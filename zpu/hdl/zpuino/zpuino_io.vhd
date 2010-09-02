@@ -23,7 +23,11 @@ entity zpuino_io is
     spi_pf_miso:  in std_logic;
     spi_pf_mosi:  out std_logic;
     spi_pf_sck:   out std_logic;
-    spi_pf_nsel:  out std_logic
+    spi_pf_nsel:  out std_logic;
+
+    -- UART
+    uart_rx:      in std_logic;
+    uart_tx:      out std_logic
   );
 end entity zpuino_io;
 
@@ -33,17 +37,23 @@ architecture behave of zpuino_io is
   signal spi_re:  std_logic;
   signal spi_we:  std_logic;
 
+  signal uart_read:     std_logic_vector(wordSize-1 downto 0);
+  signal uart_re:  std_logic;
+  signal uart_we:  std_logic;
+
 begin
 
   busy <= '0';
   interrupt <= '0';
 
   -- MUX read signals
-  process(spi_read,address)
+  process(address,spi_read,uart_read)
   begin
-    case address(2) is
+    case address(3) is
       when '0' =>
         read <= spi_read;
+      when '1' =>
+        read <= uart_read;
       when others =>
         read <= (others => DontCareValue);
     end case;
@@ -55,10 +65,16 @@ begin
   begin
     spi_re <= '0';
     spi_we <= '0';
+    uart_re <= '0';
+    uart_we <= '0';
+
     case address(3) is
       when '0' =>
         spi_re <= re;
         spi_we <= we;
+      when '1' =>
+        uart_re <= re;
+        uart_we <= we;
       when others =>
     end case;
   end process;
@@ -80,6 +96,22 @@ begin
     miso      => spi_pf_miso,
     sck       => spi_pf_sck,
     nsel      => spi_pf_nsel
+  );
+
+  uart: zpuino_uart
+  port map (
+    clk       => clk,
+	 	areset    => areset,
+    read      => uart_read,
+    write     => write,
+    address   => address(2 downto 2),
+    we        => uart_we,
+    re        => uart_re,
+    busy      => open,
+    interrupt => open,
+
+    tx        => uart_tx,
+    rx        => uart_rx
   );
 
 end behave;

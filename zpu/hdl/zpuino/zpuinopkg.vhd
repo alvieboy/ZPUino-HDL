@@ -24,7 +24,11 @@ package zpuinopkg is
       spi_pf_miso:  in std_logic;
       spi_pf_mosi:  out std_logic;
       spi_pf_sck:   out std_logic;
-      spi_pf_nsel:  out std_logic
+      spi_pf_nsel:  out std_logic;
+
+      -- UART
+      uart_rx:      in std_logic;
+      uart_tx:      out std_logic
 
     );
   end component zpuino_io;
@@ -47,5 +51,22 @@ package zpuinopkg is
     nsel:     out std_logic
   );
   end component zpuino_spi;
+
+  component zpuino_uart is
+  port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(0 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+    busy:     out std_logic;
+    interrupt:out std_logic;
+
+    tx:       out std_logic;
+    rx:       in std_logic
+  );
+  end component zpuino_uart;
 
 end package zpuinopkg;
