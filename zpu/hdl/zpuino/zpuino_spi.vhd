@@ -56,29 +56,34 @@ architecture behave of zpuino_spi is
       clk:   in std_logic;
       rst:   in std_logic;
       en:    in std_logic;
+      cpol:  in std_logic;
       pres:  in std_logic_vector(1 downto 0);
-  
+    
       clkrise: out std_logic;
       clkfall: out std_logic;
       spiclk:  out std_logic
   );
   end component spiclkgen;
 
-  signal spi_read: std_logic_vector(7 downto 0);
+  signal spi_read: std_logic_vector(31 downto 0);
   signal spi_en: std_logic;
   signal spi_ready: std_logic;
   signal spi_clk_en: std_logic;
   signal spi_clkrise: std_logic;
   signal spi_clkfall: std_logic;
   signal spi_clk_pres: std_logic_vector(1 downto 0);
+  signal cpol: std_logic;
 
 begin
 
   zspi: spi
+    generic map (
+      bits => 32
+    )
     port map (
       clk   => clk,
       rst   => areset,
-      din   => write(7 downto 0),
+      din   => write,
       dout  => spi_read,
       en    => spi_en,
       ready => spi_ready,
@@ -100,7 +105,8 @@ begin
       pres    => spi_clk_pres,
       clkrise => spi_clkrise,
       clkfall => spi_clkfall,
-      spiclk  => sck
+      spiclk  => sck,
+      cpol    => cpol
     );
 
   -- Direct access (write) to SPI
@@ -115,8 +121,11 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if address="0" then
-        spi_clk_pres <= write(2 downto 1);
+      if we='1' then
+        if address="0" then
+          spi_clk_pres <= write(2 downto 1);
+          cpol <= write(3);
+        end if;
       end if;
     end if;
   end process;
@@ -128,7 +137,7 @@ begin
       read(0) <= spi_ready;
       read(2 downto 1) <= spi_clk_pres;
     else
-      read(7 downto 0) <= spi_read;
+      read <= spi_read;
     end if;
   end process;
 

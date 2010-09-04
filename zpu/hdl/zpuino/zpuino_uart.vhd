@@ -121,10 +121,10 @@ begin
   begin
     read <= (others => '0');
     case address is
-      when "0" =>
+      when "1" =>
         read(0) <= data_ready;
         read(1) <= uart_busy;
-      when "1" =>
+      when "0" =>
         read(7 downto 0) <= received_data;
       when others =>
     end case;

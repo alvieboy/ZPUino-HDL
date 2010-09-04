@@ -19,6 +19,7 @@ package zpuinopkg is
       re:       in std_logic;
       busy:     out std_logic;
       interrupt:out std_logic;
+      intready: in std_logic;
 
       -- SPI program flash
       spi_pf_miso:  in std_logic;
@@ -28,7 +29,9 @@ package zpuinopkg is
 
       -- UART
       uart_rx:      in std_logic;
-      uart_tx:      out std_logic
+      uart_tx:      out std_logic;
+      -- GPIO
+      gpio:         inout std_logic_vector(31 downto 0)
 
     );
   end component zpuino_io;
@@ -68,5 +71,54 @@ package zpuinopkg is
     rx:       in std_logic
   );
   end component zpuino_uart;
+
+  component zpuino_gpio is
+  port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(0 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+    busy:     out std_logic;
+    interrupt:out std_logic;
+
+    gpio:     inout std_logic_vector(31 downto 0)
+  );
+  end component zpuino_gpio;
+
+  component zpuino_timers is
+  port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(2 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+
+    busy:     out std_logic;
+    interrupt:out std_logic
+  );
+  end component zpuino_timers;
+
+  component zpuino_intr is
+  port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(0 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+
+    busy:     out std_logic;
+    interrupt:out std_logic;
+    poppc_inst:in std_logic;
+
+    ivecs:    in std_logic_vector(15 downto 0)
+  );
+  end component zpuino_intr;
 
 end package zpuinopkg;

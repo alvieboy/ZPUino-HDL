@@ -59,7 +59,7 @@ begin
   begin
     if rising_edge(clk) then
       if do_shift='1' then
-        MOSI <= write_reg_q(bits-1);
+        MOSI <= write_reg_q(bits-1); -- Fixed 8-bit write
       end if;
     end if;
   end process;
@@ -87,8 +87,8 @@ begin
     else
         if ready_q='1' then
           if en='1' then
-          write_reg_q <= din;
-          count <= bits;
+          write_reg_q(bits-1 downto bits-8) <= din(7 downto 0);
+          count <= 8;
           ready_q <= '0';
           --clk_en <= '1';
           end if;

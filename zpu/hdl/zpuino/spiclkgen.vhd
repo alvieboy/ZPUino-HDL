@@ -7,6 +7,7 @@ entity spiclkgen is
     clk:   in std_logic;
     rst:   in std_logic;
     en:    in std_logic;
+    cpol:  in std_logic;
     pres:  in std_logic_vector(1 downto 0);
 
     clkrise: out std_logic;
@@ -37,15 +38,15 @@ genclk: process(clk)
 begin
   if rising_edge(clk) then
     if rst='1' or en='0' then
-      spiclk <= '0';
+      spiclk <= cpol;
     else
 
       if clkrise_i='1' then
-        spiclk<='1';
+        spiclk<=not cpol;
       end if;
 
       if clkfall_i='1' then
-        spiclk<='0';
+        spiclk<=cpol;
       end if;
 
     end if;

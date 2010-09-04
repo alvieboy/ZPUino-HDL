@@ -20,7 +20,9 @@ entity zpuino_top is
 
     -- UART
     uart_rx:      in std_logic;
-    uart_tx:      out std_logic
+    uart_tx:      out std_logic;
+
+    gpio:         inout std_logic_vector(31 downto 0)
 
   );
 end entity zpuino_top;
@@ -34,6 +36,7 @@ architecture behave of zpuino_top is
   signal mem_re:      std_logic;
   signal mem_busy:    std_logic;
   signal interrupt:   std_logic;
+  signal poppc_inst:  std_logic;
 
   signal io_we:       std_logic;
   signal io_re:       std_logic;
@@ -56,6 +59,7 @@ begin
 			out_mem_readEnable  => mem_re,
 	 		mem_writeMask => open,
 	 		interrupt     => interrupt,
+      poppc_inst    => poppc_inst,
 	 		break         => open
     );
 
@@ -71,6 +75,7 @@ begin
       re            => io_re,
       busy          => mem_busy,
       interrupt     => interrupt,
+      intready      => poppc_inst,
 
       spi_pf_miso   => spi_pf_miso,
       spi_pf_mosi   => spi_pf_mosi,
@@ -78,8 +83,9 @@ begin
       spi_pf_nsel   => spi_pf_nsel,
 
       uart_rx       => uart_rx,
-      uart_tx       => uart_tx
+      uart_tx       => uart_tx,
 
+      gpio          => gpio
     );
 
 end behave;

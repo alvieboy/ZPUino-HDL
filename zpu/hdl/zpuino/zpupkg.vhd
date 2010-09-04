@@ -110,6 +110,7 @@ package zpupkg is
 			  out_mem_readEnable : out std_logic;
 	 		  mem_writeMask: out std_logic_vector(wordBytes-1 downto 0);
 	 		  interrupt : in std_logic;
+        poppc_inst: out std_logic;
 	 		  break : out std_logic);
 	end component;
 
