@@ -38,7 +38,7 @@ signal tmr0_ien_q: std_logic;
 begin
 
   -- Read
-  process(address,TSC_q)
+  process(address,TSC_q, tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q)
   begin
     read <= (others => '0');
     case address is

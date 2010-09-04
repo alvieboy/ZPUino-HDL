@@ -45,7 +45,7 @@ begin
   end if;
 end process;
 
-process(address,mask_q,ien_q)
+process(address,mask_q,ien_q,intr_q)
 begin
   read <= (others => '0');
   case address is
@@ -67,6 +67,7 @@ begin
       ien_q <= '0';
       iready_q <= '1';
       interrupt <= '0';
+      intr_q <= (others =>'0');
     else
       if we='1' then
         case address is
