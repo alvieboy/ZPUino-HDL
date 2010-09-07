@@ -113,7 +113,9 @@ begin
 
   spi_en <= '1' when we='1' and address="1" else '0';
 
+  --  busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
   busy <= '0';
+
   interrupt <= '0';
 
   -- Prescaler write

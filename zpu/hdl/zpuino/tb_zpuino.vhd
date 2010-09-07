@@ -92,11 +92,12 @@ architecture behave of tb_zpuino is
   end component;
 
   signal vcc: real := 0.0;
-
+  signal uart_tx: std_logic;
+  signal uart_rx: std_logic := '0';
 begin
 
-
-
+  uart_rx <= uart_tx after 7 us;
+                
 
   top: zpuino_top
     port map (
@@ -106,7 +107,8 @@ begin
       spi_pf_mosi   => spi_pf_mosi,
       spi_pf_sck    => spi_pf_sck,
       spi_pf_nsel   => spi_pf_nsel,
-      uart_rx => '1',
+      uart_rx => uart_rx,
+      uart_tx => uart_tx,
       gpio => open
   );
 
@@ -133,6 +135,8 @@ begin
       w_rst   <= '1';
       wait for 10 ns;
       w_rst   <= '0';
+      wait for 4 ms;
+      report "End" severity failure;
       wait;
    end process;
 

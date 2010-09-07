@@ -58,17 +58,39 @@ architecture behave of zpuino_uart is
      );
   end component uart_brgen;
 
+  component fifo is
+  port (
+    clk:      in std_logic;
+    rst:      in std_logic;
+    wr:       in std_logic;
+    rd:       in std_logic;
+    write:    in std_logic_vector(7 downto 0);
+    read :    out std_logic_vector(7 downto 0);
+    full:     out std_logic;
+    empty:    out std_logic
+  );
+  end component fifo;
+
+
   signal uart_read: std_logic;
   signal uart_write: std_logic;
-  signal divider_tx: std_logic_vector(15 downto 0) := x"0004";
+  signal divider_tx: std_logic_vector(15 downto 0) := x"0003";
 
   signal divider_rx_q: std_logic_vector(15 downto 0);
 
   signal data_ready: std_logic;
   signal received_data: std_logic_vector(7 downto 0);
+  signal fifo_data: std_logic_vector(7 downto 0);
   signal uart_busy: std_logic;
+  signal fifo_empty: std_logic;
   signal rx_br: std_logic;
   signal tx_br: std_logic;
+  signal rx_en: std_logic;
+
+  signal dready_q: std_logic;
+  signal data_ready_dly_q: std_logic;
+  signal fifo_rd: std_logic;
+
 begin
 
   rx_inst: RxUnit
@@ -117,15 +139,50 @@ begin
       count => divider_tx
     );
 
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if areset='1' then
+        dready_q<='0';
+        data_ready_dly_q<='0';
+      else
+
+        data_ready_dly_q<=data_ready;
+
+        if data_ready='1' and data_ready_dly_q='0' then
+          dready_q<='1';
+        else
+          dready_q<='0';
+        end if;
+
+      end if;
+    end if;
+  end process;
+
+  fifo_instance: fifo
+    port map (
+      clk   => clk,
+      rst   => areset,
+      wr    => dready_q,
+      rd    => fifo_rd,
+      write => received_data,
+      read  => fifo_data,
+      full  => open,
+      empty => fifo_empty
+    );
+  
+
+  fifo_rd<='1' when address="0" and re='1' else '0';
+
   process(address, received_data, uart_busy, data_ready)
   begin
     read <= (others => '0');
     case address is
       when "1" =>
-        read(0) <= data_ready;
+        read(0) <= not fifo_empty;
         read(1) <= uart_busy;
       when "0" =>
-        read(7 downto 0) <= received_data;
+        read(7 downto 0) <= fifo_data;
       when others =>
     end case;
   end process;

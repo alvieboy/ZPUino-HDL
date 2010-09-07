@@ -39,6 +39,7 @@ architecture behave of zpuino_io is
   signal spi_read:     std_logic_vector(wordSize-1 downto 0);
   signal spi_re:  std_logic;
   signal spi_we:  std_logic;
+  signal spi_busy:  std_logic;
 
   signal uart_read:     std_logic_vector(wordSize-1 downto 0);
   signal uart_re:  std_logic;
@@ -60,7 +61,7 @@ architecture behave of zpuino_io is
   signal ivecs: std_logic_vector(15 downto 0);
 begin
 
-  busy <= '0';
+  busy <= spi_busy;
   ivecs(0) <= timers_interrupt;
   ivecs(15 downto 1) <= (others => '0');
 
@@ -129,7 +130,7 @@ begin
     address   => address(2 downto 2),
     we        => spi_we,
     re        => spi_re,
-    busy      => open,
+    busy      => spi_busy,
     interrupt => open,
 
     mosi      => spi_pf_mosi,
