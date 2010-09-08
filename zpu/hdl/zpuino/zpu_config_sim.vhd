@@ -52,6 +52,7 @@ package zpu_config is
 	
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words
-	constant 	spStart				: std_logic_vector(maxAddrBitIncIO downto 0) :=
-					conv_std_logic_vector((2**(maxAddrBitBRAM+1))-8, maxAddrBitIncIO+1);
+	constant 	spStart				: std_logic_vector(maxAddrBitIncIO downto 0) :=  x"7EFC";
+--          conv_std_logic_vector("x7EFC",maxAddrBitIncIO+1);
+--					conv_std_logic_vector((2**(maxAddrBitBRAM+1))-8, maxAddrBitIncIO+1);
 end zpu_config;
