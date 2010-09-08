@@ -10,8 +10,7 @@ SEARCH_DIR("/local/work/zpu/zpubig/binutils/../install/zpu-elf/lib");
 
   MEMORY
   {
-    RAM (rx) : ORIGIN = 0x00000000, LENGTH = 0x7EFF
-    BOOT(rxw) : ORIGIN = 0x00007F00, LENGTH = 256
+    RAM (rx) : ORIGIN = 0x00000000, LENGTH = 0x1000
   }
 
 SECTIONS
@@ -67,13 +66,17 @@ SECTIONS
     /* .gnu.warning sections are handled specially by elf32.em.  */
     *(.gnu.warning)
     *(.glue_7t) *(.glue_7)
-    KEEP(*(.text))
+    /* KEEP(*(.text)) */
   } > RAM =0
   .fini           :
   {
     KEEP (*(.fini))
   } 
-  
+ 
+  /DISCARD/ : {
+   *(.text.*)
+  }
+ 
    
   PROVIDE (__etext = .);
   PROVIDE (_etext = .);
@@ -220,12 +223,7 @@ SECTIONS
   {
     _stack = .;
     *(.stack)
-  } > BOOT
-
-  PROVIDE ( _bootloader_start = .);
-  .bootloader : {
-  	KEEP (*(.bootloader))
-  } > BOOT
+  } 
 
   .note.gnu.zpu.ident 0 : { KEEP (*(.note.gnu.zpu.ident)) }
   /DISCARD/ : { *(.note.GNU-stack) }

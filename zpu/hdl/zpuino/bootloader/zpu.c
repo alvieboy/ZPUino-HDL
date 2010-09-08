@@ -1,6 +1,8 @@
 #include "register.h"
 #include <stdarg.h>
-#define BOOTLOADER __attribute__((section (".bootloader")))
+//#define BOOTLOADER __attribute__((section (".bootloader")))
+
+#define BOOTLOADER
 
 #define SECTORSIZE 65536
 
@@ -29,8 +31,6 @@ extern unsigned char ___jcr_start,___jcr_begin,___jcr_end;
 extern unsigned char __bss_start__, __bss_end__;
 
 void outbyte(int);
-
-
 
 /*
  * Wait indefinitely for input byte
@@ -72,7 +72,7 @@ void _initIO(void)
 	MHZ=(volatile int *)&mhz;*/
 }
 
-static inline spi_disable()
+void spi_disable()
 {
 	GPIODATA |= 1;
 }
@@ -93,12 +93,12 @@ static inline void waitspiready()
     while (!(SPICTL & BIT(SPIREADY)));
 }
 
-static inline void spiwrite(unsigned int i)
+static void spiwrite(unsigned int i)
 {
 	waitspiready();
 	SPIDATA=i;
 }
-static inline unsigned int spiread()
+static unsigned int spiread()
 {
 	waitspiready();
 	return SPIDATA;
@@ -106,13 +106,47 @@ static inline unsigned int spiread()
 
 #define SPIOFFSET 0x00000000
 
-void BOOTLOADER __attribute__((noreturn)) spi_copy()
+void printnibble(unsigned int c)
+{
+	c&=0xf;
+	if (c>9)
+		outbyte(c+'a'-10);
+	else
+		outbyte(c+'0');
+}
+
+void printhexbyte(unsigned int c)
+{
+	printnibble(c>>4);
+	printnibble(c);
+}
+void printhex(unsigned int c)
+{
+	printhexbyte(c>>24);
+	printhexbyte(c>>16);
+	printhexbyte(c>>8);
+	printhexbyte(c);
+}
+void __attribute__((noreturn)) spi_copy()
+{
+	// Make sure we are on top of stack. We can safely discard everything
+	__asm__("im 0x7ffc\n"
+			"popsp\n"
+			"im spi_copy_impl\n"
+			"poppc");
+	while (1) {}
+}
+
+void __attribute__((noreturn)) spi_copy_impl()
 {
 	unsigned int bootword;
-	unsigned int count = 0x7F00 >> 2;
-	volatile unsigned int *target = (volatile unsigned int *)0x400;
+	// We must not overflow stack, leave 128 bytes
+	unsigned int count = (0x7000 - 128) >> 2;
 
-	// Fast read
+	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+
+	spi_enable();
+
 	spiwrite(0x0B);
 	spiwrite(SPIOFFSET >> 16);
 	spiwrite(SPIOFFSET >> 8);
@@ -123,16 +157,17 @@ void BOOTLOADER __attribute__((noreturn)) spi_copy()
 		spiwrite(0);
 		spiwrite(0);
 		spiwrite(0);
-		__asm__("nop\n");
 
 		*target++ = spiread();
 	}
-	// Need to reset stack also
 
-	__asm__("im _bootloader_start - 4\n"
+	// Need to reset stack also
+	spi_disable();
+	__asm__("im 0x7FFC\n"
 			"popsp\n"
-			"im 0\n"
+			"im 0x1000\n"
 			"poppc\n");
+	while(1) {}
 }
 
 
@@ -327,7 +362,12 @@ void _premain()
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0);//|BIT(SPICP1);
 
-
+	outbyte('B');
+	outbyte('o');
+	outbyte('o');
+	outbyte('t');
+	outbyte('\r');
+	outbyte('\n');
 
 	while (1) {
 		int i;
@@ -363,7 +403,9 @@ void _premain()
 		case '?':
 			break;
 		case 'b':
-			__asm__ ( "im 0x7F00\npoppc\n" );
+			INTRCTL=0;
+			TMR0CTL=0;
+			spi_copy();
 			break;
 		default:
 			outbyte('?');
@@ -372,8 +414,3 @@ void _premain()
 	}
 }
 
-void main()
-{
-	milisseconds=0;
-	_preinit();
-}
