@@ -39,7 +39,10 @@
 #define TCTLCCM 1
 #define TCTLDIR 2
 #define TCTLIEN 3
-
+#define TCTLCP0 4
+#define TCTLCP1 5
+#define TCTLCP2 6
+#define TCTLIF  7
 /* SPI bits */
 
 #define SPICP0   1

@@ -174,6 +174,7 @@ void __attribute__((noreturn)) spi_copy_impl()
 void _zpu_interrupt()
 {
 	milisseconds++;
+	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
 void ___zpu_interrupt_vector()
@@ -354,11 +355,14 @@ void _premain()
 	// Enable interrupts
 
 	// Load timer0 compare
-
+    /*
 	TMR0CMP = (CLK_FREQ/1000U)-1;
 	TMR0CNT = 0x0;
-
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLIEN);
+    */
+	TMR0CMP = (CLK_FREQ/2000U)-1;
+	TMR0CNT = 0x0;
+	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0);//|BIT(SPICP1);
 
