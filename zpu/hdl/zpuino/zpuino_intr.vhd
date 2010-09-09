@@ -44,7 +44,7 @@ use work.zpuinopkg.all;
 entity zpuino_intr is
   port (
     clk:      in std_logic;
-	 	areset:   in std_logic;
+    areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
     address:  in std_logic_vector(0 downto 0);
