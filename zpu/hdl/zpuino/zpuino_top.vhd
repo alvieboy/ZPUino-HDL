@@ -29,6 +29,16 @@ end entity zpuino_top;
 
 architecture behave of zpuino_top is
 
+  component clkgen is
+  port (
+    clkin:  in std_logic;
+    rstin:  in std_logic;
+    clkout: out std_logic;
+    rstout: out std_logic
+  );
+  end component clkgen;
+
+
   signal mem_read:    std_logic_vector(wordSize-1 downto 0);
   signal mem_write:   std_logic_vector(wordSize-1 downto 0);
   signal mem_address: std_logic_vector(maxAddrBitIncIO downto 0);
@@ -41,15 +51,26 @@ architecture behave of zpuino_top is
   signal io_we:       std_logic;
   signal io_re:       std_logic;
 
+  signal sysrst:      std_logic;
+  signal sysclk:      std_logic;
+
 begin
 
+  clkgen_inst: clkgen
+  port map (
+    clkin   => clk,
+    rstin   => areset,
+    clkout  => sysclk,
+    rstout  => sysrst
+  );
+                      
   io_we <= mem_we;-- and mem_address(maxAddrBitIncIO-1);
   io_re <= mem_re;-- and mem_address(maxAddrBitIncIO-1);
 
   core: zpu_core
     port map (
-      clk           => clk,
-	 		areset        => areset,
+      clk           => sysclk,
+	 		areset        => sysrst,
 	 		enable        => '1',
 	 		in_mem_busy   => mem_busy,
 	 		mem_read      => mem_read,
@@ -66,8 +87,8 @@ begin
 
   io: zpuino_io
     port map (
-      clk           => clk,
-	 	  areset        => areset,
+      clk           => sysclk,
+	 	  areset        => sysrst,
       read          => mem_read,
       write         => mem_write,
       address       => mem_address,

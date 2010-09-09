@@ -1,7 +1,7 @@
 #ifndef __REGISTER_H__
 #define __REGISTER_H__
 
-#define CLK_FREQ 50000000U
+#define CLK_FREQ 100000000ULL
 
 #define IOBASE 0x8000
 #define IO_SLOT_OFFSET_BIT 5
@@ -51,6 +51,6 @@
 #define SPIREADY  0
 /* Baud rate computation */
 
-#define BAUDRATEGEN(x) ((CLK_FREQ/(x)))
+#define BAUDRATEGEN(x) ((CLK_FREQ/(x))/4)
 
 #endif

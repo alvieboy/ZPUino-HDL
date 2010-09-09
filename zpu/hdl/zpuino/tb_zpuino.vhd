@@ -133,7 +133,7 @@ begin
       wait for 1 ns;
       vcc     <= 3.3;
       w_rst   <= '1';
-      wait for 10 ns;
+      wait for 120 ns;
       w_rst   <= '0';
       wait for 4 ms;
       report "End" severity failure;

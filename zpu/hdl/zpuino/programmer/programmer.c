@@ -166,7 +166,10 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"Flash information: manufacturer 0x%02x, type 0x%02x, density 0x%02x\n",
 			buffer[0],buffer[1],buffer[2]);
-
+	if (buffer[0]!=0x20 || buffer[1]!=0x20 || buffer[2]!=0x15) {
+		fprintf(stderr,"Invalid flash\n");
+		return -1;
+	}
 
 	// Get file
 	int fin = open(argv[2],O_RDONLY);
