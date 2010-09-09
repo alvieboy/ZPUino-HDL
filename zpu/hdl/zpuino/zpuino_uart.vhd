@@ -208,7 +208,7 @@ begin
 
   fifo_rd<='1' when address="0" and re='1' else '0';
 
-  process(address, received_data, uart_busy, data_ready)
+  process(address, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
   begin
     read <= (others => '0');
     case address is

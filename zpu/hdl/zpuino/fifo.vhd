@@ -62,9 +62,14 @@ architecture behave of fifo is
 
 begin
 
-  read <= memory( conv_integer(std_logic_vector(rdaddr)) );
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      read <= memory( conv_integer(std_logic_vector(rdaddr)) );
+    end if;
+  end process;
 
-  process(clk,rdaddr,wraddr)
+  process(clk,rdaddr,wraddr,rst)
     variable full_v: std_logic;
     variable empty_v: std_logic;
   begin
