@@ -61,8 +61,6 @@ end entity zpuino_timers;
 
 architecture behave of zpuino_timers is
 
-signal TSC_q: unsigned(31 downto 0);
-
   component timer is
   generic (
     TSCENABLED: boolean := false

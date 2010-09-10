@@ -160,7 +160,7 @@ begin
               tmr0_ien_q <= write(3);
               tmr0_prescale <= write(6 downto 4);
               --tmr0_prescale_rst <= '1';
-            when "01" =>
+            when "10" =>
               tmr0_cmp_q <= unsigned(write(15 downto 0));
             when others =>
           end case;
