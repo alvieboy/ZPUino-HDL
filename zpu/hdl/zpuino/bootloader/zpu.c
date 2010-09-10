@@ -344,7 +344,7 @@ void _premain()
 	int t;
 	UARTCTL = 216;//BAUDRATEGEN(115200);
 	GPIODATA=0x1;
-	GPIOTRIS=0; // All outputs
+	GPIOTRIS=0xFFFFFFFE; // All inputs, but SPI select
 
 	INTRCTL=1;
 
