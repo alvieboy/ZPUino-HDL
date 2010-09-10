@@ -132,7 +132,7 @@ architecture behave of tb_zpuino is
   signal uart_rx: std_logic := '0';
 begin
 
-  uart_rx <= uart_tx after 7 us;
+  uart_rx <= '1';--uart_tx after 7 us;
                 
 
   top: zpuino_top
