@@ -68,6 +68,15 @@ end entity s3e_eval_zpuino;
 
 architecture behave of s3e_eval_zpuino is
 
+  component clkgen is
+  port (
+    clkin:  in std_logic;
+    rstin:  in std_logic;
+    clkout: out std_logic;
+    rstout: out std_logic
+  );
+  end component clkgen;
+
 component zpuino_top is
   port (
     clk:      in std_logic;
@@ -89,10 +98,20 @@ component zpuino_top is
 end component zpuino_top;
 
 
-signal gpio: std_logic_vector(31 downto 0);
-signal spi_mosi_i: std_logic;
+  signal gpio: std_logic_vector(31 downto 0);
+  signal spi_mosi_i: std_logic;
+  signal sysrst:      std_logic;
+  signal sysclk:      std_logic;
 
 begin
+
+  clkgen_inst: clkgen
+  port map (
+    clkin   => clk,
+    rstin   => rst,
+    clkout  => sysclk,
+    rstout  => sysrst
+  );
 
     -- Signals to disable (write '1')
     DAC_CS <= '1';
@@ -114,8 +133,8 @@ begin
 
   zpuino:zpuino_top
   port map (
-    clk           => clk,
-	 	areset        => rst,
+    clk           => sysclk,
+	 	areset        => sysrst,
 
     -- SPI program flash
     spi_pf_miso   => SPI_MISO,

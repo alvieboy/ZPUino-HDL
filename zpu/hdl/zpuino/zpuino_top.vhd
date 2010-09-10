@@ -85,26 +85,15 @@ architecture behave of zpuino_top is
   signal io_we:       std_logic;
   signal io_re:       std_logic;
 
-  signal sysrst:      std_logic;
-  signal sysclk:      std_logic;
-
 begin
 
-  clkgen_inst: clkgen
-  port map (
-    clkin   => clk,
-    rstin   => areset,
-    clkout  => sysclk,
-    rstout  => sysrst
-  );
-                      
   io_we <= mem_we;-- and mem_address(maxAddrBitIncIO-1);
   io_re <= mem_re;-- and mem_address(maxAddrBitIncIO-1);
 
   core: zpu_core
     port map (
-      clk           => sysclk,
-	 		areset        => sysrst,
+      clk           => clk,
+	 		areset        => areset,
 	 		enable        => '1',
 	 		in_mem_busy   => mem_busy,
 	 		mem_read      => mem_read,
@@ -121,8 +110,8 @@ begin
 
   io: zpuino_io
     port map (
-      clk           => sysclk,
-	 	  areset        => sysrst,
+      clk           => clk,
+	 	  areset        => areset,
       read          => mem_read,
       write         => mem_write,
       address       => mem_address,

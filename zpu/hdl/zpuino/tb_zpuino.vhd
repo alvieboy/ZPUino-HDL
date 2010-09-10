@@ -42,7 +42,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 20 ns;
+  constant period : time := 10 ns;
 
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
@@ -51,6 +51,7 @@ architecture behave of tb_zpuino is
   signal spi_pf_miso:  std_logic;
   signal spi_pf_mosi:  std_logic;
   signal spi_pf_mosi_dly:  std_logic;
+  signal spi_pf_sck_dly:  std_logic;
   signal spi_pf_sck:   std_logic;
   signal spi_pf_nsel:  std_logic;
 
@@ -147,12 +148,13 @@ begin
       gpio => open
   );
 
-  spi_pf_mosi_dly <= spi_pf_mosi after 5 ns;
+  spi_pf_mosi_dly <= spi_pf_mosi after 7.886 ns;
+  spi_pf_sck_dly <= spi_pf_sck after 3.825 ns;
 
   spiflash: M25P16
     port map (
       VCC => vcc,
-		  C   => spi_pf_sck,
+		  C   => spi_pf_sck_dly,
       D   => spi_pf_mosi_dly,
       S   => spi_pf_nsel,
       W   => '0',

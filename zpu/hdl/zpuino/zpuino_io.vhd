@@ -86,7 +86,7 @@ architecture behave of zpuino_io is
   signal timers_read:     std_logic_vector(wordSize-1 downto 0);
   signal timers_re:  std_logic;
   signal timers_we:  std_logic;
-  signal timers_interrupt:  std_logic;
+  signal timers_interrupt:  std_logic_vector(1 downto 0);
 
   signal intr_read:     std_logic_vector(wordSize-1 downto 0);
   signal intr_re:  std_logic;
@@ -96,8 +96,9 @@ architecture behave of zpuino_io is
 begin
 
   busy <= spi_busy;
-  ivecs(0) <= timers_interrupt;
-  ivecs(15 downto 1) <= (others => '0');
+  ivecs(0) <= timers_interrupt(0);
+  ivecs(1) <= timers_interrupt(1);
+  ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
   process(address,spi_read,uart_read,gpio_read,timers_read,intr_read)

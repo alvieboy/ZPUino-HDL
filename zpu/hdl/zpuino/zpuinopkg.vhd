@@ -133,7 +133,7 @@ package zpuinopkg is
     re:       in std_logic;
 
     busy:     out std_logic;
-    interrupt:out std_logic
+    interrupt:out std_logic_vector(1 downto 0)
   );
   end component zpuino_timers;
 
