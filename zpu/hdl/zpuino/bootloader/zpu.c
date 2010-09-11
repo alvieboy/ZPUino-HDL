@@ -35,6 +35,7 @@ void outbyte(int);
 /*
  * Wait indefinitely for input byte
  */
+void __attribute__((noreturn)) spi_copy();
 
 int inbyte()
 {
@@ -44,10 +45,12 @@ int inbyte()
 		if (UARTCTL&0x1 != 0) {
 			return UARTDATA;
 		}
-            /*
-		if (inprogrammode && milisseconds>1000)
-		__asm__ ( "im 0x7F00\npoppc\n" );
-		*/
+
+		if (inprogrammode==0 && milisseconds>1000) {
+			INTRCTL=0;
+			TMR0CTL=0;
+			spi_copy();
+		}
 	}
 }
 
