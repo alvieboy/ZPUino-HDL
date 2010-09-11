@@ -54,7 +54,8 @@ entity spi is
     clk_en:    out std_logic;
 
     clkrise: in std_logic;
-    clkfall: in std_logic
+    clkfall: in std_logic;
+    samprise:in std_logic -- Sample on rising edge
   );
 end entity spi;
 
@@ -65,11 +66,21 @@ signal write_reg_q: std_logic_vector(bits-1 downto 0);
 --signal read_reg_q: std_logic_vector(bits-1 downto 0);
 signal ready_q: std_logic;
 signal count: integer range 0 to bits;
-
+signal sample_event: std_logic;
 signal do_shift: std_logic;
 begin
 
   dout <= write_reg_q;
+
+  process(samprise,clkrise,clkfall)
+  begin
+    sample_event <= '0';
+    if (clkfall='1' and samprise='0') then
+      sample_event <= '1';
+    elsif (clkrise='1' and samprise='1') then
+      sample_event <= '1';
+    end if;
+  end process;
 
   process(ready_q, en)
   begin
@@ -141,7 +152,7 @@ begin
           --end if;
         end if;
 
-        if ready_q='0' and clkfall='1' then
+        if ready_q='0' and sample_event='1' then
           write_reg_q <= write_reg_q(bits-2 downto 0) & MISO;
         end if;
       end if;
