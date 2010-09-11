@@ -81,7 +81,8 @@ architecture behave of zpuino_spi is
       clk_en:    out std_logic;
   
       clkrise: in std_logic;
-      clkfall: in std_logic
+      clkfall: in std_logic;
+      samprise:in std_logic
     );
   end component spi;
 
@@ -106,6 +107,7 @@ architecture behave of zpuino_spi is
   signal spi_clkrise: std_logic;
   signal spi_clkfall: std_logic;
   signal spi_clk_pres: std_logic_vector(1 downto 0);
+  signal spi_samprise: std_logic;
   signal cpol: std_logic;
 
 begin
@@ -128,7 +130,8 @@ begin
       clk_en    => spi_clk_en,
   
       clkrise   => spi_clkrise,
-      clkfall   => spi_clkfall
+      clkfall   => spi_clkfall,
+      samprise  => spi_samprise
     );
 
   zspiclk: spiclkgen
@@ -161,6 +164,7 @@ begin
         if address="0" then
           spi_clk_pres <= write(2 downto 1);
           cpol <= write(3);
+          spi_samprise <= write(4);
         end if;
       end if;
     end if;
@@ -172,6 +176,8 @@ begin
     if address="0" then
       read(0) <= spi_ready;
       read(2 downto 1) <= spi_clk_pres;
+      read(3) <= cpol;
+      read(4) <= spi_samprise;
     else
       read <= spi_read;
     end if;
