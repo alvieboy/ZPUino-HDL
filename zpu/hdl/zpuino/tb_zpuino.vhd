@@ -49,6 +49,7 @@ architecture behave of tb_zpuino is
   signal gpio:  std_logic_vector(31 downto 0);
 
   signal spi_pf_miso:  std_logic;
+  signal spi_pf_miso_dly:  std_logic;
   signal spi_pf_mosi:  std_logic;
   signal spi_pf_mosi_dly:  std_logic;
   signal spi_pf_sck_dly:  std_logic;
@@ -148,8 +149,12 @@ begin
       gpio => open
   );
 
-  spi_pf_mosi_dly <= spi_pf_mosi after 7.886 ns;
+  -- These values were taken from post-P&R timing analysis
+
+  spi_pf_mosi_dly <= spi_pf_mosi after 3.850 ns;
   spi_pf_sck_dly <= spi_pf_sck after 3.825 ns;
+  spi_pf_miso <= spi_pf_miso_dly after  2.540 ns;
+
 
   spiflash: M25P16
     port map (
@@ -159,7 +164,7 @@ begin
       S   => spi_pf_nsel,
       W   => '0',
       HOLD => '1',
-		  Q   => spi_pf_miso
+		  Q   => spi_pf_miso_dly
     );
 
   w_clk <= not w_clk after period/2;
