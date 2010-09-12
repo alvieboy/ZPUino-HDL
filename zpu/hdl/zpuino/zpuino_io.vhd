@@ -99,8 +99,6 @@ architecture behave of zpuino_io is
   signal sigmadelta_read:     std_logic_vector(wordSize-1 downto 0);
   signal sigmadelta_re:  std_logic;
   signal sigmadelta_we:  std_logic;
-  signal sigmadelta_spp_data: std_logic_vector(31 downto 0);
-  signal sigmadelta_spp_en: std_logic_vector(31 downto 0);
 
 begin
 
@@ -264,8 +262,8 @@ begin
     address   => address(2 downto 2),
     we        => sigmadelta_we,
     re        => sigmadelta_re,
-    spp_data  => sigmadelta_spp_data(3),
-    spp_en    => sigmadelta_spp_en(3),
+    spp_data  => gpio_spp_data(3),
+    spp_en    => gpio_spp_en(3),
     busy      => open,
     interrupt => open
   );
