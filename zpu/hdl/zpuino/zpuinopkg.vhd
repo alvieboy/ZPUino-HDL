@@ -159,4 +159,26 @@ package zpuinopkg is
   );
   end component zpuino_intr;
 
+  component zpuino_sigmadelta is
+  generic (
+    BITS: integer := 16
+  );
+	port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(0 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+
+    -- Connection to GPIO pin
+    spp_data: out std_logic;
+    spp_en:   out std_logic;
+
+    busy:     out std_logic;
+    interrupt:out std_logic
+  );
+  end component zpuino_sigmadelta;
+
 end package zpuinopkg;

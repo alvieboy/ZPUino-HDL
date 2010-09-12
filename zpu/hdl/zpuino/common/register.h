@@ -16,6 +16,7 @@
 #define GPIOBASE IO_SLOT(2)
 #define TIMERSBASE IO_SLOT(3)
 #define INTRBASE IO_SLOT(4)
+#define SIGMADELTABASE IO_SLOT(5)
 
 #define UARTDATA REGISTER(UARTBASE,0)
 #define UARTCTL  REGISTER(UARTBASE,1)
@@ -38,6 +39,9 @@
 
 #define INTRCTL  REGISTER(INTRBASE,0)
 
+#define SIGMADELTACTL   REGISTER(SIGMADELTABASE,0)
+#define SIGMADELTADATA  REGISTER(SIGMADELTABASE,1)
+
 /* Timer CTL bits */
 
 #define TCTLENA 0 /* Timer Enable */
@@ -56,6 +60,9 @@
 #define SPICP1   2 /* Clock prescaler bit 1 */
 #define SPICPOL  3 /* Clock polarity */
 #define SPISRE   4 /* Sample on Rising Edge */
+
+/* Sigma-Delta bits */
+#define SDENA    0 /* Sigma-delta enable */
 
 /* Baud rate computation */
 

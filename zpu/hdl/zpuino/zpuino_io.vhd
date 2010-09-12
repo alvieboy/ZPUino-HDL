@@ -95,6 +95,13 @@ architecture behave of zpuino_io is
   signal intr_we:  std_logic;
 
   signal ivecs: std_logic_vector(15 downto 0);
+
+  signal sigmadelta_read:     std_logic_vector(wordSize-1 downto 0);
+  signal sigmadelta_re:  std_logic;
+  signal sigmadelta_we:  std_logic;
+  signal sigmadelta_spp_data: std_logic_vector(31 downto 0);
+  signal sigmadelta_spp_en: std_logic_vector(31 downto 0);
+
 begin
 
   busy <= spi_busy;
@@ -116,6 +123,8 @@ begin
         read <= timers_read;
       when "100" =>
         read <= intr_read;
+      when "101" =>
+        read <= sigmadelta_read;
       when others =>
         read <= (others => DontCareValue);
     end case;
@@ -135,6 +144,8 @@ begin
     timers_we <= '0';
     intr_re <= '0';
     intr_we <= '0';
+    sigmadelta_re <= '0';
+    sigmadelta_we <= '0';
 
     case address(7 downto 5) is
       when "000" =>
@@ -152,6 +163,9 @@ begin
       when "100" =>
         intr_re <= re;
         intr_we <= we;
+      when "101" =>
+        sigmadelta_re <= re;
+        sigmadelta_we <= we;
       when others =>
     end case;
   end process;
@@ -223,6 +237,7 @@ begin
     busy      => open,
     interrupt => timers_interrupt
   );
+
   intr_inst: zpuino_intr
   port map (
     clk       => clk,
@@ -240,8 +255,23 @@ begin
     ivecs     => ivecs
   );
 
+  sigmadelta_inst: zpuino_sigmadelta
+  port map (
+    clk       => clk,
+	 	areset    => areset,
+    read      => sigmadelta_read,
+    write     => write,
+    address   => address(2 downto 2),
+    we        => sigmadelta_we,
+    re        => sigmadelta_re,
+    spp_data  => sigmadelta_spp_data(3),
+    spp_en    => sigmadelta_spp_en(3),
+    busy      => open,
+    interrupt => open
+  );
+
   gpio_spp_en(0) <= '0';
-  gpio_spp_en(31 downto 3) <= (others=>'0');
+  gpio_spp_en(31 downto 4) <= (others=>'0');
 
 
 end behave;
