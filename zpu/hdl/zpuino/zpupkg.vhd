@@ -104,6 +104,7 @@ package zpupkg is
 	 		  enable : in std_logic; 
 	 		  in_mem_busy : in std_logic; 
 	 		  mem_read : in std_logic_vector(wordSize-1 downto 0);
+	 		  code_mem_read : in std_logic_vector(wordSize-1 downto 0); -- Faster BRAM read, from second port
 	 		  mem_write : out std_logic_vector(wordSize-1 downto 0);
 			  out_mem_addr : out std_logic_vector(maxAddrBitIncIO downto 0);
 			  out_mem_writeEnable : out std_logic; 

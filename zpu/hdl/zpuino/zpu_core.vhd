@@ -68,6 +68,7 @@ entity zpu_core is
 	 		  enable : in std_logic; 
 	 		  in_mem_busy : in std_logic; 
 	 		  mem_read : in std_logic_vector(wordSize-1 downto 0);
+	 		  code_mem_read : in std_logic_vector(wordSize-1 downto 0); -- Faster BRAM read, from second port
 	 		  mem_write : out std_logic_vector(wordSize-1 downto 0);
 			  out_mem_addr : out std_logic_vector(maxAddrBitIncIO downto 0);
 			  out_mem_writeEnable : out std_logic; 
@@ -328,7 +329,7 @@ begin
 					end if;
 				when State_Decode =>
 					if in_mem_busy='0' then
-						decodeWord <= mem_read;
+						-- decodeWord <= mem_read; -- it's fetched directly from BRAM output
 						state <= State_Decode2;
 						-- Do not recurse into ISR while interrupt line is active
 						if interrupt='1' and inInterrupt='0' and idim_flag='0' then
@@ -355,7 +356,7 @@ begin
 				when State_Decode2 =>
 					-- decode 4 instructions in parallel
 					for i in 0 to wordBytes-1 loop
-						tOpcode := decodeWord((wordBytes-1-i+1)*8-1 downto (wordBytes-1-i)*8);
+						tOpcode := code_mem_read((wordBytes-1-i+1)*8-1 downto (wordBytes-1-i)*8);
 
 						tSpOffset(4):=not tOpcode(4);
 						tSpOffset(3 downto 0):=unsigned(tOpcode(3 downto 0));
