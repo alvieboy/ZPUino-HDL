@@ -82,6 +82,8 @@ architecture behave of zpuino_io is
   signal gpio_read:     std_logic_vector(wordSize-1 downto 0);
   signal gpio_re:  std_logic;
   signal gpio_we:  std_logic;
+  signal gpio_spp_data: std_logic_vector(31 downto 0);
+  signal gpio_spp_en: std_logic_vector(31 downto 0);
 
   signal timers_read:     std_logic_vector(wordSize-1 downto 0);
   signal timers_re:  std_logic;
@@ -199,6 +201,8 @@ begin
     address   => address(2 downto 2),
     we        => gpio_we,
     re        => gpio_re,
+    spp_data  => gpio_spp_data,
+    spp_en    => gpio_spp_en,
     busy      => open,
     interrupt => open,
 
@@ -214,6 +218,8 @@ begin
     address   => address(4 downto 2),
     we        => timers_we,
     re        => timers_re,
+    spp_data  => gpio_spp_data(2 downto 1),
+    spp_en    => gpio_spp_en(2 downto 1),
     busy      => open,
     interrupt => timers_interrupt
   );
@@ -233,5 +239,9 @@ begin
 
     ivecs     => ivecs
   );
+
+  gpio_spp_en(0) <= '0';
+  gpio_spp_en(31 downto 3) <= (others=>'0');
+
 
 end behave;

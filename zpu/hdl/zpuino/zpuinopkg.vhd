@@ -115,6 +115,8 @@ package zpuinopkg is
     address:  in std_logic_vector(0 downto 0);
     we:       in std_logic;
     re:       in std_logic;
+    spp_data: in std_logic_vector(31 downto 0);
+    spp_en:   in std_logic_vector(31 downto 0);
     busy:     out std_logic;
     interrupt:out std_logic;
 
@@ -131,6 +133,8 @@ package zpuinopkg is
     address:  in std_logic_vector(2 downto 0);
     we:       in std_logic;
     re:       in std_logic;
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0);
 
     busy:     out std_logic;
     interrupt:out std_logic_vector(1 downto 0)

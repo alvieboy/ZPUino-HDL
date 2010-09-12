@@ -52,7 +52,8 @@ entity zpuino_timers is
     address:  in std_logic_vector(2 downto 0);
     we:       in std_logic;
     re:       in std_logic;
-
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0);
     busy:     out std_logic;
     interrupt:out std_logic_vector(1 downto 0)
   );
@@ -74,6 +75,10 @@ architecture behave of zpuino_timers is
     we:       in std_logic;
     re:       in std_logic;
 
+    -- Connection to GPIO pin
+    spp_data: out std_logic;
+    spp_en:   out std_logic;
+
     busy:     out std_logic;
     interrupt:out std_logic
   );
@@ -84,12 +89,16 @@ architecture behave of zpuino_timers is
   signal timer0_we:         std_logic;
   signal timer0_interrupt:  std_logic;
   signal timer0_busy:       std_logic;
+  signal timer0_spp_data:   std_logic;
+  signal timer0_spp_en  :   std_logic;
 
   signal timer1_read:       std_logic_vector(wordSize-1 downto 0);
   signal timer1_re:         std_logic;
   signal timer1_we:         std_logic;
   signal timer1_interrupt:  std_logic;
   signal timer1_busy:       std_logic;
+  signal timer1_spp_data:   std_logic;
+  signal timer1_spp_en  :   std_logic;
 
 begin
 
@@ -108,6 +117,8 @@ begin
       address => address(1 downto 0),
       re      => timer0_re,
       we      => timer0_we,
+      spp_data=> timer0_spp_data,
+      spp_en  => timer0_spp_en,
       busy    => timer0_busy,
       interrupt=>timer0_interrupt
     );
@@ -121,6 +132,8 @@ begin
       address => address(1 downto 0),
       re      => timer1_re,
       we      => timer1_we,
+      spp_data=> timer1_spp_data,
+      spp_en  => timer1_spp_en,
       busy    => timer1_busy,
       interrupt=>timer1_interrupt
     );
@@ -145,5 +158,11 @@ begin
   timer1_we <= '1' when address(2)='1' and we='1' else '0';
 
   busy <= timer0_busy or timer1_busy;
+  
+  spp_data(0) <= timer0_spp_data;
+  spp_data(1) <= timer1_spp_data;
+
+  spp_en(0) <= timer0_spp_en;
+  spp_en(1) <= timer1_spp_en;
 
 end behave;

@@ -52,7 +52,8 @@ entity zpuino_gpio is
     re:       in std_logic;
     busy:     out std_logic;
     interrupt:out std_logic;
-
+    spp_data: in std_logic_vector(31 downto 0);
+    spp_en:   in std_logic_vector(31 downto 0);
     gpio:     inout std_logic_vector(31 downto 0)
   );
 end entity zpuino_gpio;
@@ -61,12 +62,15 @@ end entity zpuino_gpio;
 architecture behave of zpuino_gpio is
 
 signal gpio_q: std_logic_vector(31 downto 0);
+signal gpio_i: std_logic_vector(31 downto 0);
 signal gpio_tris_q: std_logic_vector(31 downto 0);
 
 begin
 
 tgen: for i in 0 to 31 generate
-  gpio(i) <= gpio_q(i) when gpio_tris_q(i)='0' else 'Z';
+  gpio_i(i) <= gpio_q(i) when spp_en(i)='0' else spp_data(i);
+
+  gpio(i) <= gpio_i(i) when gpio_tris_q(i)='0' else 'Z';
 end generate;
 
 process(address,gpio,gpio_tris_q)

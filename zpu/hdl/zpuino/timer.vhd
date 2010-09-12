@@ -55,6 +55,9 @@ entity timer is
     address:  in std_logic_vector(1 downto 0);
     we:       in std_logic;
     re:       in std_logic;
+    -- Connection to GPIO pin
+    spp_data: out std_logic;
+    spp_en:   out std_logic;
 
     busy:     out std_logic;
     interrupt:out std_logic
@@ -74,10 +77,12 @@ architecture behave of timer is
 
 signal tmr0_cnt_q: unsigned(15 downto 0);
 signal tmr0_cmp_q: unsigned(15 downto 0);
+signal tmr0_oc_q: unsigned(15 downto 0);
 signal tmr0_en_q: std_logic;
 signal tmr0_dir_q: std_logic;
 signal tmr0_ccm_q: std_logic;
 signal tmr0_ien_q: std_logic;
+signal tmr0_oce_q: std_logic;
 signal tmr0_intr:  std_logic;
 
 signal tmr0_prescale_rst: std_logic;
@@ -124,6 +129,7 @@ begin
         read(3) <= tmr0_ien_q;
         read(6 downto 4) <= tmr0_prescale;
         read(7) <= tmr0_intr;
+        read(8) <= tmr0_oce_q;
       when "01" =>
         read(15 downto 0) <= std_logic_vector(tmr0_cnt_q);
       when "10" =>
@@ -146,6 +152,7 @@ begin
         tmr0_ccm_q <= '0';
         tmr0_dir_q <= '1';
         tmr0_ien_q <= '1';
+        tmr0_oce_q <= '0';
         tmr0_cmp_q <= (others => '1');
         tmr0_prescale <= (others => '0');
         tmr0_prescale_rst <= '1';
@@ -159,9 +166,13 @@ begin
               tmr0_dir_q <= write(2);
               tmr0_ien_q <= write(3);
               tmr0_prescale <= write(6 downto 4);
+              tmr0_oce_q <= write(8);
               --tmr0_prescale_rst <= '1';
             when "10" =>
               tmr0_cmp_q <= unsigned(write(15 downto 0));
+            when "11" =>
+              tmr0_oc_q <= unsigned(write(15 downto 0));
+
             when others =>
           end case;
         end if;
@@ -207,5 +218,18 @@ begin
       end if;
     end if;
   end process;
+
+  -- Output compare
+
+  process(tmr0_cnt_q,tmr0_oc_q)
+  begin
+    if tmr0_oc_q >= tmr0_cnt_q then
+      spp_data <= '1';
+    else
+      spp_data <= '0';
+    end if;
+  end process;
+
+  spp_en <= tmr0_oce_q; -- Output compare enable
 
 end behave;
