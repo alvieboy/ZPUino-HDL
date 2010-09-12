@@ -62,7 +62,7 @@ entity zpu_core is
 	 		  -- interrupt via memory mapped IO or the interrupt flag can
 	 		  -- be cleared automatically
 	 		  interrupt : in std_logic;
-        poppc_inst: out std_logic;
+	 		  poppc_inst: out std_logic;
 	 		  -- Signal that the break instruction is executed, normally only used
 	 		  -- in simulation to stop simulation
 	 		  break : out std_logic);
@@ -366,7 +366,8 @@ begin
 			if interrupt='0' then
 				inInterrupt <= '0'; -- no longer in an interrupt
 			end if;
-      poppc_inst<='0';
+
+			poppc_inst<='0';
 			case state is
 				when State_Execute =>
 					state <= State_Fetch;
@@ -450,7 +451,7 @@ begin
 						when Decoded_PopPC =>
 							pc <= memARead(maxAddrBit downto 0);
 							sp <= sp + 1;
-              poppc_inst <= '1';
+							poppc_inst <= '1';
 							state <= State_Resync;
 						when Decoded_Add =>
 							sp <= sp + 1;
