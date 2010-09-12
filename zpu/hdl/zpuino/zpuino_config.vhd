@@ -46,6 +46,6 @@ package zpuino_config is
     large
   );
 
-  constant zpuinocore: zpu_core_type := large;
+  constant zpuinocore: zpu_core_type := small;
 
 end package zpuino_config;
