@@ -45,7 +45,6 @@ library work;
 use work.zpupkg.all;
 use work.zpu_config.all;
 use work.zpuinopkg.all;
-use work.txt_util.all;
 
 entity zpuino_sigmadelta is
   generic (
@@ -99,7 +98,7 @@ begin
           when "0" =>
             sd_en_q <= write(0);
           when "1" =>
-            report "SigmaDelta set: " & hstr(write(BITS-1 downto 0)) severity note;
+            --report "SigmaDelta set: " & hstr(write(BITS-1 downto 0)) severity note;
   		      dat_q(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
           when others =>
         end case;
