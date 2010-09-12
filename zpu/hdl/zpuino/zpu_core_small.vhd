@@ -41,7 +41,7 @@ use work.zpu_config.all;
 use work.zpupkg.all;
 
 
-entity zpu_core is
+entity zpu_core_small is
     Port ( clk : in std_logic;
     		  -- asynchronous reset signal
 	 		  areset : in std_logic;
@@ -66,9 +66,9 @@ entity zpu_core is
 	 		  -- Signal that the break instruction is executed, normally only used
 	 		  -- in simulation to stop simulation
 	 		  break : out std_logic);
-end zpu_core;
+end zpu_core_small;
 
-architecture behave of zpu_core is
+architecture behave of zpu_core_small is
 
 signal		readIO : std_logic;
 

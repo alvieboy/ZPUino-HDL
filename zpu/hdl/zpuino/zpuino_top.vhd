@@ -40,6 +40,7 @@ library work;
 use work.zpu_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+use work.zpuino_config.all;
 
 entity zpuino_top is
   port (
@@ -74,6 +75,7 @@ architecture behave of zpuino_top is
 
 
   signal mem_read:    std_logic_vector(wordSize-1 downto 0);
+  signal io_mem_read:    std_logic_vector(wordSize-1 downto 0);
   signal mem_write:   std_logic_vector(wordSize-1 downto 0);
   signal mem_address: std_logic_vector(maxAddrBitIncIO downto 0);
   signal mem_we:      std_logic;
@@ -85,10 +87,44 @@ architecture behave of zpuino_top is
   signal io_we:       std_logic;
   signal io_re:       std_logic;
 
+  -- signals for "medium" core
+
+  signal ram_we:      std_logic;
+  signal ram_mem_read:    std_logic_vector(wordSize-1 downto 0);
+  signal select_mem_or_io: std_logic;
 begin
 
-  io_we <= mem_we;-- and mem_address(maxAddrBitIncIO-1);
-  io_re <= mem_re;-- and mem_address(maxAddrBitIncIO-1);
+  io_we <= mem_we and not select_mem_or_io;-- and mem_address(maxAddrBitIncIO-1);
+  io_re <= mem_re and not select_mem_or_io;-- and mem_address(maxAddrBitIncIO-1);
+
+  coreselectsmall: if zpuinocore=small generate
+
+  select_mem_or_io <= '0'; -- Always IO coming from small core
+  mem_read <= io_mem_read; -- Always read from IO
+
+  core: zpu_core_small
+    port map (
+      clk           => clk,
+	 		areset        => areset,
+	 		enable        => '1',
+	 		in_mem_busy   => mem_busy,
+	 		mem_read      => mem_read,
+	 		mem_write     => mem_write,
+	 		out_mem_addr  => mem_address,
+			out_mem_writeEnable => mem_we,
+			out_mem_readEnable  => mem_re,
+	 		mem_writeMask => open,
+	 		interrupt     => interrupt,
+      poppc_inst    => poppc_inst,
+	 		break         => open
+    );
+
+  end generate;
+
+  coreselectlarge: if zpuinocore=large generate
+
+  select_mem_or_io <= mem_address(maxAddrBitIncIO);
+  ram_we <= '1' when mem_we='1' and select_mem_or_io='0' else '0';
 
   core: zpu_core
     port map (
@@ -107,12 +143,36 @@ begin
 	 		break         => open
     );
 
+  -- Need to link dualport_ram here.
+	memory: dualport_ram
+    port map (
+      clk => clk,
+	    memAWriteEnable => mem_we,
+	    memAAddr => mem_address(maxAddrBit downto 2),
+	    memAWrite => mem_write,
+	    memARead => ram_mem_read,
+	    memBWriteEnable => '0',
+	    memBAddr => (others => DontCareValue),
+	    memBWrite =>(others => DontCareValue),
+	    memBRead => open
+    );
+
+  process(select_mem_or_io,ram_mem_read,io_mem_read)
+  begin
+    if select_mem_or_io='0' then
+      mem_read <= ram_mem_read;
+    else
+      mem_read <= io_mem_read;
+    end if;
+  end process;
+
+  end generate;
 
   io: zpuino_io
     port map (
       clk           => clk,
 	 	  areset        => areset,
-      read          => mem_read,
+      read          => io_mem_read,
       write         => mem_write,
       address       => mem_address,
       we            => io_we,
