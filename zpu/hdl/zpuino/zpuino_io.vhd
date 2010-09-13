@@ -119,8 +119,12 @@ begin
     process(clk)
     begin
       if rising_edge(clk) then
-        addr_save_q <= address;
-        write_save_q <= write;
+        if we='1' or re='1' then
+          addr_save_q <= address;
+        end if;
+        if we='1' then
+          write_save_q <= write;
+        end if;
       end if;
     end process;
 
