@@ -100,7 +100,7 @@ begin
 
   coreselectsmall: if zpuinocore=small generate
 
-  select_mem_or_io <= '0'; -- Always IO coming from small core
+  select_mem_or_io <= '1'; -- Always IO coming from small core
   mem_read <= io_mem_read; -- Always read from IO
 
   core: zpu_core_small
