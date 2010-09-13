@@ -118,7 +118,7 @@ begin
   end generate;
 
   -- Read
-  process(address,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr)
+  process(address,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr,TSC_q,tmr0_oce_q)
   begin
     read <= (others => '0');
     case address is

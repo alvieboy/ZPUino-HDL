@@ -170,7 +170,7 @@ begin
     end if;
   end process;
 
-  process(address, spi_ready, spi_read, spi_clk_pres)
+  process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise)
   begin
     read <= (others =>'0');
     if address="0" then

@@ -108,7 +108,7 @@ begin
   ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
-  process(address,spi_read,uart_read,gpio_read,timers_read,intr_read)
+  process(address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read)
   begin
     case address(7 downto 5) is
       when "000" =>
