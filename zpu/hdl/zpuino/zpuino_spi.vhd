@@ -149,7 +149,7 @@ begin
 
   -- Direct access (write) to SPI
 
-  spi_en <= '1' when we='1' and address="1" else '0';
+  spi_en <= '1' when we='1' and address="1" and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
     busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
