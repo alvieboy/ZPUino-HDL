@@ -58,7 +58,6 @@ entity zpuino_top is
     uart_tx:      out std_logic;
 
     gpio:         inout std_logic_vector(31 downto 0)
-
   );
 end entity zpuino_top;
 
@@ -87,6 +86,7 @@ architecture behave of zpuino_top is
 
   signal io_we:       std_logic;
   signal io_re:       std_logic;
+  signal io_busy:     std_logic;
 
   -- signals for "medium" core
 
@@ -102,6 +102,7 @@ begin
 
   select_mem_or_io <= '1'; -- Always IO coming from small core
   mem_read <= io_mem_read; -- Always read from IO
+  mem_busy <= io_busy;
 
   core: zpu_core_small
     port map (
@@ -126,6 +127,10 @@ begin
 
   select_mem_or_io <= mem_address(maxAddrBitIncIO);
   ram_we <= '1' when mem_we='1' and select_mem_or_io='0' else '0';
+
+  -- busy selection is troublesome here.
+  -- THIS is BUGGY. Make it similar to IO busy manager.
+  mem_busy <= '1' when select_mem_or_io='0' and (mem_re='1' or mem_we='1') else '0';
 
   core: zpu_core
     port map (
@@ -179,7 +184,7 @@ begin
       address       => mem_address,
       we            => io_we,
       re            => io_re,
-      busy          => mem_busy,
+      busy          => io_busy,
       interrupt     => interrupt,
       intready      => poppc_inst,
 
