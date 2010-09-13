@@ -38,6 +38,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.zpu_config.all;
+use work.zpuino_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
 
@@ -100,17 +101,85 @@ architecture behave of zpuino_io is
   signal sigmadelta_re:  std_logic;
   signal sigmadelta_we:  std_logic;
 
+  -- For busy-implementation
+  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
+  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
+
+  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
+  signal io_write: std_logic_vector(wordSize-1 downto 0);
+  signal io_we: std_logic;
+  signal io_re: std_logic;
+  signal io_device_busy: std_logic;
+
 begin
 
-  busy <= spi_busy;
+  io_device_busy <= spi_busy;
+
+  iobusy: if zpuino_iobusyinput=true generate
+    process(clk)
+    begin
+      if rising_edge(clk) then
+        addr_save_q <= address;
+        write_save_q <= write;
+      end if;
+    end process;
+
+    io_address <= addr_save_q;
+    io_write <= write_save_q;
+
+    -- Generate busy signal, and rd/wr flags
+
+    process(io_device_busy, re, we)
+    begin
+      if (re='1' or we='1') then
+        busy <= '1';
+      elsif io_device_busy='1' then
+        busy <= '1';
+      else
+        busy <= '0';
+      end if;
+    end process;
+
+    process(clk)
+    begin
+      if rising_edge(clk) then
+        if areset='1' then
+          io_re <= '0';
+          io_we <= '0';
+        else
+          -- If no device is busy, propagate request
+          if io_device_busy='0' then
+            io_re <= re;
+            io_we <= we;
+          else
+            io_re <= '1';
+            io_we <= '1';
+          end if;
+        end if;
+      end if;
+    end process;
+
+  end generate;
+
+  noiobusy: if zpuino_iobusyinput=false generate
+
+    io_address <= address;
+    io_write <= write;
+    io_re <= re;
+    io_we <= we;
+
+    busy <= io_device_busy;
+  end generate;
+
+
   ivecs(0) <= timers_interrupt(0);
   ivecs(1) <= timers_interrupt(1);
   ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
-  process(address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read)
+  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read)
   begin
-    case address(7 downto 5) is
+    case io_address(7 downto 5) is
       when "000" =>
         read <= spi_read;
       when "001" =>
@@ -130,7 +199,7 @@ begin
 
   -- Enable signals
 
-  process(address,re,we)
+  process(io_address,io_re,io_we)
   begin
     spi_re <= '0';
     spi_we <= '0';
@@ -145,25 +214,25 @@ begin
     sigmadelta_re <= '0';
     sigmadelta_we <= '0';
 
-    case address(7 downto 5) is
+    case io_address(7 downto 5) is
       when "000" =>
-        spi_re <= re;
-        spi_we <= we;
+        spi_re <= io_re;
+        spi_we <= io_we;
       when "001" =>
-        uart_re <= re;
-        uart_we <= we;
+        uart_re <= io_re;
+        uart_we <= io_we;
       when "010" =>
-        gpio_re <= re;
-        gpio_we <= we;
+        gpio_re <= io_re;
+        gpio_we <= io_we;
       when "011" =>
-        timers_re <= re;
-        timers_we <= we;
+        timers_re <= io_re;
+        timers_we <= io_we;
       when "100" =>
-        intr_re <= re;
-        intr_we <= we;
+        intr_re <= io_re;
+        intr_we <= io_we;
       when "101" =>
-        sigmadelta_re <= re;
-        sigmadelta_we <= we;
+        sigmadelta_re <= io_re;
+        sigmadelta_we <= io_we;
       when others =>
     end case;
   end process;
@@ -175,8 +244,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => spi_read,
-    write     => write,
-    address   => address(2 downto 2),
+    write     => io_write,
+    address   => io_address(2 downto 2),
     we        => spi_we,
     re        => spi_re,
     busy      => spi_busy,
@@ -193,8 +262,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => uart_read,
-    write     => write,
-    address   => address(2 downto 2),
+    write     => io_write,
+    address   => io_address(2 downto 2),
     we        => uart_we,
     re        => uart_re,
     busy      => open,
@@ -209,8 +278,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => gpio_read,
-    write     => write,
-    address   => address(2 downto 2),
+    write     => io_write,
+    address   => io_address(2 downto 2),
     we        => gpio_we,
     re        => gpio_re,
     spp_data  => gpio_spp_data,
@@ -226,8 +295,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => timers_read,
-    write     => write,
-    address   => address(4 downto 2),
+    write     => io_write,
+    address   => io_address(4 downto 2),
     we        => timers_we,
     re        => timers_re,
     spp_data  => gpio_spp_data(2 downto 1),
@@ -241,8 +310,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => intr_read,
-    write     => write,
-    address   => address(2 downto 2),
+    write     => io_write,
+    address   => io_address(2 downto 2),
     we        => intr_we,
     re        => intr_re,
 
@@ -258,8 +327,8 @@ begin
     clk       => clk,
 	 	areset    => areset,
     read      => sigmadelta_read,
-    write     => write,
-    address   => address(2 downto 2),
+    write     => io_write,
+    address   => io_address(2 downto 2),
     we        => sigmadelta_we,
     re        => sigmadelta_re,
     spp_data  => gpio_spp_data(3),

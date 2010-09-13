@@ -48,4 +48,11 @@ package zpuino_config is
 
   constant zpuinocore: zpu_core_type := small;
 
+
+  -- Set iobusyinput to 'true' to allow registered input to IO core. This also allows for IO
+  -- to become busy without needing to register its inputs. However, an extra clock-cycle is
+  -- required to access IO.
+
+  constant zpuino_iobusyinput: boolean := true;
+
 end package zpuino_config;
