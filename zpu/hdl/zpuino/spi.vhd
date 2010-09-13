@@ -84,11 +84,11 @@ begin
 
   process(ready_q, en)
   begin
-    if en='1' then
-      ready <= '0';
-    else
+    --if en='1' then
+    --  ready <= '1';
+    --else
       ready <= ready_q;
-    end if;
+    --end if;
   end process;
 
   process(ready_q, clkrise)

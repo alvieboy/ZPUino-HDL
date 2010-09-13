@@ -55,4 +55,7 @@ package zpuino_config is
 
   constant zpuino_iobusyinput: boolean := true;
 
+  -- For SPI blocking operation, you need to define also iobusyinput
+  constant zpuino_spiblocking: boolean := true;
+
 end package zpuino_config;

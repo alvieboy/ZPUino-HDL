@@ -38,6 +38,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.zpu_config.all;
+use work.zpuino_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
 
@@ -150,8 +151,16 @@ begin
 
   spi_en <= '1' when we='1' and address="1" else '0';
 
-  --  busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
-  busy <= '0';
+  busygen: if zpuino_spiblocking=true generate
+    busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
+  end generate;
+
+  nobusygen: if zpuino_spiblocking=false generate
+    --busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
+    busy <= '0';
+  end generate;
+
+  
 
   interrupt <= '0';
 

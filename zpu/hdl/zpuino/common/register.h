@@ -2,6 +2,8 @@
 #define __REGISTER_H__
 
 #define CLK_FREQ 100000000ULL
+#define SPIISBLOCKING 1
+
 
 #define IOBASE 0x8000
 #define IO_SLOT_OFFSET_BIT 5
