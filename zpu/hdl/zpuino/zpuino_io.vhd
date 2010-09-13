@@ -155,9 +155,6 @@ begin
           if io_device_busy='0' then
             io_re <= re;
             io_we <= we;
-          else
-            io_re <= '1';
-            io_we <= '1';
           end if;
         end if;
       end if;
