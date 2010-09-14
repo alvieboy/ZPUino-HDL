@@ -37,14 +37,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity spi is
-  generic (
-    bits: integer := 8
-  );
   port (
     clk:  in std_logic;
     rst:  in std_logic;
-    din:  in std_logic_vector(bits-1 downto 0);
-    dout:  out std_logic_vector(bits-1 downto 0);
+    din:  in std_logic_vector(31 downto 0);
+    dout:  out std_logic_vector(31 downto 0);
     en:   in std_logic;
     ready: out std_logic;
 
@@ -62,15 +59,17 @@ end entity spi;
 
 architecture behave of spi is
 
-signal write_reg_q: std_logic_vector(bits-1 downto 0);
---signal read_reg_q: std_logic_vector(bits-1 downto 0);
-signal ready_q: std_logic;
-signal count: integer range 0 to bits;
-signal sample_event: std_logic;
-signal do_shift: std_logic;
+signal read_reg_q:    std_logic_vector(31 downto 0);
+signal write_reg_q:   std_logic_vector(7 downto 0);
+
+signal ready_q:       std_logic;
+signal count:         integer range 0 to 32;
+signal sample_event:  std_logic;
+signal do_shift:      std_logic;
+
 begin
 
-  dout <= write_reg_q;
+  dout <= read_reg_q;
 
   process(samprise,clkrise,clkfall)
   begin
@@ -104,7 +103,7 @@ begin
   begin
     if rising_edge(clk) then
       if do_shift='1' then
-        MOSI <= write_reg_q(bits-1); -- Fixed 8-bit write
+        MOSI <= write_reg_q(7); -- Fixed 8-bit write
       end if;
     end if;
   end process;
@@ -127,15 +126,15 @@ begin
   if rising_edge(clk) then
     if rst='1' then
       ready_q <= '1';
-      --clk_en <= '0';
       count <= 0;
     else
         if ready_q='1' then
           if en='1' then
-          write_reg_q(bits-1 downto bits-8) <= din(7 downto 0);
-          count <= 8;
-          ready_q <= '0';
-          --clk_en <= '1';
+            write_reg_q <= din(7 downto 0);
+            -- Shift the 32-bit register
+            read_reg_q(31 downto 8) <= read_reg_q(23 downto 0);
+            count <= 8;
+            ready_q <= '0';
           end if;
         else 
 
@@ -146,17 +145,16 @@ begin
             else
               if clkrise='1' and ready_q='0' then
                 ready_q <= '1';
-                --clk_en <= '0';
               end if;
             end if;
-          --end if;
         end if;
 
         if ready_q='0' and sample_event='1' then
-          write_reg_q <= write_reg_q(bits-2 downto 0) & MISO;
+          read_reg_q(7 downto 0) <= read_reg_q(6 downto 0) & MISO;
+          write_reg_q(7 downto 0) <= write_reg_q(6 downto 0) & '0';
         end if;
-      end if;
---    end if;
+
+    end if;
   end if;
 end process;
 

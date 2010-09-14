@@ -65,14 +65,11 @@ architecture behave of zpuino_spi is
 
 
   component spi is
-    generic (
-      bits: integer := 8
-    );
     port (
       clk:  in std_logic;
       rst:  in std_logic;
-      din:  in std_logic_vector(bits-1 downto 0);
-      dout:  out std_logic_vector(bits-1 downto 0);
+      din:  in std_logic_vector(31 downto 0);
+      dout:  out std_logic_vector(31 downto 0);
       en:   in std_logic;
       ready: out std_logic;
   
@@ -114,9 +111,6 @@ architecture behave of zpuino_spi is
 begin
 
   zspi: spi
-    generic map (
-      bits => 32
-    )
     port map (
       clk   => clk,
       rst   => areset,

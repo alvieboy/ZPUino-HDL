@@ -365,7 +365,7 @@ void _premain()
 	SIGMADELTADATA = 32768;
 	SIGMADELTACTL = BIT(SDENA); // Enable sigma-delta output
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0);
+	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE);
 
 	// Start reading from flash.
 	spi_disable();
