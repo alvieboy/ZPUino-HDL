@@ -1,0 +1,76 @@
+Welcome to ZPUino!
+
+1) What is ZPUino ?
+
+ZPUino is a SoC (System-on-a-Chip) based on Zylin's ZPU 32-bit processor core.
+
+2) What is inside ZPUino ?
+
+Harware-wise, ZPUino currently integrates the following devices:
+
+  * ZPU small core (slightly modified) [optional medium-core, still on the forge]
+  * One UART
+  * One SPI interface
+  * Two 16-bit timers
+  * One TSC (Time Stamp Counter)
+  * 32-bit GPIO interface
+  * Interrupt Controller
+  * One SigmaDelta output [NEW!]
+  
+UART Specifications:
+
+ * 16-bit prescaler.
+ * 16-byte deep receive FIFO
+
+SPI Specifications:
+
+ * Programmable prescaler.
+ * Configurable CPOL.
+ * Configurable SRE (Sample on Rising Edge) [NEW!]
+ * 8-bit transmission mode, 4 byte (32 bit) receive register.
+ 
+Timers Specifications:
+
+ * 10-bit prescaler
+ * 16-bit wide counter
+ * Count-up and Count-down mode
+ * 16-bit Compare register
+ * Clear on Compare match support
+ * Interrupt support on Compare Match
+ * Output compare Register to GPIO pin (allows PWM) [NEW!]
+
+Interrupt controller Specifications:
+
+ * Up to 16 interrupt lines
+ * Ensures safety (does not allow interrupt recursion)
+ * 16-bit interrupt mask [NEW!]
+ * Interrupt Enable bit
+ 
+GPIO Specifications:
+
+ * 32-bit wide (one reserved for SPI)
+ * Bi-directional (tristate) configuration.
+
+IO Configuration:
+
+ * Blocking IO [NEW!]
+ 
+SigmaDelta Configuration:
+
+ * One 16-bit channel [NEW!]
+ * Blocking and non-Blocking support [NEW!]
+
+Software-wise, it supports the following features:
+
+ * 4Kb Bootloader, which includes required emulation code for ZPU.
+ * Bootstraps code from program flash (shadows into FPGA blockram)
+ * Serial programming of program flash.
+ * Serial reset (TODO)
+
+3) Where does it run ?
+
+First implementation was done on Spartan3E 500 (-4), on a S3E Starter Kit, with a M25P16 SPI flash ROM and 32Kbytes RAM.
+Implemented sizes (approximate): 841 Slices ( 563 FF, 1094 LUT )
+Running speed: 100MHz (50Mhz external clock + DCM)
+
+Current implementation still runs at 100MHz.
