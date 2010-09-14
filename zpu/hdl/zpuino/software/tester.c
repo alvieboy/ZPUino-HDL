@@ -341,7 +341,8 @@ void _premain()
 	UARTCTL = BAUDRATEGEN(115200);
 
 	digitalWrite(0, HIGH);
-	pinMode(0, OUTPUT);
+	pinMode(0, OUTPUT); // SPI nSEL out
+	pinMode(3, OUTPUT); // SigmaDelta out
 
 	sti();
 
