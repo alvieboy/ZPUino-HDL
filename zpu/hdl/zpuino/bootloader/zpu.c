@@ -31,6 +31,7 @@ extern unsigned char ___jcr_start,___jcr_begin,___jcr_end;
 extern unsigned char __bss_start__, __bss_end__;
 
 void outbyte(int);
+static void (*ivector)(void);
 
 /*
  * Wait indefinitely for input byte
@@ -166,6 +167,7 @@ void __attribute__((noreturn)) spi_copy_impl()
 
 	// Need to reset stack also
 	spi_disable();
+	ivector = 0x1008;
 	__asm__("im 0x7FFC\n"
 			"popsp\n"
 			"im 0x1000\n"
@@ -189,7 +191,7 @@ void ___zpu_interrupt_vector()
 			"im _memreg+8\n"
 			"load\n"
 		   );
-	_zpu_interrupt();
+	ivector();
 	__asm__("im _memreg+8\n"
 			"store\n"
 			"im _memreg+4\n"
@@ -343,8 +345,9 @@ static void readpage()
 
 void _premain()
 {
-
 	int t;
+
+	ivector = &_zpu_interrupt;
 	UARTCTL = 216;//BAUDRATEGEN(115200);
 	GPIODATA=0x1;
 	GPIOTRIS=0xFFFFFFFE; // All inputs, but SPI select
