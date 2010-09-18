@@ -46,7 +46,7 @@ architecture behave of tb_zpuino is
 
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
-  signal gpio:  std_logic_vector(31 downto 0);
+  --signal gpio:  std_logic_vector(31 downto 0);
 
   signal spi_pf_miso:  std_logic;
   signal spi_pf_miso_dly:  std_logic;
@@ -66,7 +66,7 @@ architecture behave of tb_zpuino is
     spi_pf_miso:  in std_logic;
     spi_pf_mosi:  out std_logic;
     spi_pf_sck:   out std_logic;
-    spi_pf_nsel:  out std_logic;
+    --spi_pf_nsel:  out std_logic;
 
     -- UART
     uart_rx:      in std_logic;
@@ -131,6 +131,7 @@ architecture behave of tb_zpuino is
   signal vcc: real := 0.0;
   signal uart_tx: std_logic;
   signal uart_rx: std_logic := '0';
+  signal gpio_i: std_logic_vector(31 downto 0);
 begin
 
   uart_rx <= '1';--uart_tx after 7 us;
@@ -143,10 +144,10 @@ begin
       spi_pf_miso   => spi_pf_miso,
       spi_pf_mosi   => spi_pf_mosi,
       spi_pf_sck    => spi_pf_sck,
-      spi_pf_nsel   => spi_pf_nsel,
+      --spi_pf_nsel   => spi_pf_nsel,
       uart_rx => uart_rx,
       uart_tx => uart_tx,
-      gpio => open
+      gpio => gpio_i
   );
 
   -- These values were taken from post-P&R timing analysis
@@ -154,7 +155,7 @@ begin
   spi_pf_mosi_dly <= spi_pf_mosi after 3.850 ns;
   spi_pf_sck_dly <= spi_pf_sck after 3.825 ns;
   spi_pf_miso <= spi_pf_miso_dly after  2.540 ns;
-
+  spi_pf_nsel <= gpio_i(0) after  3.850 ns;
 
   spiflash: M25P16
     port map (
@@ -165,6 +166,17 @@ begin
       W   => '0',
       HOLD => '1',
 		  Q   => spi_pf_miso_dly
+    );
+
+  spiflash2: M25P16
+    port map (
+      VCC => vcc,
+		  C   => gpio_i(6),
+      D   => gpio_i(8),
+      S   => gpio_i(7),
+      W   => '0',
+      HOLD => '1',
+		  Q   => gpio_i(5)
     );
 
   w_clk <= not w_clk after period/2;

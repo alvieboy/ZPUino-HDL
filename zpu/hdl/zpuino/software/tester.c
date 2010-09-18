@@ -323,7 +323,11 @@ void pinMode(unsigned int pin, unsigned int direction)
 
 void digitalWrite(unsigned int pin, unsigned int value)
 {
-	GPIODATA |= ( (!!value) << pin );
+	if (value) {
+		GPIODATA |= ( 1 << pin );
+	} else {
+		GPIODATA &= ~( 1 << pin );
+	}
 }
 
 inline void sti() {
@@ -341,14 +345,34 @@ void _premain()
 	UARTCTL = BAUDRATEGEN(115200);
 
 	digitalWrite(0, HIGH);
+	digitalWrite(7, HIGH);
+
 	pinMode(0, OUTPUT); // SPI nSEL out
 	pinMode(3, OUTPUT); // SigmaDelta out
+	pinMode(6, OUTPUT);
+	pinMode(7, OUTPUT); // USPI nSEL out
+	pinMode(8, OUTPUT); 
+
+	digitalWrite(7, HIGH);
 
 	sti();
 
 	// Read TSC
 
 	t = TIMERTSC;
+	USPICTL = BIT(SPIEN)|BIT(SPICPOL)|BIT(SPICP0)|BIT(SPICP1);
+
+	digitalWrite(7, 0);
+	USPIDATA = 0x9f;
+	USPIDATA = 0x00;
+	t=USPIDATA;
+	USPIDATA = 0x00;
+	USPIDATA = 0x00;
+	USPIDATA = 0x00;
+	USPIDATA = 0x00;
+	digitalWrite(7, 1);
+
+
 
 	// Enable interrupts
 

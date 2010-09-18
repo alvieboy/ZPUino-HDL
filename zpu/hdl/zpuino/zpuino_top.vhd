@@ -51,7 +51,6 @@ entity zpuino_top is
     spi_pf_miso:  in std_logic;
     spi_pf_mosi:  out std_logic;
     spi_pf_sck:   out std_logic;
-    spi_pf_nsel:  out std_logic;
 
     -- UART
     uart_rx:      in std_logic;
@@ -191,7 +190,6 @@ begin
       spi_pf_miso   => spi_pf_miso,
       spi_pf_mosi   => spi_pf_mosi,
       spi_pf_sck    => spi_pf_sck,
-      spi_pf_nsel   => spi_pf_nsel,
 
       uart_rx       => uart_rx,
       uart_tx       => uart_tx,

@@ -48,10 +48,10 @@ entity s3e_eval_zpuino is
     SPI_SCK:    out std_logic;
     SPI_MISO:   in std_logic;
     SPI_MOSI:   out std_logic;
-    SPI_SS_B:   inout std_logic;
+--    SPI_SS_B:   inout std_logic;
 
     LED:        inout std_logic_vector(7 downto 0);
-    GPIO:       inout std_logic_vector(22 downto 0);
+    GPIO:       inout std_logic_vector(31 downto 0);
     -- UART
     UART_TX:    out std_logic;
     UART_RX:    in std_logic;
@@ -86,7 +86,6 @@ component zpuino_top is
     spi_pf_miso:  in std_logic;
     spi_pf_mosi:  out std_logic;
     spi_pf_sck:   out std_logic;
-    spi_pf_nsel:  out std_logic;
 
     -- UART
     uart_rx:      in std_logic;
@@ -123,16 +122,10 @@ begin
     -- Signals to disable (write '0')
     AD_CONV<='0';
 
-    --LED(3 downto 0) <= gpio(11 downto 8);
-    --LED(7) <= gpio(0);
-
-    --LED(6) <= SPI_MISO;
     SPI_MOSI <= spi_mosi_i;
-    --LED(5) <= spi_mosi_i;
-    --LED(4) <= rst;
 
-    LED(7 downto 0) <= gpio_i(8 downto 1);
-    GPIO(22 downto 0) <= gpio_i(31 downto 9);
+    GPIO(31 downto 0) <= gpio_i(31 downto 0);
+    
   zpuino:zpuino_top
   port map (
     clk           => sysclk,
@@ -142,7 +135,6 @@ begin
     spi_pf_miso   => SPI_MISO,
     spi_pf_mosi   => SPI_MOSI_i,
     spi_pf_sck    => SPI_SCK,
-    spi_pf_nsel   => SPI_SS_B,
 
     -- UART
     uart_rx       => UART_RX,

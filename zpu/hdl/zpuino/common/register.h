@@ -19,6 +19,8 @@
 #define TIMERSBASE IO_SLOT(3)
 #define INTRBASE IO_SLOT(4)
 #define SIGMADELTABASE IO_SLOT(5)
+#define USERSPIBASE IO_SLOT(6)
+
 
 #define UARTDATA REGISTER(UARTBASE,0)
 #define UARTCTL  REGISTER(UARTBASE,1)
@@ -44,6 +46,9 @@
 #define SIGMADELTACTL   REGISTER(SIGMADELTABASE,0)
 #define SIGMADELTADATA  REGISTER(SIGMADELTABASE,1)
 
+#define USPICTL  REGISTER(USERSPIBASE,0)
+#define USPIDATA REGISTER(USERSPIBASE,1)
+
 /* Timer CTL bits */
 
 #define TCTLENA 0 /* Timer Enable */
@@ -62,6 +67,7 @@
 #define SPICP1   2 /* Clock prescaler bit 1 */
 #define SPICPOL  3 /* Clock polarity */
 #define SPISRE   4 /* Sample on Rising Edge */
+#define SPIEN    5 /* SPI Enabled (gpio acquire) */
 
 /* Sigma-Delta bits */
 #define SDENA    0 /* Sigma-delta enable */
@@ -69,5 +75,23 @@
 /* Baud rate computation */
 
 #define BAUDRATEGEN(x) ((CLK_FREQ/(x))/4)
+
+
+/* Special GPIO pins */
+
+#define PIN_FLASHCS 0
+#define PIN_TIMER0_OC 1
+#define PIN_TIMER1_OC 2
+#define PIN_SIGMADELTA_OUT 3
+
+#define PIN_USPI_MISO 5
+#define PIN_USPI_SCK  6
+#define PIN_USPI_CS   7 /* Not special */
+#define PIN_USPI_MOSI 8
+
+#define INPUT 1
+#define OUTPUT 0
+#define HIGH 1
+#define LOW 0
 
 #endif

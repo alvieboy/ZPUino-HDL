@@ -57,7 +57,7 @@ entity zpuino_spi is
     mosi:     out std_logic;
     miso:     in std_logic;
     sck:      out std_logic;
-    nsel:     out std_logic
+    enabled:  out std_logic
   );
 end entity zpuino_spi;
 
@@ -106,6 +106,7 @@ architecture behave of zpuino_spi is
   signal spi_clkfall: std_logic;
   signal spi_clk_pres: std_logic_vector(1 downto 0);
   signal spi_samprise: std_logic;
+  signal spi_enable_q: std_logic;
   signal cpol: std_logic;
 
 begin
@@ -157,23 +158,29 @@ begin
   
 
   interrupt <= '0';
+  enabled <= spi_enable_q;
 
   -- Prescaler write
 
   process(clk)
   begin
     if rising_edge(clk) then
+      if areset='1' then
+        spi_enable_q<='0';
+      else
       if we='1' then
         if address="0" then
           spi_clk_pres <= write(2 downto 1);
           cpol <= write(3);
           spi_samprise <= write(4);
+          spi_enable_q <= write(5);
         end if;
+      end if;
       end if;
     end if;
   end process;
 
-  process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise)
+  process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
   begin
     read <= (others =>'0');
     if address="0" then
@@ -181,6 +188,7 @@ begin
       read(2 downto 1) <= spi_clk_pres;
       read(3) <= cpol;
       read(4) <= spi_samprise;
+      read(5) <= spi_enable_q;
     else
       read <= spi_read;
     end if;

@@ -58,7 +58,6 @@ entity zpuino_io is
     spi_pf_miso:  in std_logic;
     spi_pf_mosi:  out std_logic;
     spi_pf_sck:   out std_logic;
-    spi_pf_nsel:  out std_logic;
 
     -- UART
     uart_rx:      in std_logic;
@@ -75,6 +74,15 @@ architecture behave of zpuino_io is
   signal spi_re:  std_logic;
   signal spi_we:  std_logic;
   signal spi_busy:  std_logic;
+
+  signal spi2_read:     std_logic_vector(wordSize-1 downto 0);
+  signal spi2_re:  std_logic;
+  signal spi2_we:  std_logic;
+  signal spi2_busy:  std_logic;
+  signal spi2_enabled:  std_logic;
+  signal spi2_mosi:  std_logic;
+  signal spi2_miso:  std_logic;
+  signal spi2_sck:  std_logic;
 
   signal uart_read:     std_logic_vector(wordSize-1 downto 0);
   signal uart_re:  std_logic;
@@ -113,7 +121,7 @@ architecture behave of zpuino_io is
 
 begin
 
-  io_device_busy <= spi_busy;
+  io_device_busy <= spi_busy or spi2_busy;
 
   iobusy: if zpuino_iobusyinput=true generate
     process(clk)
@@ -178,7 +186,7 @@ begin
   ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
-  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read)
+  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read)
   begin
     case io_address(7 downto 5) is
       when "000" =>
@@ -193,6 +201,8 @@ begin
         read <= intr_read;
       when "101" =>
         read <= sigmadelta_read;
+      when "110" =>
+        read <= spi2_read;
       when others =>
         read <= (others => DontCareValue);
     end case;
@@ -214,6 +224,8 @@ begin
     intr_we <= '0';
     sigmadelta_re <= '0';
     sigmadelta_we <= '0';
+    spi2_re <= '0';
+    spi2_we <= '0';
 
     case io_address(7 downto 5) is
       when "000" =>
@@ -234,11 +246,12 @@ begin
       when "101" =>
         sigmadelta_re <= io_re;
         sigmadelta_we <= io_we;
+      when "110" =>
+        spi2_re <= io_re;
+        spi2_we <= io_we;
       when others =>
     end case;
   end process;
-
-  spi_pf_nsel <= gpio(0);
 
   fpspi_inst: zpuino_spi
   port map (
@@ -255,7 +268,25 @@ begin
     mosi      => spi_pf_mosi,
     miso      => spi_pf_miso,
     sck       => spi_pf_sck,
-    nsel      => open
+    enabled   => open
+  );
+
+  userspi_inst: zpuino_spi
+  port map (
+    clk       => clk,
+	 	areset    => areset,
+    read      => spi2_read,
+    write     => io_write,
+    address   => io_address(2 downto 2),
+    we        => spi2_we,
+    re        => spi2_re,
+    busy      => spi2_busy,
+    interrupt => open,
+
+    mosi      => spi2_mosi,
+    miso      => spi2_miso,
+    sck       => spi2_sck,
+    enabled   => spi2_enabled
   );
 
   uart_inst: zpuino_uart
@@ -338,8 +369,30 @@ begin
     interrupt => open
   );
 
-  gpio_spp_en(0) <= '0';
-  gpio_spp_en(31 downto 4) <= (others=>'0');
+  gpio_spp_en(0) <= '0'; -- Special GPIO pin (Flash CS)
+
+  gpio_spp_en(4) <= '0';
+
+  gpio_spp_en(5) <= spi2_enabled; -- SPI MISO
+  spi2_miso <= gpio(5);
+
+  gpio_spp_en(6) <= spi2_enabled; -- SPI SCK
+  gpio_spp_data(6) <= spi2_sck;
+
+  gpio_spp_en(7) <= '0'; -- SPI CS
+  gpio_spp_en(8) <= spi2_enabled; -- SPI MOSI
+  gpio_spp_data(8) <= spi2_mosi;
+
+  gpio_spp_en(31 downto 9) <= (others=>'0');
+
+
+
+  -- User SPI mappings
+  -- # These four connections are shared with the J2 6-pin accessory header
+  --NET "GPIO<4>" LOC = "A6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<5>
+  --NET "GPIO<5>" LOC = "B6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<6>
+  --NET "GPIO<6>" LOC = "E7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<7>
+  --NET "GPIO<7>" LOC = "F7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<8>
 
 
 end behave;

@@ -59,7 +59,6 @@ package zpuinopkg is
       spi_pf_miso:  in std_logic;
       spi_pf_mosi:  out std_logic;
       spi_pf_sck:   out std_logic;
-      spi_pf_nsel:  out std_logic;
 
       -- UART
       uart_rx:      in std_logic;
@@ -85,7 +84,8 @@ package zpuinopkg is
     mosi:     out std_logic;
     miso:     in std_logic;
     sck:      out std_logic;
-    nsel:     out std_logic
+
+    enabled:  out std_logic
   );
   end component zpuino_spi;
 
