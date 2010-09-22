@@ -94,18 +94,25 @@ component zpuino_top is
   );
 end component zpuino_top;
 
+  component PULLUP
+    PORT (
+      O: out std_logic
+    );
+  end component;
 
   signal gpio_i:      std_logic_vector(31 downto 0);
   signal spi_mosi_i:  std_logic;
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
+  signal rst:         std_logic;
+
 
 begin
 
   clkgen_inst: clkgen
   port map (
     clkin   => clk,
-    rstin   => '0',
+    rstin   => rst,
     clkout  => sysclk,
     rstout  => sysrst
   );
@@ -119,6 +126,15 @@ begin
   PORTC <= gpio_i(24 downto 17);
   PORTD(6 downto 0) <= gpio_i(31 downto 25);
 
+  -- PULLUP on PORTD(7)
+  rstpull: PULLUP
+    port map (
+        O => PORTD(7)
+    );
+
+  rst <= PORTD(7);
+
+  
   zpuino:zpuino_top
   port map (
     clk           => sysclk,
