@@ -1,7 +1,16 @@
 #ifndef __REGISTER_H__
 #define __REGISTER_H__
 
+#if defined( __ZPUINO_S3E_EVAL__ )
 #define CLK_FREQ 100000000ULL
+#else
+# if defined( __ZPUINO_PAPILIO_ONE__ )
+#  define CLK_FREQ  96000000ULL
+# else
+#  error Unknown board.
+# endif
+#endif
+
 #define SPIISBLOCKING 1
 
 
@@ -20,6 +29,7 @@
 #define INTRBASE IO_SLOT(4)
 #define SIGMADELTABASE IO_SLOT(5)
 #define USERSPIBASE IO_SLOT(6)
+#define CRC16BASE IO_SLOT(7)
 
 
 #define UARTDATA REGISTER(UARTBASE,0)
@@ -49,6 +59,10 @@
 #define USPICTL  REGISTER(USERSPIBASE,0)
 #define USPIDATA REGISTER(USERSPIBASE,1)
 
+#define CRC16ACC  REGISTER(CRC16BASE,0)
+#define CRC16POLY REGISTER(CRC16BASE,1)
+#define CRC16APP  REGISTER(CRC16BASE,2)
+
 /* Timer CTL bits */
 
 #define TCTLENA 0 /* Timer Enable */
@@ -74,7 +88,7 @@
 
 /* Baud rate computation */
 
-#define BAUDRATEGEN(x) ((CLK_FREQ/(x))/4)
+#define BAUDRATEGEN(x) ((CLK_FREQ/(x))/4)-1
 
 
 /* Special GPIO pins */
