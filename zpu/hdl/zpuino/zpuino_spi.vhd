@@ -108,6 +108,7 @@ architecture behave of zpuino_spi is
   signal spi_samprise: std_logic;
   signal spi_enable_q: std_logic;
   signal cpol: std_logic;
+  signal miso_i: std_logic;
 
 begin
 
@@ -120,7 +121,7 @@ begin
       en    => spi_en,
       ready => spi_ready,
   
-      miso  => miso,
+      miso  => miso_i,
       mosi  => mosi,
   
       clk_en    => spi_clk_en,
@@ -141,6 +142,9 @@ begin
       spiclk  => sck,
       cpol    => cpol
     );
+
+  -- Simulation only
+  miso_i <= '0' when miso='Z' else miso;
 
   -- Direct access (write) to SPI
 
