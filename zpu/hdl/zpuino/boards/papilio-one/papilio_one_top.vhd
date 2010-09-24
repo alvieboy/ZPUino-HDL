@@ -94,7 +94,7 @@ component zpuino_top is
   );
 end component zpuino_top;
 
-  component PULLUP
+  component PULLDOWN
     PORT (
       O: out std_logic
     );
@@ -126,8 +126,8 @@ begin
   PORTC <= gpio_i(24 downto 17);
   PORTD(6 downto 0) <= gpio_i(31 downto 25);
 
-  -- PULLUP on PORTD(7)
-  rstpull: PULLUP
+  -- PULLDOWN on PORTD(7)
+  rstpull: PULLDOWN
     port map (
         O => PORTD(7)
     );
