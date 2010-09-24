@@ -109,6 +109,11 @@ architecture behave of zpuino_io is
   signal sigmadelta_re:  std_logic;
   signal sigmadelta_we:  std_logic;
 
+  signal crc16_read:     std_logic_vector(wordSize-1 downto 0);
+  signal crc16_re:  std_logic;
+  signal crc16_we:  std_logic;
+  signal crc16_busy:  std_logic;
+
   -- For busy-implementation
   signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
   signal write_save_q: std_logic_vector(wordSize-1 downto 0);
@@ -121,7 +126,7 @@ architecture behave of zpuino_io is
 
 begin
 
-  io_device_busy <= spi_busy or spi2_busy;
+  io_device_busy <= spi_busy or spi2_busy or crc16_busy;
 
   iobusy: if zpuino_iobusyinput=true generate
     process(clk)
@@ -203,6 +208,8 @@ begin
         read <= sigmadelta_read;
       when "110" =>
         read <= spi2_read;
+      when "111" =>
+        read <= crc16_read;
       when others =>
         read <= (others => DontCareValue);
     end case;
@@ -226,6 +233,8 @@ begin
     sigmadelta_we <= '0';
     spi2_re <= '0';
     spi2_we <= '0';
+    crc16_we <= '0';
+    crc16_re <= '0';
 
     case io_address(7 downto 5) is
       when "000" =>
@@ -249,6 +258,9 @@ begin
       when "110" =>
         spi2_re <= io_re;
         spi2_we <= io_we;
+      when "111" =>
+        crc16_re <= io_re;
+        crc16_we <= io_we;
       when others =>
     end case;
   end process;
@@ -367,6 +379,18 @@ begin
     spp_en    => gpio_spp_en(3),
     busy      => open,
     interrupt => open
+  );
+
+  crc16_inst: zpuino_crc16
+  port map (
+    clk       => clk,
+	 	areset    => areset,
+    read      => crc16_read,
+    write     => io_write,
+    address   => io_address(3 downto 2),
+    we        => crc16_we,
+    re        => crc16_re,
+    busy      => crc16_busy
   );
 
   gpio_spp_en(0) <= '0'; -- Special GPIO pin (Flash CS)
