@@ -189,7 +189,7 @@ begin
       w_rst   <= '1';
       wait for 120 ns;
       w_rst   <= '0';
-      wait for 4 ms;
+      wait for 10 ms;
       report "End" severity failure;
       wait;
    end process;
