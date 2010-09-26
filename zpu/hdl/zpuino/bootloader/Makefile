@@ -12,7 +12,7 @@ DHRYSRC=.
 
 SRC=boot.c zpu.c
 
-CFLAGS=-Os -ffunction-sections -I../common
+CFLAGS=-Os -ffunction-sections -I../common -D__ZPUINO_PAPILIO_ONE__
 LDFLAGS=-Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 
 all: prom-generic-dp-32.vhd Makefile
