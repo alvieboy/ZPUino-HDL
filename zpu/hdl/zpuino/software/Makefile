@@ -12,14 +12,16 @@ DHRYSRC=.
 
 SRC=tester.c
 
-CFLAGS=-Os -ffunction-sections -I../common
+CFLAGS=-Os -ffunction-sections -I../common -mno-pushspadd -mno-callpcrel 
 LDFLAGS=-Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+
+CPPFLAGS=-D__ZPUINO_PAPILIO_ONE__
 
 all: prom-generic-dp-32.vhd Makefile
 
 $(TARGET).o: *.c Makefile
-	$(CC) -DTIME -phi $(CFLAGS) -c $(SRC) -o $(TARGET).o
-	$(CC) -DTIME -phi $(CFLAGS) -S $(SRC) -o $(TARGET).S
+	$(CC) -DTIME -phi $(CPPFLAGS) $(CFLAGS) -c $(SRC) -o $(TARGET).o
+	$(CC) -DTIME -phi $(CPPFLAGS) $(CFLAGS) -S $(SRC) -o $(TARGET).S
 $(TARGET): $(TARGET).o
 	$(CC) $(TARGET).o -o $(TARGET) $(LDFLAGS)
 	$(OBJDUMP) -D $(TARGET) > $(TARGET).s

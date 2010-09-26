@@ -1,17 +1,6 @@
 #include "register.h"
 #include <stdarg.h>
 
-extern char __end__;
-static char *start_brk = &__end__;
-
-extern int _cpu_config;
-
-int _use_syscall;
-
-extern int _syscall(int *foo, int ID, ...);
-
-//extern int main();
-
 unsigned int _memreg[4];
 
 static int inprogrammode=0;
@@ -20,10 +9,6 @@ static volatile unsigned int milisseconds = 0;
 //extern void _init(void);
 void _initIO(void);
 unsigned int ZPU_ID;
-
-extern unsigned char __ram_start,__data_start,__data_end;
-extern unsigned char ___jcr_start,___jcr_begin,___jcr_end;
-extern unsigned char __bss_start__, __bss_end__;
 
 void outbyte(int);
 
@@ -63,11 +48,15 @@ void outbyte(int c)
 	UARTDATA=c;
 }
 
+static void outstring(char *buffer)
+{
+	int i;
+	for (i=0; buffer[i] != '\0';i++)
+		outbyte(buffer[i]);
+}
+
 void _initIO(void)
 {
-/*	UART=(volatile int *) 0x00008000;
-	TIMER=(volatile int *)0x0000C000;
-	MHZ=(volatile int *)&mhz;*/
 }
 
 static inline void spi_disable()
@@ -80,7 +69,7 @@ static inline void spi_enable()
 	GPIODATA &= ~1;
 }
 
-static inline spi_reset()
+static inline void spi_reset()
 {
 	spi_disable();
 	spi_enable();
@@ -199,7 +188,7 @@ static void enablewrites()
 	spi_disable();
 }
 
-static void format()
+static void spi_format()
 {
 	unsigned int status;
 	spi_enable();
@@ -212,7 +201,7 @@ static void format()
 	} while (status & 1);
 }
 
-static void readid()
+static void spi_readid()
 {
 	unsigned int manu, type, density;
 
@@ -225,9 +214,14 @@ static void readid()
 	spiwrite(0x00);
 	density = spiread()&0xff;
 	spi_disable();
-	outbyte(manu);
-	outbyte(type);
-	outbyte(density);
+
+	outstring("Values read (M/T/D): ");
+	printhexbyte(manu);
+	outbyte(' ');
+	printhexbyte(type);
+	outbyte(' ');
+	printhexbyte(density);
+	outstring("\r\n");
 }
 
 static void sectorerase()
@@ -308,25 +302,28 @@ static void readpage()
 }
 
 
-#define OUTPUT 1
-#define INPUT 0
-#define HIGH 1
-#define LOW 0
 
-void pinMode(unsigned int pin, unsigned int direction)
+
+void pinMode_i(unsigned int pinmask, unsigned int direction)
 {
-	if (direction==INPUT)
-		GPIOTRIS |= (1<<pin);
-	else
-		GPIOTRIS &= ~(1<<pin);
+ /*   if (direction!=OUTPUT)
+		GPIOTRIS |= pinmask;
+		else*/
+	GPIOTRIS = (GPIOTRIS & (~pinmask)) ^ direction;
 }
+
+static inline void pinMode(const unsigned int pin, unsigned int direction)
+{
+	pinMode_i(1<<pin,direction<<pin);
+}
+
 
 void digitalWrite(unsigned int pin, unsigned int value)
 {
-	if (value) {
-		GPIODATA |= ( 1 << pin );
-	} else {
+	if (value==0) {
 		GPIODATA &= ~( 1 << pin );
+	} else {
+		GPIODATA |= ( 1 << pin );
 	}
 }
 
@@ -344,6 +341,14 @@ void _premain()
 
 	UARTCTL = BAUDRATEGEN(115200);
 
+	CRC16ACC = -1;
+	CRC16POLY = 0x8408; // CRC16-CCITT
+	CRC16APP = 0x01;
+	CRC16APP = 0x02;
+	CRC16APP = 0x03;
+
+	t= CRC16ACC;
+
 	digitalWrite(0, HIGH);
 	digitalWrite(7, HIGH);
 
@@ -355,66 +360,40 @@ void _premain()
 
 	digitalWrite(7, HIGH);
 
-	sti();
+	outstring("ZPUino performing timing tests.\r\n");
 
-	// Read TSC
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL); 
+	outstring(" > Raw: \r\n");
+	spi_readid();
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPISRE);
+	outstring(" > Raw + SRE: \r\n");
+	spi_readid();
 
-	t = TIMERTSC;
-	USPICTL = BIT(SPIEN)|BIT(SPICPOL)|BIT(SPICP0)|BIT(SPICP1);
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPICP0);
+	outstring(" > CP0: \r\n");
+	spi_readid();
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPISRE)|BIT(SPICP0);
+	outstring(" > CP0 + SRE: \r\n");
+	spi_readid();
 
-	digitalWrite(7, 0);
-	USPIDATA = 0x9f;
-	USPIDATA = 0x00;
-	t=USPIDATA;
-	USPIDATA = 0x00;
-	USPIDATA = 0x00;
-	USPIDATA = 0x00;
-	USPIDATA = 0x00;
-	digitalWrite(7, 1);
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPICP1);
+	outstring(" > CP1: \r\n");
+	spi_readid();
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPISRE)|BIT(SPICP1);
+	outstring(" > CP1 + SRE: \r\n");
+	spi_readid();
 
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPICP1)|BIT(SPICP0);
+	outstring(" > CP0+1: \r\n");
+	spi_readid();
+	SPICTL=BIT(SPIEN)|BIT(SPICPOL)|BIT(SPISRE)|BIT(SPICP1)|BIT(SPICP0);
+	outstring(" > CP0+1 + SRE: \r\n");
+	spi_readid();
+	outstring("All done. Please reset.\r\n");
+	while (1);
 
-
-	// Enable interrupts
-
-	// Load timer0 compare
-    /*
-	TMR0CMP = (CLK_FREQ/1000U)-1;
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLIEN);
-    */
-	TMR0CMP = (CLK_FREQ/2000U)-1; // 1 ms callback
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
-
-	sdoutvalue = 32768;
-	SIGMADELTADATA = 32768;
-	SIGMADELTACTL = BIT(SDENA); // Enable sigma-delta output
-
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE);
-
-	// Start reading from flash.
-	spi_disable();
-	spi_enable();
-
-	spiwrite(0x0B);
-	// Address 0x1000
-	spiwrite(0x00);
-	//spiwrite(0x10);
-	spiwrite(0x00);
-
-	spiwrite(0x00);
-	// Dummy
-	spiwrite(0x00);
-
-	TMR1CMP = (CLK_FREQ/44100U)-1; // 44.1KHz callback
-	//TMR1CMP = (CLK_FREQ/22000U)-1; // 22KHz callback
-	TMR1CNT = 0x0;
-	TMR1CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLIEN);
-
-
-
-	
-	while (1) {
-	}
 }
-
+int main()
+{
+    return 0;
+}
