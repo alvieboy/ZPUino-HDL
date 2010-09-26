@@ -283,7 +283,8 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 	}
 	rxcount = buffer[2];
 	// Now, receive and write buffer
-	for(count=0;count<rxcount;count++) {
+	for(count=0;count
+		<rxcount;count++) {
 		spiwrite(0x00);
 		buffer[count] = spiread();
 	}
