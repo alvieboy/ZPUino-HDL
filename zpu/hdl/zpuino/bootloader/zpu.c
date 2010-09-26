@@ -1,52 +1,63 @@
 #include "register.h"
 #include <stdarg.h>
-//#define BOOTLOADER __attribute__((section (".bootloader")))
 
-#define BOOTLOADER
+#undef DEBUG_SERIAL
 
-#define SECTORSIZE 65536
+#define SPIOFFSET 0x00000000
 
-extern char __end__;
-static char *start_brk = &__end__;
+/* Commands for programmer */
 
-extern int _cpu_config;
+#define BOOTLOADER_CMD_IDENTIFY 0x02
+#define BOOTLOADER_CMD_WAITREADY 0x03
+#define BOOTLOADER_CMD_RAWREADWRITE 0x04
+#define BOOTLOADER_CMD_ENTERPGM 0x05
+#define BOOTLOADER_CMD_LEAVEPGM 0x06
 
-int _use_syscall;
+#define REPLY(X) (X|0x80)
 
-extern int _syscall(int *foo, int ID, ...);
-
-//extern int main();
+#define HDLC_frameFlag 0x7E
+#define HDLC_escapeFlag 0x7D
+#define HDLC_escapeXOR 0x20
 
 unsigned int _memreg[4];
+unsigned int ZPU_ID;
 
 static int inprogrammode=0;
 static volatile unsigned int milisseconds = 0;
-
-//extern void _init(void);
-void _initIO(void);
-unsigned int ZPU_ID;
-
-extern unsigned char __ram_start,__data_start,__data_end;
-extern unsigned char ___jcr_start,___jcr_begin,___jcr_end;
-extern unsigned char __bss_start__, __bss_end__;
-
-void outbyte(int);
 static void (*ivector)(void);
 
-/*
- * Wait indefinitely for input byte
- */
+
+static unsigned char buffer[256 + 8];
+static int syncSeen;
+static int unescaping;
+static int bufferpos;
+
+
+void outbyte(int);
+
 void __attribute__((noreturn)) spi_copy();
 
-int inbyte()
+#ifdef DEBUG_SERIAL
+const unsigned char serialbuffer[] = {
+	HDLC_frameFlag, BOOTLOADER_CMD_IDENTIFY, 0x2c, 0x95, HDLC_frameFlag,
+	HDLC_frameFlag, BOOTLOADER_CMD_RAWREADWRITE, 0x5, 0x10, 0xB, 0x0, 0x0, 0x0, 0x0, 0x9F, 0xAD, HDLC_frameFlag
+};
+int serialbufferptr=0;
+#endif
+
+static unsigned int inbyte()
 {
-	int val;
+	unsigned int val;
 	for (;;)
 	{
+#ifdef DEBUG_SERIAL
+		if (serialbufferptr<sizeof(serialbuffer))
+			return serialbuffer[serialbufferptr++];
+#else
 		if (UARTCTL&0x1 != 0) {
 			return UARTDATA;
 		}
-
+#endif
 		if (inprogrammode==0 && milisseconds>1000) {
 			INTRCTL=0;
 			TMR0CTL=0;
@@ -55,9 +66,16 @@ int inbyte()
 	}
 }
 
+void enableTimer()
+{
+	TMR0CMP = (CLK_FREQ/2000U)-1;
+	TMR0CNT = 0x0;
+	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
+}
 
 
-/* 
+
+/*
  * Output one character to the serial port 
  * 
  * 
@@ -67,13 +85,6 @@ void outbyte(int c)
 	/* Wait for space in FIFO */
 	while ((UARTCTL&0x2)==2);
 	UARTDATA=c;
-}
-
-void _initIO(void)
-{
-/*	UART=(volatile int *) 0x00008000;
-	TIMER=(volatile int *)0x0000C000;
-	MHZ=(volatile int *)&mhz;*/
 }
 
 void spi_disable()
@@ -94,7 +105,9 @@ static inline spi_reset()
 
 static inline void waitspiready()
 {
-    while (!(SPICTL & BIT(SPIREADY)));
+#if 0
+	while (!(SPICTL & BIT(SPIREADY)));
+#endif
 }
 
 static void spiwrite(unsigned int i)
@@ -102,13 +115,12 @@ static void spiwrite(unsigned int i)
 	waitspiready();
 	SPIDATA=i;
 }
+
 static unsigned int spiread()
 {
 	waitspiready();
 	return SPIDATA;
 }
-
-#define SPIOFFSET 0x00000000
 
 void printnibble(unsigned int c)
 {
@@ -167,7 +179,7 @@ void __attribute__((noreturn)) spi_copy_impl()
 
 	// Need to reset stack also
 	spi_disable();
-	ivector = 0x1008;
+	ivector = (void (*)(void))0x1008;
 	__asm__("im 0x7FFC\n"
 			"popsp\n"
 			"im 0x1000\n"
@@ -204,223 +216,229 @@ void ___zpu_interrupt_vector()
 	INTRCTL=1;
 }
 
-
-void delayms(unsigned int c)
-{
-	unsigned int cmp = milisseconds + c;
-	while (milisseconds<cmp);
-}
-
 static int spi_read_status()
 {
+	unsigned int status;
+	spi_enable();
 	spiwrite(0x05);
 	spiwrite(0x00);
-	return spiread() & 0xff;
-}
-
-static void readstatus()
-{
-	unsigned int status;
-	spi_enable();
-	status = spi_read_status();
+	status =  spiread() & 0xff;
 	spi_disable();
-	outbyte(status);
-}
-static void enablewrites()
-{
-	unsigned int status;
-	spi_enable();
-	spiwrite(0x06);
-	spi_disable();
+	return status;
 }
 
-static void format()
+static unsigned int spi_read_id()
 {
-	unsigned int status;
-	spi_enable();
-	spiwrite(0xC7);
-	spi_disable();
-	do {
-		spi_enable();
-		status = spi_read_status();
-		spi_disable();
-	} while (status & 1);
-}
-
-static void readid()
-{
-	unsigned int manu, type, density;
-
+	unsigned int ret;
 	spi_enable();
 	spiwrite(0x9F);
 	spiwrite(0x00);
-	manu = spiread()&0xff;
 	spiwrite(0x00);
-	type = spiread()&0xff;
 	spiwrite(0x00);
-	density = spiread()&0xff;
+	ret = spiread();
 	spi_disable();
-	outbyte(manu);
-	outbyte(type);
-	outbyte(density);
+	return ret;
 }
 
-static void sectorerase()
+void sendByte(unsigned int i)
 {
-	/* Inline version */
-    unsigned int status;
-	spi_enable();
-	spiwrite(0xD8);
-	spiwrite(inbyte());
-	spiwrite(inbyte());
-	spiwrite(inbyte());
-	spi_disable();
-	do {
-		spi_enable();
-		status = spi_read_status();
-		spi_disable();
-	} while (status & 1);
+	CRC16APP = i;
+	i &= 0xff;
+	if (i==HDLC_frameFlag || i==HDLC_escapeFlag) {
+		outbyte(HDLC_escapeFlag);
+		outbyte(i ^ HDLC_escapeXOR);
+	} else
+		outbyte(i);
 }
 
-static unsigned char buffer[256];
-
-static void writepage()
+static inline void prepareSend()
 {
-	unsigned char address[3];
-	unsigned int status;
-	address[0] = inbyte();
-	address[1] = inbyte();
-	address[2] = inbyte();
-
-	int count;
-	for (count=0; count<=255; count++) {
-		buffer[count] = inbyte();
-	}
-
-	spi_enable();
-	spiwrite(0x2);
-	spiwrite(address[0]);
-	spiwrite(address[1]);
-	spiwrite(address[2]);
-
-	for (count=0; count<=255; count++) {
-		spiwrite(buffer[count]);
-	}
-	spi_disable();
-	do {
-		spi_enable();
-		status = spi_read_status();
-		spi_disable();
-	} while (status & 1);
+	CRC16ACC=-1;
+	outbyte(HDLC_frameFlag);
 }
 
 
-static void readpage()
+void finishSend()
 {
+	unsigned int crc = CRC16ACC;
+	sendByte(crc>>8);
+	sendByte(crc&0xff);
+	outbyte(HDLC_frameFlag);
+}
 
-	unsigned char address[3];
-	unsigned int status;
+static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
+{
 	unsigned int count;
-	address[0] = inbyte();
-	address[1] = inbyte();
-	address[2] = inbyte();
+	unsigned int rxcount;
+
+	// buffer[1] is number of TX bytes
+	// buffer[2] is number of RX bytes
+	// buffer[3..] is data to transmit.
+
+	// NOTE - buffer will be overwritten in read.
 
 	spi_enable();
-	spiwrite(0x3);
-	spiwrite(address[0]);
-	spiwrite(address[1]);
-	spiwrite(address[2]);
-
-	for (count=0; count<=255; count++) {
-		spiwrite(0);
-		buffer[count] = spiread() & 0xff;
+	for (count=0; count<buffer[1]; count++) {
+		spiwrite(buffer[3+count]);
+	}
+	rxcount = buffer[2];
+	// Now, receive and write buffer
+	for(count=0;count<rxcount;count++) {
+		spiwrite(0x00);
+		buffer[count] = spiread();
 	}
 	spi_disable();
 
-	for (count=0; count<=255; count++) {
-		outbyte(buffer[count]);
+	// Send back
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_RAWREADWRITE));
+	sendByte(rxcount);
+	for(count=0;count<rxcount;count++) {
+		sendByte(buffer[count]);
 	}
+    finishSend();
 }
 
+static void cmd_waitready()
+{
+	int status;
+	do {
+		spi_enable();
+		status = spi_read_status();
+		spi_disable();
+	} while (status & 1);
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_WAITREADY));
+	sendByte(status);
+	finishSend();
+}
+
+static void cmd_identify()
+{
+	unsigned int id;
+
+	// Reset boot counter
+	milisseconds = 0;
+
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_IDENTIFY));
+	id = spi_read_id();
+	sendByte(id>>16);
+	sendByte(id>>8);
+	sendByte(id);
+	id = spi_read_status();
+	sendByte(id);
+	finishSend();
+}
+
+static void cmd_enterpgm()
+{
+	inprogrammode = 1;
+	// Disable timer.
+    TMR0CTL = 0;
+	
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_ENTERPGM));
+	finishSend();
+}
+
+static void cmd_leavepgm()
+{
+	inprogrammode = 0;
+
+	enableTimer();
+
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_LEAVEPGM));
+	finishSend();
+
+}
+
+void processCommand()
+{
+    int pos=0;
+	if (bufferpos<3)
+		return; // Too few data
+
+	CRC16ACC=-1;
+	for (pos=0;pos<bufferpos-2;pos++) {
+		CRC16APP=buffer[pos];
+	}
+	unsigned int tcrc = buffer[--bufferpos];
+	tcrc|=buffer[--bufferpos]<<8;
+	unsigned int rcrc=CRC16ACC;
+	if (rcrc!=tcrc) {
+		prepareSend();
+		sendByte(0xff);
+		finishSend();
+		return;
+	}
+	/* CRC ok */
+	switch(buffer[0]) {
+	case BOOTLOADER_CMD_IDENTIFY:
+		cmd_identify();
+		break;
+	case BOOTLOADER_CMD_RAWREADWRITE:
+		cmd_raw_send_receive(buffer, bufferpos);
+		break;
+	case BOOTLOADER_CMD_ENTERPGM:
+		cmd_enterpgm();
+        break;
+	case BOOTLOADER_CMD_LEAVEPGM:
+		cmd_leavepgm();
+        break;
+	case BOOTLOADER_CMD_WAITREADY:
+		cmd_waitready();
+        break;
+	}
+}
 
 void _premain()
 {
 	int t;
 
 	ivector = &_zpu_interrupt;
-	UARTCTL = 216;//BAUDRATEGEN(115200);
+	UARTCTL = BAUDRATEGEN(115200);
 	GPIODATA=0x1;
 	GPIOTRIS=0xFFFFFFFE; // All inputs, but SPI select
 
 	INTRCTL=1;
-
-	// Read TSC
-
-//	t = TIMERTSC;
-
-	// Enable interrupts
-
-	// Load timer0 compare
-    /*
-	TMR0CMP = (CLK_FREQ/1000U)-1;
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLIEN);
-    */
-	TMR0CMP = (CLK_FREQ/2000U)-1;
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
+    enableTimer();
+	CRC16POLY = 0x8408; // CRC16-CCITT
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP1);
 
-	outbyte('B');
-	outbyte('o');
-	outbyte('o');
-	outbyte('t');
-	outbyte('\r');
-	outbyte('\n');
+	syncSeen = 0;
+	unescaping = 0;
 
 	while (1) {
 		int i;
-    	i = inbyte();
-
-		inprogrammode=1;
-
-		switch (i) {
-		case 'i':
-		case 'I':
-			readid();
-			break;
-		case 's':
-		case 'S':
-			readstatus();
-			break;
-		case 'e':
-		case 'E':
-			enablewrites();
-			break;
-		case 'K':
-			format();
-			break;
-		case 'k':
-			sectorerase();
-			break;
-		case 'w':
-			writepage();
-			break;
-		case 'r':
-			readpage();
-			break;
-		case '?':
-			break;
-		case 'b':
-			INTRCTL=0;
-			TMR0CTL=0;
-			spi_copy();
-			break;
-		default:
-			outbyte('?');
+		i = inbyte();
+		// DEBUG ONLY
+		TMR1CNT=i;
+		if (syncSeen) {
+			if (i==HDLC_frameFlag) {
+				syncSeen=0;
+				processCommand();
+			} else if (i==HDLC_escapeFlag) {
+				unescaping=1;
+			} else if (bufferpos<sizeof(buffer)) {
+				if (unescaping) {
+					unescaping=0;
+					i^=HDLC_escapeXOR;
+				}
+				buffer[bufferpos++]=i;
+			} else {
+				syncSeen=0;
+			}
+		} else {
+			if (i==HDLC_frameFlag) {
+				bufferpos=0;
+				CRC16ACC=-1;
+				syncSeen=1;
+				unescaping=0;
+			}
 		}
-		outbyte('R');
 	}
 }
 
