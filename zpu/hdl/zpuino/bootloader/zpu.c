@@ -4,14 +4,20 @@
 #undef DEBUG_SERIAL
 
 #define SPIOFFSET 0x00000000
+#define SPICODESIZE   (0x00007000 - 128)
+#define VERSION_HIGH 0x01
+#define VERSION_LOW  0x01
 
 /* Commands for programmer */
 
+#define BOOTLOADER_CMD_VERSION 0x01
 #define BOOTLOADER_CMD_IDENTIFY 0x02
 #define BOOTLOADER_CMD_WAITREADY 0x03
 #define BOOTLOADER_CMD_RAWREADWRITE 0x04
 #define BOOTLOADER_CMD_ENTERPGM 0x05
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
+
+#define BOOTLOADER_WAIT_MILLIS 1000
 
 #define REPLY(X) (X|0x80)
 
@@ -58,7 +64,7 @@ static unsigned int inbyte()
 			return UARTDATA;
 		}
 #endif
-		if (inprogrammode==0 && milisseconds>1000) {
+		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
 			spi_copy();
@@ -157,7 +163,7 @@ void __attribute__((noreturn)) spi_copy_impl()
 {
 	unsigned int bootword;
 	// We must not overflow stack, leave 128 bytes
-	unsigned int count = (0x7000 - 128) >> 2;
+	unsigned int count = SPICODESIZE >> 2; // 0x7000
 
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
 
@@ -314,6 +320,23 @@ static void cmd_waitready()
 	finishSend();
 }
 
+static void cmd_version()
+{
+	// Reset boot counter
+	milisseconds = 0;
+
+	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
+	sendByte(VERSION_HIGH);
+	sendByte(VERSION_LOW);
+	sendByte(SPIOFFSET>>16);
+	sendByte(SPIOFFSET>>8);
+	sendByte(SPIOFFSET);
+	sendByte(SPICODESIZE>>16);
+	sendByte(SPICODESIZE>>8);
+	sendByte(SPICODESIZE);
+	finishSend();
+}
+
 static void cmd_identify()
 {
 	unsigned int id;
@@ -357,7 +380,7 @@ static void cmd_leavepgm()
 
 void processCommand()
 {
-    int pos=0;
+	int pos=0;
 	if (bufferpos<3)
 		return; // Too few data
 
@@ -376,6 +399,9 @@ void processCommand()
 	}
 	/* CRC ok */
 	switch(buffer[0]) {
+	case BOOTLOADER_CMD_VERSION:
+		cmd_version();
+		break;
 	case BOOTLOADER_CMD_IDENTIFY:
 		cmd_identify();
 		break;
@@ -384,13 +410,13 @@ void processCommand()
 		break;
 	case BOOTLOADER_CMD_ENTERPGM:
 		cmd_enterpgm();
-        break;
+		break;
 	case BOOTLOADER_CMD_LEAVEPGM:
 		cmd_leavepgm();
-        break;
+		break;
 	case BOOTLOADER_CMD_WAITREADY:
 		cmd_waitready();
-        break;
+		break;
 	}
 }
 
