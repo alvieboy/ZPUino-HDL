@@ -86,20 +86,11 @@ static unsigned int inbyte()
 		if (serialbufferptr<sizeof(serialbuffer))
 			return serialbuffer[serialbufferptr++];
 #else
+
 		if (UARTCTL&0x1 != 0) {
 			return UARTDATA;
 		}
-#endif
-#if 0
-		if (milisseconds==1000) {
-			milisseconds=0;
-			prepareSend();
-			sendByte(0x20);
-			sendByte(0xAA);
-			sendByte(0x00);
-			sendByte(0xFF);
-			finishSend();
-		}
+
 #endif
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
@@ -448,6 +439,8 @@ void _premain()
 {
 	int t;
 
+	inprogrammode = 0;
+	milisseconds = 0;
 	ivector = &_zpu_interrupt;
 	UARTCTL = BAUDRATEGEN(115200);
 	GPIODATA=0x1;
