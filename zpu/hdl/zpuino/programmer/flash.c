@@ -31,13 +31,13 @@ static int m25p_erase_sector(int fd, unsigned int sector)
 	wbuf[6] = (sector>>8) & 0xff;
 	wbuf[7] = (sector) & 0xff;
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 	if (NULL==b)
 		return -1;
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
 
 	if (NULL==b)
 		return -1;
@@ -58,7 +58,7 @@ static int m25p_enable_writes(int fd)
 	wbuf[3] = 0; // Rx bytes
 	wbuf[4] = 0x06; // Enable Write
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b)
 		return -1;
@@ -86,7 +86,7 @@ static buffer_t *m25p_read_page(int fd, unsigned int page)
 	wbuf[7] = (addr) & 0xff;
 	wbuf[8] = 0; /* Dummy */
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot read page\n");
@@ -116,7 +116,7 @@ static int m25p_program_page(int fd, unsigned int page, const unsigned char *buf
 
 	memcpy(&wbuf[8], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot program page\n");
@@ -125,7 +125,7 @@ static int m25p_program_page(int fd, unsigned int page, const unsigned char *buf
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 	if (NULL==b)
 		return -1;

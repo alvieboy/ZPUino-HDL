@@ -74,8 +74,8 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
     buffer_t *ret=NULL;
 	unsigned char *txbuf2;
 
-	tv.tv_sec=timeout;
-	tv.tv_usec = 0;
+	tv.tv_sec = timeout / 1000;
+	tv.tv_usec = (timeout % 1000) * 1000;
 
 	txbuf2=malloc( size + 1);
 	txbuf2[0] = cmd;
@@ -93,7 +93,7 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 			return NULL;
 		case 0:
 			// Timeout
-			fprintf(stderr,"Timeout\n");
+			//fprintf(stderr,"Timeout\n");
 			return NULL;
 		default:
 			rd = read(fd,tmpbuf,sizeof(tmpbuf));
@@ -114,7 +114,7 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 						return ret;
 					}
 					/* Check return */
-					if (ret->size<2) {
+					if (ret->size<1) {
 						buffer_free(ret);
 						free(txbuf2);
 
@@ -266,28 +266,7 @@ buffer_t *process(unsigned char *buffer, size_t size)
 		}
 	}
 	return NULL;
-}/*
-
-int command(int fd, const char *cmd, unsigned char *buffer, size_t size)
-{
-	unsigned char ready;
-	write(fd,cmd,1);
-
-	if(size>0) {
-		if (receive(fd,buffer,size,TIMEOUT)<0)
-			return -1;
-	}
-
-	if (receive(fd,&ready,1,TIMEOUT)<0)
-		return -1;
-
-	if (ready != 'R') {
-		fprintf(stderr,"Invalid response '0x%02x'\n",buffer[0]);
-		return -1;
-	}
-	return 0;
 }
-*/
 
 void buffer_free(buffer_t *b)
 {
@@ -309,7 +288,7 @@ static int flash_read_status(fd)
 	wbuf[4] = 1; // Rx bytes
 	wbuf[5] = 0x05; // Read status register
 
-	b = sendreceive(fd, wbuf, sizeof(wbuf), 30);
+	b = sendreceive(fd, wbuf, sizeof(wbuf), 30000);
 	if (NULL==b)
 		return -1;
 
@@ -322,9 +301,10 @@ int main(int argc, char **argv)
 	unsigned char buffer[8192];
 	uint32_t spioffset;
 	uint32_t spioffset_page;
-    uint32_t spioffset_sector;
+	uint32_t spioffset_sector;
 	uint32_t codesize;
 	flash_info_t *flash;
+	int retries;
 
 	struct stat st;
 	buffer_t *b;
@@ -337,46 +317,36 @@ int main(int argc, char **argv)
 
 	int fd = open_device(argv[1]);
 
-	/* Reset */
-	buffer[0] = HDLC_frameFlag;
-	buffer[1] = HDLC_frameFlag;
-	write(fd,buffer,2);
 
+	retries = 100;
+	printf("Press RESET now\n");
 
-	buffer[0] = BOOTLOADER_CMD_VERSION;
+	while (retries>0) {
+		/* Reset */
+		buffer[0] = HDLC_frameFlag;
+		buffer[1] = HDLC_frameFlag;
+		write(fd,buffer,2);
 
-	b = sendreceivecommand(fd,BOOTLOADER_CMD_VERSION,NULL,0,1);
+		b = sendreceivecommand(fd,BOOTLOADER_CMD_VERSION,NULL,0,200);
+		if (b)
+			break;
+	}
 
 	if (b) {
-			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
-			spioffset = b->buf[3];
-			spioffset<<=8;
-			spioffset += b->buf[4];
-			spioffset<<=8;
-			spioffset += b->buf[5];
-			printf("SPI offset: %u\n",spioffset);
+		printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
+		spioffset = b->buf[3];
+		spioffset<<=8;
+		spioffset += b->buf[4];
+		spioffset<<=8;
+		spioffset += b->buf[5];
+		printf("SPI offset: %u\n",spioffset);
 
-			codesize = b->buf[6];
-			codesize<<=8;
-			codesize += b->buf[7];
-			codesize<<=8;
-			codesize += b->buf[8];
-			printf("CODE size: %u\n",codesize);
-
-			/* Ensure SPI offset is aligned */
-			if (spioffset % flash->pagesize!=0) {
-				fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
-				close(fd);
-                return -1;
-			}
-			if (spioffset % flash->sectorsize!=0) {
-				fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
-				close(fd);
-                return -1;
-			}
-			/* Align offset */
-			spioffset_page = spioffset % flash->pagesize;
-            spioffset_sector = spioffset % flash->sectorsize;
+		codesize = b->buf[6];
+		codesize<<=8;
+		codesize += b->buf[7];
+		codesize<<=8;
+		codesize += b->buf[8];
+		printf("CODE size: %u\n",codesize);
 
 	} else {
 		fprintf(stderr,"Cannot get programmer version\n");
@@ -386,7 +356,7 @@ int main(int argc, char **argv)
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd,BOOTLOADER_CMD_IDENTIFY,buffer,0,1);
+	b = sendreceivecommand(fd,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
 
 	if (b) {
 
@@ -398,15 +368,32 @@ int main(int argc, char **argv)
 		if (NULL==flash) {
 			fprintf(stderr,"Unknown flash type, exiting\n");
 			close(fd);
-            buffer_free(b);
+			buffer_free(b);
 			return -1;
 		}
 		printf("Detected %s flash\n", flash->name);
 	} else {
 		fprintf(stderr,"Cannot identify flash\n");
 		close(fd);
-        return -1;
+		return -1;
 	}
+
+	/* Align offset */
+	spioffset_page = spioffset % flash->pagesize;
+	spioffset_sector = spioffset % flash->sectorsize;
+
+	/* Ensure SPI offset is aligned */
+	if (spioffset % flash->pagesize!=0) {
+		fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
+		close(fd);
+		return -1;
+	}
+	if (spioffset % flash->sectorsize!=0) {
+		fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
+		close(fd);
+		return -1;
+	}
+
 
 	buffer_free(b);
 
@@ -431,7 +418,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n", st.st_size,codesize);
 		close(fd);
 		close(fin);
-        return -1;
+		return -1;
 	}
 
 	unsigned char *buf = malloc(size_bytes);
@@ -442,6 +429,15 @@ int main(int argc, char **argv)
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
 	unsigned int saddr = spioffset_sector;
+
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
+	if (b) {
+		buffer_free(b);
+	} else {
+		fprintf(stderr,"Cannot enter program mode\n");
+		close(fd);
+        return -1;
+	}
 
 	while (sectors--) {
 		if (flash->driver->enable_writes(fd)<0)
@@ -495,6 +491,16 @@ int main(int argc, char **argv)
 		saddr++;
 	}
 
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );
+	if (b) {
+		buffer_free(b);
+	} else {
+		fprintf(stderr,"Cannot leave program mode");
+		close(fd);
+        return -1;
+	}
+
 	fprintf(stderr,"\nAll done.\n");
 
+	return 0;
 }
