@@ -6,21 +6,83 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
+#include "flash.h"
+#include "transport.h"
+#include "programmer.h"
 
-#define TIMEOUT 30
-#define PAGESIZE 256
-#define SECTORSIZE 65536
+unsigned char *packet;
+size_t packetoffset;
+int syncSeen=0;
+int unescaping=0;
+unsigned int debug=0;
 
-#define ALIGN(val,boundary) ( (((val) / (boundary)) + (!!((val)%(boundary)))) *(boundary))
 
-int receive(int fd, unsigned char *buffer,size_t size, int timeout)
+void crc16_update(uint16_t *crc, uint8_t data)
+{
+	data ^= *crc&0xff;
+	data ^= data << 4;
+	*crc = ((((uint16_t)data << 8) | ((*crc>>8)&0xff)) ^ (uint8_t)(data >> 4)
+		   ^ ((uint16_t)data << 3));
+}
+
+int sendpacket(int fd, unsigned char *buffer, size_t size)
+{
+	unsigned char txbuf[1024];
+	unsigned char *txptr = &txbuf[0];
+
+	uint16_t crc = 0xFFFF;
+	size_t i;
+
+	*txptr++=HDLC_frameFlag;
+
+	for (i=0;i<size;i++) {
+		crc16_update(&crc,buffer[i]);
+
+		if (buffer[i]==HDLC_frameFlag || buffer[i]==HDLC_escapeFlag) {
+			*txptr++=HDLC_escapeFlag;
+			*txptr++=(buffer[i] ^ HDLC_escapeXOR);
+		} else
+			*txptr++=buffer[i];
+	}
+
+	*txptr++= (crc>>8)&0xff;
+	*txptr++= crc&0xff;
+
+	*txptr++= HDLC_frameFlag;
+
+	if(debug) {
+		fprintf(stderr,"Tx:");
+		for (i=0; i<txptr-(&txbuf[0]); i++) {
+			fprintf(stderr," 0x%02x", txbuf[i]);
+		}
+		fprintf(stderr,"\n");
+	}
+	return write(fd, txbuf, txptr-(&txbuf[0]));
+}
+
+buffer_t *handle();
+buffer_t *process(unsigned char *buffer, size_t size);
+
+
+static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
 {
 	fd_set rfs;
+	unsigned char tmpbuf[32];
 	struct timeval tv;
 	int rd;
+    buffer_t *ret=NULL;
+	unsigned char *txbuf2;
 
 	tv.tv_sec=timeout;
 	tv.tv_usec = 0;
+
+	txbuf2=malloc( size + 1);
+	txbuf2[0] = cmd;
+	if (size) {
+		memcpy(&txbuf2[1], txbuf,size);
+	}
+    sendpacket(fd,txbuf2,size+1);
 
 	FD_ZERO(&rfs);
 	FD_SET(fd, &rfs);
@@ -28,21 +90,63 @@ int receive(int fd, unsigned char *buffer,size_t size, int timeout)
 	do {
 		switch (select(fd+1,&rfs,NULL,NULL,&tv)) {
 		case -1:
-			return -1;
+			return NULL;
 		case 0:
 			// Timeout
 			fprintf(stderr,"Timeout\n");
-			return -1;
+			return NULL;
 		default:
-			rd = read(fd,buffer,size);
-			if (rd<size) {
-				buffer+=rd;
-				size-=rd;
-			} else {
-				return size;
+			rd = read(fd,tmpbuf,sizeof(tmpbuf));
+			if (rd>0) {
+				if (debug) {
+					int i;
+					fprintf(stderr,"Rx:");
+					for (i=0; i<rd; i++) {
+						fprintf(stderr," 0x%02x",tmpbuf[i]);
+					}
+					fprintf(stderr,"\n");
+				}
+				ret = process(tmpbuf,rd);
+				if (ret) {
+					if (!validate) {
+
+						free(txbuf2);
+						return ret;
+					}
+					/* Check return */
+					if (ret->size<2) {
+						buffer_free(ret);
+						free(txbuf2);
+
+						return NULL;
+					}
+					// Check explicit CRC error
+					if (ret->buf[0] == 0xff) {
+						/* Resend */
+						sendpacket(fd,txbuf2,size+1);
+                        continue;
+					}
+
+					if (ret->buf[0] != REPLY(cmd)) {
+						fprintf(stderr,"Invalid reply 0x%02x to command 0x%02x\n",
+                                ret->buf[0],REPLY(cmd));
+						buffer_free(ret);
+					}
+					free(txbuf2);
+					return ret;
+				}
 			}
 		}
 	} while (1);
+}
+
+buffer_t *sendreceivecommand(int fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout)
+{
+	return sendreceivecommand_i(fd,cmd,txbuf,size,timeout,1);
+}
+buffer_t *sendreceive(int fd, unsigned char *txbuf, size_t size, int timeout)
+{
+	return sendreceivecommand_i(fd,txbuf[0],txbuf+1,size-1,timeout,0);
 }
 
 
@@ -86,6 +190,84 @@ int open_device(char *device)
 
 }
 
+buffer_t *handle()
+{
+    buffer_t*ret = NULL;
+	unsigned short crc = 0xFFFF;
+    unsigned short pcrc;
+	int i;
+
+	if (packetoffset<3) {
+		fprintf(stderr,"Short packet\n");
+		goto out;
+	}
+
+	for (i=0; i<packetoffset-2; i++) {
+		crc16_update(&crc,packet[i]);
+	}
+	pcrc = packet[packetoffset-2] << 8;
+    pcrc += packet[packetoffset-1];
+
+	if (crc!=pcrc) {
+		fprintf(stderr,"CRC error, expected 0x%02x, got 0x%02x\n",
+				crc,
+				pcrc);
+        goto out;
+	}
+
+	ret = malloc(sizeof (buffer_t) );
+	if (ret==NULL)
+		goto out;
+
+	ret->buf = malloc(packetoffset-2);
+	ret->size = packetoffset-2;
+	memcpy(ret->buf, packet, ret->size);
+	if (debug)
+		fprintf(stderr,"Got packet size %d\n",ret->size);
+out:
+	free(packet);
+	packet = NULL;
+    packetoffset = 0;
+    return ret;
+}
+
+buffer_t *process(unsigned char *buffer, size_t size)
+{
+	size_t s;
+    unsigned int i;
+	for (s=0;s<size;s++) {
+		i = buffer[s];
+
+		if (syncSeen) {
+			if (i==HDLC_frameFlag) {
+				syncSeen=0;
+				return handle();
+
+			} else if (i==HDLC_escapeFlag) {
+				unescaping=1;
+			} else if (packetoffset<1024) {
+				if (unescaping) {
+					unescaping=0;
+					i^=HDLC_escapeXOR;
+				}
+				packet[packetoffset++]=i;
+			} else {
+				syncSeen=0;
+				free(packet);
+                packet = NULL;
+			}
+		} else {
+			if (i==HDLC_frameFlag) {
+				packet = malloc(1024);
+				packetoffset=0;
+				syncSeen=1;
+				unescaping=0;
+			}
+		}
+	}
+	return NULL;
+}/*
+
 int command(int fd, const char *cmd, unsigned char *buffer, size_t size)
 {
 	unsigned char ready;
@@ -105,71 +287,106 @@ int command(int fd, const char *cmd, unsigned char *buffer, size_t size)
 	}
 	return 0;
 }
+*/
 
-int memcommand(int fd, const unsigned char *cmd, size_t sendsize, unsigned char *buffer, size_t size)
+void buffer_free(buffer_t *b)
 {
-	unsigned char ready;
-	write(fd,cmd,sendsize);
-	if(size>0) {
-		if (receive(fd,buffer,size,TIMEOUT)<0)
-			return -1;
+	if (b) {
+		if (b->buf)
+			free(b->buf);
+        free(b);
 	}
-	if (receive(fd,&ready,1,TIMEOUT)<0)
-		return -1;
-
-	if (ready != 'R') {
-		fprintf(stderr,"Invalid response '0x%02x'\n",buffer[0]);
-		return -1;
-	}
-	return 0;
 }
-int enablewrites(fd)
-{
-	unsigned char buffer[1];
 
-	if (command(fd,"s",buffer,1)<0)
+static int flash_read_status(fd)
+{
+	buffer_t *b;
+	unsigned char wbuf[6];
+	wbuf[0] = BOOTLOADER_CMD_RAWREADWRITE;
+	wbuf[1] = 0; // Tx bytes
+	wbuf[2] = 1; // Tx bytes
+	wbuf[3] = 0; // Rx bytes
+	wbuf[4] = 1; // Rx bytes
+	wbuf[5] = 0x05; // Read status register
+
+	b = sendreceive(fd, wbuf, sizeof(wbuf), 30);
+	if (NULL==b)
 		return -1;
 
-//	fprintf(stderr,"Status register: %02x\n",buffer[0]);
-
-	if (!(buffer[0] & 2)) {
-		/* Enable writes */
-  //  	fprintf(stderr, "Enabling writes\n");
-		if (command(fd,"e",buffer,0)<0)
-			return -1;
-
-		if (command(fd,"s",buffer,1)<0)
-			return -1;
-		if (!(buffer[0] &2)) {
-			fprintf(stderr,"Cannot enable writes ???\n");
-			return -1;
-		}
-	}
-	return 0;
+	buffer_free(b);
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
 	unsigned char buffer[8192];
+	uint32_t spioffset;
+	uint32_t codesize;
+	flash_info_t *flash;
+
 	struct stat st;
+	buffer_t *b;
 	int cnt;
-	if (argc<3)
+	if (argc<3) {
+		printf("Usage: %s <device> <binaryfile>\n",argv[0]);
 		return -1;
+	}
+
 
 	int fd = open_device(argv[1]);
 
-	if (command(fd,"?",buffer,0)<0)
-        return -1;
+	/* Reset */
+	buffer[0] = HDLC_frameFlag;
+    buffer[1] = HDLC_frameFlag;
+	write(fd,buffer,2);
 
-	if (command(fd,"i",buffer,3)<0)
-        return -1;
 
-	fprintf(stderr,"Flash information: manufacturer 0x%02x, type 0x%02x, density 0x%02x\n",
-			buffer[0],buffer[1],buffer[2]);
-	if (buffer[0]!=0x20 || buffer[1]!=0x20 || buffer[2]!=0x15) {
-		fprintf(stderr,"Invalid flash\n");
-		return -1;
+	buffer[0] = BOOTLOADER_CMD_VERSION;
+
+    b = sendreceive(fd,buffer,1,1);
+	if (b) {
+		if (b->buf[0]!=REPLY(BOOTLOADER_CMD_VERSION)) {
+
+		} else {
+			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
+			spioffset = b->buf[3];
+			spioffset<<=8;
+            spioffset += b->buf[4];
+			spioffset<<=8;
+            spioffset += b->buf[5];
+			printf("SPI offset: %u\n",spioffset);
+
+			codesize = b->buf[6];
+			codesize<<=8;
+            codesize += b->buf[7];
+			codesize<<=8;
+            codesize += b->buf[8];
+			printf("CODE size: %u\n",codesize);
+
+		}
 	}
+	buffer[0] = BOOTLOADER_CMD_IDENTIFY;
+
+    b = sendreceive(fd,buffer,1,1);
+	if (b) {
+		if (b->buf[0]!=REPLY(BOOTLOADER_CMD_IDENTIFY)) {
+		} else {
+			fprintf(stderr,"SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3]);
+		}
+		/* Find flash */
+		flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
+		if (NULL==flash) {
+			fprintf(stderr,"Unknown flash type, exiting\n");
+			close(fd);
+			return -1;
+		}
+        printf("Detected %s flash\n", flash->name);
+	}
+
+	// TEST
+	flash->driver->read_page(fd,0);
+	flash->driver->enable_writes(fd);
+	flash_read_status(fd);
 
 	// Get file
 	int fin = open(argv[2],O_RDONLY);
@@ -182,8 +399,8 @@ int main(int argc, char **argv)
 
 	fstat(fin,&st);
 
-	unsigned int size_bytes = ALIGN(st.st_size,PAGESIZE);
-	unsigned int pages = size_bytes/PAGESIZE;
+	unsigned int size_bytes = ALIGN(st.st_size,flash->pagesize);
+	unsigned int pages = size_bytes/flash->pagesize;
 
 	fprintf(stderr,"Need to program %d %d bytes (%d pages)\n",st.st_size,size_bytes,pages);
 
@@ -193,21 +410,20 @@ int main(int argc, char **argv)
 
 	// compute sector erase
 
-	unsigned int sectors = ALIGN(size_bytes,SECTORSIZE) / SECTORSIZE;
+	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
 	unsigned int saddr=0;
 
 	while (sectors--) {
-		if (enablewrites(fd)<0)
+		if (flash->driver->enable_writes(fd)<0)
 			return -1;
-		buffer[0] = 'k';
-		buffer[1] = (saddr>>16) & 0xff;
-		buffer[2] = (saddr>>8) & 0xff;
-		buffer[3] = (saddr) & 0xff;
-		fprintf(stderr,"Erasing sector at 0x%08x\n",saddr);
-		if (memcommand(fd,buffer,4,buffer,0)<0)
+		fprintf(stderr,"Erasing sector at 0x%08x\r",saddr);
+		if (flash->driver->erase_sector(fd, saddr)<0) {
+            fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
-		saddr+=SECTORSIZE;
+		}
+		saddr++;
 	}
+    fprintf(stderr,"\n");
 
 	// program
 
@@ -215,24 +431,42 @@ int main(int argc, char **argv)
 	unsigned char *sptr = buf;
 
 	while (pages--) {
-		if (enablewrites(fd)<0)
+		if (flash->driver->enable_writes(fd)<0)
 			return -1;
-		buffer[0] = 'w';
-		buffer[1] = (saddr>>16) & 0xff;
-		buffer[2] = (saddr>>8) & 0xff;
-		buffer[3] = (saddr) & 0xff;
+        //flash_read_status(fd);
 		fprintf(stderr,"Programing page at 0x%08x\r",saddr);
-		memcpy( buffer + 4, sptr, PAGESIZE);
-		sptr+=PAGESIZE;
-
-		if (memcommand(fd,buffer,4 + PAGESIZE,buffer,0)<0)
+		if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
+			fprintf(stderr,"\nCannot program page!\n");
 			return -1;
-
-		saddr+=PAGESIZE;
+		}
+        //flash_read_status(fd);
+		sptr+=flash->pagesize;
+		saddr++;
 	}
-	fprintf(stderr,"\nAll done.\n");
 
-    // All done
-//	command(fd,"b",NULL,0);
+	fprintf(stderr,"\nVerifying...\n");
+
+	pages = size_bytes/flash->pagesize;
+	sptr = buf;
+    saddr=0;
+
+	while (pages--) {
+		b = flash->driver->read_page(fd, saddr);
+
+		if (NULL==b) {
+			fprintf(stderr,"Cannot read page?\n");
+			return -1;
+		}
+
+		if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
+			fprintf(stderr,"Verification failed!\n");
+		}
+
+		buffer_free(b);
+		sptr+=flash->pagesize;
+		saddr++;
+	}
+
+	fprintf(stderr,"\nAll done.\n");
 
 }

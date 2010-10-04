@@ -33,7 +33,7 @@ static volatile unsigned int milisseconds = 0;
 static void (*ivector)(void);
 
 
-static unsigned char buffer[256 + 8];
+static unsigned char buffer[256 + 32];
 static int syncSeen;
 static int unescaping;
 static int bufferpos;
@@ -51,6 +51,32 @@ const unsigned char serialbuffer[] = {
 int serialbufferptr=0;
 #endif
 
+void sendByte(unsigned int i)
+{
+	CRC16APP = i;
+	i &= 0xff;
+	if (i==HDLC_frameFlag || i==HDLC_escapeFlag) {
+		outbyte(HDLC_escapeFlag);
+		outbyte(i ^ HDLC_escapeXOR);
+	} else
+		outbyte(i);
+}
+
+static inline void prepareSend()
+{
+	CRC16ACC=-1;
+	outbyte(HDLC_frameFlag);
+}
+
+
+void finishSend()
+{
+	unsigned int crc = CRC16ACC;
+	sendByte(crc>>8);
+	sendByte(crc&0xff);
+	outbyte(HDLC_frameFlag);
+}
+
 static unsigned int inbyte()
 {
 	unsigned int val;
@@ -62,6 +88,17 @@ static unsigned int inbyte()
 #else
 		if (UARTCTL&0x1 != 0) {
 			return UARTDATA;
+		}
+#endif
+#if 0
+		if (milisseconds==1000) {
+			milisseconds=0;
+			prepareSend();
+			sendByte(0x20);
+			sendByte(0xAA);
+			sendByte(0x00);
+			sendByte(0xFF);
+			finishSend();
 		}
 #endif
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
@@ -246,36 +283,12 @@ static unsigned int spi_read_id()
 	return ret;
 }
 
-void sendByte(unsigned int i)
-{
-	CRC16APP = i;
-	i &= 0xff;
-	if (i==HDLC_frameFlag || i==HDLC_escapeFlag) {
-		outbyte(HDLC_escapeFlag);
-		outbyte(i ^ HDLC_escapeXOR);
-	} else
-		outbyte(i);
-}
-
-static inline void prepareSend()
-{
-	CRC16ACC=-1;
-	outbyte(HDLC_frameFlag);
-}
-
-
-void finishSend()
-{
-	unsigned int crc = CRC16ACC;
-	sendByte(crc>>8);
-	sendByte(crc&0xff);
-	outbyte(HDLC_frameFlag);
-}
 
 static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 {
 	unsigned int count;
 	unsigned int rxcount;
+    unsigned int txcount;
 
 	// buffer[1] is number of TX bytes
 	// buffer[2] is number of RX bytes
@@ -284,13 +297,19 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 	// NOTE - buffer will be overwritten in read.
 
 	spi_enable();
-	for (count=0; count<buffer[1]; count++) {
-		spiwrite(buffer[3+count]);
+	txcount = buffer[1];
+	txcount<<=8;
+	txcount += buffer[2];
+
+	for (count=0; count<txcount; count++) {
+		spiwrite(buffer[5+count]);
 	}
-	rxcount = buffer[2];
+	rxcount = buffer[3];
+	rxcount<<=8;
+    rxcount += buffer[4];
 	// Now, receive and write buffer
-	for(count=0;count
-		<rxcount;count++) {
+	for(count=0;count <rxcount;count++) {
+
 		spiwrite(0x00);
 		buffer[count] = spiread();
 	}
@@ -299,7 +318,8 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 	// Send back
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_RAWREADWRITE));
-	sendByte(rxcount);
+	sendByte(rxcount>>8);
+    sendByte(rxcount);
 	for(count=0;count<rxcount;count++) {
 		sendByte(buffer[count]);
 	}
@@ -324,7 +344,7 @@ static void cmd_version()
 {
 	// Reset boot counter
 	milisseconds = 0;
-
+    prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
 	sendByte(VERSION_HIGH);
 	sendByte(VERSION_LOW);
@@ -394,6 +414,10 @@ void processCommand()
 	if (rcrc!=tcrc) {
 		prepareSend();
 		sendByte(0xff);
+		sendByte( tcrc >> 8 );
+		sendByte( tcrc );
+        sendByte( rcrc >> 8 );
+		sendByte( rcrc );
 		finishSend();
 		return;
 	}
@@ -430,6 +454,7 @@ void _premain()
 	GPIOTRIS=0xFFFFFFFE; // All inputs, but SPI select
 
 	INTRCTL=1;
+
     enableTimer();
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
@@ -442,11 +467,13 @@ void _premain()
 		int i;
 		i = inbyte();
 		// DEBUG ONLY
-		TMR1CNT=i;
+		//TMR1CNT=i;
 		if (syncSeen) {
 			if (i==HDLC_frameFlag) {
-				syncSeen=0;
-				processCommand();
+				if (bufferpos>0) {
+					syncSeen=0;
+					processCommand();
+				}
 			} else if (i==HDLC_escapeFlag) {
 				unescaping=1;
 			} else if (bufferpos<sizeof(buffer)) {
