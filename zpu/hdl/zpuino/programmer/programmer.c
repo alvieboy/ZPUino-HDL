@@ -321,6 +321,8 @@ int main(int argc, char **argv)
 {
 	unsigned char buffer[8192];
 	uint32_t spioffset;
+	uint32_t spioffset_page;
+    uint32_t spioffset_sector;
 	uint32_t codesize;
 	flash_info_t *flash;
 
@@ -337,61 +339,81 @@ int main(int argc, char **argv)
 
 	/* Reset */
 	buffer[0] = HDLC_frameFlag;
-    buffer[1] = HDLC_frameFlag;
+	buffer[1] = HDLC_frameFlag;
 	write(fd,buffer,2);
 
 
 	buffer[0] = BOOTLOADER_CMD_VERSION;
 
-    b = sendreceive(fd,buffer,1,1);
-	if (b) {
-		if (b->buf[0]!=REPLY(BOOTLOADER_CMD_VERSION)) {
+	b = sendreceivecommand(fd,BOOTLOADER_CMD_VERSION,NULL,0,1);
 
-		} else {
+	if (b) {
 			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
 			spioffset = b->buf[3];
 			spioffset<<=8;
-            spioffset += b->buf[4];
+			spioffset += b->buf[4];
 			spioffset<<=8;
-            spioffset += b->buf[5];
+			spioffset += b->buf[5];
 			printf("SPI offset: %u\n",spioffset);
 
 			codesize = b->buf[6];
 			codesize<<=8;
-            codesize += b->buf[7];
+			codesize += b->buf[7];
 			codesize<<=8;
-            codesize += b->buf[8];
+			codesize += b->buf[8];
 			printf("CODE size: %u\n",codesize);
 
-		}
-	}
-	buffer[0] = BOOTLOADER_CMD_IDENTIFY;
+			/* Ensure SPI offset is aligned */
+			if (spioffset % flash->pagesize!=0) {
+				fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
+				close(fd);
+                return -1;
+			}
+			if (spioffset % flash->sectorsize!=0) {
+				fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
+				close(fd);
+                return -1;
+			}
+			/* Align offset */
+			spioffset_page = spioffset % flash->pagesize;
+            spioffset_sector = spioffset % flash->sectorsize;
 
-    b = sendreceive(fd,buffer,1,1);
+	} else {
+		fprintf(stderr,"Cannot get programmer version\n");
+		close(fd);
+		return -1;
+	}
+
+	buffer_free(b);
+
+	b = sendreceivecommand(fd,BOOTLOADER_CMD_IDENTIFY,buffer,0,1);
+
 	if (b) {
-		if (b->buf[0]!=REPLY(BOOTLOADER_CMD_IDENTIFY)) {
-		} else {
-			fprintf(stderr,"SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3]);
-		}
+
+		fprintf(stderr,"SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3]);
+
 		/* Find flash */
 		flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
+
 		if (NULL==flash) {
 			fprintf(stderr,"Unknown flash type, exiting\n");
 			close(fd);
+            buffer_free(b);
 			return -1;
 		}
-        printf("Detected %s flash\n", flash->name);
+		printf("Detected %s flash\n", flash->name);
+	} else {
+		fprintf(stderr,"Cannot identify flash\n");
+		close(fd);
+        return -1;
 	}
 
-	// TEST
-	flash->driver->read_page(fd,0);
-	flash->driver->enable_writes(fd);
-	flash_read_status(fd);
+	buffer_free(b);
 
 	// Get file
 	int fin = open(argv[2],O_RDONLY);
 	if (fin<0) {
-		perror("open");
+		perror("Cannot open input file");
 		return -1;
 	}
 
@@ -404,6 +426,14 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"Need to program %d %d bytes (%d pages)\n",st.st_size,size_bytes,pages);
 
+	/* Ensure there's enough space */
+	if (st.st_size > codesize) {
+		fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n", st.st_size,codesize);
+		close(fd);
+		close(fin);
+        return -1;
+	}
+
 	unsigned char *buf = malloc(size_bytes);
 	read(fin,buf,size_bytes);
 	close(fin);
@@ -411,35 +441,33 @@ int main(int argc, char **argv)
 	// compute sector erase
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
-	unsigned int saddr=0;
+	unsigned int saddr = spioffset_sector;
 
 	while (sectors--) {
 		if (flash->driver->enable_writes(fd)<0)
 			return -1;
 		fprintf(stderr,"Erasing sector at 0x%08x\r",saddr);
 		if (flash->driver->erase_sector(fd, saddr)<0) {
-            fprintf(stderr,"\nSector erase failed!\n");
+			fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
 		}
 		saddr++;
 	}
-    fprintf(stderr,"\n");
+	fprintf(stderr,"\n");
 
 	// program
 
-	saddr = 0;
+	saddr = spioffset_page;
 	unsigned char *sptr = buf;
 
 	while (pages--) {
 		if (flash->driver->enable_writes(fd)<0)
 			return -1;
-        //flash_read_status(fd);
 		fprintf(stderr,"Programing page at 0x%08x\r",saddr);
 		if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
 			fprintf(stderr,"\nCannot program page!\n");
 			return -1;
 		}
-        //flash_read_status(fd);
 		sptr+=flash->pagesize;
 		saddr++;
 	}
@@ -448,7 +476,7 @@ int main(int argc, char **argv)
 
 	pages = size_bytes/flash->pagesize;
 	sptr = buf;
-    saddr=0;
+	saddr = spioffset_page;
 
 	while (pages--) {
 		b = flash->driver->read_page(fd, saddr);
