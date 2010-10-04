@@ -1,1 +1,1 @@
-software/prom-generic-dp-32.vhd
+bootloader/prom-generic-dp-32.vhd
