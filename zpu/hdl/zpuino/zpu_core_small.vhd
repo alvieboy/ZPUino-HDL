@@ -86,6 +86,7 @@ signal memBRead : unsigned(wordSize-1 downto 0);
 
 
 signal	pc				: unsigned(maxAddrBit downto 0);
+signal	pc_q			: unsigned(maxAddrBit downto 0); -- For neqbranch and other relative PC ops
 signal	sp				: unsigned(maxAddrBit downto minAddrBit);
 
 -- this signal is set upon executing an IM instruction
@@ -125,7 +126,10 @@ State_AddSP,
 State_ReadIODone,
 State_Decode,
 State_Resync,
-State_Interrupt
+State_Interrupt,
+State_Neqbranch,
+State_Eq,
+State_Ulessthan
 
 );
 
@@ -149,7 +153,10 @@ Decoded_Not,
 Decoded_Flip,
 Decoded_Store,
 Decoded_PopSP,
-Decoded_Interrupt
+Decoded_Interrupt,
+Decoded_Neqbranch,
+Decoded_Eq,
+Decoded_Ulessthan
 );
 
 
@@ -287,7 +294,15 @@ begin
 		elsif (tOpcode(7 downto 5)=OpCode_LoadSP) then
 			sampledDecodedOpcode<=Decoded_LoadSP;
 		elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
-			sampledDecodedOpcode<=Decoded_Emulate;
+      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+        sampledDecodedOpcode<=Decoded_Neqbranch;
+      elsif (tOpcode(5 downto 0)=OpCode_Eq) then
+        sampledDecodedOpcode<=Decoded_Eq;
+      elsif (tOpcode(5 downto 0)=OpCode_Ulessthan) then
+        sampledDecodedOpcode<=Decoded_Ulessthan;
+      else
+			  sampledDecodedOpcode<=Decoded_Emulate;
+      end if;
 		elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
 			sampledDecodedOpcode<=Decoded_AddSP;
 		else
@@ -375,6 +390,7 @@ begin
 					-- memBRead contains opcode word
 					-- memARead contains top of stack
 					pc <= pc + 1;
+          pc_q <= pc;
 	
 					-- trace
 					begin_inst <= '1';
@@ -453,6 +469,18 @@ begin
 							sp <= sp + 1;
 							poppc_inst <= '1';
 							state <= State_Resync;
+
+						when Decoded_Neqbranch =>
+							sp <= sp + 1;
+              state <= State_Neqbranch;
+
+						when Decoded_Eq =>
+							sp <= sp + 1;
+							state <= State_Eq;
+						when Decoded_Ulessthan =>
+							sp <= sp + 1;
+							state <= State_Ulessthan;
+
 						when Decoded_Add =>
 							sp <= sp + 1;
 							state <= State_Add;
@@ -563,6 +591,29 @@ begin
 					memAWriteEnable <= '1';
 					memAWrite <= memARead and memBRead;
 					state <= State_Fetch;
+				when State_Eq =>
+					memAAddr <= sp;
+					memAWriteEnable <= '1';
+					memAWrite <= (others=>'0');
+          if memARead=memBRead then
+            memAWrite(0) <= '1';
+          end if;
+          state <= State_Fetch;
+				when State_Ulessthan =>
+					memAAddr <= sp;
+					memAWriteEnable <= '1';
+					memAWrite <= (others=>'0');
+          if memARead < memBRead then
+            memAWrite(0) <= '1';
+          end if;
+          state <= State_Fetch;
+        when State_Neqbranch =>
+          sp <= sp + 1;
+          if memBRead/=0 then
+            pc <= memARead(maxAddrBit downto 0) + pc_q;
+          end if;
+          state <= State_Resync;
+					
 				when others =>
 					null;
 			end case;
