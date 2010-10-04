@@ -53,12 +53,12 @@ end entity fifo;
 
 architecture behave of fifo is
 
-  type mem_t is array (0 to 15) of std_logic_vector(7 downto 0);
+  type mem_t is array (0 to 127) of std_logic_vector(7 downto 0);
 
   signal memory:  mem_t;
 
-  signal wraddr: unsigned(3 downto 0);
-  signal rdaddr: unsigned(3 downto 0);
+  signal wraddr: unsigned(6 downto 0);
+  signal rdaddr: unsigned(6 downto 0);
 
 begin
 
