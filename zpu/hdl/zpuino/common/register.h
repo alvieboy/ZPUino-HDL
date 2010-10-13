@@ -15,7 +15,7 @@
 
 
 #define IOBASE 0x8000
-#define IO_SLOT_OFFSET_BIT 5
+#define IO_SLOT_OFFSET_BIT 9
 #define BIT(x) (1<<x)
 
 #define IO_SLOT(x) (IOBASE + (x<<IO_SLOT_OFFSET_BIT))
@@ -40,6 +40,9 @@
 
 #define GPIODATA  REGISTER(GPIOBASE,0)
 #define GPIOTRIS  REGISTER(GPIOBASE,1)
+
+#define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(32 + x))
+#define GPIOPPSIN(x)  REGISTER(GPIOBASE,(64 + x))
 
 #define TMR0CTL  REGISTER(TIMERSBASE,0)
 #define TMR0CNT  REGISTER(TIMERSBASE,1)
@@ -107,5 +110,12 @@
 #define OUTPUT 0
 #define HIGH 1
 #define LOW 0
+
+/* PPS configuration */
+
+#define FUNCTION_USPI_MISO 5
+#define FUNCTION_USPI_SCK  6
+#define FUNCTION_USPI_CS   7
+#define FUNCTION_USPI_MOSI 8
 
 #endif

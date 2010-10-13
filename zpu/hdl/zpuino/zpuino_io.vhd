@@ -92,6 +92,7 @@ architecture behave of zpuino_io is
   signal gpio_re:  std_logic;
   signal gpio_we:  std_logic;
   signal gpio_spp_data: std_logic_vector(31 downto 0);
+  signal gpio_spp_read: std_logic_vector(31 downto 0);
   signal gpio_spp_en: std_logic_vector(31 downto 0);
 
   signal timers_read:     std_logic_vector(wordSize-1 downto 0);
@@ -193,7 +194,7 @@ begin
   -- MUX read signals
   process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read)
   begin
-    case io_address(7 downto 5) is
+    case io_address(11 downto 9) is
       when "000" =>
         read <= spi_read;
       when "001" =>
@@ -236,7 +237,7 @@ begin
     crc16_we <= '0';
     crc16_re <= '0';
 
-    case io_address(7 downto 5) is
+    case io_address(11 downto 9) is
       when "000" =>
         spi_re <= io_re;
         spi_we <= io_we;
@@ -323,10 +324,11 @@ begin
 	 	areset    => areset,
     read      => gpio_read,
     write     => io_write,
-    address   => io_address(2 downto 2),
+    address   => io_address(8 downto 2),
     we        => gpio_we,
     re        => gpio_re,
     spp_data  => gpio_spp_data,
+    spp_read  => gpio_spp_read,
     spp_en    => gpio_spp_en,
     busy      => open,
     interrupt => open,
@@ -398,7 +400,7 @@ begin
   gpio_spp_en(4) <= '0';
 
   gpio_spp_en(5) <= spi2_enabled; -- SPI MISO
-  spi2_miso <= gpio(5);
+  spi2_miso <= gpio_spp_read(5);
 
   gpio_spp_en(6) <= spi2_enabled; -- SPI SCK
   gpio_spp_data(6) <= spi2_sck;

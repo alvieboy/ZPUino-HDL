@@ -35,6 +35,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use IEEE.std_logic_unsigned.all; 
 
 library work;
 use work.zpu_config.all;
@@ -47,12 +48,13 @@ entity zpuino_gpio is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(6 downto 0);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
     interrupt:out std_logic;
     spp_data: in std_logic_vector(31 downto 0);
+    spp_read: out std_logic_vector(31 downto 0);
     spp_en:   in std_logic_vector(31 downto 0);
     gpio:     inout std_logic_vector(31 downto 0)
   );
@@ -61,27 +63,50 @@ end entity zpuino_gpio;
 
 architecture behave of zpuino_gpio is
 
-signal gpio_q: std_logic_vector(31 downto 0);
-signal gpio_i: std_logic_vector(31 downto 0);
-signal gpio_tris_q: std_logic_vector(31 downto 0);
+signal gpio_q:        std_logic_vector(31 downto 0); -- GPIO output data FFs
+signal gpio_tris_q:   std_logic_vector(31 downto 0); -- Tristate FFs
+
+subtype input_number is integer range 0 to 31;
+type mapper_q_type is array(0 to 31) of input_number;
+
+signal input_mapper_q:  mapper_q_type; -- Mapper for output pins (input data)
+signal output_mapper_q: mapper_q_type; -- Mapper for input pins (output data)
 
 begin
 
 tgen: for i in 0 to 31 generate
-  gpio_i(i) <= gpio_q(i) when spp_en(i)='0' else spp_data(i);
 
-  gpio(i) <= gpio_i(i) when gpio_tris_q(i)='0' else 'Z';
+  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data )
+  begin
+
+    if gpio_tris_q(i) = '1' then
+      gpio(i) <= 'Z';
+    else
+      if spp_en( input_mapper_q(i) )='1' then
+        gpio(i) <= spp_data( input_mapper_q(i) );
+      else
+        gpio(i) <= gpio_q(i);
+      end if;
+    end if;
+
+  end process;
+
+  process( gpio(i), output_mapper_q(i) )
+  begin
+    spp_read(i) <= gpio(output_mapper_q(i));
+  end process;
+
 end generate;
 
 process(address,gpio,gpio_tris_q)
 begin
-  read <= (others => '0');
-  case address is
-    when "0" =>
+  case address(0) is
+    when '0' =>
       read <= gpio;
-    when "1" =>
+    when '1' =>
       read <= gpio_tris_q;
     when others =>
+      read <= (others => DontCareValue);
   end case;
 end process;
 
@@ -90,12 +115,24 @@ begin
   if rising_edge(clk) then
     if areset='1' then
       gpio_tris_q <= (others => '1');
+      -- Default values for input mapper
+      for i in 0 to 31 loop
+        input_mapper_q(i) <= i;
+      end loop;
     elsif we='1' then
-      case address is
-        when "0" =>
-          gpio_q <= write;
-        when "1" =>
-          gpio_tris_q <= write;
+      case address(6 downto 5) is
+        when "00" =>
+          case address(0) is
+            when '0' =>
+              gpio_q <= write;
+            when '1' =>
+              gpio_tris_q <= write;
+            when others =>
+          end case;
+        when "01" =>
+          input_mapper_q( conv_integer(address(4 downto 0)) ) <= conv_integer(write(4 downto 0));
+        when "10" =>
+          output_mapper_q( conv_integer(address(4 downto 0)) ) <= conv_integer(write(4 downto 0));
         when others =>
       end case;
     end if;

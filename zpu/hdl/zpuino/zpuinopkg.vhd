@@ -112,10 +112,11 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(6 downto 0);
     we:       in std_logic;
     re:       in std_logic;
     spp_data: in std_logic_vector(31 downto 0);
+    spp_read: out std_logic_vector(31 downto 0);
     spp_en:   in std_logic_vector(31 downto 0);
     busy:     out std_logic;
     interrupt:out std_logic;
