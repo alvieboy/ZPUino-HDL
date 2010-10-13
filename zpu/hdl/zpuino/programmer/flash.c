@@ -116,7 +116,7 @@ static int m25p_program_page(int fd, unsigned int page, const unsigned char *buf
 
 	memcpy(&wbuf[8], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 5000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot program page\n");
