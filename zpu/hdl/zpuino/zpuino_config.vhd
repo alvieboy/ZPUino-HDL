@@ -50,6 +50,11 @@ package zpuino_config is
 
   constant zpuinocore: zpu_core_type := small;
 
+  -- Number of GPIO to map (number of FPGA pins)
+  constant zpuino_gpio_count: integer := 45;
+
+  -- Peripheral Pin Select
+  constant zpuino_pps_enabled: boolean := true;
 
   -- Set iobusyinput to 'true' to allow registered input to IO core. This also allows for IO
   -- to become busy without needing to register its inputs. However, an extra clock-cycle is

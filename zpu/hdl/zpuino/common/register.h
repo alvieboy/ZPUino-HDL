@@ -2,7 +2,7 @@
 #define __REGISTER_H__
 
 #if defined( __ZPUINO_S3E_EVAL__ )
-#define CLK_FREQ 100000000ULL
+#include "board_s3e_eval.h"
 #else
 # if defined( __ZPUINO_PAPILIO_ONE__ )
 #  define CLK_FREQ  96000000ULL
@@ -15,7 +15,7 @@
 
 
 #define IOBASE 0x8000
-#define IO_SLOT_OFFSET_BIT 9
+#define IO_SLOT_OFFSET_BIT 11
 #define BIT(x) (1<<x)
 
 #define IO_SLOT(x) (IOBASE + (x<<IO_SLOT_OFFSET_BIT))
@@ -38,11 +38,11 @@
 #define SPICTL  REGISTER(SPIBASE,0)
 #define SPIDATA REGISTER(SPIBASE,1)
 
-#define GPIODATA  REGISTER(GPIOBASE,0)
-#define GPIOTRIS  REGISTER(GPIOBASE,1)
+#define GPIODATA(x)  REGISTER(GPIOBASE,x)
+#define GPIOTRIS(x)  REGISTER(GPIOBASE,4+x)
 
-#define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(32 + x))
-#define GPIOPPSIN(x)  REGISTER(GPIOBASE,(64 + x))
+#define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(128 + x))
+#define GPIOPPSIN(x)  REGISTER(GPIOBASE,(256 + x))
 
 #define TMR0CTL  REGISTER(TIMERSBASE,0)
 #define TMR0CNT  REGISTER(TIMERSBASE,1)
@@ -65,6 +65,8 @@
 #define CRC16ACC  REGISTER(CRC16BASE,0)
 #define CRC16POLY REGISTER(CRC16BASE,1)
 #define CRC16APP  REGISTER(CRC16BASE,2)
+
+#define UARTEN 16 /* Uart enable */
 
 /* Timer CTL bits */
 
@@ -93,29 +95,24 @@
 
 #define BAUDRATEGEN(x) ((CLK_FREQ/(x))/4)-1
 
-
-/* Special GPIO pins */
-
-#define PIN_FLASHCS 0
-#define PIN_TIMER0_OC 1
-#define PIN_TIMER1_OC 2
-#define PIN_SIGMADELTA_OUT 3
-
-#define PIN_USPI_MISO 5
-#define PIN_USPI_SCK  6
-#define PIN_USPI_CS   7 /* Not special */
-#define PIN_USPI_MOSI 8
-
 #define INPUT 1
 #define OUTPUT 0
+
 #define HIGH 1
 #define LOW 0
 
 /* PPS configuration */
 
-#define FUNCTION_USPI_MISO 5
-#define FUNCTION_USPI_SCK  6
-#define FUNCTION_USPI_CS   7
-#define FUNCTION_USPI_MOSI 8
+#define IOPIN_UART_RX     0
+#define IOPIN_UART_TX     1
+#define IOPIN_SPI_MISO    2
+#define IOPIN_SPI_MOSI    3
+#define IOPIN_SPI_SCK     4
+#define IOPIN_SIGMADELTA  5
+#define IOPIN_TIMER0_OC   6
+#define IOPIN_TIMER1_OC   7
+#define IOPIN_USPI_MISO   8
+#define IOPIN_USPI_MOSI   9
+#define IOPIN_USPI_SCK    10
 
 #endif

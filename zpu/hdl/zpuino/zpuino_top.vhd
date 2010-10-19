@@ -47,16 +47,9 @@ entity zpuino_top is
     clk:      in std_logic;
 	 	areset:   in std_logic;
 
-    -- SPI program flash
-    spi_pf_miso:  in std_logic;
-    spi_pf_mosi:  out std_logic;
-    spi_pf_sck:   out std_logic;
-
-    -- UART
-    uart_rx:      in std_logic;
-    uart_tx:      out std_logic;
-
-    gpio:         inout std_logic_vector(31 downto 0)
+    gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
   );
 end entity zpuino_top;
 
@@ -186,15 +179,9 @@ begin
       busy          => io_busy,
       interrupt     => interrupt,
       intready      => poppc_inst,
-
-      spi_pf_miso   => spi_pf_miso,
-      spi_pf_mosi   => spi_pf_mosi,
-      spi_pf_sck    => spi_pf_sck,
-
-      uart_rx       => uart_rx,
-      uart_tx       => uart_tx,
-
-      gpio          => gpio
+      gpio_i        => gpio_i,
+      gpio_o        => gpio_o,
+      gpio_t        => gpio_t
     );
 
 end behave;

@@ -1,4 +1,4 @@
-#include "register.h"
+#include "zpuino.h"
 #include <stdarg.h>
 
 #undef DEBUG_SERIAL
@@ -64,7 +64,7 @@ void sendByte(unsigned int i)
 
 static inline void prepareSend()
 {
-	CRC16ACC=-1;
+	CRC16ACC=0xFFFF;
 	outbyte(HDLC_frameFlag);
 }
 
@@ -123,15 +123,15 @@ void outbyte(int c)
 
 void spi_disable()
 {
-	GPIODATA |= 1;
+	digitalWriteS<40,HIGH>::apply();
 }
 
-static inline spi_enable()
+static inline void spi_enable()
 {
-	GPIODATA &= ~1;
+	digitalWriteS<40,LOW>::apply();
 }
 
-static inline spi_reset()
+static inline void spi_reset()
 {
 	spi_disable();
 	spi_enable();
@@ -180,6 +180,15 @@ void printhex(unsigned int c)
 void __attribute__((noreturn)) spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
+	// Reset settings
+
+	GPIOTRIS(0) = 0xffffffff;
+	GPIOTRIS(1) = 0xffffffff;
+	GPIOTRIS(2) = 0xffffffff;
+	GPIOTRIS(3) = 0xffffffff;
+
+	UARTCTL &= ~(BIT(UARTEN));
+
 	__asm__("im 0x7ffc\n"
 			"popsp\n"
 			"im spi_copy_impl\n"
@@ -187,7 +196,7 @@ void __attribute__((noreturn)) spi_copy()
 	while (1) {}
 }
 
-void __attribute__((noreturn)) spi_copy_impl()
+extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	unsigned int bootword;
 	// We must not overflow stack, leave 128 bytes
@@ -213,6 +222,9 @@ void __attribute__((noreturn)) spi_copy_impl()
 
 	// Need to reset stack also
 	spi_disable();
+
+	SPICTL &= ~(BIT(SPIEN));
+
 	ivector = (void (*)(void))0x1008;
 	__asm__("im 0x7FFC\n"
 			"popsp\n"
@@ -222,13 +234,13 @@ void __attribute__((noreturn)) spi_copy_impl()
 }
 
 
-void _zpu_interrupt()
+extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
-void ___zpu_interrupt_vector()
+extern "C" void ___zpu_interrupt_vector()
 {
 	__asm__("im _memreg\n"
 			"load\n"
@@ -395,7 +407,7 @@ void processCommand()
 	if (bufferpos<3)
 		return; // Too few data
 
-	CRC16ACC=-1;
+	CRC16ACC=0xFFFF;
 	for (pos=0;pos<bufferpos-2;pos++) {
 		CRC16APP=buffer[pos];
 	}
@@ -407,7 +419,7 @@ void processCommand()
 		sendByte(0xff);
 		sendByte( tcrc >> 8 );
 		sendByte( tcrc );
-        sendByte( rcrc >> 8 );
+		sendByte( rcrc >> 8 );
 		sendByte( rcrc );
 		finishSend();
 		return;
@@ -435,23 +447,81 @@ void processCommand()
 	}
 }
 
-void _premain()
+void configure_pins()
+{
+	// For S3E Eval
+
+	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+
+	digitalWriteS<36,LOW>::apply();
+	digitalWriteS<37,HIGH>::apply();
+	digitalWriteS<38,HIGH>::apply();
+	digitalWriteS<39,HIGH>::apply();
+	digitalWriteS<40,HIGH>::apply();
+
+	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
+
+//	pinModeS<FPGA_PIN_R7,OUTPUT>::apply();
+
+	GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
+	pinModeS<FPGA_PIN_M14,OUTPUT>::apply();
+
+	GPIOPPSOUT( FPGA_PIN_T4  ) = IOPIN_SPI_MOSI;
+	pinModeS<FPGA_PIN_T4,OUTPUT>::apply();
+
+	GPIOPPSOUT( FPGA_PIN_U16 ) = IOPIN_SPI_SCK;
+	pinModeS<FPGA_PIN_U16,OUTPUT>::apply();
+
+	GPIOPPSOUT( FPGA_PIN_U3 ) = 40; // SPI_SS_B
+	pinModeS<FPGA_PIN_U3,OUTPUT>::apply();
+
+	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_N10;
+	pinModeS<FPGA_PIN_N10,INPUT>::apply();
+
+	// Pins that need output to disable other SPI devices
+
+	GPIOPPSOUT( FPGA_PIN_P11 ) = 36; // AD_CONV
+	pinModeS<FPGA_PIN_P11,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_N8 ) = 37; // DAC_CS
+	pinModeS<FPGA_PIN_N8,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_N7 ) = 38; // AMP_CS
+	pinModeS<FPGA_PIN_N7,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_D16 ) = 39; // SF_CE0
+	pinModeS<FPGA_PIN_D16,OUTPUT>::apply();
+
+	pinModeS<FPGA_LED_0,OUTPUT>::apply();
+	digitalWriteS<FPGA_LED_0, HIGH>::apply();
+	pinModeS<FPGA_LED_1,OUTPUT>::apply();
+	digitalWriteS<FPGA_LED_1, LOW>::apply();
+	pinModeS<FPGA_LED_2,OUTPUT>::apply();
+	digitalWriteS<FPGA_LED_2, LOW>::apply();
+
+}
+
+extern "C" void _premain()
 {
 	int t;
 
 	inprogrammode = 0;
 	milisseconds = 0;
 	ivector = &_zpu_interrupt;
-	UARTCTL = BAUDRATEGEN(115200);
-	GPIODATA=0x1;
-	GPIOTRIS=0xFFFFFFFE; // All inputs, but SPI select
+
+	configure_pins();
+
+	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+
+
+	/* Reset PPS mapping, just in case */
 
 	INTRCTL=1;
 
     enableTimer();
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP1);
+	SPICTL=BIT(SPICPOL)|BIT(SPICP1)|BIT(SPIEN);
 
 	syncSeen = 0;
 	unescaping = 0;
@@ -481,7 +551,7 @@ void _premain()
 		} else {
 			if (i==HDLC_frameFlag) {
 				bufferpos=0;
-				CRC16ACC=-1;
+				CRC16ACC=0xFFFF;
 				syncSeen=1;
 				unescaping=0;
 			}

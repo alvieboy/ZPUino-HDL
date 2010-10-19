@@ -5,21 +5,22 @@ CCPATH:=
 
 CROSS=$(CCPATH)zpu-elf-
 CC=$(CROSS)gcc
+CXX=$(CROSS)g++
 OBJCOPY=$(CROSS)objcopy
 OBJDUMP=$(CROSS)objdump
 
 DHRYSRC=.
 
-SRC=boot.c zpu.c
+SRC=boot.cpp
 
-CFLAGS=-Os -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
-LDFLAGS=-Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+CFLAGS=-Os  -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
+LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 
 all: prom-generic-dp-32.vhd Makefile
 
-$(TARGET).o: *.c Makefile
-	$(CC) -DTIME -phi $(CFLAGS) -c $(SRC) -o $(TARGET).o
-	$(CC) -DTIME -phi $(CFLAGS) -S $(SRC) -o $(TARGET).S
+$(TARGET).o: $(SRC) Makefile
+	$(CXX) -DTIME -phi $(CFLAGS) -c $(SRC) -o $(TARGET).o
+	$(CXX) -DTIME -phi $(CFLAGS) -S $(SRC) -o $(TARGET).S
 $(TARGET): $(TARGET).o
 	$(CC) $(TARGET).o -o $(TARGET) $(LDFLAGS)
 	$(OBJDUMP) -D $(TARGET) > $(TARGET).s

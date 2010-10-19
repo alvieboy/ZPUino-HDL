@@ -54,17 +54,11 @@ entity zpuino_io is
     busy:     out std_logic;
     interrupt:out std_logic;
     intready: in std_logic;
-    -- SPI program flash
-    spi_pf_miso:  in std_logic;
-    spi_pf_mosi:  out std_logic;
-    spi_pf_sck:   out std_logic;
-
-    -- UART
-    uart_rx:      in std_logic;
-    uart_tx:      out std_logic;
 
     -- GPIO
-    gpio:         inout std_logic_vector(31 downto 0)
+    gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
   );
 end entity zpuino_io;
 
@@ -74,6 +68,7 @@ architecture behave of zpuino_io is
   signal spi_re:  std_logic;
   signal spi_we:  std_logic;
   signal spi_busy:  std_logic;
+  signal spi_enabled:  std_logic;
 
   signal spi2_read:     std_logic_vector(wordSize-1 downto 0);
   signal spi2_re:  std_logic;
@@ -87,18 +82,21 @@ architecture behave of zpuino_io is
   signal uart_read:     std_logic_vector(wordSize-1 downto 0);
   signal uart_re:  std_logic;
   signal uart_we:  std_logic;
+  signal uart_enabled:  std_logic;
 
   signal gpio_read:     std_logic_vector(wordSize-1 downto 0);
   signal gpio_re:  std_logic;
   signal gpio_we:  std_logic;
-  signal gpio_spp_data: std_logic_vector(31 downto 0);
-  signal gpio_spp_read: std_logic_vector(31 downto 0);
-  signal gpio_spp_en: std_logic_vector(31 downto 0);
+  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 0);
 
   signal timers_read:     std_logic_vector(wordSize-1 downto 0);
   signal timers_re:  std_logic;
   signal timers_we:  std_logic;
   signal timers_interrupt:  std_logic_vector(1 downto 0);
+  signal timers_spp_data: std_logic_vector(1 downto 0);
+  signal timers_spp_en: std_logic_vector(1 downto 0);
 
   signal intr_read:     std_logic_vector(wordSize-1 downto 0);
   signal intr_re:  std_logic;
@@ -109,6 +107,8 @@ architecture behave of zpuino_io is
   signal sigmadelta_read:     std_logic_vector(wordSize-1 downto 0);
   signal sigmadelta_re:  std_logic;
   signal sigmadelta_we:  std_logic;
+  signal sigmadelta_spp_en:  std_logic;
+  signal sigmadelta_spp_data:  std_logic;
 
   signal crc16_read:     std_logic_vector(wordSize-1 downto 0);
   signal crc16_re:  std_logic;
@@ -125,6 +125,11 @@ architecture behave of zpuino_io is
   signal io_re: std_logic;
   signal io_device_busy: std_logic;
 
+  signal spi_pf_miso: std_logic;
+  signal spi_pf_mosi: std_logic;
+  signal spi_pf_sck: std_logic;
+  signal uart_tx: std_logic;
+  signal uart_rx: std_logic;
 begin
 
   io_device_busy <= spi_busy or spi2_busy or crc16_busy;
@@ -192,9 +197,9 @@ begin
   ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
-  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read)
+  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read,crc16_read)
   begin
-    case io_address(11 downto 9) is
+    case io_address(13 downto 11) is
       when "000" =>
         read <= spi_read;
       when "001" =>
@@ -237,7 +242,7 @@ begin
     crc16_we <= '0';
     crc16_re <= '0';
 
-    case io_address(11 downto 9) is
+    case io_address(13 downto 11) is
       when "000" =>
         spi_re <= io_re;
         spi_we <= io_we;
@@ -281,7 +286,7 @@ begin
     mosi      => spi_pf_mosi,
     miso      => spi_pf_miso,
     sck       => spi_pf_sck,
-    enabled   => open
+    enabled   => spi_enabled
   );
 
   userspi_inst: zpuino_spi
@@ -313,18 +318,21 @@ begin
     re        => uart_re,
     busy      => open,
     interrupt => open,
-
+    enabled   => uart_enabled,
     tx        => uart_tx,
     rx        => uart_rx
   );
 
   gpio_inst: zpuino_gpio
+  generic map (
+    gpio_count => zpuino_gpio_count
+  )
   port map (
     clk       => clk,
 	 	areset    => areset,
     read      => gpio_read,
     write     => io_write,
-    address   => io_address(8 downto 2),
+    address   => io_address(10 downto 2),
     we        => gpio_we,
     re        => gpio_re,
     spp_data  => gpio_spp_data,
@@ -333,7 +341,9 @@ begin
     busy      => open,
     interrupt => open,
 
-    gpio      => gpio
+    gpio_i      => gpio_i,
+    gpio_t      => gpio_t,
+    gpio_o      => gpio_o
   );
 
   timers_inst: zpuino_timers
@@ -345,8 +355,8 @@ begin
     address   => io_address(4 downto 2),
     we        => timers_we,
     re        => timers_re,
-    spp_data  => gpio_spp_data(2 downto 1),
-    spp_en    => gpio_spp_en(2 downto 1),
+    spp_data  => timers_spp_data,
+    spp_en    => timers_spp_en,
     busy      => open,
     interrupt => timers_interrupt
   );
@@ -377,8 +387,8 @@ begin
     address   => io_address(2 downto 2),
     we        => sigmadelta_we,
     re        => sigmadelta_re,
-    spp_data  => gpio_spp_data(3),
-    spp_en    => gpio_spp_en(3),
+    spp_data  => sigmadelta_spp_data,
+    spp_en    => sigmadelta_spp_en,
     busy      => open,
     interrupt => open
   );
@@ -395,30 +405,48 @@ begin
     busy      => crc16_busy
   );
 
-  gpio_spp_en(0) <= '0'; -- Special GPIO pin (Flash CS)
+  process(spi_enabled,spi2_enabled,spi_enabled,
+          uart_enabled,sigmadelta_spp_en, uart_tx,
+          gpio_spp_read, spi_pf_mosi, spi_pf_sck,
+          sigmadelta_spp_data,timers_spp_data,
+          spi2_mosi,spi2_sck,timers_spp_en)
+  begin
+    gpio_spp_en(zpuino_gpio_count-1 downto 0) <= (others=>'0');
+    gpio_spp_data <= (others => DontCareValue);
 
-  gpio_spp_en(4) <= '0';
+    gpio_spp_en(0) <= uart_enabled;         -- PPS1 : UART RX
+    uart_rx <= gpio_spp_read(0);
 
-  gpio_spp_en(5) <= spi2_enabled; -- SPI MISO
-  spi2_miso <= gpio_spp_read(5);
+    gpio_spp_en(1) <= uart_enabled;         -- PPS0 : UART TX
+    gpio_spp_data(1) <= uart_tx;
 
-  gpio_spp_en(6) <= spi2_enabled; -- SPI SCK
-  gpio_spp_data(6) <= spi2_sck;
+    gpio_spp_en(2) <= spi_enabled;          -- PPS2 : SPI MISO
+    spi_pf_miso <= gpio_spp_read(2);
 
-  gpio_spp_en(7) <= '0'; -- SPI CS
-  gpio_spp_en(8) <= spi2_enabled; -- SPI MOSI
-  gpio_spp_data(8) <= spi2_mosi;
+    gpio_spp_en(3) <= spi_enabled;          -- PPS3 : SPI MOSI
+    gpio_spp_data(3) <= spi_pf_mosi;
 
-  gpio_spp_en(31 downto 9) <= (others=>'0');
+    gpio_spp_en(4) <= spi_enabled;          -- PPS4 : SPI SCK
+    gpio_spp_data(4) <= spi_pf_sck;
 
+    gpio_spp_en(5) <= sigmadelta_spp_en;    -- PPS5 : SIGMADELTA DATA
+    gpio_spp_data(5) <= sigmadelta_spp_data;
 
+    gpio_spp_en(6) <= timers_spp_en(0);     -- PPS6 : TIMER0
+    gpio_spp_data(6) <= timers_spp_data(0);
 
-  -- User SPI mappings
-  -- # These four connections are shared with the J2 6-pin accessory header
-  --NET "GPIO<4>" LOC = "A6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<5>
-  --NET "GPIO<5>" LOC = "B6" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<6>
-  --NET "GPIO<6>" LOC = "E7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<7>
-  --NET "GPIO<7>" LOC = "F7" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;   # FX2_IO<8>
+    gpio_spp_en(7) <= timers_spp_en(1);     -- PPS7 : TIMER1
+    gpio_spp_data(7) <= timers_spp_data(1);
 
+    gpio_spp_en(8) <= spi2_enabled;         -- PPS8 : USPI MISO
+    spi2_miso <= gpio_spp_read(8);
+
+    gpio_spp_en(9) <= spi2_enabled;         -- PPS9 : USPI MOSI
+    gpio_spp_data(9) <= spi2_mosi;
+
+    gpio_spp_en(10) <= spi2_enabled;         -- PPS10: USPI SCK
+    gpio_spp_data(10) <= spi2_sck;
+
+  end process;
 
 end behave;

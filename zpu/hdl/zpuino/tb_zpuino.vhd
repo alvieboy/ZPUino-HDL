@@ -36,6 +36,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+library work;
+use work.zpuino_config.all;
 
 entity tb_zpuino is
 end entity;
@@ -62,17 +64,9 @@ architecture behave of tb_zpuino is
     clk:      in std_logic;
 	 	areset:   in std_logic;
 
-    -- SPI program flash
-    spi_pf_miso:  in std_logic;
-    spi_pf_mosi:  out std_logic;
-    spi_pf_sck:   out std_logic;
-    --spi_pf_nsel:  out std_logic;
-
-    -- UART
-    uart_rx:      in std_logic;
-    uart_tx:      out std_logic;
-        -- GPIO
-    gpio:         inout std_logic_vector(31 downto 0)
+    gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
 
   );
   end component zpuino_top;
@@ -131,38 +125,38 @@ architecture behave of tb_zpuino is
   signal vcc: real := 0.0;
   signal uart_tx: std_logic;
   signal uart_rx: std_logic := '0';
-  signal gpio_i: std_logic_vector(31 downto 0);
+  signal gpio_i: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_t: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
 begin
 
-  uart_rx <= '1';--uart_tx after 7 us;
-                
+  uart_rx <= uart_tx after 7 us;
+
+  uart_tx <= gpio_o(1);
+  gpio_i(0) <= uart_rx;
 
   top: zpuino_top
     port map (
       clk     => w_clk,
 	 	  areset   => w_rst,
-      spi_pf_miso   => spi_pf_miso,
-      spi_pf_mosi   => spi_pf_mosi,
-      spi_pf_sck    => spi_pf_sck,
-      --spi_pf_nsel   => spi_pf_nsel,
-      uart_rx => uart_rx,
-      uart_tx => uart_tx,
-      gpio => gpio_i
+      gpio_i => gpio_i,
+      gpio_o => gpio_o,
+      gpio_t => gpio_t
   );
 
   -- These values were taken from post-P&R timing analysis
 
-  spi_pf_mosi_dly <= spi_pf_mosi after 3.850 ns;
-  spi_pf_sck_dly <= spi_pf_sck after 3.825 ns;
-  spi_pf_miso <= spi_pf_miso_dly after  2.540 ns;
-  spi_pf_nsel <= gpio_i(0) after  3.850 ns;
+--  spi_pf_mosi_dly <= spi_pf_mosi after 3.850 ns;
+--- spi_pf_sck_dly <= spi_pf_sck after 3.825 ns;
+    gpio_i(2) <= spi_pf_miso_dly after  2.540 ns;
+--  spi_pf_nsel <= gpio_i(0) after  3.850 ns;
 
   spiflash: M25P16
     port map (
       VCC => vcc,
-		  C   => spi_pf_sck_dly,
-      D   => spi_pf_mosi_dly,
-      S   => spi_pf_nsel,
+		  C   => gpio_o(4),
+      D   => gpio_o(3),
+      S   => gpio_o(40),
       W   => '0',
       HOLD => '1',
 		  Q   => spi_pf_miso_dly
@@ -171,9 +165,9 @@ begin
   spiflash2: M25P16
     port map (
       VCC => vcc,
-		  C   => gpio_i(6),
-      D   => gpio_i(8),
-      S   => gpio_i(7),
+		  C   => gpio_o(6),
+      D   => gpio_o(8),
+      S   => gpio_o(7),
       W   => '0',
       HOLD => '1',
 		  Q   => gpio_i(5)

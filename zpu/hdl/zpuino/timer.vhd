@@ -219,14 +219,16 @@ begin
     end if;
   end process;
 
-  -- Output compare
+  -- Output compare ( synchronous )
 
-  process(tmr0_cnt_q,tmr0_oc_q)
+  process(clk)
   begin
-    if tmr0_oc_q >= tmr0_cnt_q then
-      spp_data <= '1';
-    else
-      spp_data <= '0';
+    if rising_edge(clk) then
+      if tmr0_oc_q >= tmr0_cnt_q then
+        spp_data <= '1';
+      else
+        spp_data <= '0';
+      end if;
     end if;
   end process;
 

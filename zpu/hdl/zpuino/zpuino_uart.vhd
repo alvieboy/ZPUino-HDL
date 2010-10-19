@@ -53,6 +53,7 @@ entity zpuino_uart is
     busy:     out std_logic;
     interrupt:out std_logic;
 
+    enabled:  out std_logic;
     tx:       out std_logic;
     rx:       in std_logic
   );
@@ -124,8 +125,11 @@ architecture behave of zpuino_uart is
   signal dready_q: std_logic;
   signal data_ready_dly_q: std_logic;
   signal fifo_rd: std_logic;
+  signal enabled_q: std_logic;
 
 begin
+
+  enabled <= enabled_q;
 
   rx_inst: RxUnit
     port map(
@@ -224,9 +228,14 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if we='1' then
-        if address="1" then
-          divider_rx_q <= write(15 downto 0);
+      if areset='1' then
+        enabled_q<='0';
+      else
+        if we='1' then
+          if address="1" then
+            divider_rx_q <= write(15 downto 0);
+            enabled_q  <= write(16);
+          end if;
         end if;
       end if;
     end if;

@@ -39,30 +39,17 @@ use ieee.numeric_std.all;
 library work;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+use work.zpuino_config.all;
+library UNISIM;
+use UNISIM.VCOMPONENTS.all;
 
 entity s3e_eval_zpuino is
   port (
-    CLK:        in std_logic;
-    RST:        in std_logic;
-
-    SPI_SCK:    out std_logic;
-    SPI_MISO:   in std_logic;
-    SPI_MOSI:   out std_logic;
---    SPI_SS_B:   inout std_logic;
-
-    LED:        inout std_logic_vector(7 downto 0);
-    GPIO:       inout std_logic_vector(31 downto 0);
-    -- UART
-    UART_TX:    out std_logic;
-    UART_RX:    in std_logic;
-
-    -- Signals to disable (write '1')
-    DAC_CS:     out std_logic;
-    SF_CE0:     out std_logic;
-    FPGA_INIT_B:out std_logic;
-    AMP_CS:     out std_logic;
-    -- Signals to disable (write '0')
-    AD_CONV:    out std_logic
+    CLK:          in std_logic;
+    RST:          in std_logic;
+    UART_RX:      in std_logic; -- gpio<0>
+    GPIO:         inout std_logic_vector(zpuino_gpio_count-1 downto 1);
+    FPGA_INIT_B:  out std_logic
   );
 end entity s3e_eval_zpuino;
 
@@ -81,26 +68,21 @@ component zpuino_top is
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
-
-    -- SPI program flash
-    spi_pf_miso:  in std_logic;
-    spi_pf_mosi:  out std_logic;
-    spi_pf_sck:   out std_logic;
-
-    -- UART
-    uart_rx:      in std_logic;
-    uart_tx:      out std_logic;
-
-    gpio:         inout std_logic_vector(31 downto 0)
-
+    gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
   );
 end component zpuino_top;
 
 
-  signal gpio_i: std_logic_vector(31 downto 0);
-  signal spi_mosi_i: std_logic;
+
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
+
+  signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_i: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_t: std_logic_vector(zpuino_gpio_count-1 downto 0);
+
 
 begin
 
@@ -113,34 +95,49 @@ begin
   );
 
     -- Signals to disable (write '1')
-    DAC_CS <= '1';
+--    DAC_CS <= '1';
 
-    SF_CE0 <= '1';
+--    SF_CE0 <= '1';
     FPGA_INIT_B<='0';
 
-    AMP_CS<='1';
+--    AMP_CS<='1';
     -- Signals to disable (write '0')
-    AD_CONV<='0';
+--    AD_CONV<='0';
 
-    SPI_MOSI <= spi_mosi_i;
+--    SPI_MOSI <= spi_mosi_i;
 
-    GPIO(31 downto 0) <= gpio_i(31 downto 0);
+  bufgen: for i in 1 to zpuino_gpio_count-1 generate
+    iob: IOBUF
+      generic map (
+        IBUF_DELAY_VALUE => "0",
+        SLEW => "FAST",
+        DRIVE => 8,
+        IFD_DELAY_VALUE => "0"
+      )
+      port map(
+        I => gpio_o(i),
+        O => gpio_i(i),
+        T => gpio_t(i),
+        IO => gpio(i)
+      );
+  end generate;
+
+  ibufrx: IBUF
+      port map (
+        I => UART_RX,
+        O => gpio_i(0)
+      );
+--  gpio_i(zpuino_gpio_count-1) <= UART_RX;
+
+
     
   zpuino:zpuino_top
   port map (
     clk           => sysclk,
 	 	areset        => sysrst,
-
-    -- SPI program flash
-    spi_pf_miso   => SPI_MISO,
-    spi_pf_mosi   => SPI_MOSI_i,
-    spi_pf_sck    => SPI_SCK,
-
-    -- UART
-    uart_rx       => UART_RX,
-    uart_tx       => UART_TX,
-
-    gpio          => gpio_i
+    gpio_i        =>  gpio_i,
+    gpio_o        =>  gpio_o,
+    gpio_t        =>  gpio_t
   );
 
 end behave;
