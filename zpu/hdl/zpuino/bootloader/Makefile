@@ -11,7 +11,7 @@ OBJDUMP=$(CROSS)objdump
 
 DHRYSRC=.
 
-SRC=boot.cpp
+SRC=boot.cpp 
 
 CFLAGS=-Os  -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
@@ -21,8 +21,8 @@ all: prom-generic-dp-32.vhd Makefile
 $(TARGET).o: $(SRC) Makefile
 	$(CXX) -DTIME -phi $(CFLAGS) -c $(SRC) -o $(TARGET).o
 	$(CXX) -DTIME -phi $(CFLAGS) -S $(SRC) -o $(TARGET).S
-$(TARGET): $(TARGET).o
-	$(CC) $(TARGET).o -o $(TARGET) $(LDFLAGS)
+$(TARGET): $(TARGET).o syscall.o
+	$(CC) $+ -o $(TARGET) $(LDFLAGS)
 	$(OBJDUMP) -D $(TARGET) > $(TARGET).s
 	
 $(TARGET).bin: $(TARGET)

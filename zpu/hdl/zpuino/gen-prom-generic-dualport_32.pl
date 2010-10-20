@@ -48,7 +48,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all; 
 use ieee.numeric_std.all;
 
-entity dualport_ram is
+entity prom_generic_dualport is
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
@@ -60,10 +60,9 @@ entity dualport_ram is
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0)
   );
-end entity dualport_ram;
+end entity prom_generic_dualport;
 
-architecture behave of dualport_ram is
-
+architecture behave of prom_generic_dualport is
 
   subtype RAM_WORD is STD_LOGIC_VECTOR (31 downto 0);
   type RAM_TABLE is array (0 to 8191) of RAM_WORD;

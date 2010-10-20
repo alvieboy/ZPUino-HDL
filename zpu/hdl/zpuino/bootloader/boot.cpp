@@ -501,6 +501,9 @@ void configure_pins()
 
 }
 
+extern "C" int _syscall(int *foo, int ID, ...);
+
+
 extern "C" void _premain()
 {
 	int t;

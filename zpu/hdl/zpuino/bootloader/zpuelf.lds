@@ -10,7 +10,8 @@ SEARCH_DIR("/local/work/zpu/zpubig/binutils/../install/zpu-elf/lib");
 
   MEMORY
   {
-    RAM (rx) : ORIGIN = 0x00000000, LENGTH = 0x1000
+    ROM (rx) : ORIGIN = 0x00000000, LENGTH = 0x1000
+    RAM (rw) : ORIGIN = 0x00001000, LENGTH = 0x1000
   }
 
 SECTIONS
@@ -53,12 +54,12 @@ SECTIONS
     /*      . = .;*/
       
 	  KEEP (*(.fixed_vectors))
-  } =0
+  } > ROM =0
 
   .init           :
   {
     KEEP (*(.init))
-  } > RAM
+  } > ROM
   .plt            : { *(.plt) }
   .text           :
   {
@@ -67,7 +68,7 @@ SECTIONS
     *(.gnu.warning)
     *(.glue_7t) *(.glue_7)
     /* KEEP(*(.text)) */
-  } > RAM =0
+  } > ROM =0
   .fini           :
   {
     KEEP (*(.fini))
@@ -81,11 +82,11 @@ SECTIONS
   PROVIDE (__etext = .);
   PROVIDE (_etext = .);
   PROVIDE (etext = .);
-  .rodata      ALIGN(4)    : { *(.rodata .rodata.* .gnu.linkonce.r.*) } > RAM
+  .rodata      ALIGN(4)    : { *(.rodata .rodata.* .gnu.linkonce.r.*) } > ROM
   .rodata1      : { *(.rodata1)
   	. = ALIGN(4); /* Enforce alignment of .data below */
-  	} > RAM
-  .eh_frame_hdr : { *(.eh_frame_hdr) }  > RAM
+  	} > ROM
+  .eh_frame_hdr : { *(.eh_frame_hdr) }  > ROM
   
   
   /* Adjust the address for the data segment.  We want to adjust up to
@@ -120,12 +121,12 @@ SECTIONS
     __data_end = .;
   } > RAM
   
-  .data1          : { *(.data1) }
-  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) }
-  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) }
-  .eh_frame       : { KEEP (*(.eh_frame)) }
-  .gcc_except_table   : { *(.gcc_except_table) }
-  .dynamic        : { *(.dynamic) }
+  .data1          : { *(.data1) } > RAM
+  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) } > RAM
+  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) } > RAM
+  .eh_frame       : { KEEP (*(.eh_frame)) } > RAM
+  .gcc_except_table   : { *(.gcc_except_table) } > RAM
+  .dynamic        : { *(.dynamic) } > RAM
   .ctors          : 
   {
     ___ctors = .;
@@ -147,7 +148,7 @@ SECTIONS
     KEEP (*(SORT(.ctors.*)))
     KEEP (*(.ctors))
     ___ctors_end = .;
-  } > RAM
+  } > ROM
 
   .dtors          :
   {
@@ -157,7 +158,7 @@ SECTIONS
     KEEP (*(SORT(.dtors.*)))
     KEEP (*(.dtors))
     ___dtors_end = .;
-  } > RAM
+  } > ROM
   
   ___jcr_start = .;
   .jcr            : 
@@ -165,7 +166,7 @@ SECTIONS
       ___jcr_begin = .;
   	KEEP (*(.jcr)) 
       ___jcr_end = .;
-  } > RAM
+  } > ROM
 
   .got            : { *(.got.plt) *(.got) }
   _edata = .;
