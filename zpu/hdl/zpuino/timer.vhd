@@ -151,7 +151,7 @@ begin
         tmr0_en_q <= '0';
         tmr0_ccm_q <= '0';
         tmr0_dir_q <= '1';
-        tmr0_ien_q <= '1';
+        tmr0_ien_q <= '0';
         tmr0_oce_q <= '0';
         tmr0_cmp_q <= (others => '1');
         tmr0_prescale <= (others => '0');
