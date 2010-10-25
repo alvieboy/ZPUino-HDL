@@ -86,23 +86,27 @@ begin
       full_v:='0';
     end if;
 
-    if rst='1' then
-      wraddr <= (others => '0');
-      rdaddr <= (others => '0');
-    elsif rising_edge(clk) then
-
-      if wr='1' and full_v='0' then
-        memory(conv_integer(std_logic_vector(wraddr) ) ) <= write;
-        wraddr <= wraddr+1;
+    if rising_edge(clk) then
+      if rst='1' then
+        wraddr <= (others => '0');
+        rdaddr <= (others => '0');
+      else
+  
+        if wr='1' and full_v='0' then
+          memory(conv_integer(std_logic_vector(wraddr) ) ) <= write;
+          wraddr <= wraddr+1;
+        end if;
+  
+        if rd='1' and empty_v='0' then
+          rdaddr <= rdaddr+1;
+        end if;
       end if;
 
-      if rd='1' and empty_v='0' then
-        rdaddr <= rdaddr+1;
-      end if;
+      full <= full_v;
+      empty <= empty_v;
+
     end if;
 
-    full <= full_v;
-    empty <= empty_v;
 
   end process;
 end behave;
