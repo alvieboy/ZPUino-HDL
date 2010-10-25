@@ -4,7 +4,7 @@
 #undef DEBUG_SERIAL
 
 #define SPIOFFSET 0x00000000
-#define SPICODESIZE   (0x00007000 - 128)
+#define SPICODESIZE (0x00007000 - 128)
 #define VERSION_HIGH 0x01
 #define VERSION_LOW  0x01
 
@@ -28,15 +28,14 @@
 unsigned int _memreg[4];
 unsigned int ZPU_ID;
 
-static int inprogrammode=0;
-static volatile unsigned int milisseconds = 0;
-static void (*ivector)(void);
+extern "C" void (*ivector)(void);
 
-
+static int inprogrammode;
+static volatile unsigned int milisseconds;
 static unsigned char buffer[256 + 32];
 static int syncSeen;
 static int unescaping;
-static int bufferpos;
+static unsigned int bufferpos;
 
 
 void outbyte(int);
@@ -45,8 +44,9 @@ void __attribute__((noreturn)) spi_copy();
 
 #ifdef DEBUG_SERIAL
 const unsigned char serialbuffer[] = {
+	HDLC_frameFlag, BOOTLOADER_CMD_RAWREADWRITE, 0x5, 0x10, 0xB, 0x0, 0x0, 0x0, 0x0, /*0x9F*/0x55, 0xAD, HDLC_frameFlag,
 	HDLC_frameFlag, BOOTLOADER_CMD_IDENTIFY, 0x2c, 0x95, HDLC_frameFlag,
-	HDLC_frameFlag, BOOTLOADER_CMD_RAWREADWRITE, 0x5, 0x10, 0xB, 0x0, 0x0, 0x0, 0x0, 0x9F, 0xAD, HDLC_frameFlag
+
 };
 int serialbufferptr=0;
 #endif
@@ -77,9 +77,8 @@ void finishSend()
 	outbyte(HDLC_frameFlag);
 }
 
-static unsigned int inbyte()
+unsigned int inbyte()
 {
-	unsigned int val;
 	for (;;)
 	{
 #ifdef DEBUG_SERIAL
@@ -144,19 +143,19 @@ static inline void waitspiready()
 #endif
 }
 
-static void spiwrite(unsigned int i)
+static inline void spiwrite(unsigned int i)
 {
 	waitspiready();
 	SPIDATA=i;
 }
 
-static unsigned int spiread()
+static inline unsigned int spiread()
 {
 	waitspiready();
 	return SPIDATA;
 }
 
-void printnibble(unsigned int c)
+extern "C" void printnibble(unsigned int c)
 {
 	c&=0xf;
 	if (c>9)
@@ -165,12 +164,12 @@ void printnibble(unsigned int c)
 		outbyte(c+'0');
 }
 
-void printhexbyte(unsigned int c)
+extern "C" void printhexbyte(unsigned int c)
 {
 	printnibble(c>>4);
 	printnibble(c);
 }
-void printhex(unsigned int c)
+extern "C" void printhex(unsigned int c)
 {
 	printhexbyte(c>>24);
 	printhexbyte(c>>16);
@@ -180,12 +179,6 @@ void printhex(unsigned int c)
 void __attribute__((noreturn)) spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
-	// Reset settings
-
-	GPIOTRIS(0) = 0xffffffff;
-	GPIOTRIS(1) = 0xffffffff;
-	GPIOTRIS(2) = 0xffffffff;
-	GPIOTRIS(3) = 0xffffffff;
 
 	UARTCTL &= ~(BIT(UARTEN));
 
@@ -198,7 +191,6 @@ void __attribute__((noreturn)) spi_copy()
 
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
-	unsigned int bootword;
 	// We must not overflow stack, leave 128 bytes
 	unsigned int count = SPICODESIZE >> 2; // 0x7000
 
@@ -225,7 +217,15 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	SPICTL &= ~(BIT(SPIEN));
 
+	// Reset settings
+
+	GPIOTRIS(0) = 0xffffffff;
+	GPIOTRIS(1) = 0xffffffff;
+	GPIOTRIS(2) = 0xffffffff;
+	GPIOTRIS(3) = 0xffffffff;
+
 	ivector = (void (*)(void))0x1008;
+
 	__asm__("im 0x7FFC\n"
 			"popsp\n"
 			"im 0x1000\n"
@@ -240,27 +240,6 @@ extern "C" void _zpu_interrupt()
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
-extern "C" void ___zpu_interrupt_vector()
-{
-	__asm__("im _memreg\n"
-			"load\n"
-			"im _memreg+4\n"
-			"load\n"
-			"im _memreg+8\n"
-			"load\n"
-		   );
-	ivector();
-	__asm__("im _memreg+8\n"
-			"store\n"
-			"im _memreg+4\n"
-			"store\n"
-			"im _memreg+2\n"
-			"store\n"
-		   );
-	
-	// Re-enable interrupts
-	INTRCTL=1;
-}
 
 static int spi_read_status()
 {
@@ -403,7 +382,7 @@ static void cmd_leavepgm()
 
 void processCommand()
 {
-	int pos=0;
+	unsigned int pos=0;
 	if (bufferpos<3)
 		return; // Too few data
 
@@ -421,6 +400,9 @@ void processCommand()
 		sendByte( tcrc );
 		sendByte( rcrc >> 8 );
 		sendByte( rcrc );
+		/* Send received packet */
+		for (pos=0;pos<bufferpos;pos++)
+			sendByte(buffer[pos]);
 		finishSend();
 		return;
 	}
@@ -464,8 +446,6 @@ void configure_pins()
 
 	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
 
-//	pinModeS<FPGA_PIN_R7,OUTPUT>::apply();
-
 	GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
 	pinModeS<FPGA_PIN_M14,OUTPUT>::apply();
 
@@ -504,24 +484,20 @@ void configure_pins()
 extern "C" int _syscall(int *foo, int ID, ...);
 
 
-extern "C" void _premain()
+extern "C" int main(int argc,char**argv)
 {
-	int t;
-
 	inprogrammode = 0;
 	milisseconds = 0;
+	bufferpos = 0;
+
 	ivector = &_zpu_interrupt;
 
 	configure_pins();
 
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
-
-
-	/* Reset PPS mapping, just in case */
-
 	INTRCTL=1;
 
-    enableTimer();
+	enableTimer();
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP1)|BIT(SPIEN);
@@ -534,6 +510,7 @@ extern "C" void _premain()
 		i = inbyte();
 		// DEBUG ONLY
 		//TMR1CNT=i;
+		//outbyte(i);
 		if (syncSeen) {
 			if (i==HDLC_frameFlag) {
 				if (bufferpos>0) {
@@ -562,3 +539,13 @@ extern "C" void _premain()
 	}
 }
 
+extern "C" void __attribute__((noreturn)) _opcode_swap_c(unsigned int pc,unsigned int sp,unsigned int addra,unsigned int addrb)
+{
+	printhex(pc);
+	printhex(sp);
+	printhex(addra);
+	printhex(addrb);
+
+
+	while(1);
+}

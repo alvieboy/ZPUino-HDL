@@ -120,6 +120,7 @@ SECTIONS
     SORT(CONSTRUCTORS)
     __data_end = .;
   } > RAM
+  AT >ROM
   
   .data1          : { *(.data1) } > RAM
   .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) } > RAM
