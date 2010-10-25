@@ -565,8 +565,8 @@ int main(int argc, char **argv)
         return -1;
 	}
 
-	if (verbose>0)
-	printf("\nAll done.\n");
+	//if (verbose>0)
+	printf("\nProgramming complete.\n");
 
 	return 0;
 }
