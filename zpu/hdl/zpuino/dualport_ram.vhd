@@ -36,8 +36,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use IEEE.std_logic_unsigned.all; 
-library work;
-use work.txt_util.all;
 
 entity dualport_ram is
   port (
@@ -49,7 +47,8 @@ entity dualport_ram is
     memBWriteEnable:  in std_logic;
     memBAddr:         in std_logic_vector(14 downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
-    memBRead:         out std_logic_vector(31 downto 0)
+    memBRead:         out std_logic_vector(31 downto 0);
+    memErr:           out std_logic
   );
 end entity dualport_ram;
 
@@ -66,7 +65,7 @@ architecture behave of dualport_ram is
     memBAddr:         in std_logic_vector(14 downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0)
-  );
+    );
   end component prom_generic_dualport;
 
   signal memAWriteEnable_i:   std_logic;
@@ -79,12 +78,23 @@ begin
   memAWriteEnable_i <= memAWriteEnable when memAAddr(14 downto 12)/="000" else '0';
   memBWriteEnable_i <= memBWriteEnable when memBAddr(14 downto 12)/="000" else '0';
 
+  process(memAWriteEnable,memAAddr(14 downto 12),memBWriteEnable,memBAddr(14 downto 12))
+  begin
+    memErr <= '0';
+    if memAWriteEnable='1' and memAAddr(14 downto 12)="000" then
+      memErr<='1';
+    end if;
+    if memBWriteEnable='1' and memBAddr(14 downto 12)="000" then
+      memErr<='1';
+    end if;
+  end process;
+
   -- Sanity checks for simulation
   process(clk)
   begin
     if rising_edge(clk) then
       if memAWriteEnable='1' and memAAddr(14 downto 12)="000" then
-        report "Write to BOOTLOADER port A not allowed!!! " & str(memAAddr) severity failure;
+        report "Write to BOOTLOADER port A not allowed!!! " severity note;
       end if;
     end if;
   end process;
@@ -94,7 +104,7 @@ begin
   begin
     if rising_edge(clk) then
       if memBWriteEnable='1' and memBAddr(14 downto 12)="000" then
-        report "Write to BOOTLOADER port B not allowed!!!" & str(memBAddr) severity failure;
+        report "Write to BOOTLOADER port B not allowed!!!" severity note;
       end if;
     end if;
   end process;

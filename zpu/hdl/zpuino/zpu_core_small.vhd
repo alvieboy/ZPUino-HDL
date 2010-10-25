@@ -76,17 +76,21 @@ signal		readIO : std_logic;
 
 signal memAWriteEnable : std_logic;
 signal memAAddr : unsigned(maxAddrBit downto minAddrBit);
+signal exception_memAAddr : unsigned(maxAddrBit downto minAddrBit);
 signal memAWrite : unsigned(wordSize-1 downto 0);
 signal memARead : unsigned(wordSize-1 downto 0);
 signal memBWriteEnable : std_logic;
 signal memBAddr : unsigned(maxAddrBit downto minAddrBit);
+signal exception_memBAddr : unsigned(maxAddrBit downto minAddrBit);
 signal memBWrite : unsigned(wordSize-1 downto 0);
 signal memBRead : unsigned(wordSize-1 downto 0);
 
 
 
 signal	pc				: unsigned(maxAddrBit downto 0);
+signal	exception_pc				: unsigned(maxAddrBit downto 0);
 signal	sp				: unsigned(maxAddrBit downto minAddrBit);
+signal	exception_sp				: unsigned(maxAddrBit downto minAddrBit);
 
 -- this signal is set upon executing an IM instruction
 -- the subsequence IM instruction will then behave differently.
@@ -125,7 +129,8 @@ State_AddSP,
 State_ReadIODone,
 State_Decode,
 State_Resync,
-State_Interrupt
+State_Interrupt,
+State_Exception
 
 );
 
@@ -170,6 +175,7 @@ signal memARead_stdlogic  : std_logic_vector(memARead'range);
 signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
 signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
 signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
+signal memErr: std_logic;
 
 subtype index is integer range 0 to 3;
 
@@ -178,6 +184,7 @@ signal tOpcode_sel : index;
 
 signal inInterrupt : std_logic;
 
+signal exceptionStep: integer;
 
 
 begin
@@ -246,7 +253,8 @@ begin
 	memBWriteEnable => memBWriteEnable,
 	memBAddr => memBAddr_stdlogic,
 	memBWrite => memBWrite_stdlogic,
-	memBRead => memBRead_stdlogic
+	memBRead => memBRead_stdlogic,
+  memErr => memErr
         );
 	memARead <= unsigned(memARead_stdlogic);
 	memBRead <= unsigned(memBRead_stdlogic);
@@ -325,9 +333,11 @@ begin
 	process(clk, areset)
 		variable spOffset : unsigned(4 downto 0);
 	begin
-		if areset = '1' then
+    if rising_edge(clk) then
+ 	   if areset = '1' then
 			state <= State_Resync;
 			break <= '0';
+      -- Save 32-words for exception handling
 			sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
 			pc <= (others => '0');
 			idim_flag <= '0';
@@ -341,7 +351,7 @@ begin
 			memAWrite <= (others => '0');
 			memBWrite <= (others => '0');
 			inInterrupt <= '0';
-		elsif (clk'event and clk = '1') then
+		else
 			memAWriteEnable <= '0';
 			memBWriteEnable <= '0';
 			-- This saves ca. 100 LUT's, by explicitly declaring that the
@@ -502,6 +512,7 @@ begin
 						memAWriteEnable <= '1';
 						memAWrite <= unsigned(mem_read);
 					end if;
+					memAAddr <= sp;
 				when State_WriteIO =>
 					sp <= sp + 1;
 					out_mem_writeEnable <= '1';
@@ -517,8 +528,17 @@ begin
 					-- we'll fetch the opcode @ pc and thus it will
 					-- be available for State_Execute the cycle after
 					-- next
-					memBAddr <= pc(maxAddrBit downto minAddrBit);
-					state <= State_FetchNext;
+          if memErr='1' then
+            exception_memAAddr <= memAAddr;
+            exception_memBAddr <= memBAddr;
+            exceptionStep <= 0;
+            sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
+            state <= State_Exception;
+          else
+  					memBAddr <= pc(maxAddrBit downto minAddrBit);
+            exception_pc <= pc; -- Save for exception
+  					state <= State_FetchNext;
+          end if;
 				when State_FetchNext =>
 					-- at this point memARead contains the value that is either
 					-- from the top of stack or should be copied to the top of the stack
@@ -536,6 +556,7 @@ begin
 					-- during the State_Execute cycle we'll be fetching SP+1
 					memAAddr <= sp;
 					memBAddr <= sp + 1;
+          exception_sp <= sp; -- Save
 					state <= State_Execute;
 				when State_Store =>
 					sp <= sp + 1;
@@ -556,18 +577,60 @@ begin
 					memAWrite <= memARead or memBRead;
 					state <= State_Fetch;
 				when State_Resync =>
-					memAAddr <= sp;
-					state <= State_Fetch;
+          if memErr='1' then
+            exception_memAAddr <= memAAddr;
+            exception_memBAddr <= memBAddr;
+            exceptionStep <= 0;
+      			sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
+            state <= State_Exception;
+          else
+					  memAAddr <= sp;
+					  state <= State_Fetch;
+          end if;
 				when State_And =>
 					memAAddr <= sp;
 					memAWriteEnable <= '1';
 					memAWrite <= memARead and memBRead;
 					state <= State_Fetch;
+        when State_Exception =>
+          memAAddr <= sp;
+          case exceptionStep is
+            when 0 =>
+              memAWriteEnable <= '1';
+              memAWrite<=(others => '0');
+              memAWrite(maxAddrBit downto minAddrBit) <= exception_memBAddr;
+              exceptionStep <= exceptionStep+1;
+              sp <= sp - 1;
+            when 1 =>
+              memAWriteEnable <= '1';
+              memAWrite<=(others => '0');
+              memAWrite(maxAddrBit downto minAddrBit) <= exception_memAAddr;
+              exceptionStep <= exceptionStep+1;
+              sp <= sp - 1;
+            when 2 =>
+              memAWriteEnable <= '1';
+              memAWrite<=(others => '0');
+              memAWrite(maxAddrBit downto minAddrBit) <= exception_sp;
+              exceptionStep <= exceptionStep+1;
+              sp <= sp - 1;
+            when 3 =>
+              memAWriteEnable <= '1';
+              memAWrite<=(others => '0');
+              memAWrite(maxAddrBit downto 0) <= exception_pc;
+              exceptionStep <= exceptionStep+1;
+            when 4 =>
+              pc <= (others => '0');
+              pc(11 downto 0) <= x"100";
+              state <= State_Fetch;
+            when others =>
+          end case;
+
 				when others =>
 					null;
 			end case;
 			
 		end if;
+    end if;
 	end process;
 
 

@@ -153,7 +153,8 @@ begin
 	    memBWriteEnable => '0',
 	    memBAddr => mem_address(maxAddrBit downto 2),
 	    memBWrite =>(others => DontCareValue),
-	    memBRead => code_mem_read
+	    memBRead => code_mem_read,
+	    memErr => open
     );
 
   process(select_mem_or_io,ram_mem_read,io_mem_read)
