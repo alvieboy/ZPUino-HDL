@@ -1,5 +1,5 @@
 TARGET=bootloader
-all: $(TARGET)
+all: $(TARGET).bin $(TARGET).hex
 
 CCPATH:=
 
@@ -11,22 +11,23 @@ OBJDUMP=$(CROSS)objdump
 
 DHRYSRC=.
 
-SRC=boot.cpp 
+OBJ=boot.o boot-c.o syscall.o
 
-CFLAGS=-Os  -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
+CFLAGS=-Os -phi -Wall -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all: prom-generic-dp-32.vhd Makefile
 
-$(TARGET).o: $(SRC) Makefile
-	$(CXX) -DTIME -phi $(CFLAGS) -c $(SRC) -o $(TARGET).o
-	$(CXX) -DTIME -phi $(CFLAGS) -S $(SRC) -o $(TARGET).S
-$(TARGET): $(TARGET).o syscall.o
-	$(CC) $+ -o $(TARGET) $(LDFLAGS)
-	$(OBJDUMP) -D $(TARGET) > $(TARGET).s
+$(TARGET).elf: $(OBJ)
+	$(CXX) $+ -o $@ $(LDFLAGS)
+	$(OBJDUMP) -D $@ > $(TARGET).s
 	
-$(TARGET).bin: $(TARGET)
-	$(OBJCOPY) -O binary $(TARGET) $(TARGET).bin
+$(TARGET).bin: $(TARGET).elf
+	$(OBJCOPY) -O binary $< $@
+
+$(TARGET).hex: $(TARGET).elf
+	$(OBJCOPY) -O ihex $< $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin
 	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin 32768 > prom-generic-dp-32.vhd || rm -f prom-generic-dp-32.vhd	
