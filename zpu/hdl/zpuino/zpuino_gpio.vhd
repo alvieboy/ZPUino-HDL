@@ -177,7 +177,7 @@ begin
   if rising_edge(clk) then
     if areset='1' then
       gpio_tris_q <= (others => '1');
-      --gpio_q <= (others => '0');
+      gpio_q <= (others => DontCareValue);
       -- Default values for input/output mapper
       for i in 0 to 127 loop
         input_mapper_q(i) <= i;
