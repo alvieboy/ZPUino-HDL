@@ -227,12 +227,12 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	SPICTL &= ~(BIT(SPIEN));
 
 	// Reset settings
-
+    /*
 	GPIOTRIS(0) = 0xffffffff;
 	GPIOTRIS(1) = 0xffffffff;
 	GPIOTRIS(2) = 0xffffffff;
 	GPIOTRIS(3) = 0xffffffff;
-
+    */
 	ivector = (void (*)(void))0x1008;
 
 	__asm__("im 0x7ff8\n"
@@ -447,11 +447,11 @@ void configure_pins()
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
 
-	digitalWriteS<36,LOW>::apply();
-	digitalWriteS<37,HIGH>::apply();
-	digitalWriteS<38,HIGH>::apply();
-	digitalWriteS<39,HIGH>::apply();
-	digitalWriteS<40,HIGH>::apply();
+	digitalWriteS<FPGA_AD_CONV,LOW>::apply();
+	digitalWriteS<FPGA_DAC_CS,HIGH>::apply();
+	digitalWriteS<FPGA_AMP_CS,HIGH>::apply();
+	digitalWriteS<FPGA_SF_CE0,HIGH>::apply();
+	digitalWriteS<FPGA_SS_B,HIGH>::apply();
 
 	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
 
@@ -464,7 +464,7 @@ void configure_pins()
 	GPIOPPSOUT( FPGA_PIN_U16 ) = IOPIN_SPI_SCK;
 	pinModeS<FPGA_PIN_U16,OUTPUT>::apply();
 
-	GPIOPPSOUT( FPGA_PIN_U3 ) = 40; // SPI_SS_B
+	GPIOPPSOUT( FPGA_PIN_U3 ) = FPGA_SS_B; // SPI_SS_B
 	pinModeS<FPGA_PIN_U3,OUTPUT>::apply();
 
 	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_N10;
@@ -472,13 +472,13 @@ void configure_pins()
 
 	// Pins that need output to disable other SPI devices
 
-	GPIOPPSOUT( FPGA_PIN_P11 ) = 36; // AD_CONV
+	GPIOPPSOUT( FPGA_PIN_P11 ) = FPGA_AD_CONV; // AD_CONV
 	pinModeS<FPGA_PIN_P11,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N8 ) = 37; // DAC_CS
+	GPIOPPSOUT( FPGA_PIN_N8 ) = FPGA_DAC_CS; // DAC_CS
 	pinModeS<FPGA_PIN_N8,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N7 ) = 38; // AMP_CS
+	GPIOPPSOUT( FPGA_PIN_N7 ) = FPGA_AMP_CS; // AMP_CS
 	pinModeS<FPGA_PIN_N7,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_D16 ) = 39; // SF_CE0
+	GPIOPPSOUT( FPGA_PIN_D16 ) = FPGA_SF_CE0; // SF_CE0
 	pinModeS<FPGA_PIN_D16,OUTPUT>::apply();
 
 	pinModeS<FPGA_LED_0,OUTPUT>::apply();
