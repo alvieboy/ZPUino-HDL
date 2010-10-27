@@ -2,9 +2,14 @@
 #include <stdarg.h>
 
 #undef DEBUG_SERIAL
+#undef SIMULATION
 
 #define SPIOFFSET 0x00000000
-#define SPICODESIZE (0x00007000 - 128)
+#ifdef SIMULATION
+# define SPICODESIZE 0x1000
+#else
+# define SPICODESIZE (0x00007000 - 128)
+#endif
 #define VERSION_HIGH 0x01
 #define VERSION_LOW  0x01
 
@@ -17,7 +22,11 @@
 #define BOOTLOADER_CMD_ENTERPGM 0x05
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
 
-#define BOOTLOADER_WAIT_MILLIS 1000
+#ifdef SIMULATION
+# define BOOTLOADER_WAIT_MILLIS 1
+#else
+# define BOOTLOADER_WAIT_MILLIS 1000
+#endif
 
 #define REPLY(X) (X|0x80)
 
@@ -182,7 +191,7 @@ void __attribute__((noreturn)) spi_copy()
 
 	UARTCTL &= ~(BIT(UARTEN));
 
-	__asm__("im 0x7ffc\n"
+	__asm__("im 0x7ff8\n"
 			"popsp\n"
 			"im spi_copy_impl\n"
 			"poppc");
@@ -226,9 +235,9 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	ivector = (void (*)(void))0x1008;
 
-	__asm__("im 0x7FFC\n"
+	__asm__("im 0x7ff8\n"
 			"popsp\n"
-			"im 0x1000\n"
+			"im __sketch_start\n"
 			"poppc\n");
 	while(1) {}
 }

@@ -11,9 +11,9 @@ OBJDUMP=$(CROSS)objdump
 
 DHRYSRC=.
 
-OBJ=boot.o boot-c.o syscall.o
+OBJ=boot.o boot-c.o syscall.o boot-s.o
 
-CFLAGS=-Os -phi -Wall -mno-callpcrel -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
+CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_S3E_EVAL__
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 

@@ -1,6 +1,6 @@
 #include "register.h"
 
-void (*ivector)(void);
+extern void (*ivector)(void);
 
 void ___zpu_interrupt_vector()
 {

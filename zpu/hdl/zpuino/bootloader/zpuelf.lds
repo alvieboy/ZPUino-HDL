@@ -112,7 +112,9 @@ SECTIONS
   PROVIDE (__fini_array_end = .);
   
   __ram_start = .;
-    
+  .boots : {
+      KEEP(.boots.*)
+  } > RAM
   .data :
   {
     __data_start = . ;
