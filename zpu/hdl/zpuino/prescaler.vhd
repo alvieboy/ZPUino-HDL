@@ -50,6 +50,7 @@ end entity prescaler;
 architecture behave of prescaler is
 
 signal counter: unsigned(9 downto 0);
+signal event_i: std_logic;
 
 signal ck2:     std_logic;
 signal ck4:     std_logic;
@@ -58,8 +59,27 @@ signal ck16:     std_logic;
 signal ck64:    std_logic;
 signal ck256:   std_logic;
 signal ck1024:  std_logic;
+signal ck2_q:     std_logic;
+signal ck4_q:     std_logic;
+signal ck8_q:     std_logic;
+signal ck16_q:     std_logic;
+signal ck64_q:    std_logic;
+signal ck256_q:   std_logic;
+signal ck1024_q:  std_logic;
+
+function edge( now: std_logic; before: std_logic ) return std_logic is
+  variable result: std_logic;
+begin
+  if (now='1' and before='0') then
+    result := '1';
+  else
+    result := '0';
+  end if;
+  return result;
+end edge;
 
 begin
+
 
 ck2 <= counter(0);
 ck4 <= counter(1);
@@ -69,25 +89,51 @@ ck64 <= counter(5);
 ck256 <= counter(7);
 ck1024 <= counter(9);
 
-process(prescale,ck2,ck4,ck8,ck16,ck64,ck256,ck1024)
+event <= event_i;
+
+
+process(clk)
+begin
+  if rising_edge(clk) then
+    if rst='1' then
+      ck2_q<='0';
+      ck4_q<='0';
+      ck8_q<='0';
+      ck16_q<='0';
+      ck64_q<='0';
+      ck256_q<='0';
+      ck1024_q<='0';
+    else
+      ck2_q<=ck2;
+      ck4_q<=ck4;
+      ck8_q<=ck8;
+      ck16_q<=ck16;
+      ck64_q<=ck64;
+      ck256_q<=ck256;
+      ck1024_q<=ck1024;
+    end if;
+  end if;
+end process;
+
+process(prescale,ck2,ck4,ck8,ck16,ck64,ck256,ck1024,ck2_q,ck4_q,ck8_q,ck16_q,ck64_q,ck256_q,ck1024_q)
 begin
   case prescale is
     when "000" =>
-      event <= '1';
+      event_i <= '1';
     when "001" =>
-      event <= ck2;
+      event_i <= edge(ck2,ck2_q);
     when "010" =>
-      event <= ck4;
+      event_i <= edge(ck4,ck4_q);
     when "011" =>
-      event <= ck8;
+      event_i <= edge(ck8,ck8_q);
     when "100" =>
-      event <= ck16;
+      event_i <= edge(ck16,ck16_q);
     when "101" =>
-      event <= ck64;
+      event_i <= edge(ck64,ck64_q);
     when "110" =>
-      event <= ck256;
+      event_i <= edge(ck256,ck256_q);
     when "111" =>
-      event <= ck1024;
+      event_i <= edge(ck1024,ck1024_q);
     when others =>
   end case;
 end process;
