@@ -43,7 +43,7 @@ entity spiclkgen is
     rst:   in std_logic;
     en:    in std_logic;
     cpol:  in std_logic;
-    pres:  in std_logic_vector(1 downto 0);
+    pres:  in std_logic_vector(2 downto 0);
 
     clkrise: out std_logic;
     clkfall: out std_logic;
@@ -60,14 +60,34 @@ signal running_q: std_logic;
 signal clkrise_i: std_logic;
 signal clkfall_i: std_logic;
 
-signal prescale_q: integer range 0 to 15;
-signal prescale_load_q: integer range 0 to 15;
-signal prescale_fall_cmp_q: integer range 0 to 8;
+component prescaler is
+  port (
+    clk:    in std_logic;
+    rst:    in std_logic;
+    prescale:   in std_logic_vector(2 downto 0);
+    event:  out std_logic                       
+  );
+end component prescaler;
+
+
+signal prescale_q: std_logic_vector(2 downto 0);
+signal clk_i: std_logic;
+signal prescale_event: std_logic;
+signal prescale_reset: std_logic;
 
 begin
 
 clkrise <= clkrise_i;
 clkfall <= clkfall_i;
+
+pr: prescaler
+  port map (
+    clk => clk,
+    rst => prescale_reset,
+    prescale => prescale_q,
+    event => prescale_event
+  );
+
 
 genclk: process(clk)
 begin
@@ -93,57 +113,25 @@ process(clk)
 begin
   if rising_edge(clk) then
     if rst='1' then
-      prescale_load_q <= 0;
-      prescale_fall_cmp_q <= 0;
+      prescale_q <= (others => '0');
       running_q <= '0';
+      prescale_reset <= '0';
     else
       if en='1' then
-        if running_q='0' then
-          -- Load data
-          case pres is
-            when "00" =>
-              prescale_load_q <= 1;
-              prescale_fall_cmp_q <= 1;
-            when "01" =>
-              prescale_load_q <= 3;
-              prescale_fall_cmp_q <= 2;
-            when "10" =>
-              prescale_load_q <= 7;
-              prescale_fall_cmp_q <= 4;
-            when "11" =>
-              prescale_load_q <= 15;
-              prescale_fall_cmp_q <= 8;
-            when others =>
-          end case;
-        end if;
+        prescale_reset<='0';
         running_q <= '1';
+
+        if running_q='0' then
+          prescale_q <= pres;
+          prescale_reset<='1';
+        end if;
+        
       else
         running_q <= '0';
       end if;
-
     end if;
   end if;
 end process;
-
-process(clk)
-begin
-  if rising_edge(clk) then
-    if rst='1' then
-      prescale_q <= 0;
-    else
-      if running_q='1' then
-        if prescale_q = 0 then
-          prescale_q <= prescale_load_q;
-        else
-          prescale_q <= prescale_q - 1;
-        end if;
-      else
-        prescale_q <= 0;
-      end if;
-    end if;
-  end if;
-end process;
-
 
 process(clk)
 begin
@@ -151,22 +139,23 @@ begin
     if rst='1' then
       clkrise_i<='0';
       clkfall_i<='0';
+      clk_i<='0';
     else
-      if running_q='1' and en='1' then
-        if prescale_q=0 then
-          clkrise_i <= '1';
-        else
-          clkrise_i <= '0';
-        end if;
+      clkrise_i <= '0';
+      clkfall_i <= '0';
 
-        if prescale_q = prescale_fall_cmp_q then
-          clkfall_i <= '1';
-        else
-          clkfall_i <= '0';
+      if running_q='1' and en='1' then
+
+        if prescale_event='1' then
+          clk_i <= not clk_i;
+          if clk_i='0' then
+            clkrise_i <= '1';
+          else
+            clkfall_i <= '1';
+          end if;
         end if;
       else
-        clkrise_i <= '0';
-        clkfall_i <= '0';
+        clk_i <= '0';
       end if;
     end if;
   end if;

@@ -90,7 +90,7 @@ architecture behave of zpuino_spi is
       rst:   in std_logic;
       en:    in std_logic;
       cpol:  in std_logic;
-      pres:  in std_logic_vector(1 downto 0);
+      pres:  in std_logic_vector(2 downto 0);
     
       clkrise: out std_logic;
       clkfall: out std_logic;
@@ -104,7 +104,7 @@ architecture behave of zpuino_spi is
   signal spi_clk_en: std_logic;
   signal spi_clkrise: std_logic;
   signal spi_clkfall: std_logic;
-  signal spi_clk_pres: std_logic_vector(1 downto 0);
+  signal spi_clk_pres: std_logic_vector(2 downto 0);
   signal spi_samprise: std_logic;
   signal spi_enable_q: std_logic;
   signal cpol: std_logic;
@@ -174,10 +174,10 @@ begin
       else
       if we='1' then
         if address="0" then
-          spi_clk_pres <= write(2 downto 1);
-          cpol <= write(3);
-          spi_samprise <= write(4);
-          spi_enable_q <= write(5);
+          spi_clk_pres <= write(3 downto 1);
+          cpol <= write(4);
+          spi_samprise <= write(5);
+          spi_enable_q <= write(6);
         end if;
       end if;
       end if;
@@ -189,10 +189,10 @@ begin
     read <= (others =>'0');
     if address="0" then
       read(0) <= spi_ready;
-      read(2 downto 1) <= spi_clk_pres;
-      read(3) <= cpol;
-      read(4) <= spi_samprise;
-      read(5) <= spi_enable_q;
+      read(3 downto 1) <= spi_clk_pres;
+      read(4) <= cpol;
+      read(5) <= spi_samprise;
+      read(6) <= spi_enable_q;
     else
       read <= spi_read;
     end if;

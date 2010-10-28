@@ -84,9 +84,10 @@
 #define SPIREADY 0 /* SPI ready */
 #define SPICP0   1 /* Clock prescaler bit 0 */
 #define SPICP1   2 /* Clock prescaler bit 1 */
-#define SPICPOL  3 /* Clock polarity */
-#define SPISRE   4 /* Sample on Rising Edge */
-#define SPIEN    5 /* SPI Enabled (gpio acquire) */
+#define SPICP2   3 /* Clock prescaler bit 2 */
+#define SPICPOL  4 /* Clock polarity */
+#define SPISRE   5 /* Sample on Rising Edge */
+#define SPIEN    6 /* SPI Enabled (gpio acquire) */
 
 /* Sigma-Delta bits */
 #define SDENA    0 /* Sigma-delta enable */
