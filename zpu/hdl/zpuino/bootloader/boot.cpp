@@ -110,7 +110,11 @@ unsigned int inbyte()
 
 void enableTimer()
 {
+#ifdef SIMULATION
+	TMR0CMP = (CLK_FREQ/100000U)-1;
+#else
 	TMR0CMP = (CLK_FREQ/2000U)-1;
+#endif
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
 }
@@ -225,6 +229,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spi_disable();
 
 	SPICTL &= ~(BIT(SPIEN));
+	digitalWriteS<FPGA_LED_0, LOW>::apply();
 
 	// Reset settings
     /*
@@ -509,7 +514,7 @@ extern "C" int main(int argc,char**argv)
 	enableTimer();
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP1)|BIT(SPIEN);
+	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
 
 	syncSeen = 0;
 	unescaping = 0;
