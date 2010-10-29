@@ -130,7 +130,7 @@ architecture behave of tb_zpuino is
   signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
 begin
 
-  uart_rx <= uart_tx after 7 us;
+  uart_rx <= '1';--uart_tx after 7 us;
 
   uart_tx <= gpio_o(1);
   gpio_i(0) <= uart_rx;
