@@ -12,6 +12,7 @@ flash_info_t *find_flash(unsigned int manufacturer,unsigned int product, unsigne
 			flash->product == product &&
 			flash->density == density)
 			return flash;
+		flash++;
 	}
 	return NULL;
 }
