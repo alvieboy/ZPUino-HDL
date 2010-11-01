@@ -18,7 +18,7 @@ unsigned int io_load(unsigned int address)
 
 void io_store(unsigned int address, unsigned int val)
 {
- //   printf("IO store, address 0x%08x, val 0x%08x\n", address,val);
+  //  printf("IO store, address 0x%08x, val 0x%08x\n", address,val);
 }
 
 static struct timeval start,end;

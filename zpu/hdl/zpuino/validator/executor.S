@@ -8,11 +8,11 @@
 execute:
 	std
         movl _usp, %esi
-        mov _upc, %ebx     /* ebx: PC */
-        movl %esi, %edi    /* esi,edi: stack pointer */
+        mov _upc, %edi     /* edi: PC */
+
         xorl %edx, %edx
 .loop:
-        movzbl _memory(,%ebx), %eax /* Load opcode */
+        movzbl _memory(,%edi), %eax /* Load opcode */
         addl %edx, %eax /* For idim */	        
         movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
         movl %eax, %edx
@@ -23,7 +23,7 @@ execute:
         jmp .loop
 
 zpu_nop:
-	incl %ebx
+	incl %edi
 	ret
 zpu_ibreak:
 	pop %eax
@@ -33,10 +33,10 @@ zpu_pushsp:
 	// movl %esi, %eax
         movl %esi, _memory-4(%esi)
         subl $4,%esi
-        incl %ebx
+        incl %edi
         ret
 zpu_poppc:
-	movl _memory(%esi), %ebx
+	movl _memory(%esi), %edi
         addl $4, %esi
         ret
 zpu_add:
@@ -44,28 +44,28 @@ zpu_add:
         addl _memory+4(%esi), %eax
         addl $4, %esi
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 zpu_or:
 	movl _memory(%esi), %eax
         orl _memory+4(%esi), %eax
         addl $4, %esi
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 zpu_and:
 	movl _memory(%esi), %eax
 	andl _memory+4(%esi), %eax
         addl $4, %esi
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 
 zpu_not:
 	movl _memory(%esi), %eax
 	not %eax
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 
 zpu_flip:
@@ -77,7 +77,7 @@ zpu_flip:
 	adc $0, %eax
 .endr
 	movl %eax, _memory(%esi)
-	incl %ebx
+	incl %edi
 	ret
         
 zpu_store:
@@ -89,14 +89,14 @@ zpu_store:
         bt $15, %eax
         jc store_external
         movl %ecx, _memory(%eax)
-        incl %ebx
+        incl %edi
 	ret
 store_external:
         push %ecx
 	push %eax
         call io_store
 	add $8, %esp
-        incl %ebx
+        incl %edi
         ret
 	
 zpu_load:
@@ -107,19 +107,19 @@ zpu_load:
 	movl _memory(%eax), %eax
         bswap %eax
         movl %eax,_memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 .load_external:
         push %eax
         call io_load
         add $4, %esp
 	movl _memory(%esi), %eax
-        incl %ebx
+        incl %edi
 	ret           
 .macro addspX off
         movl _memory+\off(%esi), %eax   // Load
         addl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 .endm
         
@@ -158,9 +158,9 @@ zpu_addsp15:
 
 .macro emulateX off
 	subl $4, %esi
-        incl %ebx
-        movl %ebx, _memory(%esi)
-        movl $\off*32, %ebx
+        incl %edi
+        movl %edi, _memory(%esi)
+        movl $\off*32, %edi
         ret
 .endm
 
@@ -231,14 +231,14 @@ zpu_emulate31:
         
 zpu_popsp:
 	movl _memory(%esi), %esi
-        incl %ebx
+        incl %edi
         ret
         
 .macro storespX off
         movl _memory(%esi), %eax
         movl %eax, _memory+\off*4(%esi)
         addl $4, %esi
-        incl %ebx
+        incl %edi
         ret
 .endm
 
@@ -312,7 +312,7 @@ zpu_storesp31:
         movl _memory+(\off*4)(%esi), %eax
         subl $4, %esi
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 .endm
 
@@ -385,7 +385,7 @@ zpu_loadsp31:
         subl $4, %esi
         movl $\val, %eax
 	movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 .endm
 
@@ -651,7 +651,7 @@ zpu_first_im127:
         shl $7, %eax
         or $\val, %eax
         movl %eax, _memory(%esi)
-        incl %ebx
+        incl %edi
         ret
 .endm
 
