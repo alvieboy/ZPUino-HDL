@@ -10,32 +10,25 @@ execute:
         movl _usp, %esi
         mov _upc, %ebx     /* ebx: PC */
         movl %esi, %edi    /* esi,edi: stack pointer */
+        xorl %edx, %edx
 .loop:
         movzbl _memory(,%ebx), %eax /* Load opcode */
-        addl idimflag, %eax /* For idim */	        
+        addl %edx, %eax /* For idim */	        
         movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
-	xorl %edx, %edx
-        push %eax
+        movl %eax, %edx
         call *%ecx
-        pop %eax
-        andl $128, %eax
-        shl $1, %eax
-        movl %eax, idimflag
+        andl $128, %edx
+        shl $1, %edx
         incl count
         jmp .loop
-        movl %edx, %eax
-	/* test %eax, %eax */
-        /* Store values */
-        movl %ebx, (_upc)
-        movl %esi, (_usp)
-        ret
 
 zpu_nop:
 	incl %ebx
 	ret
 zpu_ibreak:
-	movl $1, %edx
-        ret
+	pop %eax
+        movl $1, %eax
+        ret /* Will go back to C */
 zpu_pushsp:
 	// movl %esi, %eax
         movl %esi, _memory-4(%esi)
@@ -103,27 +96,9 @@ store_external:
 	push %eax
         call io_store
 	add $8, %esp
-        xorl %edx,%edx
         incl %ebx
         ret
 	
-zpu_im:
-	movl idimflag, %edx
-        and $127, %eax
-        test $128, %edx
-        movl $0, %edx
-        jnz  .im_idim
-        subl $4, %esi
-	movl %eax, _memory(%esi)
-        incl %ebx
-        ret
-.im_idim:
-	movl _memory(%esi), %ecx
-        shl $7, %ecx
-        or %ecx, %eax
-        movl %eax, _memory(%esi)
-        incl %ebx
-        ret
 zpu_load:
 	movl _memory(%esi), %eax
         // If IO, dispatch
@@ -138,7 +113,6 @@ zpu_load:
         push %eax
         call io_load
         add $4, %esp
-        xor %edx, %edx
 	movl _memory(%esi), %eax
         incl %ebx
 	ret           
