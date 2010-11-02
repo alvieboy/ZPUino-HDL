@@ -28,7 +28,8 @@ execute:
         addl %edx, %eax /* For idim */	        
         movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
         movl %eax, %edx  /* Save opcode */
-        call *%ecx
+        jmp *%ecx
+.opcode_return:
         andl $128, %edx
         shl $1, %edx
         incl count
@@ -36,23 +37,23 @@ execute:
 .align 16
 zpu_nop:
 	incl %edi
-	ret
+	jmp .opcode_return
 zpu_ibreak:
 	pop %eax
         movl $1, %eax
-        ret /* Will go back to C */
+        jmp .opcode_return /* Will go back to C */
 zpu_pushsp:
         // Write back
         movl %ebx, _memory(%esi)
         movl %esi, %ebx
         subl $4,%esi
         incl %edi
-        ret
+        jmp .opcode_return
 zpu_poppc:
 	movl %ebx, %edi
         addl $4, %esi
         movl _memory(%esi), %ebx
-        ret
+        jmp .opcode_return
 .align 16
 zpu_add:
 
@@ -60,24 +61,24 @@ zpu_add:
         addl $4, %esi
         incl %edi
         addl %eax, %ebx
-        ret
+        jmp .opcode_return
 zpu_or:
         movl _memory+4(%esi), %eax
         orl %eax, %ebx
         addl $4, %esi
         incl %edi
-        ret
+        jmp .opcode_return
 zpu_and:
 	movl _memory+4(%esi), %eax
         addl $4, %esi
         incl %edi
         andl %eax, %ebx
-        ret
+        jmp .opcode_return
 .align 16
 zpu_not:
 	not %ebx
         incl %edi
-        ret
+        jmp .opcode_return
         
         
 	.globl BitReverseTable256
@@ -138,7 +139,7 @@ zpu_flip:
 */
 	movl   %eax, %ebx
 	incl   %edi
-	ret
+	jmp .opcode_return
         
 zpu_store:
 	// Address in %ebx
@@ -153,7 +154,7 @@ zpu_store:
         jc store_external
         movl %ecx, _memory(%eax)
         incl %edi
-	ret
+	jmp .opcode_return
 store_external:
         push %ecx
 	push %ebx
@@ -161,7 +162,7 @@ store_external:
 	add $8, %esp
         
         incl %edi
-        ret
+        jmp .opcode_return
 	
 zpu_load:
         bt $15, %ebx
@@ -169,7 +170,7 @@ zpu_load:
 	movl _memory(%ebx), %ebx
         bswap %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 
 .load_external:
         push %ebx
@@ -177,20 +178,20 @@ zpu_load:
         add $4, %esp
 	movl %eax, %ebx
         incl %edi
-	ret      
+	jmp .opcode_return      
         
 .macro addspX off
         movl _memory+\off(%esi), %eax   // Load
         addl %eax, %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 .endm
         
 zpu_addsp0:
 	// Special case ????
         addl %ebx, %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 zpu_addsp1:
         addspX 4
 zpu_addsp2:
@@ -229,7 +230,7 @@ zpu_addsp15:
         incl %edi
         movl %edi, %ebx
         movl $\off*32, %edi
-        ret
+        jmp .opcode_return
 .endm
 
 zpu_emulate0:
@@ -303,14 +304,14 @@ zpu_popsp:
 	movl %ebx, %esi
         movl _memory(%esi), %ebx
         incl %edi
-        ret
+        jmp .opcode_return
         
 .macro storespX off
         movl %ebx, _memory+\off*4(%esi)
         addl $4, %esi
         movl _memory(%esi), %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 .endm
 
 zpu_storesp0:
@@ -385,7 +386,7 @@ zpu_storesp31:
         movl _memory+(\off*4)(%esi), %ebx
         subl $4, %esi
         incl %edi
-        ret
+        jmp .opcode_return
 .endm
 
 zpu_loadsp0:
@@ -459,7 +460,7 @@ zpu_loadsp31:
         subl $4, %esi
         movl $\val, %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 .endm
 
 zpu_first_im0:
@@ -723,7 +724,7 @@ zpu_first_im127:
         shl $7, %ebx
         or $\val, %ebx
         incl %edi
-        ret
+        jmp .opcode_return
 .endm
 
 zpu_next_im0:
