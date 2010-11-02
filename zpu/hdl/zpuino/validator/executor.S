@@ -8,20 +8,32 @@
 execute:
 	std
         movl _usp, %esi
-        mov _upc, %edi     /* edi: PC */
+        movl _upc, %edi     /* edi: PC */
 
         xorl %edx, %edx
+        // Preload stack top
+        movl _memory(%esi), %ebx
 .loop:
+       /* Trace stuff. Remove for performance */
+/* 
+	pusha
+        push %ebx
+        push %esi
+        push %edi
+        call trace
+        add $12, %esp
+        popa
+*/
         movzbl _memory(,%edi), %eax /* Load opcode */
         addl %edx, %eax /* For idim */	        
         movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
-        movl %eax, %edx
+        movl %eax, %edx  /* Save opcode */
         call *%ecx
         andl $128, %edx
         shl $1, %edx
         incl count
         jmp .loop
-
+.align 16
 zpu_nop:
 	incl %edi
 	ret
@@ -30,101 +42,155 @@ zpu_ibreak:
         movl $1, %eax
         ret /* Will go back to C */
 zpu_pushsp:
-	// movl %esi, %eax
-        movl %esi, _memory-4(%esi)
+        // Write back
+        movl %ebx, _memory(%esi)
+        movl %esi, %ebx
         subl $4,%esi
         incl %edi
         ret
 zpu_poppc:
-	movl _memory(%esi), %edi
+	movl %ebx, %edi
         addl $4, %esi
+        movl _memory(%esi), %ebx
         ret
+.align 16
 zpu_add:
-	movl _memory(%esi), %eax
-        addl _memory+4(%esi), %eax
+
+        movl _memory+4(%esi), %eax
         addl $4, %esi
-        movl %eax, _memory(%esi)
         incl %edi
+        addl %eax, %ebx
         ret
 zpu_or:
-	movl _memory(%esi), %eax
-        orl _memory+4(%esi), %eax
+        movl _memory+4(%esi), %eax
+        orl %eax, %ebx
         addl $4, %esi
-        movl %eax, _memory(%esi)
         incl %edi
         ret
 zpu_and:
-	movl _memory(%esi), %eax
-	andl _memory+4(%esi), %eax
+	movl _memory+4(%esi), %eax
         addl $4, %esi
-        movl %eax, _memory(%esi)
         incl %edi
+        andl %eax, %ebx
         ret
-
+.align 16
 zpu_not:
-	movl _memory(%esi), %eax
-	not %eax
-        movl %eax, _memory(%esi)
+	not %ebx
         incl %edi
         ret
-
+        
+        
+	.globl BitReverseTable256
 zpu_flip:
-	movl _memory(%esi), %ecx
+/*
 	xorl %eax,%eax
 .rept 32
         shl %eax
-        shr $1, %ecx
+        shr $1, %ebx
 	adc $0, %eax
 .endr
-	movl %eax, _memory(%esi)
-	incl %edi
+*/
+
+	mov    %ebx,%eax
+	shr    %ebx
+	and    $0x55555555,%eax
+	and    $0x55555555,%ebx
+	add    %eax,%eax
+	or     %ebx,%eax
+	mov    %eax,%ebx
+	and    $0x33333333,%eax
+	shr    $0x2,%ebx
+	shl    $0x2,%eax
+	and    $0x33333333,%ebx
+	or     %ebx,%eax
+	mov    %eax,%ebx
+	and    $0xf0f0f0f,%eax
+	shr    $0x4,%ebx
+	shl    $0x4,%eax
+	and    $0xf0f0f0f,%ebx
+	or     %ebx,%eax
+	mov    %eax,%ebx
+	and    $0xff00ff,%eax
+	shr    $0x8,%ebx
+	shl    $0x8,%eax
+	and    $0xff00ff,%ebx
+	or     %ebx,%eax
+	ror    $0x10,%eax
+
+/*
+
+	movzbl %bl,%eax
+ 	mov    %ebx,%ecx
+ 	movzbl BitReverseTable256(%eax),%eax
+ 	shr    $0x18,%ecx
+ 	shl    $0x18,%eax
+ 	movzbl BitReverseTable256(%ecx),%ecx
+ 	or     %ecx,%eax
+ 	movzbl %bh,%ecx
+ 	shr    $0x10,%ebx
+ 	movzbl BitReverseTable256(%ecx),%ecx
+ 	and    $0xff,%ebx
+ 	shl    $0x10,%ecx
+ 	or     %ecx,%eax
+ 	movzbl 0x8049d00(%ebx),%ecx
+ 	shl    $0x8,%ecx
+ 	or     %ecx,%eax
+*/
+	movl   %eax, %ebx
+	incl   %edi
 	ret
         
 zpu_store:
-	movl _memory(%esi), %eax  // address
+	// Address in %ebx
         addl $4, %esi
         movl _memory(%esi), %ecx //value
         addl $4, %esi
         bswap %ecx
-        bt $15, %eax
+        bt $15, %ebx
+        
+        movl _memory(%esi), %ebx // Reload stack top
+        
         jc store_external
         movl %ecx, _memory(%eax)
         incl %edi
 	ret
 store_external:
         push %ecx
-	push %eax
+	push %ebx
         call io_store
 	add $8, %esp
+        
         incl %edi
         ret
 	
 zpu_load:
-	movl _memory(%esi), %eax
-        // If IO, dispatch
-        bt $15, %eax
+        bt $15, %ebx
         jc .load_external
-	movl _memory(%eax), %eax
-        bswap %eax
-        movl %eax,_memory(%esi)
+	movl _memory(%ebx), %ebx
+        bswap %ebx
         incl %edi
         ret
+
 .load_external:
-        push %eax
+        push %ebx
         call io_load
         add $4, %esp
-	movl _memory(%esi), %eax
+	movl %eax, %ebx
         incl %edi
-	ret           
+	ret      
+        
 .macro addspX off
         movl _memory+\off(%esi), %eax   // Load
-        addl %eax, _memory(%esi)
+        addl %eax, %ebx
         incl %edi
         ret
 .endm
         
 zpu_addsp0:
-	addspX 0
+	// Special case ????
+        addl %ebx, %ebx
+        incl %edi
+        ret
 zpu_addsp1:
         addspX 4
 zpu_addsp2:
@@ -157,9 +223,11 @@ zpu_addsp15:
 	addspX 60
 
 .macro emulateX off
+        // Write back
+        movl %ebx, _memory(%esi)
 	subl $4, %esi
         incl %edi
-        movl %edi, _memory(%esi)
+        movl %edi, %ebx
         movl $\off*32, %edi
         ret
 .endm
@@ -230,14 +298,17 @@ zpu_emulate31:
 	emulateX 31
         
 zpu_popsp:
-	movl _memory(%esi), %esi
+	// Write back
+        movl %ebx, _memory(%esi)
+	movl %ebx, %esi
+        movl _memory(%esi), %ebx
         incl %edi
         ret
         
 .macro storespX off
-        movl _memory(%esi), %eax
-        movl %eax, _memory+\off*4(%esi)
+        movl %ebx, _memory+\off*4(%esi)
         addl $4, %esi
+        movl _memory(%esi), %ebx
         incl %edi
         ret
 .endm
@@ -309,9 +380,10 @@ zpu_storesp31:
 
 
 .macro loadspX off
-        movl _memory+(\off*4)(%esi), %eax
+	// Write back
+        movl %ebx, _memory(%esi)
+        movl _memory+(\off*4)(%esi), %ebx
         subl $4, %esi
-        movl %eax, _memory(%esi)
         incl %edi
         ret
 .endm
@@ -382,9 +454,10 @@ zpu_loadsp31:
 	loadspX 31
 
 .macro firstimX val
+	// Write back
+        movl %ebx, _memory(%esi)
         subl $4, %esi
-        movl $\val, %eax
-	movl %eax, _memory(%esi)
+        movl $\val, %ebx
         incl %edi
         ret
 .endm
@@ -647,10 +720,8 @@ zpu_first_im127:
 	firstimX -1
 
 .macro nextimX val
-        movl _memory(%esi), %eax
-        shl $7, %eax
-        or $\val, %eax
-        movl %eax, _memory(%esi)
+        shl $7, %ebx
+        or $\val, %ebx
         incl %edi
         ret
 .endm
