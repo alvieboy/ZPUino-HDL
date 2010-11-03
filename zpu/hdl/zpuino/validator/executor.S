@@ -5,6 +5,7 @@
         .globl execute
 	.globl idimflag
         .globl count
+        .globl tick
 execute:
 	std
         movl _usp, %esi
@@ -14,7 +15,24 @@ execute:
         // Preload stack top
         movl _memory(%esi), %ebx
 .loop:
+       push %edi
+       push %esi
+
+       /* Fetch stage delay*/
+       call tick
+       incl count
+       
+       /* Fetch next stage delay*/
+       call tick
+       incl count
+       
+       /* Decode stage */
+       call tick
+       incl count
+       pop %esi
+       pop %edi
        /* Trace stuff. Remove for performance */
+       
 /* 
 	pusha
         push %ebx

@@ -8,8 +8,14 @@ unsigned int _usp=0x7FF8;
 unsigned char _memory[32768];
 unsigned int _upc=0;
 
+unsigned int cnt=0;
+
 extern unsigned int execute();
 
+void tick()
+{
+    cnt++;
+}
 unsigned int io_load(unsigned int address)
 {
 //	printf("IO load, address 0x%08x\n", address);
