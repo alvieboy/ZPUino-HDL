@@ -1,39 +1,50 @@
-        .globl _usp
-        .globl _upc
-        .globl _memory
-        .globl dispatchtable
+
+/*
+	Registers EAX, ECX, and EDX are available for use in the function.
+        C calling standard
+*/
+	
         .globl execute
-	.globl idimflag
-        .globl count
-        .globl tick
+
 execute:
-	std
-        movl _usp, %esi
-        movl _upc, %edi     /* edi: PC */
+	pusha /* Save everything */
+        std
+	movl _usp, %esi
+	movl _upc, %edi     /* edi: PC */
 
-        xorl %edx, %edx
+	xorl %edx, %edx /* IDIM flag offset */
         // Preload stack top
-        movl _memory(%esi), %ebx
+	movl _memory(%esi), %ebx
 .loop:
-       push %edi
-       push %esi
+        
+        /* Check if we're to halt */
+        movl request_halt, %eax
+        test %eax, %eax
+        jne .do_halt
 
-       /* Fetch stage delay*/
-       call tick
-       incl count
+.cannot_halt:
+	push %edx
+	/* Fetch stage delay*/
+	call tick
+	incl count
        
-       /* Fetch next stage delay*/
-       call tick
-       incl count
+	/* Fetch next stage delay*/
+	call tick
+	incl count
        
-       /* Decode stage */
-       call tick
-       incl count
-       pop %esi
-       pop %edi
+	/* Decode stage */
+	call tick
+	incl count
+        	
+	pop %edx
+       
+       /* Check interrupt */
+	mov do_interrupt, %eax 
+	test %eax, %eax
+	jne .jump_to_interrupt 
+.fetch:
        /* Trace stuff. Remove for performance */
-       
-/* 
+#ifdef TRACE	
 	pusha
         push %ebx
         push %esi
@@ -41,51 +52,79 @@ execute:
         call trace
         add $12, %esp
         popa
-*/
-        movzbl _memory(,%edi), %eax /* Load opcode */
-        addl %edx, %eax /* For idim */	        
-        movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
-        movl %eax, %edx  /* Save opcode */
-        jmp *%ecx
+#endif	
+
+	movzbl _memory(,%edi), %eax /* Load opcode */
+	addl %edx, %eax /* For idim */	        
+	movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
+	movl %eax, %edx  /* Save opcode */
+	jmp *%ecx
+
 .opcode_return:
-        andl $128, %edx
-        shl $1, %edx
-        incl count
-        jmp .loop
+	andl $128, %edx
+	shl $1, %edx
+	incl count
+	jmp .loop
+.do_halt:
+	/* Only go back to "C" if we're not processing IDIM */
+        test %edx, %edx
+        je .cannot_halt
+	/* Go back to "C" */
+        movl %ebx, _memory(%esi)
+	
+        popa
+        ret
+        
+.jump_to_interrupt:
+	// Skip interrupt if IDIM flag is set
+        test %edx, %edx
+        jne .fetch
+        // Write back
+	movl %ebx, _memory(%esi)
+	subl $4,%esi
+	movl %edi, %ebx
+	movl $0x20, %edi
+	movl $0, do_interrupt
+	jmp .fetch
+
 .align 16
 zpu_nop:
 	incl %edi
 	jmp .opcode_return
 zpu_ibreak:
-	pop %eax
-        movl $1, %eax
-        jmp .opcode_return /* Will go back to C */
+	movl $1, %eax
+        popa
+	ret /* Will go back to C */
+
 zpu_pushsp:
-        // Write back
-        movl %ebx, _memory(%esi)
-        movl %esi, %ebx
-        subl $4,%esi
-        incl %edi
-        jmp .opcode_return
+	// Write back
+	movl %ebx, _memory(%esi)
+	movl %esi, %ebx
+	subl $4,%esi
+	incl %edi
+	jmp .opcode_return
+
 zpu_poppc:
 	movl %ebx, %edi
-        addl $4, %esi
-        movl _memory(%esi), %ebx
-        jmp .opcode_return
+	addl $4, %esi
+	movl _memory(%esi), %ebx
+	jmp .opcode_return
+
 .align 16
 zpu_add:
+	movl _memory+4(%esi), %eax
+	addl $4, %esi
+	incl %edi
+	addl %eax, %ebx
+	jmp .opcode_return
 
-        movl _memory+4(%esi), %eax
-        addl $4, %esi
-        incl %edi
-        addl %eax, %ebx
-        jmp .opcode_return
 zpu_or:
-        movl _memory+4(%esi), %eax
-        orl %eax, %ebx
-        addl $4, %esi
-        incl %edi
-        jmp .opcode_return
+	movl _memory+4(%esi), %eax
+	orl %eax, %ebx
+	addl $4, %esi
+	incl %edi
+	jmp .opcode_return
+
 zpu_and:
 	movl _memory+4(%esi), %eax
         addl $4, %esi
@@ -101,15 +140,6 @@ zpu_not:
         
 	.globl BitReverseTable256
 zpu_flip:
-/*
-	xorl %eax,%eax
-.rept 32
-        shl %eax
-        shr $1, %ebx
-	adc $0, %eax
-.endr
-*/
-
 	mov    %ebx,%eax
 	shr    %ebx
 	and    $0x55555555,%eax
@@ -135,26 +165,6 @@ zpu_flip:
 	and    $0xff00ff,%ebx
 	or     %ebx,%eax
 	ror    $0x10,%eax
-
-/*
-
-	movzbl %bl,%eax
- 	mov    %ebx,%ecx
- 	movzbl BitReverseTable256(%eax),%eax
- 	shr    $0x18,%ecx
- 	shl    $0x18,%eax
- 	movzbl BitReverseTable256(%ecx),%ecx
- 	or     %ecx,%eax
- 	movzbl %bh,%ecx
- 	shr    $0x10,%ebx
- 	movzbl BitReverseTable256(%ecx),%ecx
- 	and    $0xff,%ebx
- 	shl    $0x10,%ecx
- 	or     %ecx,%eax
- 	movzbl 0x8049d00(%ebx),%ecx
- 	shl    $0x8,%ecx
- 	or     %ecx,%eax
-*/
 	movl   %eax, %ebx
 	incl   %edi
 	jmp .opcode_return
@@ -164,37 +174,44 @@ zpu_store:
         addl $4, %esi
         movl _memory(%esi), %ecx //value
         addl $4, %esi
-        bswap %ecx
         bt $15, %ebx
         
-        movl _memory(%esi), %ebx // Reload stack top
-        
         jc store_external
-        movl %ecx, _memory(%eax)
+        bswap %ecx
+        movl %ecx, _memory(%ebx)
+        movl _memory(%esi), %ebx // Reload stack top
+
         incl %edi
 	jmp .opcode_return
+
 store_external:
+        mov io_write_table-32768(%ebx), %eax
+        push %edx
         push %ecx
 	push %ebx
-        call io_store
+        call *%eax
 	add $8, %esp
-        
+        pop %edx
+        movl _memory(%esi), %ebx // Reload stack top        
         incl %edi
         jmp .opcode_return
 	
 zpu_load:
         bt $15, %ebx
-        jc .load_external
+        jc load_external
 	movl _memory(%ebx), %ebx
         bswap %ebx
         incl %edi
         jmp .opcode_return
 
-.load_external:
+load_external:
+	mov io_read_table-32768(%ebx), %eax
+        push %edx
         push %ebx
-        call io_load
+        call *%eax
         add $4, %esp
-	movl %eax, %ebx
+	pop %edx
+        movl %eax, %ebx
         incl %edi
 	jmp .opcode_return      
         

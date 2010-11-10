@@ -11,6 +11,10 @@
 #include "transport.h"
 #include "programmer.h"
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/un.h>
+#include <sys/socket.h>
+#endif
 
 static unsigned char *packet;
 static size_t packetoffset;
@@ -19,7 +23,7 @@ static int unescaping=0;
 static unsigned int verbose = 0;
 static char *binfile=NULL;
 static char *serialport=NULL;
-
+static int is_simulator=0;
 
 int parse_arguments(int argc,char **const argv)
 {
@@ -35,7 +39,9 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'd':
 			serialport = optarg;
-            break;
+			if (strncmp(serialport,"socket:",7)==0)
+				is_simulator=1;
+			break;
 		default:
 			return 0;
 		}
@@ -176,6 +182,9 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 					free(txbuf2);
 					return ret;
 				}
+			} else {
+				fprintf(stderr,"Cannot read from connection\n");
+				return NULL;
 			}
 		}
 	} while (1);
@@ -190,8 +199,7 @@ buffer_t *sendreceive(int fd, unsigned char *txbuf, size_t size, int timeout)
 	return sendreceivecommand_i(fd,txbuf[0],txbuf+1,size-1,timeout,0);
 }
 
-
-int open_device(char *device)
+int open_serial_device(char *device)
 {
 	struct termios termset;
 	int fd;
@@ -229,7 +237,45 @@ int open_device(char *device)
 	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) |O_NONBLOCK);
 
 	return fd;
+}
 
+int open_simulator_device(const char *device)
+{
+#ifndef __linux__
+	return -1;
+#else
+	struct sockaddr_un sock;
+	char *dstart;
+	int s;
+
+	dstart=strchr(device,':');
+	if (NULL==dstart)
+		return -1;
+	dstart++;
+
+	memset(&sock,0,sizeof(sock));
+	sock.sun_family=AF_UNIX;
+	strcpy( &sock.sun_path[1], dstart );
+
+	s = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+	if (s<0)
+		return s;
+
+	if (connect(s, (struct sockaddr*)&sock,sizeof(sock))<0) {
+		perror("Cannot connect");
+		return -1;
+	}
+	fcntl(s, F_SETFL, fcntl(s, F_GETFL) |O_NONBLOCK);
+	return s;
+#endif
+}
+
+int open_device(char *device)
+{
+	if (is_simulator)
+		return open_simulator_device(device);
+	else
+		return open_serial_device(device);
 }
 
 buffer_t *handle()
@@ -566,7 +612,7 @@ int main(int argc, char **argv)
 	}
 
 	//if (verbose>0)
-	printf("\nProgramming complete.\n");
+	printf("Programming completed successfully.\n");
 
 	return 0;
 }
