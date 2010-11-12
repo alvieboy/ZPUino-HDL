@@ -15,6 +15,7 @@ execute:
 	xorl %edx, %edx /* IDIM flag offset */
         // Preload stack top
 	movl _memory(%esi), %ebx
+        bswap %ebx
 .loop:
         
         /* Check if we're to halt */
@@ -70,9 +71,10 @@ execute:
         test %edx, %edx
         je .cannot_halt
 	/* Go back to "C" */
+        bswap %ebx
         movl %ebx, _memory(%esi)
-	
         popa
+        movl $0, %eax
         ret
         
 .jump_to_interrupt:
@@ -80,7 +82,9 @@ execute:
         test %edx, %edx
         jne .fetch
         // Write back
-	movl %ebx, _memory(%esi)
+        movl %ebx, %eax
+        bswap %eax
+	movl %eax, _memory(%esi)
 	subl $4,%esi
 	movl %edi, %ebx
 	movl $0x20, %edi
@@ -92,13 +96,15 @@ zpu_nop:
 	incl %edi
 	jmp .opcode_return
 zpu_ibreak:
-	movl $1, %eax
         popa
+        movl $1, %eax
 	ret /* Will go back to C */
 
 zpu_pushsp:
 	// Write back
-	movl %ebx, _memory(%esi)
+        movl %ebx,%eax
+        bswap %eax
+	movl %eax, _memory(%esi)
 	movl %esi, %ebx
 	subl $4,%esi
 	incl %edi
@@ -108,11 +114,13 @@ zpu_poppc:
 	movl %ebx, %edi
 	addl $4, %esi
 	movl _memory(%esi), %ebx
+        bswap %ebx
 	jmp .opcode_return
 
 .align 16
 zpu_add:
 	movl _memory+4(%esi), %eax
+        bswap %eax
 	addl $4, %esi
 	incl %edi
 	addl %eax, %ebx
@@ -120,6 +128,7 @@ zpu_add:
 
 zpu_or:
 	movl _memory+4(%esi), %eax
+        bswap %eax
 	orl %eax, %ebx
 	addl $4, %esi
 	incl %edi
@@ -127,6 +136,7 @@ zpu_or:
 
 zpu_and:
 	movl _memory+4(%esi), %eax
+        bswap %eax
         addl $4, %esi
         incl %edi
         andl %eax, %ebx
@@ -177,14 +187,14 @@ zpu_store:
         bt $15, %ebx
         
         jc store_external
-        bswap %ecx
         movl %ecx, _memory(%ebx)
         movl _memory(%esi), %ebx // Reload stack top
-
+        bswap %ebx
         incl %edi
 	jmp .opcode_return
 
 store_external:
+        bswap %ecx
         mov io_write_table-32768(%ebx), %eax
         push %edx
         push %ecx
@@ -193,6 +203,7 @@ store_external:
 	add $8, %esp
         pop %edx
         movl _memory(%esi), %ebx // Reload stack top        
+        bswap %ebx
         incl %edi
         jmp .opcode_return
 	
@@ -217,6 +228,7 @@ load_external:
         
 .macro addspX off
         movl _memory+\off(%esi), %eax   // Load
+        bswap %eax
         addl %eax, %ebx
         incl %edi
         jmp .opcode_return
@@ -260,6 +272,7 @@ zpu_addsp15:
 
 .macro emulateX off
         // Write back
+        bswap %ebx
         movl %ebx, _memory(%esi)
 	subl $4, %esi
         incl %edi
@@ -335,16 +348,21 @@ zpu_emulate31:
         
 zpu_popsp:
 	// Write back
-        movl %ebx, _memory(%esi)
+        movl %ebx, %eax
+        bswap %eax
+        movl %eax, _memory(%esi)
 	movl %ebx, %esi
         movl _memory(%esi), %ebx
+        bswap %ebx
         incl %edi
         jmp .opcode_return
         
 .macro storespX off
+	bswap %ebx
         movl %ebx, _memory+\off*4(%esi)
         addl $4, %esi
         movl _memory(%esi), %ebx
+        bswap %ebx
         incl %edi
         jmp .opcode_return
 .endm
@@ -417,8 +435,10 @@ zpu_storesp31:
 
 .macro loadspX off
 	// Write back
+        bswap %ebx
         movl %ebx, _memory(%esi)
         movl _memory+(\off*4)(%esi), %ebx
+        bswap %ebx
         subl $4, %esi
         incl %edi
         jmp .opcode_return
@@ -491,6 +511,7 @@ zpu_loadsp31:
 
 .macro firstimX val
 	// Write back
+        bswap %ebx
         movl %ebx, _memory(%esi)
         subl $4, %esi
         movl $\val, %ebx
