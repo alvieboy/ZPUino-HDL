@@ -36,16 +36,18 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use IEEE.std_logic_unsigned.all; 
+library work;
+use work.zpupkg.all;
 
 entity dualport_ram is
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
-    memAAddr:         in std_logic_vector(14 downto 2);
+    memAAddr:         in std_logic_vector(maxAddrBit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector(14 downto 2);
+    memBAddr:         in std_logic_vector(maxAddrBit downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0);
     memErr:           out std_logic
@@ -58,11 +60,11 @@ architecture behave of dualport_ram is
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
-    memAAddr:         in std_logic_vector(14 downto 2);
+    memAAddr:         in std_logic_vector(maxAddrBit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector(14 downto 2);
+    memBAddr:         in std_logic_vector(maxAddrBit downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0)
     );
@@ -70,21 +72,22 @@ architecture behave of dualport_ram is
 
   signal memAWriteEnable_i:   std_logic;
   signal memBWriteEnable_i:   std_logic;
+  constant nullAddr: std_logic_vector(maxAddrBit downto 12) := (others => '0');
 
 begin
   -- Boot loader address: 000XXXXXXXXXX
   -- Disallow any writes to bootloader protected code (first 4096 bytes, 0x1000 hex (0x000 to 0xFFF)
 
-  memAWriteEnable_i <= memAWriteEnable when memAAddr(14 downto 12)/="000" else '0';
-  memBWriteEnable_i <= memBWriteEnable when memBAddr(14 downto 12)/="000" else '0';
+  memAWriteEnable_i <= memAWriteEnable when memAAddr(maxAddrBit downto 12)/=nullAddr else '0';
+  memBWriteEnable_i <= memBWriteEnable when memBAddr(maxAddrBit downto 12)/=nullAddr else '0';
 
-  process(memAWriteEnable,memAAddr(14 downto 12),memBWriteEnable,memBAddr(14 downto 12))
+  process(memAWriteEnable,memAAddr(maxAddrBit downto 12),memBWriteEnable,memBAddr(maxAddrBit downto 12))
   begin
     memErr <= '0';
-    if memAWriteEnable='1' and memAAddr(14 downto 12)="000" then
+    if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" then
       memErr<='1';
     end if;
-    if memBWriteEnable='1' and memBAddr(14 downto 12)="000" then
+    if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" then
       memErr<='1';
     end if;
   end process;
@@ -93,7 +96,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if memAWriteEnable='1' and memAAddr(14 downto 12)="000" then
+      if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" then
         report "Write to BOOTLOADER port A not allowed!!! " severity note;
       end if;
     end if;
@@ -103,7 +106,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if memBWriteEnable='1' and memBAddr(14 downto 12)="000" then
+      if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" then
         report "Write to BOOTLOADER port B not allowed!!!" severity note;
       end if;
     end if;
