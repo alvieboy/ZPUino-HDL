@@ -39,8 +39,11 @@ use ieee.numeric_std.all;
 library work;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+use work.zpuino_config.all;
+library unisim;
+use unisim.vcomponents.all;
 
-entity papilio_one_zpuino is
+entity papilio_one_top is
   port (
     CLK:        in std_logic;
     --RST:        in std_logic; -- No reset on papilio
@@ -48,23 +51,17 @@ entity papilio_one_zpuino is
     SPI_SCK:    out std_logic;
     SPI_MISO:   in std_logic;
     SPI_MOSI:   out std_logic;
-    SPI_CS:     inout std_logic; -- Shared with GPIO0
+    SPI_CS:     inout std_logic; 
 
-    --GPIO:       inout std_logic_vector(31 downto 0);
-    PORTA:      inout std_logic_vector(7 downto 0);
-    PORTB:      inout std_logic_vector(7 downto 0);
-    PORTC:      inout std_logic_vector(7 downto 0);
-    PORTD:      inout std_logic_vector(7 downto 0);
-    PORTE:      inout std_logic_vector(7 downto 0);
-    PORTF:      inout std_logic_vector(7 downto 0);
+    GPIO:       inout std_logic_vector(47 downto 0);
 
     TXD:        out std_logic;
     RXD:        in std_logic
 
   );
-end entity papilio_one_zpuino;
+end entity papilio_one_top;
 
-architecture behave of papilio_one_zpuino is
+architecture behave of papilio_one_top is
 
   component clkgen is
   port (
@@ -80,32 +77,19 @@ component zpuino_top is
     clk:      in std_logic;
 	 	areset:   in std_logic;
 
-    -- SPI program flash
-    spi_pf_miso:  in std_logic;
-    spi_pf_mosi:  out std_logic;
-    spi_pf_sck:   out std_logic;
-
-    -- UART
-    uart_rx:      in std_logic;
-    uart_tx:      out std_logic;
-
-    gpio:         inout std_logic_vector(31 downto 0)
+    gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
 
   );
 end component zpuino_top;
 
-  component PULLDOWN
-    PORT (
-      O: out std_logic
-    );
-  end component;
-
-  signal gpio_i:      std_logic_vector(31 downto 0);
-  signal spi_mosi_i:  std_logic;
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
   signal rst:         std_logic;
-
+  signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
 begin
 
@@ -117,39 +101,42 @@ begin
     rstout  => sysrst
   );
 
-  SPI_MOSI <= spi_mosi_i;
+  bufgen: for i in 0 to 47 generate
+    iob: IOBUF
+      generic map (
+        IBUF_DELAY_VALUE => "0",
+        SLEW => "FAST",
+        DRIVE => 8,
+        IFD_DELAY_VALUE => "0"
+      )
+      port map(
+        I => gpio_o(i),
+        O => gpio_i(i),
+        T => gpio_t(i),
+        IO => gpio(i)
+      );
+  end generate;
 
-  --  GPIO(31 downto 0) <= gpio_i(31 downto 0);
-  SPI_CS <= gpio_i(0);
-  PORTA <= gpio_i(8 downto 1);
-  PORTB <= gpio_i(16 downto 9);
-  PORTC <= gpio_i(24 downto 17);
-  PORTD(6 downto 0) <= gpio_i(31 downto 25);
+  -- Other ports are special, we need to avoid outputs on input-only pins
 
-  -- PULLDOWN on PORTD(7)
-  rstpull: PULLDOWN
-    port map (
-        O => PORTD(7)
-    );
+  ibufrx:   IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => RXD,        O => gpio_i(48) );
+  ibufmiso: IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => SPI_MISO,   O => gpio_i(49) );
+  obuftx:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(50), O => TXD );
+  ospiclk:  OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(51), O => SPI_SCK );
+  ospics:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(52), O => SPI_CS );
+  ospimosi: OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(53), O => SPI_MOSI );
 
-  rst <= PORTD(7);
+  rst <= '0';
 
-  
+
   zpuino:zpuino_top
   port map (
     clk           => sysclk,
 	 	areset        => sysrst,
 
-    -- SPI program flash
-    spi_pf_miso   => SPI_MISO,
-    spi_pf_mosi   => SPI_MOSI_i,
-    spi_pf_sck    => SPI_SCK,
-
-    -- UART
-    uart_rx       => RXD,
-    uart_tx       => TXD,
-
-    gpio          => gpio_i
+    gpio_i        => gpio_i,
+    gpio_t        => gpio_t,
+    gpio_o        => gpio_o
   );
 
 end behave;
