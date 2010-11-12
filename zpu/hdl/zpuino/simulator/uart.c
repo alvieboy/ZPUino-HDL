@@ -134,3 +134,8 @@ int uart_init()
 	printf("UART device is %s\n",name);
 	return 0;
 }
+
+char *uart_get_slave_name()
+{
+	return name;
+}
