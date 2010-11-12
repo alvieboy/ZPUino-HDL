@@ -5,7 +5,7 @@
 #include "board_s3e_eval.h"
 #else
 # if defined( __ZPUINO_PAPILIO_ONE__ )
-#  define CLK_FREQ  96000000ULL
+#  include "board_papilio_one.h"
 # else
 #  error Unknown board.
 # endif
