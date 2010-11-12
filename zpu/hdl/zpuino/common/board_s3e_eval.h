@@ -2,6 +2,7 @@
 #define __BOARD_H__
 
 #define CLK_FREQ 100000000ULL
+#define BOARD_MEMORYSIZE 0x8000
 
 #define FPGA_PIN_R7 0
 #define FPGA_PIN_M14 1
