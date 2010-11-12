@@ -41,6 +41,7 @@ my $mybuf;
 
 my $out = "";
 my $addr = 0;
+my $bitsminusone = $bits-1;
 
 print<<EOM;
 library IEEE;
@@ -52,11 +53,11 @@ entity prom_generic_dualport is
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
-    memAAddr:         in std_logic_vector(14 downto 2);
+    memAAddr:         in std_logic_vector($bitsminusone downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector(14 downto 2);
+    memBAddr:         in std_logic_vector($bitsminusone downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0)
   );
@@ -65,7 +66,7 @@ end entity prom_generic_dualport;
 architecture behave of prom_generic_dualport is
 
   subtype RAM_WORD is STD_LOGIC_VECTOR (31 downto 0);
-  type RAM_TABLE is array (0 to 8191) of RAM_WORD;
+  type RAM_TABLE is array (0 to $total_words-1) of RAM_WORD;
   shared variable RAM: RAM_TABLE := RAM_TABLE'(
 EOM
 
