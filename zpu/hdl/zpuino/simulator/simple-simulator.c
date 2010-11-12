@@ -13,6 +13,7 @@
 #include "io.h"
 #include <pthread.h>
 #include <errno.h>
+#include <byteswap.h>
 
 #define IOSIZE 0x8000
 #define IOSLOTS (IOSIZE>>2)
@@ -406,7 +407,7 @@ void trace(unsigned int pc, unsigned int sp, unsigned int top)
 		printf("0x%04X 0x%02X 0x%08X 0x%08X 0x%08X %d\n", pc,
 			   _memory[pc], sp,
 			   top,
-			   *(unsigned int*)&_memory[sp+4],cnt);
+			   bswap_32(*(unsigned int*)&_memory[sp+4]),cnt);
 		fflush(stdout);
 	}
 }
@@ -425,20 +426,28 @@ int help()
 
 void *zpu_thread(void*data)
 {
+	int r;
 	do {
-		execute();
-		pthread_mutex_lock(&zpu_halted_lock);
-		zpu_halted_flag=1;
-		pthread_mutex_unlock(&zpu_halted_lock);
-		pthread_cond_broadcast(&zpu_halted_cond);
-		// Wait for resume
-		pthread_mutex_lock(&zpu_resume_lock);
-		while (!zpu_resume_flag)
-			pthread_cond_wait(&zpu_resume_cond,&zpu_resume_lock);
-		zpu_resume_flag=0;
-		pthread_mutex_unlock(&zpu_resume_lock);
-		if (do_exit)
-			return NULL;
+		r = execute();
+		if (r==0) { // Requested halt
+
+			pthread_mutex_lock(&zpu_halted_lock);
+			zpu_halted_flag=1;
+			pthread_mutex_unlock(&zpu_halted_lock);
+			pthread_cond_broadcast(&zpu_halted_cond);
+			// Wait for resume
+			pthread_mutex_lock(&zpu_resume_lock);
+			while (!zpu_resume_flag)
+				pthread_cond_wait(&zpu_resume_cond,&zpu_resume_lock);
+			zpu_resume_flag=0;
+			pthread_mutex_unlock(&zpu_resume_lock);
+			if (do_exit)
+				return NULL;
+		} else {
+			// We caught a BREAK instruction
+			printf("BREAK instruction\n");
+			abort();
+		}
 	} while(1);
 	return NULL;
 }
@@ -491,6 +500,16 @@ int main(int argc,char **argv)
 
 	spiflash_mapbin(argv[2]);
 	uart_init();
+
+	// Spawn terminal
+	int pid;
+	switch(pid=vfork()) {
+	case 0:
+		return execl("./terminal/terminal","terminal",uart_get_slave_name(),NULL);
+	default:
+		break;
+	}
+
 	if (setup_programmer_port()<0)
 		return -1;
 
