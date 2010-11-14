@@ -516,42 +516,25 @@ void configure_pins()
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
 
-                    /*
-	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
 
-	GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
-	pinModeS<FPGA_PIN_M14,OUTPUT>::apply();
+	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_UART_RX;
 
-	GPIOPPSOUT( FPGA_PIN_T4  ) = IOPIN_SPI_MOSI;
-	pinModeS<FPGA_PIN_T4,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
 
-	GPIOPPSOUT( FPGA_PIN_U16 ) = IOPIN_SPI_SCK;
-	pinModeS<FPGA_PIN_U16,OUTPUT>::apply();
+	pinModeS<FPGA_PIN_UART_TX,OUTPUT>::apply();
 
-	GPIOPPSOUT( FPGA_PIN_U3 ) = FPGA_SS_B; // SPI_SS_B
-	pinModeS<FPGA_PIN_U3,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_SPI_MOSI  ) = IOPIN_SPI_MOSI;
+	pinModeS<FPGA_PIN_SPI_MOSI,OUTPUT>::apply();
 
-	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_N10;
-	pinModeS<FPGA_PIN_N10,INPUT>::apply();
+	GPIOPPSOUT( FPGA_PIN_SPI_SCK ) = IOPIN_SPI_SCK;
+	pinModeS<FPGA_PIN_SPI_SCK,OUTPUT>::apply();
 
-	// Pins that need output to disable other SPI devices
+	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = FPGA_PIN_FLASHCS; // SPI_SS_B
+	pinModeS<FPGA_PIN_FLASHCS,OUTPUT>::apply();
 
-	GPIOPPSOUT( FPGA_PIN_P11 ) = FPGA_AD_CONV; // AD_CONV
-	pinModeS<FPGA_PIN_P11,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N8 ) = FPGA_DAC_CS; // DAC_CS
-	pinModeS<FPGA_PIN_N8,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N7 ) = FPGA_AMP_CS; // AMP_CS
-	pinModeS<FPGA_PIN_N7,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_D16 ) = FPGA_SF_CE0; // SF_CE0
-	pinModeS<FPGA_PIN_D16,OUTPUT>::apply();
+	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_SPI_MISO;
+	pinModeS<FPGA_PIN_SPI_MISO,INPUT>::apply();
 
-	pinModeS<FPGA_LED_0,OUTPUT>::apply();
-	digitalWriteS<FPGA_LED_0, HIGH>::apply();
-	pinModeS<FPGA_LED_1,OUTPUT>::apply();
-	digitalWriteS<FPGA_LED_1, LOW>::apply();
-	pinModeS<FPGA_LED_2,OUTPUT>::apply();
-	digitalWriteS<FPGA_LED_2, LOW>::apply();
-    */
 }
 #endif
 
