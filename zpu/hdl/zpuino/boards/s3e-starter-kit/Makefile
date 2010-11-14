@@ -1,10 +1,11 @@
-PROJECT=papilio_one
-PART=xc3s250e-vq100-4
+PROJECT=s3e_eval_zpuino
+PART=xc3s500e-fg320-4
 
 all: ${PROJECT}_routed.ncd
 
 
 ${PROJECT}.ngc:
+	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
 ${PROJECT}.ngd: ${PROJECT}.ngc
