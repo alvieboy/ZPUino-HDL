@@ -2,6 +2,8 @@ all: simulator
 
 CC:=gcc
 
+# Add -DTRACE to ASFLAGS to have a proper trace
+
 ASFLAGS=-g
 CFLAGS=-g -O6 -Wall -march=i686 -mtune=core2 -fomit-frame-pointer
 LDFLAGS=-lutil -lpthread
