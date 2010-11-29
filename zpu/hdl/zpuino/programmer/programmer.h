@@ -14,6 +14,8 @@
 #define BOOTLOADER_CMD_RAWREADWRITE 0x04
 #define BOOTLOADER_CMD_ENTERPGM 0x05
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
+#define BOOTLOADER_CMD_SSTAAIPROGRAM 0x07
+
 #define REPLY(X) (X|0x80)
 
 #define ALIGN(val,boundary) ( (((val) / (boundary)) + (!!((val)%(boundary)))) *(boundary))

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -24,18 +25,58 @@ static unsigned int verbose = 0;
 static char *binfile=NULL;
 static char *serialport=NULL;
 static int is_simulator=0;
+static int only_read=0;
+static int ignore_limit=0;
+static int user_offset=-1;
+static int serial_speed = B1000000;
+static int dry_run = 0;
+
+unsigned short version;
+
+static int set_speed(char *value)
+{
+	int v = atoi(value);
+	switch (v) {
+	case 1000000:
+		serial_speed = B1000000;
+		break;
+	case 115200:
+		serial_speed = B115200;
+		break;
+	default:
+		printf("Baud rate '%s' not supported\n",value);
+		return -1;
+	}
+	return 0;
+}
 
 int parse_arguments(int argc,char **const argv)
 {
 	while (1) {
-		switch (getopt(argc,argv,"vb:d:")) {
+		switch (getopt(argc,argv,"Dvb:d:ro:ls:")) {
 		case '?':
 			return -1;
 		case 'v':
 			verbose++;
 			break;
+		case 's':
+			if (set_speed(optarg)<0)
+				return -1;
+			break;
 		case 'b':
 			binfile = optarg;
+			break;
+		case 'r':
+			only_read=1;
+			break;
+		case 'l':
+			ignore_limit=1;
+			break;
+		case 'D':
+			dry_run=1;
+			break;
+		case 'o':
+			user_offset=atoi(optarg);
 			break;
 		case 'd':
 			serialport = optarg;
@@ -224,8 +265,8 @@ int open_serial_device(char *device)
 	termset.c_cc[VMIN]=1;
 	termset.c_cc[VTIME]=5;
 
-	cfsetospeed(&termset,B115200);
-	cfsetispeed(&termset,B115200);
+	cfsetospeed(&termset,serial_speed);
+	cfsetispeed(&termset,serial_speed);
 
 	tcsetattr(fd,TCSANOW,&termset);
 
@@ -325,7 +366,7 @@ out:
 buffer_t *process(unsigned char *buffer, size_t size)
 {
 	size_t s;
-    unsigned int i;
+	unsigned int i;
 	for (s=0;s<size;s++) {
 		i = buffer[s];
 
@@ -345,7 +386,7 @@ buffer_t *process(unsigned char *buffer, size_t size)
 			} else {
 				syncSeen=0;
 				free(packet);
-                packet = NULL;
+				packet = NULL;
 			}
 		} else {
 			if (i==HDLC_frameFlag) {
@@ -364,7 +405,7 @@ void buffer_free(buffer_t *b)
 	if (b) {
 		if (b->buf)
 			free(b->buf);
-        free(b);
+		free(b);
 	}
 }
 
@@ -384,12 +425,29 @@ static int flash_read_status(fd)
 		return -1;
 
 	buffer_free(b);
-    return 0;
+	return 0;
+}
+
+int read_flash(int fd, flash_info_t *flash, size_t page)
+{
+	buffer_t *b = flash->driver->read_page(fd,page);
+
+	if (verbose>0)
+		printf("Reading page nr %d (offset 0x%08x)\n",page,page*flash->pagesize);
+	if (b) {
+		unsigned int i;
+		for (i=3;i<b->size;i++) {
+			printf("%02x ", b->buf[i]);
+		}
+        printf("\n");
+		buffer_free(b);
+	}
+	return 0;
 }
 
 int help(char *name)
 {
-	printf("Usage: %s -d <serialdevice> -b <binaryfile> [-v]\n",name);
+	printf("Usage: %s -d <serialdevice> [-b <binaryfile>|-r] [-v]\n",name);
 }
 int main(int argc, char **argv)
 {
@@ -398,6 +456,8 @@ int main(int argc, char **argv)
 	uint32_t spioffset_page;
 	uint32_t spioffset_sector;
 	uint32_t codesize;
+	struct timeval start,end,delta;
+
 	flash_info_t *flash;
 	int retries;
 
@@ -409,8 +469,8 @@ int main(int argc, char **argv)
 		return help(argv[0]);
 	}
 
-	if (NULL==binfile || NULL==serialport) {
-        return help(argv[0]);
+	if ((NULL==binfile&&only_read==0) || NULL==serialport) {
+		return help(argv[0]);
 	}
 
 	int fd = open_device(serialport);
@@ -430,12 +490,15 @@ int main(int argc, char **argv)
 		b = sendreceivecommand(fd,BOOTLOADER_CMD_VERSION,NULL,0,200);
 		if (b)
 			break;
-        retries--;
+		retries--;
 	}
 
 	if (b) {
 		if (verbose>0)
 			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
+
+		version = ((unsigned short)b->buf[1]<<8) | b->buf[2];
+
 		spioffset = b->buf[3];
 		spioffset<<=8;
 		spioffset += b->buf[4];
@@ -462,11 +525,18 @@ int main(int argc, char **argv)
 
 	buffer_free(b);
 
+	gettimeofday(&start,NULL);
+
+	if (user_offset>=0) {
+		printf("Using user-specified offset 0x%08x\n",user_offset);
+		spioffset=user_offset;
+	}
+
 	b = sendreceivecommand(fd,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
 
 	if (b) {
 		if (verbose>0)
-			printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3]);
+			printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
 
 		/* Find flash */
 		flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
@@ -486,8 +556,12 @@ int main(int argc, char **argv)
 	}
 
 	/* Align offset */
-	spioffset_page = spioffset % flash->pagesize;
-	spioffset_sector = spioffset % flash->sectorsize;
+	spioffset_page = spioffset / flash->pagesize;
+	spioffset_sector = spioffset / flash->sectorsize;
+
+	if (verbose>0) {
+		printf("Will program sector %d (page %d), original offset 0x%08x\n", spioffset_sector,spioffset_page,spioffset);
+	}
 
 	/* Ensure SPI offset is aligned */
 	if (spioffset % flash->pagesize!=0) {
@@ -501,38 +575,47 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	unsigned int size_bytes;
+	unsigned int pages;
+	unsigned char *buf;
 
 	buffer_free(b);
 
 	// Get file
-	int fin = open(binfile,O_RDONLY);
-	if (fin<0) {
-		perror("Cannot open input file");
-		return -1;
-	}
+	if (binfile) {
+		int fin = open(binfile,O_RDONLY);
+		if (fin<0) {
+			perror("Cannot open input file");
+			return -1;
+		}
 
-	// STAT
+		// STAT
 
-	fstat(fin,&st);
+		fstat(fin,&st);
 
-	unsigned int size_bytes = ALIGN(st.st_size,flash->pagesize);
-	unsigned int pages = size_bytes/flash->pagesize;
+		size_bytes = ALIGN(st.st_size,flash->pagesize);
+		pages = size_bytes/flash->pagesize;
 
-	if (verbose>0)
-		printf("Need to program %d %d bytes (%d pages)\n",st.st_size,size_bytes,pages);
+		if (verbose>0)
+			printf("Need to program %d %d bytes (%d pages)\n",st.st_size,size_bytes,pages);
 
-	/* Ensure there's enough space */
-	if (st.st_size > codesize) {
-		fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n", st.st_size,codesize);
-		close(fd);
+		/* Ensure there's enough space */
+		if (ignore_limit) {
+			printf("Ignoring space limit for programming\n");
+
+		} else {
+			if (st.st_size > codesize) {
+				fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n", st.st_size,codesize);
+				close(fd);
+				close(fin);
+				return -1;
+			}
+		}
+
+		buf = malloc(size_bytes);
+		read(fin,buf,size_bytes);
 		close(fin);
-		return -1;
 	}
-
-	unsigned char *buf = malloc(size_bytes);
-	read(fin,buf,size_bytes);
-	close(fin);
-
 	// compute sector erase
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
@@ -544,37 +627,55 @@ int main(int argc, char **argv)
 	} else {
 		fprintf(stderr,"Cannot enter program mode\n");
 		close(fd);
-        return -1;
+		return -1;
 	}
 
+	if (only_read) {
+		return read_flash(fd,flash,spioffset/flash->pagesize);
+	}
+
+	if (verbose>0) {
+		printf("Need to erase %d sectors\n",sectors);
+	}
 	while (sectors--) {
-		if (flash->driver->enable_writes(fd)<0)
-			return -1;
+		if (!dry_run)
+			if (flash->driver->enable_writes(fd)<0)
+				return -1;
+
 		if (verbose>0)
-			printf("Erasing sector at 0x%08x\r",saddr);
-		if (flash->driver->erase_sector(fd, saddr)<0) {
+			printf("Erasing sector at 0x%08x...",saddr);
+
+		if (!dry_run && flash->driver->erase_sector(fd, saddr)<0) {
 			fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
 		}
+
+		if (verbose>0)
+			printf("done.\n");
+
 		saddr++;
 	}
 	fprintf(stderr,"\n");
-
-	// program
 
 	saddr = spioffset_page;
 	unsigned char *sptr = buf;
 
 	while (pages--) {
-		if (flash->driver->enable_writes(fd)<0)
-			return -1;
+		if (!dry_run)
+			if (flash->driver->enable_writes(fd)<0)
+				return -1;
+
 		if (verbose>0)
 			fprintf(stderr,"Programing page at 0x%08x\r",saddr * flash->pagesize);
-		if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
-			fprintf(stderr,"\nCannot program page!\n");
-			return -1;
-		}
+
+		if (!dry_run)
+			if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
+				fprintf(stderr,"\nCannot program page!\n");
+				return -1;
+			}
+
 		sptr+=flash->pagesize;
+
 		saddr++;
 	}
 
@@ -585,21 +686,26 @@ int main(int argc, char **argv)
 	sptr = buf;
 	saddr = spioffset_page;
 
-	while (pages--) {
-		b = flash->driver->read_page(fd, saddr);
+	if (dry_run) {
+		if (verbose>0)
+			printf("Skipping verification due to dry run\n");
+	} else {
+		while (pages--) {
+			b = flash->driver->read_page(fd, saddr);
 
-		if (NULL==b) {
-			fprintf(stderr,"Cannot read page?\n");
-			return -1;
+			if (NULL==b) {
+				fprintf(stderr,"Cannot read page?\n");
+				return -1;
+			}
+
+			if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
+				fprintf(stderr,"Verification failed!\n");
+			}
+
+			buffer_free(b);
+			sptr+=flash->pagesize;
+			saddr++;
 		}
-
-		if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
-			fprintf(stderr,"Verification failed!\n");
-		}
-
-		buffer_free(b);
-		sptr+=flash->pagesize;
-		saddr++;
 	}
 
 	b = sendreceivecommand(fd, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );
@@ -608,11 +714,16 @@ int main(int argc, char **argv)
 	} else {
 		fprintf(stderr,"Cannot leave program mode");
 		close(fd);
-        return -1;
+		return -1;
 	}
 
 	//if (verbose>0)
-	printf("Programming completed successfully.\n");
+
+	gettimeofday(&end,NULL);
+
+	timersub(&end,&start,&delta);
+
+	printf("Programming completed successfully in %.02f seconds.\n", (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
 
 	return 0;
 }
