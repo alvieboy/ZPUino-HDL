@@ -14,8 +14,6 @@
 #define SPIISBLOCKING 1
 
 
-#define IOBASE 0x8000
-#define IO_SLOT_OFFSET_BIT 11
 #define BIT(x) (1<<x)
 
 #define IO_SLOT(x) (IOBASE + (x<<IO_SLOT_OFFSET_BIT))

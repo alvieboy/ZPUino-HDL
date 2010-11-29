@@ -3,6 +3,11 @@
 
 #define CLK_FREQ 96000000ULL
 #define BOARD_MEMORYSIZE 0x4000
+#define SPIOFFSET 0x00040000
+
+#define IOBASE 0x4000
+#define IO_SLOT_OFFSET_BIT 11
+
 
 // Wing1 Column A
 #define FPGA_PIN_P18 0
@@ -73,5 +78,6 @@
 #define FPGA_PIN_SPI_SCK     FPGA_PIN_P50
 #define FPGA_PIN_FLASHCS     FPGA_PIN_P24
 
+#define SPI_FLASH_SEL_PIN FPGA_PIN_FLASHCS
 
 #endif
