@@ -3,8 +3,8 @@
 
 #undef DEBUG_SERIAL
 #undef SIMULATION
+//#define VERBOSE_LOADER
 
-#define SPIOFFSET 0x00000000
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
@@ -14,7 +14,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x01
+#define VERSION_LOW  0x02
 
 /* Commands for programmer */
 
@@ -24,6 +24,7 @@
 #define BOOTLOADER_CMD_RAWREADWRITE 0x04
 #define BOOTLOADER_CMD_ENTERPGM 0x05
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
+#define BOOTLOADER_CMD_SSTAAIPROGRAM 0x07
 
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 1
@@ -36,6 +37,7 @@
 #define HDLC_frameFlag 0x7E
 #define HDLC_escapeFlag 0x7D
 #define HDLC_escapeXOR 0x20
+
 
 unsigned int _memreg[4];
 unsigned int ZPU_ID;
@@ -138,12 +140,12 @@ void outbyte(int c)
 
 void spi_disable()
 {
-	digitalWriteS<40,HIGH>::apply();
+	digitalWriteS<SPI_FLASH_SEL_PIN,HIGH>::apply();
 }
 
 static inline void spi_enable()
 {
-	digitalWriteS<40,LOW>::apply();
+	digitalWriteS<SPI_FLASH_SEL_PIN,LOW>::apply();
 }
 
 static inline void spi_reset()
@@ -178,6 +180,13 @@ extern "C" void printnibble(unsigned int c)
 		outbyte(c+'a'-10);
 	else
 		outbyte(c+'0');
+}
+extern "C" void printstring(const char *str)
+{
+	while (*str) {
+		outbyte(*str);
+		str++;
+	}
 }
 
 extern "C" void printhexbyte(unsigned int c)
@@ -260,6 +269,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
+	outbyte('.');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -295,9 +305,9 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 	unsigned int rxcount;
     unsigned int txcount;
 
-	// buffer[1] is number of TX bytes
-	// buffer[2] is number of RX bytes
-	// buffer[3..] is data to transmit.
+	// buffer[1-2] is number of TX bytes
+	// buffer[3-4] is number of RX bytes
+	// buffer[5..] is data to transmit.
 
 	// NOTE - buffer will be overwritten in read.
 
@@ -331,13 +341,60 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
     finishSend();
 }
 
+
+static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
+{
+	unsigned int count;
+    unsigned int txcount;
+
+	// buffer[1-2] is number of TX bytes
+    // buffer[3-5] is address to program
+	// buffer[6...] is data to transmit.
+
+	spi_enable();
+	spiwrite(0xAD);
+
+	txcount = buffer[1];
+	txcount<<=8;
+	txcount += buffer[2];
+
+	spiwrite(buffer[3]);
+	spiwrite(buffer[4]);
+    spiwrite(buffer[5]);
+
+	for (count=0; count<txcount; count+=2) {
+		if (count>0) {
+			spi_enable();
+			spiwrite(0xAD);
+		}
+		spiwrite(buffer[6+count]);
+		spiwrite(buffer[6+count+1]);
+		spi_disable();
+		// Read back status, wait for completion
+		while (spi_read_status() & 1);
+	}
+
+	// Disable write enable
+
+	spi_enable();
+	spiwrite(0x04);
+	spi_disable();
+
+	// Send back
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
+	finishSend();
+}
+
+
+
 static void cmd_waitready()
 {
 	int status;
 	do {
-		spi_enable();
+		//spi_enable();
 		status = spi_read_status();
-		spi_disable();
+		//spi_disable();
 	} while (status & 1);
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_WAITREADY));
@@ -449,6 +506,9 @@ void processCommand()
 	case BOOTLOADER_CMD_WAITREADY:
 		cmd_waitready();
 		break;
+	case BOOTLOADER_CMD_SSTAAIPROGRAM:
+		cmd_sst_aai_program(buffer,bufferpos);
+		break;
 	}
 }
 
@@ -509,7 +569,7 @@ void configure_pins()
 #ifdef __ZPUINO_PAPILIO_ONE__
 void configure_pins()
 {
-	// For S3E Eval
+	// For Papilio One
 
 	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
@@ -551,13 +611,26 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+	UARTCTL = BAUDRATEGEN(1000000) | BIT(UARTEN);
 	INTRCTL=1;
 
-	enableTimer();
+#ifdef VERBOSE_LOADER
+	printstring("\r\nZPUINO bootloader\r\n");
+#endif
+   // enableTimer();
+
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
+
+	// Reset flash
+	spi_enable();
+	spi_disable();
+#ifdef __ZPUINO_PAPILIO_ONE__
+	spi_enable();
+	spiwrite(0x4); // Disable WREN for SST flash
+	spi_disable();
+#endif
 
 	syncSeen = 0;
 	unescaping = 0;
@@ -591,6 +664,10 @@ extern "C" int main(int argc,char**argv)
 				CRC16ACC=0xFFFF;
 				syncSeen=1;
 				unescaping=0;
+			} else {
+#ifdef VERBOSE_LOADER
+				outbyte(i); // Echo back.
+#endif
 			}
 		}
 	}
