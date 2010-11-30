@@ -351,6 +351,11 @@ static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
     // buffer[3-5] is address to program
 	// buffer[6...] is data to transmit.
 
+	// Enable writes
+	spi_enable();
+	spiwrite(0x06);
+	spi_disable();
+
 	spi_enable();
 	spiwrite(0xAD);
 
@@ -360,7 +365,7 @@ static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
 
 	spiwrite(buffer[3]);
 	spiwrite(buffer[4]);
-    spiwrite(buffer[5]);
+	spiwrite(buffer[5]);
 
 	for (count=0; count<txcount; count+=2) {
 		if (count>0) {
@@ -379,7 +384,6 @@ static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
 	spi_enable();
 	spiwrite(0x04);
 	spi_disable();
-
 	// Send back
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
@@ -672,7 +676,7 @@ extern "C" int main(int argc,char**argv)
 		}
 	}
 }
-
+/*
 extern "C" void __attribute__((noreturn)) _opcode_swap_c(unsigned int pc,unsigned int sp,unsigned int addra,unsigned int addrb)
 {
 	printhex(pc);
@@ -682,4 +686,4 @@ extern "C" void __attribute__((noreturn)) _opcode_swap_c(unsigned int pc,unsigne
 
 
 	while(1);
-}
+} */
