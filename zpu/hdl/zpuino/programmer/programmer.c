@@ -152,6 +152,7 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 	int rd;
     buffer_t *ret=NULL;
 	unsigned char *txbuf2;
+	int retries=3;
 
 	tv.tv_sec = timeout / 1000;
 	tv.tv_usec = (timeout % 1000) * 1000;
@@ -172,8 +173,12 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 			return NULL;
 		case 0:
 			// Timeout
+			if (!(--retries))
+				return NULL;
+			else
+				// Resend
+				sendpacket(fd,txbuf2,size+1);
 
-			return NULL;
 		default:
 			rd = read(fd,tmpbuf,sizeof(tmpbuf));
 			if (rd>0) {
@@ -642,31 +647,36 @@ int main(int argc, char **argv)
 			if (flash->driver->enable_writes(fd)<0)
 				return -1;
 
-		if (verbose>0)
-			printf("Erasing sector at 0x%08x...",saddr);
+		if (verbose>0) {
+			printf("Erasing sector at 0x%08x...\r",saddr);
+			fflush(stdout);
+		}
 
 		if (!dry_run && flash->driver->erase_sector(fd, saddr)<0) {
 			fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
 		}
 
-		if (verbose>0)
-			printf("done.\n");
 
 		saddr++;
 	}
-	fprintf(stderr,"\n");
+	if (verbose>0)
+		printf("\ndone.\n");
 
 	saddr = spioffset_page;
 	unsigned char *sptr = buf;
 
 	while (pages--) {
 		if (!dry_run)
-			if (flash->driver->enable_writes(fd)<0)
+			if (flash->driver->enable_writes(fd)<0) {
+				fprintf(stderr,"Cannot enable writes ?\n");
 				return -1;
+			}
 
-		if (verbose>0)
-			fprintf(stderr,"Programing page at 0x%08x\r",saddr * flash->pagesize);
+		if (verbose>0) {
+			printf("Programing page at 0x%08x\r",saddr * flash->pagesize);
+			fflush(stdout);
+		}
 
 		if (!dry_run)
 			if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
@@ -680,7 +690,7 @@ int main(int argc, char **argv)
 	}
 
 	if (verbose>0)
-		printf("\nVerifying...\n");
+		printf("\ndone. Verifying...\n");
 
 	pages = size_bytes/flash->pagesize;
 	sptr = buf;
@@ -691,21 +701,28 @@ int main(int argc, char **argv)
 			printf("Skipping verification due to dry run\n");
 	} else {
 		while (pages--) {
+			if (verbose>0) {
+				printf("Verifying page at 0x%08x...\r",saddr * flash->pagesize);
+				fflush(stdout);
+			}
 			b = flash->driver->read_page(fd, saddr);
 
 			if (NULL==b) {
-				fprintf(stderr,"Cannot read page?\n");
+				fprintf(stderr,"\nCannot read page?\n");
 				return -1;
 			}
 
 			if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
-				fprintf(stderr,"Verification failed!\n");
+				fprintf(stderr,"\nVerification failed at 0x%08x!\n",saddr * flash->pagesize);
+				pages=0;
 			}
 
 			buffer_free(b);
 			sptr+=flash->pagesize;
 			saddr++;
 		}
+		if (verbose>0)
+			printf("\nVerification done.\n");
 	}
 
 	b = sendreceivecommand(fd, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );

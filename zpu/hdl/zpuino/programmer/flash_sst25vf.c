@@ -215,10 +215,13 @@ static int sst25vf_program_page_aai(int fd, unsigned int page, const unsigned ch
 		return -1;
 
 	wbuf[0] = 0x01;
-	wbuf[1] = 0x00;
+	wbuf[1] = 0x00; // 256 bytes
+
 	wbuf[2] = (addr >> 16) & 0xff;
 	wbuf[3] = (addr >> 8) & 0xff;
 	wbuf[4] = (addr) & 0xff;
+
+	memcpy( &wbuf[5], buf, size);
 
 	b = sendreceivecommand(fd, BOOTLOADER_CMD_SSTAAIPROGRAM, wbuf, sizeof(wbuf), 5000);
 
@@ -242,10 +245,11 @@ static int sst25vf_program_page(int fd, unsigned int page, const unsigned char *
 
 	if (size!=256)
 		return -1;
-    /*
+
+
 	if (version>=0x0102)
 		return sst25vf_program_page_aai(fd,page,buf,size);
-    */
+
 	wbuf[0] = 0x00;
 	wbuf[1] = psize;
 	wbuf[2] = 0;
@@ -276,7 +280,7 @@ static int sst25vf_program_page(int fd, unsigned int page, const unsigned char *
 				return -1;
 		} while (status & SST_STATUS_BUSY);
         */
-        psize = 3;
+		psize = 3;
 		wbuf[1] = psize; // 2 bytes at a time
 
 		buf+=2;
