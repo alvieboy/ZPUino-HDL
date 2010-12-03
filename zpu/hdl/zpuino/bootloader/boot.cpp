@@ -3,7 +3,7 @@
 
 #undef DEBUG_SERIAL
 #undef SIMULATION
-//#define VERBOSE_LOADER
+#undef VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -204,13 +204,15 @@ extern "C" void printhex(unsigned int c)
 void __attribute__((noreturn)) spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
-
-	UARTCTL &= ~(BIT(UARTEN));
+#ifdef VERBOSE_LOADER
+	printstring("Starting sketch\r\n");
+#endif
+//	UARTCTL &= ~(BIT(UARTEN));
 
 	__asm__("im %0\n"
 			"popsp\n"
 			"im spi_copy_impl\n"
-			"poppc"
+			"poppc\n"
 			:
 			:"i"(STACKTOP)
 		   );
@@ -223,6 +225,13 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	unsigned int count = SPICODESIZE >> 2; // 0x7000
 
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+
+#ifdef VERBOSE_LOADER
+//	UARTCTL |= BIT(UARTEN);
+	printstring("Starting copy...\r\n");
+ //   UARTCTL &= ~(BIT(UARTEN));
+#endif
+
 
 	spi_enable();
 
@@ -242,7 +251,11 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	// Need to reset stack also
 	spi_disable();
-
+#ifdef VERBOSE_LOADER
+//	UARTCTL |= BIT(UARTEN);
+	printstring("Loaded, starting...\r\n");
+//	UARTCTL &= ~(BIT(UARTEN));
+#endif
 	SPICTL &= ~(BIT(SPIEN));
 #ifdef __ZPUINO_S3E_EVAL__
 	digitalWriteS<FPGA_LED_0, LOW>::apply();
@@ -269,7 +282,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
-	outbyte('.');
+	//outbyte('.');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -621,7 +634,9 @@ extern "C" int main(int argc,char**argv)
 #ifdef VERBOSE_LOADER
 	printstring("\r\nZPUINO bootloader\r\n");
 #endif
-   // enableTimer();
+#ifndef SIMULATION
+	enableTimer();
+#endif
 
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
@@ -634,6 +649,10 @@ extern "C" int main(int argc,char**argv)
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable();
+#endif
+
+#ifdef SIMULATION
+	spi_copy();
 #endif
 
 	syncSeen = 0;
@@ -670,7 +689,7 @@ extern "C" int main(int argc,char**argv)
 				unescaping=0;
 			} else {
 #ifdef VERBOSE_LOADER
-				outbyte(i); // Echo back.
+				//outbyte(i); // Echo back.
 #endif
 			}
 		}
