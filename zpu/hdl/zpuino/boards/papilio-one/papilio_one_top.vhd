@@ -72,7 +72,7 @@ architecture behave of papilio_one_top is
   );
   end component clkgen;
 
-component zpuino_top is
+  component zpuino_top is
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -82,23 +82,48 @@ component zpuino_top is
     gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
 
   );
-end component zpuino_top;
+  end component zpuino_top;
+
+  component zpuino_serialreset is
+  generic (
+    SYSTEM_CLOCK_MHZ: integer := 100
+  );
+  port (
+    clk:      in std_logic;
+    rx:       in std_logic;
+    rstin:    in std_logic;
+    rstout:   out std_logic
+  );
+  end component zpuino_serialreset;
 
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
-  signal rst:         std_logic;
+  signal clkgen_rst:  std_logic;
   signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
 begin
 
+  rstgen: zpuino_serialreset
+    generic map (
+      SYSTEM_CLOCK_MHZ  => 96
+    )
+    port map (
+      clk       => sysclk,
+      rx        => gpio_i(48),
+      rstin     => clkgen_rst,
+      rstout    => sysrst
+    );
+    --sysrst <= clkgen_rst;
+
+
   clkgen_inst: clkgen
   port map (
     clkin   => clk,
-    rstin   => rst,
+    rstin   => '0'  ,
     clkout  => sysclk,
-    rstout  => sysrst
+    rstout  => clkgen_rst
   );
 
   bufgen: for i in 0 to 47 generate
@@ -125,8 +150,6 @@ begin
   ospiclk:  OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(51), O => SPI_SCK );
   ospics:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(52), O => SPI_CS );
   ospimosi: OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(53), O => SPI_MOSI );
-
-  rst <= '0';
 
 
   zpuino:zpuino_top
