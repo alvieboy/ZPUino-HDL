@@ -15,6 +15,7 @@
 #ifdef __linux__
 #include <sys/un.h>
 #include <sys/socket.h>
+#include <errno.h>
 #endif
 
 static unsigned char *packet;
@@ -30,6 +31,7 @@ static int ignore_limit=0;
 static int user_offset=-1;
 static int serial_speed = B1000000;
 static int dry_run = 0;
+static int serial_reset = 0;
 
 unsigned short version;
 
@@ -53,7 +55,7 @@ static int set_speed(char *value)
 int parse_arguments(int argc,char **const argv)
 {
 	while (1) {
-		switch (getopt(argc,argv,"Dvb:d:ro:ls:")) {
+		switch (getopt(argc,argv,"RDvb:d:ro:ls:")) {
 		case '?':
 			return -1;
 		case 'v':
@@ -68,6 +70,9 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'r':
 			only_read=1;
+			break;
+		case 'R':
+			serial_reset=1;
 			break;
 		case 'l':
 			ignore_limit=1;
@@ -229,7 +234,9 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 					return ret;
 				}
 			} else {
-				fprintf(stderr,"Cannot read from connection\n");
+				if (errno==EINTR || errno==EAGAIN)
+					continue;
+				fprintf(stderr,"Cannot read from connection (%d) errno %d: %s\n",rd,errno,strerror(errno));
 				return NULL;
 			}
 		}
@@ -284,6 +291,31 @@ int open_serial_device(char *device)
 
 	return fd;
 }
+
+void do_serial_reset(int fd)
+{
+	struct termios termset;
+	unsigned char reset[] = { 0, 0xFF, 0 };
+
+	tcgetattr(fd, &termset);
+	cfsetospeed(&termset,B300);
+	cfsetispeed(&termset,B300);
+	tcsetattr(fd,TCSANOW,&termset);
+
+	// Send reset sequence
+
+	write(fd, reset,sizeof(reset));
+	tcflush(fd, TCOFLUSH);
+
+	// delay a bit. It takes about 80ms to get sequence into board
+	usleep(80000);
+
+	cfsetospeed(&termset,serial_speed);
+	cfsetispeed(&termset,serial_speed);
+
+	tcsetattr(fd,TCSANOW,&termset);
+}
+
 
 int open_simulator_device(const char *device)
 {
@@ -484,8 +516,11 @@ int main(int argc, char **argv)
 	}
 
 	retries = 100;
-	fprintf(stderr,"Press RESET now\n");
-
+	if (serial_reset) {
+		do_serial_reset(fd);
+	} else {
+		fprintf(stderr,"Press RESET now\n");
+	}
 	while (retries>0) {
 		/* Reset */
 		buffer[0] = HDLC_frameFlag;
