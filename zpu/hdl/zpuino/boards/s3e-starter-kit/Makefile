@@ -1,10 +1,16 @@
 PROJECT=s3e_eval_zpuino
 PART=xc3s500e-fg320-4
+# For bootloader
+BOARD=S3E_EVAL
+SIZE=32768
 
 all: ${PROJECT}_routed.ncd
 
-
-${PROJECT}.ngc:
+prom-generic-dp-32.vhd:
+	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE)
+	cp ../../bootloader/prom-generic-dp-32.vhd .
+	
+${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
