@@ -1,10 +1,17 @@
 PROJECT=papilio_one
 PART=xc3s250e-vq100-4
 
-all: ${PROJECT}_routed.bit
+# For bootloader
+BOARD=PAPILIO_ONE
+SIZE=16384
 
+all: ${PROJECT}_routed.bit 
 
-${PROJECT}.ngc:
+prom-generic-dp-32.vhd:
+	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE)
+	cp ../../bootloader/prom-generic-dp-32.vhd .
+	
+${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
