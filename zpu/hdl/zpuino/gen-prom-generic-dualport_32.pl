@@ -27,6 +27,10 @@ my $words = $size;
 
 if (defined $force) {
     $words=$force;
+    if ($size>$force) {
+        print STDERR "File too large ($size won't fit $force)\n";
+        exit -1;
+    }
 }
 
 print STDERR "Need to map $words words\n";
