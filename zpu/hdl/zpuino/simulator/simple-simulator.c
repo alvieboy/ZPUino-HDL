@@ -403,13 +403,13 @@ void tick()
 
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
-	if (pc < 0x40 || pc >=0x400) {
+//	if (pc < 0x40 || pc >=0x400) {
 		printf("0x%04X 0x%02X 0x%08X 0x%08X 0x%08X %d\n", pc,
 			   _memory[pc], sp,
 			   top,
 			   bswap_32(*(unsigned int*)&_memory[sp+4]),cnt);
 		fflush(stdout);
-	}
+//	}
 }
 
 void perform_io()
