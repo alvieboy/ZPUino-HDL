@@ -94,6 +94,20 @@ int parse_arguments(int argc,char **const argv)
 	}
 }
 
+int help(char *name)
+{
+	printf("Usage: %s -d <serialdevice> [OPTIONS]\n",name);
+	printf("\nOptions:\n");
+	printf("  -r\t\tPerform only sector read (use with -o)\n");
+	printf("  -D\t\tDry-run. Don't actually do anything\n");
+	printf("  -o offset\tUse specified offset within flash\n");
+	printf("  -b binfile\tBinary file to program\n");
+	printf("  -l\t\tIgnore programming limit sent by bootloader\n");
+	printf("  -R\t\tPerform serial reset before programming\n");
+	printf("  -s speed\tUse specified serial port speed (default: 1000000)\n");
+	printf("  -v\t\tIncrease verbosity\n");
+}
+
 void crc16_update(uint16_t *crc, uint8_t data)
 {
 	data ^= *crc&0xff;
@@ -482,10 +496,6 @@ int read_flash(int fd, flash_info_t *flash, size_t page)
 	return 0;
 }
 
-int help(char *name)
-{
-	printf("Usage: %s -d <serialdevice> [-b <binaryfile>|-r] [-v]\n",name);
-}
 int main(int argc, char **argv)
 {
 	unsigned char buffer[8192];
