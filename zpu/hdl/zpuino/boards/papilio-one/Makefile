@@ -5,7 +5,7 @@ PART=xc3s250e-vq100-4
 BOARD=PAPILIO_ONE
 SIZE=16384
 
-all: ${PROJECT}_routed.bit 
+all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE)
@@ -30,5 +30,8 @@ ${PROJECT}_routed.ncd: ${PROJECT}.ncd
 ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 	bitgen -f ${PROJECT}.ut ${PROJECT}_routed.ncd
 
+${PROJECT}_routed.bin: ${PROJECT}_routed.bit
+	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
+
 clean:
-	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit}
+	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
