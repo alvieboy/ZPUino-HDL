@@ -44,6 +44,7 @@ entity spi is
     dout:  out std_logic_vector(31 downto 0);
     en:   in std_logic;
     ready: out std_logic;
+    transfersize: in std_logic_vector(1 downto 0);
 
     miso: in std_logic;
     mosi: out std_logic;
@@ -60,10 +61,12 @@ end entity spi;
 architecture behave of spi is
 
 signal read_reg_q:    std_logic_vector(31 downto 0);
-signal write_reg_q:   std_logic_vector(7 downto 0);
+signal write_reg_q:   std_logic_vector(31 downto 0);
 
 signal ready_q:       std_logic;
 signal count:         integer range 0 to 32;
+signal count_val_q:   integer range 0 to 32;
+
 signal sample_event:  std_logic;
 signal do_shift:      std_logic;
 
@@ -83,11 +86,7 @@ begin
 
   process(ready_q, en)
   begin
-    --if en='1' then
-    --  ready <= '1';
-    --else
       ready <= ready_q;
-    --end if;
   end process;
 
   process(ready_q, clkrise)
@@ -103,7 +102,17 @@ begin
   begin
     if rising_edge(clk) then
       if do_shift='1' then
-        MOSI <= write_reg_q(7); -- Fixed 8-bit write
+        case transfersize is
+          when "00" =>
+            MOSI <= write_reg_q(7); -- 8-bit write
+          when "01" =>
+            MOSI <= write_reg_q(15); -- 16-bit write
+          when "10" =>
+            MOSI <= write_reg_q(23); -- 24-bit write
+          when "11" =>
+            MOSI <= write_reg_q(31); -- 32-bit write
+          when others =>
+        end case;
       end if;
     end if;
   end process;
@@ -127,13 +136,23 @@ begin
     if rst='1' then
       ready_q <= '1';
       count <= 0;
+      count_val_q <= 8; -- Default to 8-bit
     else
         if ready_q='1' then
           if en='1' then
-            write_reg_q <= din(7 downto 0);
+            write_reg_q <= din(31 downto 0);
             -- Shift the 32-bit register
-            read_reg_q(31 downto 8) <= read_reg_q(23 downto 0);
-            count <= 8;
+            case transfersize is
+              when "00" =>
+                count <= 8;
+              when "01" =>
+                count <= 16;
+              when "10" =>
+                count <= 24;
+              when "11" =>
+                count <= 32;
+              when others =>
+            end case;
             ready_q <= '0';
           end if;
         else 
@@ -150,8 +169,8 @@ begin
         end if;
 
         if ready_q='0' and sample_event='1' then
-          read_reg_q(7 downto 0) <= read_reg_q(6 downto 0) & MISO;
-          write_reg_q(7 downto 0) <= write_reg_q(6 downto 0) & '0';
+          read_reg_q(31 downto 0) <= read_reg_q(30 downto 0) & MISO;
+          write_reg_q(31 downto 0) <= write_reg_q(30 downto 0) & '0';
         end if;
 
     end if;

@@ -72,6 +72,7 @@ architecture behave of zpuino_spi is
       dout:  out std_logic_vector(31 downto 0);
       en:   in std_logic;
       ready: out std_logic;
+      transfersize: in std_logic_vector(1 downto 0);
   
       miso: in std_logic;
       mosi: out std_logic;
@@ -107,8 +108,10 @@ architecture behave of zpuino_spi is
   signal spi_clk_pres: std_logic_vector(2 downto 0);
   signal spi_samprise: std_logic;
   signal spi_enable_q: std_logic;
+  signal spi_txblock_q: std_logic;
   signal cpol: std_logic;
   signal miso_i: std_logic;
+  signal spi_transfersize_q: std_logic_vector(1 downto 0);
 
 begin
 
@@ -120,7 +123,8 @@ begin
       dout  => spi_read,
       en    => spi_en,
       ready => spi_ready,
-  
+      transfersize => spi_transfersize_q,
+
       miso  => miso_i,
       mosi  => mosi,
   
@@ -151,11 +155,10 @@ begin
   spi_en <= '1' when we='1' and address="1" and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
-    busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
+    busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
   end generate;
 
   nobusygen: if zpuino_spiblocking=false generate
-    --busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' else '0';
     busy <= '0';
   end generate;
 
@@ -171,6 +174,7 @@ begin
     if rising_edge(clk) then
       if areset='1' then
         spi_enable_q<='0';
+        spi_txblock_q<='1';
       else
       if we='1' then
         if address="0" then
@@ -178,6 +182,8 @@ begin
           cpol <= write(4);
           spi_samprise <= write(5);
           spi_enable_q <= write(6);
+          spi_txblock_q <= write(7);
+          spi_transfersize_q <= write(9 downto 8);
         end if;
       end if;
       end if;
@@ -193,6 +199,8 @@ begin
       read(4) <= cpol;
       read(5) <= spi_samprise;
       read(6) <= spi_enable_q;
+      read(7) <= spi_txblock_q;
+      read(9 downto 8) <= spi_transfersize_q;
     else
       read <= spi_read;
     end if;
