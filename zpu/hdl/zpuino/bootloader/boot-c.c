@@ -42,7 +42,7 @@ extern int main(int,char**);
 
 void _premain()
 {
-	__copy_data();
+ //   __copy_data();
 	main(0,0);
 }
 
