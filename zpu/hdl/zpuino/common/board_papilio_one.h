@@ -5,7 +5,7 @@
 #define BOARD_MEMORYSIZE 0x4000
 #define SPIOFFSET 0x00040000
 
-#define IOBASE 0x4000
+#define IOBASE 0x8000
 #define IO_SLOT_OFFSET_BIT 11
 
 

@@ -44,7 +44,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10 ns;
+  constant period : time := 10.4166666667 ns;
 
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
@@ -160,17 +160,6 @@ begin
       W   => '0',
       HOLD => '1',
 		  Q   => spi_pf_miso_dly
-    );
-
-  spiflash2: M25P16
-    port map (
-      VCC => vcc,
-		  C   => gpio_o(6),
-      D   => gpio_o(8),
-      S   => gpio_o(7),
-      W   => '0',
-      HOLD => '1',
-		  Q   => gpio_i(5)
     );
 
   w_clk <= not w_clk after period/2;
