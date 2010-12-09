@@ -65,10 +65,11 @@ signal write_reg_q:   std_logic_vector(31 downto 0);
 
 signal ready_q:       std_logic;
 signal count:         integer range 0 to 32;
-signal count_val_q:   integer range 0 to 32;
+--signal count_val_q:   integer range 0 to 32;
 
 signal sample_event:  std_logic;
 signal do_shift:      std_logic;
+signal ignore_sample_q: std_logic;
 
 begin
 
@@ -136,11 +137,12 @@ begin
     if rst='1' then
       ready_q <= '1';
       count <= 0;
-      count_val_q <= 8; -- Default to 8-bit
+      --count_val_q <= 8; -- Default to 8-bit
     else
         if ready_q='1' then
           if en='1' then
             write_reg_q <= din(31 downto 0);
+            ignore_sample_q <= samprise;
             -- Shift the 32-bit register
             case transfersize is
               when "00" =>
@@ -169,7 +171,10 @@ begin
         end if;
 
         if ready_q='0' and sample_event='1' then
-          read_reg_q(31 downto 0) <= read_reg_q(30 downto 0) & MISO;
+          if ignore_sample_q='0' then
+            read_reg_q(31 downto 0) <= read_reg_q(30 downto 0) & MISO;
+          end if;
+          ignore_sample_q<='0';
           write_reg_q(31 downto 0) <= write_reg_q(30 downto 0) & '0';
         end if;
 
