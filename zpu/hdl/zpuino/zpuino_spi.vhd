@@ -175,6 +175,7 @@ begin
       if areset='1' then
         spi_enable_q<='0';
         spi_txblock_q<='1';
+        spi_transfersize_q<=(others => '0');
       else
       if we='1' then
         if address="0" then
