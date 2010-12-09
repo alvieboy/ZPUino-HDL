@@ -65,24 +65,27 @@ architecture behave of zpuino_serialreset is
 constant rstcount_val: integer := ((SYSTEM_CLOCK_MHZ*1000000)/300)*8;
 
 signal rstcount: integer;
+signal rstcount_zero_q: std_logic;
 
 begin
 
-  rstout<='1' when rstin='1' or rstcount=0 else '0';
+  rstout<='1' when rstin='1' or rstcount_zero_q='1' else '0';
 
   process(clk)
   begin
     if rising_edge(clk) then
       if rstin='1' then
         rstcount <= rstcount_val;
+        rstcount_zero_q <= '0';
       else
         if rx='1' then
           rstcount <= rstcount_val;
         else
-          if rstcount>0 then
+          if rstcount/=0 then
             rstcount <= rstcount - 1;
-          --else
-          --  rstcount<=rstcount_val;
+            rstcount_zero_q<='0';
+          else
+            rstcount_zero_q<='1';
           end if;
         end if;
       end if;
