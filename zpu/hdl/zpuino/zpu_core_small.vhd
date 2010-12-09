@@ -130,7 +130,8 @@ State_ReadIODone,
 State_Decode,
 State_Resync,
 State_Interrupt,
-State_Exception
+State_Exception,
+State_Neqbranch
 
 );
 
@@ -154,7 +155,8 @@ Decoded_Not,
 Decoded_Flip,
 Decoded_Store,
 Decoded_PopSP,
-Decoded_Interrupt
+Decoded_Interrupt,
+Decoded_Neqbranch
 );
 
 
@@ -295,7 +297,11 @@ begin
 		elsif (tOpcode(7 downto 5)=OpCode_LoadSP) then
 			sampledDecodedOpcode<=Decoded_LoadSP;
 		elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
-			sampledDecodedOpcode<=Decoded_Emulate;
+      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+			  sampledDecodedOpcode<=Decoded_Neqbranch;
+      else
+        sampledDecodedOpcode<=Decoded_Emulate;
+      end if;
 		elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
 			sampledDecodedOpcode<=Decoded_AddSP;
 		else
@@ -384,7 +390,11 @@ begin
 					-- at this point:
 					-- memBRead contains opcode word
 					-- memARead contains top of stack
-					pc <= pc + 1;
+
+          -- Don't increment PC if decoded opcode is neqbranch
+          if decodedOpcode/=Decoded_Neqbranch then
+            pc <= pc + 1;
+          end if;
 	
 					-- trace
 					begin_inst <= '1';
@@ -434,6 +444,12 @@ begin
 						when Decoded_LoadSP =>
 							sp <= sp - 1;
 							memAAddr <= sp+spOffset;
+
+            when Decoded_Neqbranch =>
+							sp <= sp + 1;
+              memBAddr <= sp + 1;
+              state <= State_Neqbranch;
+
 						when Decoded_Emulate =>
 							sp <= sp - 1;
 							memAWriteEnable <= '1';
@@ -576,6 +592,16 @@ begin
 					memAWriteEnable <= '1';
 					memAWrite <= memARead or memBRead;
 					state <= State_Fetch;
+
+        when State_Neqbranch =>
+          sp <= sp + 1;
+          if memBRead/=0 then
+            pc <= pc + memARead(maxAddrBit downto 0);
+          else
+            pc <= pc + 1;
+          end if;
+          state <= State_Resync;
+
 				when State_Resync =>
           if memErr='1' then
             exception_memAAddr <= memAAddr;
