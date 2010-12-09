@@ -1,0 +1,46 @@
+TARGET=bootloader-sim
+all: $(TARGET).bin $(TARGET).hex
+
+CCPATH:=
+
+CROSS=$(CCPATH)zpu-elf-
+CC=$(CROSS)gcc
+CXX=$(CROSS)g++
+OBJCOPY=$(CROSS)objcopy
+OBJDUMP=$(CROSS)objdump
+
+BOARD?=
+SIZE=16384
+
+DHRYSRC=.
+
+SKETCHBIN?=InvalidSketch.bin
+
+OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o
+
+CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_PAPILIO_ONE__
+LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+CXXFLAGS=$(CFLAGS) -fno-exceptions
+
+all: prom-generic-dp-32.vhd Makefile
+
+.PHONY: boot.cpp $(TARGET).bin.merged
+
+$(TARGET).bin.merged: $(TARGET).bin
+	dd if=$(TARGET).bin of=$(TARGET).bin.merged bs=4096 count=1 conv=sync
+	cat $(SKETCHBIN) >> $(TARGET).bin.merged
+
+$(TARGET).elf: $(OBJ)
+	$(CXX) $+ -o $@ $(LDFLAGS)
+	$(OBJDUMP) -D $@ > $(TARGET).s
+	
+$(TARGET).bin: $(TARGET).elf
+	$(OBJCOPY) -O binary $< $@
+
+$(TARGET).hex: $(TARGET).elf
+	$(OBJCOPY) -O ihex $< $@
+
+prom-generic-dp-32.vhd: $(TARGET).bin.merged
+	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
+clean:	
+	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).bin.merged $(TARGET).s $(TARGET).S prom-simulation.vhd
