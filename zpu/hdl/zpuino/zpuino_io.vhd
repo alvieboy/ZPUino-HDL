@@ -199,22 +199,22 @@ begin
   -- MUX read signals
   process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read,crc16_read)
   begin
-    case io_address(13 downto 11) is
-      when "000" =>
+    case io_address(14 downto 11) is
+      when "0000" =>
         read <= spi_read;
-      when "001" =>
+      when "0001" =>
         read <= uart_read;
-      when "010" =>
+      when "0010" =>
         read <= gpio_read;
-      when "011" =>
+      when "0011" =>
         read <= timers_read;
-      when "100" =>
+      when "0100" =>
         read <= intr_read;
-      when "101" =>
+      when "0101" =>
         read <= sigmadelta_read;
-      when "110" =>
+      when "0110" =>
         read <= spi2_read;
-      when "111" =>
+      when "0111" =>
         read <= crc16_read;
       when others =>
         read <= (others => DontCareValue);
@@ -242,29 +242,29 @@ begin
     crc16_we <= '0';
     crc16_re <= '0';
 
-    case io_address(13 downto 11) is
-      when "000" =>
+    case io_address(14 downto 11) is
+      when "0000" =>
         spi_re <= io_re;
         spi_we <= io_we;
-      when "001" =>
+      when "0001" =>
         uart_re <= io_re;
         uart_we <= io_we;
-      when "010" =>
+      when "0010" =>
         gpio_re <= io_re;
         gpio_we <= io_we;
-      when "011" =>
+      when "0011" =>
         timers_re <= io_re;
         timers_we <= io_we;
-      when "100" =>
+      when "0100" =>
         intr_re <= io_re;
         intr_we <= io_we;
-      when "101" =>
+      when "0101" =>
         sigmadelta_re <= io_re;
         sigmadelta_we <= io_we;
-      when "110" =>
+      when "0110" =>
         spi2_re <= io_re;
         spi2_we <= io_we;
-      when "111" =>
+      when "0111" =>
         crc16_re <= io_re;
         crc16_we <= io_we;
       when others =>
