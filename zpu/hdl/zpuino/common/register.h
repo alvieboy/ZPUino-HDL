@@ -32,6 +32,7 @@
 
 #define UARTDATA REGISTER(UARTBASE,0)
 #define UARTCTL  REGISTER(UARTBASE,1)
+#define UARTSTATUS  REGISTER(UARTBASE,2)
 
 #define SPICTL  REGISTER(SPIBASE,0)
 #define SPIDATA REGISTER(SPIBASE,1)
@@ -86,6 +87,9 @@
 #define SPICPOL  4 /* Clock polarity */
 #define SPISRE   5 /* Sample on Rising Edge */
 #define SPIEN    6 /* SPI Enabled (gpio acquire) */
+#define SPIBLOCK 7
+#define SPITS0   8
+#define SPITS1   9
 
 /* Sigma-Delta bits */
 #define SDENA    0 /* Sigma-delta enable */
