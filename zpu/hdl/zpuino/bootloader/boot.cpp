@@ -1,15 +1,18 @@
 #include "zpuino.h"
 #include <stdarg.h>
 
-#undef DEBUG_SERIAL
-#undef SIMULATION
-#undef VERBOSE_LOADER
+//#undef DEBUG_SERIAL
+//#undef SIMULATION
+//#undef VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 #ifdef SIMULATION
 # define SPICODESIZE 0x1000
+# define FPGA_SS_B 40
+# undef SPI_FLASH_SEL_PIN
+# define SPI_FLASH_SEL_PIN FPGA_SS_B
 #else
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
@@ -267,7 +270,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	GPIOTRIS(2) = 0xffffffff;
 	GPIOTRIS(3) = 0xffffffff;
     */
-	ivector = (void (*)(void))0x1008;
+	ivector = (void (*)(void))0x100C;
 
 	__asm__("im %0\n"
 			"popsp\n"
@@ -529,6 +532,23 @@ void processCommand()
 	}
 }
 
+#ifdef SIMULATION
+
+void configure_pins()
+{
+	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+	pinModeS<IOPIN_UART_TX,OUTPUT>::apply();
+	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
+	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();
+	pinModeS<FPGA_SS_B,OUTPUT>::apply();
+	pinModeS<IOPIN_SPI_MISO,INPUT>::apply();
+}
+
+#else
+
 #ifdef __ZPUINO_S3E_EVAL__
 
 void configure_pins()
@@ -614,6 +634,7 @@ void configure_pins()
 
 }
 #endif
+#endif // SIMULATION
 
 extern "C" int _syscall(int *foo, int ID, ...);
 
@@ -640,7 +661,7 @@ extern "C" int main(int argc,char**argv)
 
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
+	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	// Reset flash
 	spi_enable();
