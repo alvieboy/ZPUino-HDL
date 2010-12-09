@@ -173,8 +173,6 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 	unsigned char *txbuf2;
 	int retries=3;
 
-	tv.tv_sec = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
 
 	txbuf2=malloc( size + 1);
 	txbuf2[0] = cmd;
@@ -183,10 +181,13 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 	}
     sendpacket(fd,txbuf2,size+1);
 
-	FD_ZERO(&rfs);
-	FD_SET(fd, &rfs);
 
 	do {
+		FD_ZERO(&rfs);
+		FD_SET(fd, &rfs);
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+
 		switch (select(fd+1,&rfs,NULL,NULL,&tv)) {
 		case -1:
 			return NULL;

@@ -94,7 +94,7 @@ static int sst25vf_enable_writes(int fd)
 		status & SST_STATUS_BP2 ||
 		status & SST_STATUS_BP3) {
 
-		printf("Flash is protected\n");
+//		printf("Flash is protected\n");
 		if (status & SST_STATUS_BPL) {
 			fprintf(stderr,"Cannot disable flash protection bits, aborting\n");
 			return -1;
@@ -127,7 +127,7 @@ static int sst25vf_enable_writes(int fd)
 		wbuf[3] = 0; // Rx bytes
 		wbuf[4] = 0x01; // Write status register
 		wbuf[5] = newstatus;
-		printf("Sending new status %02x\n",newstatus);
+		//printf("Sending new status %02x\n",newstatus);
 		b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 6, 1000);
 		if (NULL==b)  {
 			fprintf(stderr,"Cannot write status register ??\n");
@@ -140,8 +140,10 @@ static int sst25vf_enable_writes(int fd)
 		if (NULL==b)
 			return -1;
 
-		status = b->buf[1];
-		printf("New status: %02x\n",status);
+		/*
+		 status = b->buf[1];
+		 printf("New status: %02x\n",status);
+         */
 		buffer_free(b);
 	}
 
