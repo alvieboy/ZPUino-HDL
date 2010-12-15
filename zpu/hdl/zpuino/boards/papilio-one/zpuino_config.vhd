@@ -66,4 +66,7 @@ package zpuino_config is
   -- Peripheral Pin Select
   constant zpuino_pps_enabled: boolean := true;
 
+  -- Internal SPI ADC
+  constant zpuino_adc_enabled: boolean := true;
+
 end package zpuino_config;

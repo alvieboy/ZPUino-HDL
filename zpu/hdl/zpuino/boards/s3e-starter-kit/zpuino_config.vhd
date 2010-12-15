@@ -65,4 +65,7 @@ package zpuino_config is
   -- For SPI blocking operation, you need to define also iobusyinput
   constant zpuino_spiblocking: boolean := true;
 
+  -- Internal SPI ADC
+  constant zpuino_adc_enabled: boolean := true;
+
 end package zpuino_config;

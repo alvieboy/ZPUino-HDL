@@ -195,4 +195,27 @@ package zpuinopkg is
   );
   end component zpuino_crc16;
 
+  component zpuino_adc is
+  port (
+    clk:      in std_logic;
+	 	areset:   in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(2 downto 0);
+    we:       in std_logic;
+    re:       in std_logic;
+    busy:     out std_logic;
+    interrupt:out std_logic;
+
+    -- GPIO SPI pins
+
+    mosi:     out std_logic;
+    miso:     in std_logic;
+    sck:      out std_logic;
+    seln:     out std_logic;
+    enabled:  out std_logic
+  );
+  end component zpuino_adc;
+
+
 end package zpuinopkg;

@@ -130,6 +130,17 @@ architecture behave of zpuino_io is
   signal spi_pf_sck: std_logic;
   signal uart_tx: std_logic;
   signal uart_rx: std_logic;
+
+  signal adc_read:  std_logic_vector(wordSize-1 downto 0);
+  signal adc_we:    std_logic;
+  signal adc_re:    std_logic;
+  signal adc_mosi:  std_logic;
+  signal adc_miso:  std_logic;
+  signal adc_sck:   std_logic;
+  signal adc_seln:  std_logic;
+  signal adc_enabled: std_logic;
+
+
 begin
 
   io_device_busy <= spi_busy or spi2_busy or crc16_busy;
@@ -216,6 +227,12 @@ begin
         read <= spi2_read;
       when "0111" =>
         read <= crc16_read;
+      when "1000" =>
+        if zpuino_adc_enabled then
+          read <= adc_read;
+        else
+          read <= (others => DontCareValue);
+        end if;
       when others =>
         read <= (others => DontCareValue);
     end case;
@@ -241,6 +258,8 @@ begin
     spi2_we <= '0';
     crc16_we <= '0';
     crc16_re <= '0';
+    adc_we <= '0';
+    adc_re <= '0';
 
     case io_address(14 downto 11) is
       when "0000" =>
@@ -267,6 +286,11 @@ begin
       when "0111" =>
         crc16_re <= io_re;
         crc16_we <= io_we;
+      when "1000" =>
+        if zpuino_adc_enabled then
+          adc_re <= io_re;
+          adc_we <= io_we;
+        end if;
       when others =>
     end case;
   end process;
@@ -405,6 +429,27 @@ begin
     busy      => crc16_busy
   );
 
+  adcgen: if zpuino_adc_enabled generate
+
+  adc_inst:zpuino_adc
+  port map (
+    clk       => clk,
+	 	areset    => areset,
+    read      => adc_read,
+    write     => io_write,
+    address   => io_address(4 downto 2),
+    we        => adc_we,
+    re        => adc_re,
+    busy      => open,
+    interrupt => open,
+    mosi      => adc_mosi,
+    miso      => adc_miso,
+    sck       => adc_sck,
+    seln      => adc_seln,
+    enabled   => adc_enabled
+  );
+  end generate;
+
   process(spi_enabled,spi2_enabled,spi_enabled,
           uart_enabled,sigmadelta_spp_en, uart_tx,
           gpio_spp_read, spi_pf_mosi, spi_pf_sck,
@@ -446,6 +491,20 @@ begin
 
     gpio_spp_en(10) <= spi2_enabled;         -- PPS10: USPI SCK
     gpio_spp_data(10) <= spi2_sck;
+
+    if zpuino_adc_enabled then
+      gpio_spp_en(11) <= adc_enabled;         -- PPS11: ADC SCK
+      gpio_spp_data(11) <= adc_sck;
+
+      gpio_spp_en(12) <= adc_enabled;         -- PPS12 : ADC MISO
+      adc_miso <= gpio_spp_read(12);
+
+      gpio_spp_en(13) <= adc_enabled;         -- PPS13 : ADC MOSI
+      gpio_spp_data(13) <= adc_mosi;
+
+      gpio_spp_en(14) <= adc_enabled;         -- PPS14 : ADC SELN
+      gpio_spp_data(14) <= adc_seln;
+    end if;
 
   end process;
 
