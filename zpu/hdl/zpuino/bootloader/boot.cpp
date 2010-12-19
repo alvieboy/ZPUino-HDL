@@ -17,7 +17,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x02
+#define VERSION_LOW  0x03
 
 /* Commands for programmer */
 
@@ -53,6 +53,7 @@ static unsigned char buffer[256 + 32];
 static int syncSeen;
 static int unescaping;
 static unsigned int bufferpos;
+static unsigned int flash_id;
 
 
 void outbyte(int);
@@ -289,12 +290,22 @@ extern "C" void _zpu_interrupt()
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
+static int is_atmel_flash()
+{
+	return ((flash_id & 0xff0000)==0x1f0000);
+}
+
 
 static int spi_read_status()
 {
 	unsigned int status;
 	spi_enable();
-	spiwrite(0x05);
+
+	if (is_atmel_flash())
+		spiwrite(0x57);
+	else
+		spiwrite(0x05);
+
 	spiwrite(0x00);
 	status =  spiread() & 0xff;
 	spi_disable();
@@ -411,11 +422,16 @@ static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
 static void cmd_waitready()
 {
 	int status;
-	do {
-		//spi_enable();
-		status = spi_read_status();
-		//spi_disable();
-	} while (status & 1);
+
+	if (is_atmel_flash()) {
+		do {
+			status = spi_read_status();
+		} while (!(status & 0x80));
+	} else {
+		do {
+			status = spi_read_status();
+		} while (status & 1);
+	}
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_WAITREADY));
 	sendByte(status);
@@ -441,17 +457,16 @@ static void cmd_version()
 
 static void cmd_identify()
 {
-	unsigned int id;
-
 	// Reset boot counter
 	milisseconds = 0;
+	int id;
 
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_IDENTIFY));
-	id = spi_read_id();
-	sendByte(id>>16);
-	sendByte(id>>8);
-	sendByte(id);
+	flash_id = spi_read_id();
+	sendByte(flash_id>>16);
+	sendByte(flash_id>>8);
+	sendByte(flash_id);
 	id = spi_read_status();
 	sendByte(id);
 	finishSend();
