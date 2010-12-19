@@ -21,7 +21,7 @@ static int sst25vf_get_status(int fd)
 	return status;
 }
 
-static int sst25vf_erase_sector(int fd, unsigned int sector)
+static int sst25vf_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
 {
 	buffer_t *b;
 	unsigned char wbuf[8];
@@ -71,7 +71,7 @@ static int sst25vf_erase_sector(int fd, unsigned int sector)
 #define SST_STATUS_AAI  64
 #define SST_STATUS_BPL  128
 
-static int sst25vf_enable_writes(int fd)
+static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 {
 	buffer_t *b;
 	unsigned char wbuf[6];
@@ -177,7 +177,7 @@ static int sst25vf_enable_writes(int fd)
 	return -1;
 }
 
-static buffer_t *sst25vf_read_page(int fd, unsigned int page)
+static buffer_t *sst25vf_read_page(flash_info_t *flash, int fd, unsigned int page)
 {
 	unsigned int addr = page * 256;
 	unsigned char wbuf[9];
@@ -237,7 +237,7 @@ static int sst25vf_program_page_aai(int fd, unsigned int page, const unsigned ch
 	return 0;
 }
 
-static int sst25vf_program_page(int fd, unsigned int page, const unsigned char *buf,size_t size)
+static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char wbuf[256 + 8];
 	unsigned int addr = page * 256;

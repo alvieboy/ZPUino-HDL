@@ -22,4 +22,6 @@
 
 extern unsigned int debug;
 
+unsigned short get_programmer_version();
+
 #endif

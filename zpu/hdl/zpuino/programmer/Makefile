@@ -3,7 +3,7 @@ LDFLAGS=
 
 all: zpuinoprogrammer reader
 
-zpuinoprogrammer: programmer.o flash.o flash_m25p.o flash_sst25vf.o
+zpuinoprogrammer: programmer.o flash.o flash_m25p.o flash_sst25vf.o flash_atmel.o
 	$(CC) -o $@ $+
 # DO NOT DELETE
 

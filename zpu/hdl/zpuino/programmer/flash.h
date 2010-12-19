@@ -3,12 +3,7 @@
 
 #include "transport.h"
 
-typedef struct {
-	int (*erase_sector)(int fd, unsigned sector);
-	int (*enable_writes)(int fd);
-	buffer_t *(*read_page)(int fd, unsigned page);
-	int (*program_page)(int fd, unsigned page, const unsigned char *data, size_t size);
-} flash_driver_t;
+struct flash_driver_t;
 
 typedef struct {
 	unsigned int manufacturer;
@@ -17,8 +12,16 @@ typedef struct {
 	unsigned int pagesize;
 	unsigned int sectorsize;
 	const char *name;
-	flash_driver_t *driver;
+	struct flash_driver_t *driver;
 } flash_info_t;
+
+typedef struct flash_driver_t {
+	int (*erase_sector)(flash_info_t *flash, int fd, unsigned sector);
+	int (*enable_writes)(flash_info_t *flash, int fd);
+	buffer_t *(*read_page)(flash_info_t *flash, int fd, unsigned page);
+	int (*program_page)(flash_info_t *flash, int fd, unsigned page, const unsigned char *data, size_t size);
+} flash_driver_t;
+
 
 
 extern flash_info_t flash_list[];

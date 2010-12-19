@@ -35,6 +35,12 @@ static int serial_reset = 0;
 
 unsigned short version;
 
+unsigned short get_programmer_version()
+{
+	return version;
+}
+
+
 static int set_speed(char *value)
 {
 	int v = atoi(value);
@@ -480,9 +486,18 @@ static int flash_read_status(fd)
 	return 0;
 }
 
+void dump_buffer(unsigned char *start,size_t size)
+{
+	unsigned int i;
+	for (i=0;i<size;i++) {
+		printf("%02x ", start[i]);
+	}
+	printf("\n");
+}
+
 int read_flash(int fd, flash_info_t *flash, size_t page)
 {
-	buffer_t *b = flash->driver->read_page(fd,page);
+	buffer_t *b = flash->driver->read_page(flash,fd,page);
 
 	if (verbose>0)
 		printf("Reading page nr %d (offset 0x%08x)\n",page,page*flash->pagesize);
@@ -615,15 +630,17 @@ int main(int argc, char **argv)
 	}
 
 	/* Ensure SPI offset is aligned */
-	if (spioffset % flash->pagesize!=0) {
-		fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
-		close(fd);
-		return -1;
-	}
-	if (spioffset % flash->sectorsize!=0) {
-		fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
-		close(fd);
-		return -1;
+	if (!only_read) {
+		if (spioffset % flash->pagesize!=0) {
+			fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
+			close(fd);
+			return -1;
+		}
+		if (spioffset % flash->sectorsize!=0) {
+			fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
+			close(fd);
+			return -1;
+		}
 	}
 
 	unsigned int size_bytes;
@@ -688,9 +705,10 @@ int main(int argc, char **argv)
 	if (verbose>0) {
 		printf("Need to erase %d sectors\n",sectors);
 	}
+
 	while (sectors--) {
 		if (!dry_run)
-			if (flash->driver->enable_writes(fd)<0)
+			if (flash->driver->enable_writes(flash,fd)<0)
 				return -1;
 
 		if (verbose>0) {
@@ -698,7 +716,7 @@ int main(int argc, char **argv)
 			fflush(stdout);
 		}
 
-		if (!dry_run && flash->driver->erase_sector(fd, saddr)<0) {
+		if (!dry_run && flash->driver->erase_sector(flash, fd, saddr)<0) {
 			fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
 		}
@@ -706,26 +724,29 @@ int main(int argc, char **argv)
 
 		saddr++;
 	}
+
 	if (verbose>0)
 		printf("\ndone.\n");
+
+	//exit(0);
 
 	saddr = spioffset_page;
 	unsigned char *sptr = buf;
 
 	while (pages--) {
 		if (!dry_run)
-			if (flash->driver->enable_writes(fd)<0) {
+			if (flash->driver->enable_writes(flash,fd)<0) {
 				fprintf(stderr,"Cannot enable writes ?\n");
 				return -1;
 			}
 
 		if (verbose>0) {
-			printf("Programing page at 0x%08x\r",saddr * flash->pagesize);
+			printf("Programing page %d at 0x%08x\r",saddr, saddr * flash->pagesize);
 			fflush(stdout);
 		}
 
 		if (!dry_run)
-			if (flash->driver->program_page(fd, saddr, sptr,flash->pagesize)<0) {
+			if (flash->driver->program_page(flash, fd, saddr, sptr,flash->pagesize)<0) {
 				fprintf(stderr,"\nCannot program page!\n");
 				return -1;
 			}
@@ -748,10 +769,10 @@ int main(int argc, char **argv)
 	} else {
 		while (pages--) {
 			if (verbose>0) {
-				printf("Verifying page at 0x%08x...\r",saddr * flash->pagesize);
+				printf("Verifying page %d at 0x%08x...\r",saddr, saddr * flash->pagesize);
 				fflush(stdout);
 			}
-			b = flash->driver->read_page(fd, saddr);
+			b = flash->driver->read_page(flash, fd, saddr);
 
 			if (NULL==b) {
 				fprintf(stderr,"\nCannot read page?\n");
@@ -760,6 +781,10 @@ int main(int argc, char **argv)
 
 			if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
 				fprintf(stderr,"\nVerification failed at 0x%08x!\n",saddr * flash->pagesize);
+				// Dump
+				dump_buffer(&b->buf[3], flash->pagesize);
+				dump_buffer(sptr, flash->pagesize);
+
 				pages=0;
 			}
 
