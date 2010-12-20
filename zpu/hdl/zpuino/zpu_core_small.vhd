@@ -131,7 +131,8 @@ State_Decode,
 State_Resync,
 State_Interrupt,
 State_Exception,
-State_Neqbranch
+State_Neqbranch,
+State_Eq
 
 );
 
@@ -156,7 +157,8 @@ Decoded_Flip,
 Decoded_Store,
 Decoded_PopSP,
 Decoded_Interrupt,
-Decoded_Neqbranch
+Decoded_Neqbranch,
+Decoded_Eq
 );
 
 
@@ -299,6 +301,8 @@ begin
 		elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
 			  sampledDecodedOpcode<=Decoded_Neqbranch;
+      elsif (tOpcode(5 downto 0)=OpCode_Eq) then
+			  sampledDecodedOpcode<=Decoded_Eq;
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
@@ -446,9 +450,14 @@ begin
 							memAAddr <= sp+spOffset;
 
             when Decoded_Neqbranch =>
-							sp <= sp + 1;
+              sp <= sp + 1;
               memBAddr <= sp + 1;
               state <= State_Neqbranch;
+
+            when Decoded_Eq =>
+              sp <= sp + 1;
+              memBAddr <= sp + 1;
+              state <= State_Eq;
 
 						when Decoded_Emulate =>
 							sp <= sp - 1;
@@ -601,6 +610,15 @@ begin
             pc <= pc + 1;
           end if;
           state <= State_Resync;
+
+				when State_Eq =>
+					memAAddr <= sp;
+					memAWriteEnable <= '1';
+          memAWrite <= (others => '0');
+          if memARead = memBRead then
+					  memAWrite(0) <= '1';
+          end if;
+					state <= State_Fetch;
 
 				when State_Resync =>
           if memErr='1' then
