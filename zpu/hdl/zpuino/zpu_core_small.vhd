@@ -42,75 +42,46 @@ use work.zpupkg.all;
 
 
 entity zpu_core_small is
-    Port ( clk : in std_logic;
-          -- asynchronous reset signal
-         areset : in std_logic;
-         -- this particular implementation of the ZPU does not
-         -- have a clocked enable signal
-         enable : in std_logic; 
-         in_mem_busy : in std_logic; 
-         mem_read : in std_logic_vector(wordSize-1 downto 0);
-         mem_write : out std_logic_vector(wordSize-1 downto 0);        
-         out_mem_addr : out std_logic_vector(maxAddrBitIncIO downto 0);
-        out_mem_writeEnable : out std_logic; 
-        out_mem_readEnable : out std_logic;
-        -- this implementation of the ZPU *always* reads and writes entire
-        -- 32 bit words, so mem_writeMask is tied to (others => '1').
-         mem_writeMask: out std_logic_vector(wordBytes-1 downto 0);
-         -- Set to one to jump to interrupt vector
-         -- The ZPU will communicate with the hardware that caused the
-         -- interrupt via memory mapped IO or the interrupt flag can
-         -- be cleared automatically
-         interrupt : in std_logic;
-         poppc_inst: out std_logic;
-         -- Signal that the break instruction is executed, normally only used
-         -- in simulation to stop simulation
-         break : out std_logic);
+  port (
+    clk:            in std_logic;
+    rst:            in std_logic; -- Synchronous reset
+    in_mem_busy:    in std_logic;
+    io_read:        in std_logic_vector(wordSize-1 downto 0);
+    io_write:       out std_logic_vector(wordSize-1 downto 0);
+    io_addr:        out std_logic_vector(maxAddrBitIncIO downto 0);
+    io_wr:          out std_logic;
+    io_rd:          out std_logic;
+    interrupt:      in std_logic;
+    poppc_inst:     out std_logic;
+    break:          out std_logic
+  );
 end zpu_core_small;
 
 architecture behave of zpu_core_small is
 
-signal    readIO : std_logic;
+signal memAWriteEnable:     std_logic;
+signal memAWriteMask:       std_logic_vector(3 downto 0);
+signal memAAddr:            unsigned(maxAddrBit downto minAddrBit);
+signal memAWrite:           unsigned(wordSize-1 downto 0);
+signal memARead:            unsigned(wordSize-1 downto 0);
+signal memBWriteEnable:     std_logic;
+signal memBWriteMask:       std_logic_vector(3 downto 0);
+signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
+signal memBWrite:           unsigned(wordSize-1 downto 0);
+signal memBRead:            unsigned(wordSize-1 downto 0);
 
+signal pc:                  unsigned(maxAddrBit downto 0);
+signal sp:                  unsigned(maxAddrBit downto minAddrBit);
 
+signal idim_flag:           std_logic;
+signal busy:                std_logic;
+signal begin_inst:          std_logic;
 
-signal memAWriteEnable : std_logic;
-signal memAWriteMask : std_logic_vector(3 downto 0);
-signal memAAddr : unsigned(maxAddrBit downto minAddrBit);
-signal exception_memAAddr : unsigned(maxAddrBit downto minAddrBit);
-signal memAWrite : unsigned(wordSize-1 downto 0);
-signal memARead : unsigned(wordSize-1 downto 0);
-signal memBWriteEnable : std_logic;
-signal memBWriteMask : std_logic_vector(3 downto 0);
-signal memBAddr : unsigned(maxAddrBit downto minAddrBit);
-signal exception_memBAddr : unsigned(maxAddrBit downto minAddrBit);
-signal memBWrite : unsigned(wordSize-1 downto 0);
-signal memBRead : unsigned(wordSize-1 downto 0);
-
-
-
-signal  pc        : unsigned(maxAddrBit downto 0);
-signal  exception_pc        : unsigned(maxAddrBit downto 0);
-signal  sp        : unsigned(maxAddrBit downto minAddrBit);
-signal  exception_sp        : unsigned(maxAddrBit downto minAddrBit);
-
--- this signal is set upon executing an IM instruction
--- the subsequence IM instruction will then behave differently.
--- all other instructions will clear the idim_flag.
--- this yields highly compact immediate instructions.
-signal  idim_flag      : std_logic;
-
-signal  busy         : std_logic;
-
-signal  begin_inst      : std_logic;
-
-
-
-signal trace_opcode    : std_logic_vector(7 downto 0);
-signal  trace_pc        : std_logic_vector(maxAddrBitIncIO downto 0);
-signal  trace_sp        : std_logic_vector(maxAddrBitIncIO downto minAddrBit);
-signal  trace_topOfStack        : std_logic_vector(wordSize-1 downto 0);
-signal  trace_topOfStackB        : std_logic_vector(wordSize-1 downto 0);
+signal trace_opcode:        std_logic_vector(7 downto 0);
+signal trace_pc:            std_logic_vector(maxAddrBitIncIO downto 0);
+signal trace_sp:            std_logic_vector(maxAddrBitIncIO downto minAddrBit);
+signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
+signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 
 -- state machine.
 type State_Type is
@@ -145,7 +116,7 @@ Decoded_Nop,
 Decoded_Im,
 Decoded_ImShift,
 Decoded_LoadSP,
-Decoded_StoreSP  ,
+Decoded_StoreSP,
 Decoded_AddSP,
 Decoded_Emulate,
 Decoded_Break,
@@ -167,13 +138,11 @@ Decoded_Storeb
 
 
 
-signal sampledOpcode : std_logic_vector(OpCode_Size-1 downto 0);
-signal opcode : std_logic_vector(OpCode_Size-1 downto 0);
+signal sampledOpcode: std_logic_vector(OpCode_Size-1 downto 0);
+signal opcode: std_logic_vector(OpCode_Size-1 downto 0);
 
 signal decodedOpcode : DecodedOpcodeType;
 signal sampledDecodedOpcode : DecodedOpcodeType;
-
-
 signal state : State_Type;
 
 subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
@@ -188,12 +157,7 @@ signal memErr: std_logic;
 subtype index is integer range 0 to 3;
 
 signal tOpcode_sel : index;
-
-
 signal inInterrupt : std_logic;
-
-signal exceptionStep: integer;
-
 
 begin
 
@@ -207,23 +171,19 @@ begin
   -- good trace file
   traceFileGenerate:
    if Generate_Trace generate
-  trace_file: trace port map (
-         clk => clk,
-         begin_inst => begin_inst,
-         pc => trace_pc,
-    opcode => trace_opcode,
-    sp => trace_sp,
-    memA => trace_topOfStack,
-    memB => trace_topOfStackB,
-    busy => busy,
-    intsp => (others => 'U')
+      trace_file: trace
+        port map (
+          clk         => clk,
+          begin_inst  => begin_inst,
+          pc          => trace_pc,
+          opcode      => trace_opcode,
+          sp          => trace_sp,
+          memA        => trace_topOfStack,
+          memB        => trace_topOfStackB,
+          busy        => busy,
+          intsp       => (others => 'U')
         );
   end generate;
-
-
-
-    -- mem_writeMask is not used in this design, tie it to 1
-    mem_writeMask <= (others => '1');
 
 
 
@@ -232,48 +192,26 @@ begin
   memBAddr_stdlogic  <= std_logic_vector(memBAddr(AddrBitBRAM_range));
   memBWrite_stdlogic <= std_logic_vector(memBWrite);
   
-  
-  -- dualport_ram must be defined by the application. 
-  -- 
-  -- How this can be implemented is highly dependent on the FPGA
-  -- and synthesis technology used. 
-  --
-  -- sometimes it can be instantiated as in the 
-  -- zpu/example/helloworld.vhd, using inference,
-  -- but oftentimes it must be instantiated directly
-  -- portmapping to part specific FPGA resources
-  -- 
-  --
-  -- DANGER!!!!!! If inference fails, then synthesis will try
-  -- to implement the memory using basic logic resources. This
-  -- will almost certainly cause the compiler to get "stuck"
-  -- since synthesising such a huge number of basic logic resources
-  -- will take more or less forever.
-  --
-  -- So: if your compiler gets "stuck" then inference is not
-  -- the way to go.
-  memory: dualport_ram port map (
-         clk => clk,
-  memAWriteEnable => memAWriteEnable,
-  memAWriteMask => memAWriteMask,
-  memAAddr => memAAddr_stdlogic,
-  memAWrite => memAWrite_stdlogic,
-  memARead => memARead_stdlogic,
-  memBWriteEnable => memBWriteEnable,
-  memBWriteMask => memBWriteMask,
-  memBAddr => memBAddr_stdlogic,
-  memBWrite => memBWrite_stdlogic,
-  memBRead => memBRead_stdlogic,
-  memErr => memErr
-        );
+  memory: dualport_ram
+    port map (
+      clk => clk,
+      memAWriteEnable => memAWriteEnable,
+      memAWriteMask => memAWriteMask,
+      memAAddr => memAAddr_stdlogic,
+      memAWrite => memAWrite_stdlogic,
+      memARead => memARead_stdlogic,
+      memBWriteEnable => memBWriteEnable,
+      memBWriteMask => memBWriteMask,
+      memBAddr => memBAddr_stdlogic,
+      memBWrite => memBWrite_stdlogic,
+      memBRead => memBRead_stdlogic,
+      memErr => memErr
+    );
+
   memARead <= unsigned(memARead_stdlogic);
   memBRead <= unsigned(memBRead_stdlogic);
 
-
-
   tOpcode_sel <= to_integer(pc(minAddrBit-1 downto 0));
-
-
 
   -- move out calculation of the opcode to a seperate process
   -- to make things a bit easier to read
@@ -353,52 +291,48 @@ begin
   begin
     if rising_edge(clk) then
       if areset = '1' then
-      state <= State_Resync;
-      break <= '0';
-      -- Save 32-words for exception handling
-      sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
-      pc <= (others => '0');
-      idim_flag <= '0';
-      begin_inst <= '0';
-      memAAddr <= (others => '0');
-      memBAddr <= (others => '0');
-      memAWriteEnable <= '0';
-      memBWriteEnable <= '0';
-      out_mem_writeEnable <= '0';
-      out_mem_readEnable <= '0';
-      memAWrite <= (others => '0');
-      memBWrite <= (others => '0');
-      inInterrupt <= '0';
-    else
-      memAWriteEnable <= '0';
-      memBWriteEnable <= '0';
-      -- This saves ca. 100 LUT's, by explicitly declaring that the
-            -- memAWrite can be left at whatever value if memAWriteEnable is
-      -- not set.
-      memAWrite <= (others => DontCareValue);
-      memBWrite <= (others => DontCareValue);
---      out_mem_addr <= (others => DontCareValue);
---      mem_write <= (others => DontCareValue);
-      spOffset := (others => DontCareValue);
-      memAAddr <= (others => DontCareValue);
-      memBAddr <= (others => DontCareValue);
-      memAWriteMask <= (others => DontCareValue);
-      memBWriteMask <= (others => DontCareValue);
-      
-      out_mem_writeEnable <= '0';
-      out_mem_readEnable <= '0';
-      begin_inst <= '0';
-      out_mem_addr <= std_logic_vector(memARead(maxAddrBitIncIO downto 0));
-      mem_write <= std_logic_vector(memBRead);
-      
-      decodedOpcode <= sampledDecodedOpcode;
-      opcode <= sampledOpcode;
-      if interrupt='0' then
-        inInterrupt <= '0'; -- no longer in an interrupt
-      end if;
+        state <= State_Resync;
+        break <= '0';
+        sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
+        pc <= (others => '0');
+        idim_flag <= '0';
+        begin_inst <= '0';
+        memAAddr <= (others => '0');
+        memBAddr <= (others => '0');
+        memAWriteEnable <= '0';
+        memBWriteEnable <= '0';
+        out_mem_writeEnable <= '0';
+        out_mem_readEnable <= '0';
+        memAWrite <= (others => '0');
+        memBWrite <= (others => '0');
+        inInterrupt <= '0';
+      else
+        memAWriteEnable <= '0';
+        memBWriteEnable <= '0';
+        memAWrite <= (others => DontCareValue);
+        memBWrite <= (others => DontCareValue);
+        spOffset := (others => DontCareValue);
+        memAAddr <= (others => DontCareValue);
+        memBAddr <= (others => DontCareValue);
+        memAWriteMask <= (others => DontCareValue);
+        memBWriteMask <= (others => DontCareValue);
+        
+        out_mem_writeEnable <= '0';
+        out_mem_readEnable <= '0';
+        begin_inst <= '0';
+        out_mem_addr <= std_logic_vector(memARead(maxAddrBitIncIO downto 0));
+        mem_write <= std_logic_vector(memBRead);
+        
+        decodedOpcode <= sampledDecodedOpcode;
+        opcode <= sampledOpcode;
 
-      poppc_inst<='0';
-      case state is
+        if interrupt='0' then
+          inInterrupt <= '0'; -- no longer in an interrupt
+        end if;
+
+        poppc_inst<='0';
+
+        case state is
         when State_Execute =>
           state <= State_Fetch;
           -- at this point:
@@ -698,39 +632,6 @@ begin
           memAWriteMask <= (others => '1');
           memAWrite <= memARead and memBRead;
           state <= State_Fetch;
---        when State_Exception =>
---          memAAddr <= sp;
---          case exceptionStep is
---            when 0 =>
---              memAWriteEnable <= '1';
---              memAWrite<=(others => '0');
---              memAWrite(maxAddrBit downto minAddrBit) <= exception_memBAddr;
---              exceptionStep <= exceptionStep+1;
---              sp <= sp - 1;
---            when 1 =>
---              memAWriteEnable <= '1';
---              memAWrite<=(others => '0');
---              memAWrite(maxAddrBit downto minAddrBit) <= exception_memAAddr;
---              exceptionStep <= exceptionStep+1;
---              sp <= sp - 1;
---            when 2 =>
---             memAWriteEnable <= '1';
---              memAWrite<=(others => '0');
---              memAWrite(maxAddrBit downto minAddrBit) <= exception_sp;
---              exceptionStep <= exceptionStep+1;
---              sp <= sp - 1;
---            when 3 =>
---              memAWriteEnable <= '1';
---              memAWrite<=(others => '0');
---              memAWrite(maxAddrBit downto 0) <= exception_pc;
---              exceptionStep <= exceptionStep+1;
---            when 4 =>
---              pc <= (others => '0');
---              pc(11 downto 0) <= x"100";
---              state <= State_Fetch;
---            when others =>
---          end case;
-
         when others =>
           null;
       end case;
@@ -738,7 +639,5 @@ begin
     end if;
     end if;
   end process;
-
-
 
 end behave;
