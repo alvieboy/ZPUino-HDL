@@ -134,7 +134,8 @@ State_Resync,
 State_Interrupt,
 State_Exception,
 State_Neqbranch,
-State_Eq
+State_Eq,
+State_Storeb
 
 );
 
@@ -160,7 +161,8 @@ Decoded_Store,
 Decoded_PopSP,
 Decoded_Interrupt,
 Decoded_Neqbranch,
-Decoded_Eq
+Decoded_Eq,
+Decoded_Storeb
 );
 
 
@@ -307,6 +309,8 @@ begin
 			  sampledDecodedOpcode<=Decoded_Neqbranch;
       elsif (tOpcode(5 downto 0)=OpCode_Eq) then
 			  sampledDecodedOpcode<=Decoded_Eq;
+      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
+			  sampledDecodedOpcode<=Decoded_Storeb;
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
@@ -360,8 +364,6 @@ begin
 			memBAddr <= (others => '0');
 			memAWriteEnable <= '0';
 			memBWriteEnable <= '0';
-			memAWriteMask <= (others => '1');
-			memBWriteMask <= (others => '1');
 			out_mem_writeEnable <= '0';
 			out_mem_readEnable <= '0';
 			memAWrite <= (others => '0');
@@ -380,6 +382,8 @@ begin
 			spOffset := (others => DontCareValue);
 			memAAddr <= (others => DontCareValue);
 			memBAddr <= (others => DontCareValue);
+			memAWriteMask <= (others => DontCareValue);
+			memBWriteMask <= (others => DontCareValue);
 			
 			out_mem_writeEnable <= '0';
 			out_mem_readEnable <= '0';
@@ -426,6 +430,7 @@ begin
 							sp <= sp - 1;
 							memAAddr <= sp - 1;
 							memAWriteEnable <= '1';
+  			      memAWriteMask <= (others => '1');
 							memAWrite <= (others => DontCareValue);
 							memAWrite(maxAddrBit downto 0) <= pc;
 							pc <= to_unsigned(32, maxAddrBit+1); -- interrupt address
@@ -433,6 +438,8 @@ begin
 						when Decoded_Im =>
 							idim_flag <= '1';
 							memAWriteEnable <= '1';
+              memAWriteMask <= (others => '1');
+
 							if (idim_flag='0') then
 								sp <= sp - 1;
 								memAAddr <= sp-1;
@@ -447,6 +454,7 @@ begin
 							end if;
 						when Decoded_StoreSP =>
 							memBWriteEnable <= '1';
+              memBWriteMask <= (others => '1');
 							memBAddr <= sp+spOffset;
 							memBWrite <= memARead;
 							sp <= sp + 1;
@@ -460,6 +468,11 @@ begin
               memBAddr <= sp + 1;
               state <= State_Neqbranch;
 
+            when Decoded_Storeb =>
+              sp <= sp + 1;
+              memBAddr <= sp + 1;
+              state <= State_Storeb;
+
             when Decoded_Eq =>
               sp <= sp + 1;
               memBAddr <= sp + 1;
@@ -468,6 +481,7 @@ begin
 						when Decoded_Emulate =>
 							sp <= sp - 1;
 							memAWriteEnable <= '1';
+              memAWriteMask <= (others => '1');
 							memAAddr <= sp - 1;
 							memAWrite <= (others => DontCareValue);
 							memAWrite(maxAddrBit downto 0) <= pc + 1;
@@ -485,6 +499,7 @@ begin
 							break <= '1';
 						when Decoded_PushSP =>
 							memAWriteEnable <= '1';
+              memAWriteMask <= (others => '1');
 							memAAddr <= sp - 1;
 							sp <= sp - 1;
 							memAWrite <= (others => DontCareValue);
@@ -514,10 +529,12 @@ begin
 						when Decoded_Not =>
 							memAAddr <= sp(maxAddrBit downto minAddrBit);
 							memAWriteEnable <= '1';
+              memAWriteMask <= (others => '1');
 							memAWrite <= not memARead;
 						when Decoded_Flip =>
 							memAAddr <= sp(maxAddrBit downto minAddrBit);
 							memAWriteEnable <= '1';
+              memAWriteMask <= (others => '1');
 							for i in 0 to wordSize-1 loop
 								memAWrite(i) <= memARead(wordSize-1-i);
 				  			end loop;
@@ -541,6 +558,7 @@ begin
 					if (in_mem_busy = '0') then
 						state <= State_Fetch;
 						memAWriteEnable <= '1';
+            memAWriteMask <= (others => '1');
 						memAWrite <= unsigned(mem_read);
 					end if;
 					memAAddr <= sp;
@@ -574,6 +592,7 @@ begin
 					-- at this point memARead contains the value that is either
 					-- from the top of stack or should be copied to the top of the stack
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
 					memAWrite <= memARead; 
 					memAAddr <= sp;
 					memBAddr <= sp + 1;
@@ -592,6 +611,7 @@ begin
 				when State_Store =>
 					sp <= sp + 1;
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
 					memAAddr <= memARead(maxAddrBit downto minAddrBit);
 					memAWrite <= memBRead;
 					state <= State_Resync;
@@ -600,11 +620,13 @@ begin
 				when State_Add =>
 					memAAddr <= sp;
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
 					memAWrite <= memARead + memBRead;
 					state <= State_Fetch;
 				when State_Or =>
 					memAAddr <= sp;
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
 					memAWrite <= memARead or memBRead;
 					state <= State_Fetch;
 
@@ -617,9 +639,42 @@ begin
           end if;
           state <= State_Resync;
 
+        when State_Storeb =>
+          sp <= sp + 1;
+          -- Address is in memARead, value are 8 lower bits of memBRead
+          -- Generate write mask.
+          memAWrite <= (others => DontCareValue);
+
+          case memARead(1 downto 0) is
+            when "00" =>
+              memAWriteMask <= "1000";
+              memAWrite(31 downto 24) <= memBRead(7 downto 0);
+              
+            when "01" =>
+              memAWriteMask <= "0100";
+              memAWrite(23 downto 16) <= memBRead(7 downto 0);
+
+            when "10" =>
+              memAWriteMask <= "0010";
+              memAWrite(15 downto 8) <= memBRead(7 downto 0);
+
+            when "11" =>
+              memAWriteMask <= "0001";
+              memAWrite(7 downto 0) <= memBRead(7 downto 0);
+
+            when others =>
+          end case;
+
+
+          memAWriteEnable <= '1';
+          memAAddr <= memARead(maxAddrBit downto minAddrBit);
+
+          state <= State_Resync;
+
 				when State_Eq =>
 					memAAddr <= sp;
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
           memAWrite <= (others => '0');
           if memARead = memBRead then
 					  memAWrite(0) <= '1';
@@ -640,40 +695,41 @@ begin
 				when State_And =>
 					memAAddr <= sp;
 					memAWriteEnable <= '1';
+          memAWriteMask <= (others => '1');
 					memAWrite <= memARead and memBRead;
 					state <= State_Fetch;
-        when State_Exception =>
-          memAAddr <= sp;
-          case exceptionStep is
-            when 0 =>
-              memAWriteEnable <= '1';
-              memAWrite<=(others => '0');
-              memAWrite(maxAddrBit downto minAddrBit) <= exception_memBAddr;
-              exceptionStep <= exceptionStep+1;
-              sp <= sp - 1;
-            when 1 =>
-              memAWriteEnable <= '1';
-              memAWrite<=(others => '0');
-              memAWrite(maxAddrBit downto minAddrBit) <= exception_memAAddr;
-              exceptionStep <= exceptionStep+1;
-              sp <= sp - 1;
-            when 2 =>
-              memAWriteEnable <= '1';
-              memAWrite<=(others => '0');
-              memAWrite(maxAddrBit downto minAddrBit) <= exception_sp;
-              exceptionStep <= exceptionStep+1;
-              sp <= sp - 1;
-            when 3 =>
-              memAWriteEnable <= '1';
-              memAWrite<=(others => '0');
-              memAWrite(maxAddrBit downto 0) <= exception_pc;
-              exceptionStep <= exceptionStep+1;
-            when 4 =>
-              pc <= (others => '0');
-              pc(11 downto 0) <= x"100";
-              state <= State_Fetch;
-            when others =>
-          end case;
+--        when State_Exception =>
+--          memAAddr <= sp;
+--          case exceptionStep is
+--            when 0 =>
+--              memAWriteEnable <= '1';
+--              memAWrite<=(others => '0');
+--              memAWrite(maxAddrBit downto minAddrBit) <= exception_memBAddr;
+--              exceptionStep <= exceptionStep+1;
+--              sp <= sp - 1;
+--            when 1 =>
+--              memAWriteEnable <= '1';
+--              memAWrite<=(others => '0');
+--              memAWrite(maxAddrBit downto minAddrBit) <= exception_memAAddr;
+--              exceptionStep <= exceptionStep+1;
+--              sp <= sp - 1;
+--            when 2 =>
+--             memAWriteEnable <= '1';
+--              memAWrite<=(others => '0');
+--              memAWrite(maxAddrBit downto minAddrBit) <= exception_sp;
+--              exceptionStep <= exceptionStep+1;
+--              sp <= sp - 1;
+--            when 3 =>
+--              memAWriteEnable <= '1';
+--              memAWrite<=(others => '0');
+--              memAWrite(maxAddrBit downto 0) <= exception_pc;
+--              exceptionStep <= exceptionStep+1;
+--            when 4 =>
+--              pc <= (others => '0');
+--              pc(11 downto 0) <= x"100";
+--              state <= State_Fetch;
+--            when others =>
+--          end case;
 
 				when others =>
 					null;
