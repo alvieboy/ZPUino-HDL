@@ -61,10 +61,12 @@ package zpupkg is
 	component dualport_ram is
 	port (clk : in std_logic;
 		memAWriteEnable : in std_logic;
+    memAWriteMask : in std_logic_vector(3 downto 0);
 		memAAddr : in std_logic_vector(maxAddrBit downto minAddrBit);
 		memAWrite : in std_logic_vector(wordSize-1 downto 0);
 		memARead : out std_logic_vector(wordSize-1 downto 0);
 		memBWriteEnable : in std_logic;
+    memBWriteMask : in std_logic_vector(3 downto 0);
 		memBAddr : in std_logic_vector(maxAddrBit downto minAddrBit);
 		memBWrite : in std_logic_vector(wordSize-1 downto 0);
 		memBRead : out std_logic_vector(wordSize-1 downto 0);

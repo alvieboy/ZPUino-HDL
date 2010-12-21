@@ -75,11 +75,13 @@ signal		readIO : std_logic;
 
 
 signal memAWriteEnable : std_logic;
+signal memAWriteMask : std_logic_vector(3 downto 0);
 signal memAAddr : unsigned(maxAddrBit downto minAddrBit);
 signal exception_memAAddr : unsigned(maxAddrBit downto minAddrBit);
 signal memAWrite : unsigned(wordSize-1 downto 0);
 signal memARead : unsigned(wordSize-1 downto 0);
 signal memBWriteEnable : std_logic;
+signal memBWriteMask : std_logic_vector(3 downto 0);
 signal memBAddr : unsigned(maxAddrBit downto minAddrBit);
 signal exception_memBAddr : unsigned(maxAddrBit downto minAddrBit);
 signal memBWrite : unsigned(wordSize-1 downto 0);
@@ -251,10 +253,12 @@ begin
 	memory: dualport_ram port map (
        	clk => clk,
 	memAWriteEnable => memAWriteEnable,
+  memAWriteMask => memAWriteMask,
 	memAAddr => memAAddr_stdlogic,
 	memAWrite => memAWrite_stdlogic,
 	memARead => memARead_stdlogic,
 	memBWriteEnable => memBWriteEnable,
+  memBWriteMask => memBWriteMask,
 	memBAddr => memBAddr_stdlogic,
 	memBWrite => memBWrite_stdlogic,
 	memBRead => memBRead_stdlogic,
@@ -356,6 +360,8 @@ begin
 			memBAddr <= (others => '0');
 			memAWriteEnable <= '0';
 			memBWriteEnable <= '0';
+			memAWriteMask <= (others => '1');
+			memBWriteMask <= (others => '1');
 			out_mem_writeEnable <= '0';
 			out_mem_readEnable <= '0';
 			memAWrite <= (others => '0');
