@@ -103,7 +103,8 @@ State_Interrupt,
 State_Exception,
 State_Neqbranch,
 State_Eq,
-State_Storeb
+State_Storeb,
+State_LoadSP
 
 );
 
@@ -115,7 +116,10 @@ Decoded_ImShift,
 Decoded_LoadSP,
 Decoded_Dup,
 Decoded_StoreSP,
+Decoded_Pop,
+Decoded_PopDown,
 Decoded_AddSP,
+Decoded_Shift,
 Decoded_Emulate,
 Decoded_Break,
 Decoded_PushSP,
@@ -247,9 +251,6 @@ begin
     variable localspOffset: unsigned(4 downto 0);
   begin
 
-    localspOffset(4):=not opcode(4);
-    localspOffset(3 downto 0) := unsigned(opcode(3 downto 0));
-
         case (tOpcode_sel) is
 
             when 0 => tOpcode := std_logic_vector(memBRead(31 downto 24));
@@ -264,31 +265,44 @@ begin
         end case;
 
     sampledOpcode <= tOpcode;
+    localspOffset(4):=not tOpcode(4);
+    localspOffset(3 downto 0) := unsigned(tOpcode(3 downto 0));
+
 
     if (tOpcode(7 downto 7)=OpCode_Im) then
       sampledDecodedOpcode<=Decoded_Im;
     elsif (tOpcode(7 downto 5)=OpCode_StoreSP) then
-      sampledDecodedOpcode<=Decoded_StoreSP;
+      if localspOffset=0 then
+        sampledDecodedOpcode<=Decoded_Pop;
+      elsif localspOffset=1 then
+        sampledDecodedOpcode<=Decoded_PopDown;
+      else
+        sampledDecodedOpcode<=Decoded_StoreSP;
+      end if;
     elsif (tOpcode(7 downto 5)=OpCode_LoadSP) then
       if localspOffset=0 then
-        sampledDecodedOpcode<=Decoded_LoadSP;
-      else
         sampledDecodedOpcode<=Decoded_Dup;
+      else
+        sampledDecodedOpcode<=Decoded_LoadSP;
       end if;
 
 
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
-      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
-        sampledDecodedOpcode<=Decoded_Neqbranch;
-      elsif (tOpcode(5 downto 0)=OpCode_Eq) then
+--      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+--        sampledDecodedOpcode<=Decoded_Neqbranch;
+      if (tOpcode(5 downto 0)=OpCode_Eq) then
         sampledDecodedOpcode<=Decoded_Eq;
-      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
-        sampledDecodedOpcode<=Decoded_Storeb;
+--      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
+--        sampledDecodedOpcode<=Decoded_Storeb;
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
     elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
-      sampledDecodedOpcode<=Decoded_AddSP;
+      if localspOffset=0 then
+        sampledDecodedOpcode<=Decoded_Shift;
+      else
+        sampledDecodedOpcode<=Decoded_AddSP;
+      end if;
     else
       case tOpcode(3 downto 0) is
         when OpCode_Break =>
@@ -320,7 +334,7 @@ begin
   end process;
 
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode)
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -335,8 +349,8 @@ begin
 
     io_wr <= '0';
     io_rd <= '0';
-    io_addr <= std_logic_vector(memARead(maxAddrBitIncIO downto 0));
-    io_write <= std_logic_vector(memBRead);
+    io_addr <= (others => DontCareValue);
+    io_write <= (others => DontCareValue);
 
     begin_inst<='0';
 
@@ -353,8 +367,9 @@ begin
         w.state <= State_Resync2;
 
       when State_Resync2 =>
-        memAAddr <= r.sp - 1;
+        memAAddr <= r.sp + 1;
         w.pc <= r.pc + 1;
+        w.topOfStack <= memARead;
         w.state <= State_Execute;
   
       when State_Decode =>
@@ -462,13 +477,153 @@ begin
 
             w.state <= State_Decode;
 
+          when Decoded_And =>
+
+            w.sp <= r.sp + 1;
+            w.topOfStack <= r.topOfStack and memARead;
+
+            w.state <= State_Decode;
+
+          when Decoded_Or =>
+
+            w.sp <= r.sp + 1;
+            w.topOfStack <= r.topOfStack or memARead;
+
+            w.state <= State_Decode;
+
+          when Decoded_Not =>
+
+            w.topOfStack <= not r.topOfStack;
+
+            w.state <= State_Decode;
+
+          when Decoded_Flip =>
+
+            for i in 0 to wordSize-1 loop
+              w.topOfStack(i) <= r.topOfStack(wordSize-1-i);
+            end loop;
+
+            w.state <= State_Decode;
+
           when Decoded_LoadSP =>
 
-          
+            w.sp <= r.sp - 1;
+            memAWriteEnable <= '1';
+            memAAddr <= r.sp;
+            memAWrite <= r.topOfStack;
+            -- We need to load here next value.
+            memBAddr <= r.sp + spOffset;
+            w.state <= State_LoadSP;
+
+          when Decoded_Dup =>
+
+            w.sp <= r.sp - 1;
+            memAWriteEnable <= '1';
+            memAAddr <= r.sp;
+            memAWrite <= r.topOfStack;
+            w.state <= State_Decode;
+
+          when Decoded_AddSP =>
+
+            memAAddr <= r.sp + spOffset;
+            w.state <= State_AddSP;
+
+          when Decoded_Shift =>
+
+            w.topOfStack <= r.topOfStack + r.topOfStack;
+
+            w.state <= State_Decode;
+
+          when Decoded_StoreSP =>
+
+            w.sp <= r.sp + 1;
+            memAAddr <= r.sp + spOffset;
+            memAWriteEnable <= '1';
+            memAWrite <= r.topOfStack;
+            w.topOfStack <= memARead;
+
+            w.state <= State_Decode;
+
+          when Decoded_PopDown =>
+            w.sp <= r.sp + 1;
+            memAAddr <= r.sp;
+            memAWriteEnable <= '1';
+            memAWrite <= r.topOfStack;
+            w.state <= State_Decode;
+
+          when Decoded_Eq =>
+            w.sp <= r.sp + 1;
+            memAAddr <= r.sp;
+            memAWriteEnable <= '1';
+            memAWrite <= r.topOfStack;
+
+            w.topOfStack <= (others => '0');
+            if r.topOfStack=memARead then
+              w.topOfStack(0) <= '1';
+            end if;
+
+            w.state <= State_Decode;
+
+          when Decoded_Store =>
+            -- TODO: Ensure we can wait here for busy.
+
+            w.sp <= r.sp + 2;
+            io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+            io_write <= std_logic_vector(memARead);
+            memBWrite <= memARead;
+            memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            if r.topOfStack(maxAddrBitIncIO)='1' then
+              io_wr <='1';
+            else
+              memBWriteEnable <= '1';
+            end if;
+            -- We need to maintain address for memA.
+
+            -- TODO: fix this
+            --memAAddr <= r.sp + 2;
+
+            w.state <= State_Resync1;
+
+          when Decoded_Load =>
+
+            io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+            io_rd <= '1';
+
+            w.state <= State_Load;
+
+          when Decoded_PopSP =>
+            -- The long lag...
+            -- We don't need to sync top of stack here.
+
+            memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+            w.sp <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            w.state <= State_Resync2;
+
           when others =>
             w.break <= '1';
         end case;
 
+      when State_LoadSP =>
+
+        memBAddr <= pc_to_memaddr(r.pc);
+        -- We have now value to load.
+        w.topOfStack <= memBRead;
+        w.state <= State_Decode;
+
+      when State_AddSP =>
+
+        memBAddr <= pc_to_memaddr(r.pc);
+        -- We have now value to load.
+        w.topOfStack <= r.topOfStack + memARead;
+        w.state <= State_Decode;
+        
+      when State_Load =>
+        memBAddr <= pc_to_memaddr(r.pc);
+        -- TODO: add wait here
+        w.topOfStack <= unsigned(io_read);
+        w.state <= State_Decode;
 
       when others =>
 
