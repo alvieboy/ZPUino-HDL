@@ -153,6 +153,7 @@ type zpuregs is record
   idim:       std_logic;
   state:      State_Type;
   break:      std_logic;
+  inInterrupt:std_logic;
 end record;
 
 signal r: zpuregs;
@@ -290,13 +291,13 @@ begin
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
 --      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
 --        sampledDecodedOpcode<=Decoded_Neqbranch;
-      if (tOpcode(5 downto 0)=OpCode_Eq) then
-        sampledDecodedOpcode<=Decoded_Eq;
+--      if (tOpcode(5 downto 0)=OpCode_Eq) then
+--        sampledDecodedOpcode<=Decoded_Eq;
 --      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
 --        sampledDecodedOpcode<=Decoded_Storeb;
-      else
+--      else
         sampledDecodedOpcode<=Decoded_Emulate;
-      end if;
+--      end if;
     elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
       if localspOffset=0 then
         sampledDecodedOpcode<=Decoded_Shift;
@@ -351,13 +352,21 @@ begin
     io_rd <= '0';
     io_addr <= (others => DontCareValue);
     io_write <= (others => DontCareValue);
-
+    poppc_inst <= '0';
     begin_inst<='0';
 
     w <= r;
 
     spOffset(4):=not opcode(4);
     spOffset(3 downto 0) := unsigned(opcode(3 downto 0));
+
+    if interrupt='0' then
+      w.inInterrupt<='0';
+    else
+      if r.state=State_Decode and r.idim='0' then
+        w.inInterrupt<=interrupt;
+      end if;
+    end if;
 
     case r.state is
 
@@ -375,7 +384,9 @@ begin
       when State_Decode =>
 
         memAAddr <= r.sp + 1;
-        w.pc <= r.pc + 1;
+        if interrupt='0' or r.inInterrupt='1' then
+          w.pc <= r.pc + 1;
+        end if;
         w.state <= State_Execute;
 
       when State_Execute =>
@@ -433,8 +444,26 @@ begin
             w.pc <= r.topOfStack(maxAddrBit downto 0);
             w.topOfStack <= memARead;
             w.sp <= r.sp + 1;
+            poppc_inst <= '1';
 
             memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+            memAAddr <= r.sp;
+            memAWrite <= r.topOfStack;
+            memAWriteEnable <= '1';
+
+            w.state <= State_Decode;
+
+          when Decoded_Interrupt =>
+
+            w.pc <= to_unsigned(32, maxAddrBit+1);
+
+            w.topOfStack <= (others => '0');
+            w.topOfStack(maxAddrBit downto 0) <= r.pc;
+            w.sp <= r.sp - 1;
+
+            memBAddr <= (others => '0');
+            memBAddr(minAddrBit+3 downto minAddrBit) <= "1000";
+
             memAAddr <= r.sp;
             memAWrite <= r.topOfStack;
             memAWriteEnable <= '1';
@@ -588,7 +617,11 @@ begin
           when Decoded_Load =>
 
             io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
-            io_rd <= '1';
+            memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            if r.topOfStack(maxAddrBitIncIO)='1' then
+              io_rd <= '1';
+            end if;
 
             w.state <= State_Load;
 
@@ -621,9 +654,17 @@ begin
         
       when State_Load =>
         memBAddr <= pc_to_memaddr(r.pc);
+
         -- TODO: add wait here
-        w.topOfStack <= unsigned(io_read);
-        w.state <= State_Decode;
+        if r.topOfStack(maxAddrBitIncIO)='1' then
+          if io_busy='0' then
+            w.topOfStack <= unsigned(io_read);
+            w.state <= State_Decode;
+          end if;
+        else
+          w.topOfStack <= memARead;
+          w.state <= State_Decode;
+        end if;
 
       when others =>
 
@@ -641,8 +682,14 @@ begin
         r.idim <= '0';
         r.topOfStack <= (others => '0');
         r.break <= '0';
+        r.inInterrupt<='1';
       else
-        decodedOpcode <= sampledDecodedOpcode;
+        if interrupt='1' and r.inInterrupt='0' and r.state=State_Decode and r.idim='0' then
+          decodedOpcode <= Decoded_Interrupt;
+          report "Interrupt!" severity note;
+        else
+          decodedOpcode <= sampledDecodedOpcode;
+        end if;
         opcode <= sampledOpcode;
         r <= w;
         if w.break='1' then
