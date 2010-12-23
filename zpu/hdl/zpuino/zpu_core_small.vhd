@@ -292,8 +292,8 @@ begin
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
         sampledDecodedOpcode<=Decoded_Neqbranch;
---      if (tOpcode(5 downto 0)=OpCode_Eq) then
---        sampledDecodedOpcode<=Decoded_Eq;
+      elsif (tOpcode(5 downto 0)=OpCode_Eq) then
+        sampledDecodedOpcode<=Decoded_Eq;
 --      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
 --        sampledDecodedOpcode<=Decoded_Storeb;
       else
@@ -530,6 +530,15 @@ begin
 
             w.state <= State_Decode;
 
+          when Decoded_Eq =>
+            w.sp <= r.sp + 1;
+
+            w.topOfStack <= (others => '0');
+            if memARead = r.topOfStack then
+              w.topOfStack(0) <= '1';
+            end if;
+            w.state <= State_Decode;
+
           when Decoded_Or =>
 
             w.sp <= r.sp + 1;
@@ -603,19 +612,6 @@ begin
             memAWriteEnable <= '1';
             memAWrite <= r.topOfStack;
             w.topOfStack <= memARead;
-            w.state <= State_Decode;
-
-          when Decoded_Eq =>
-            w.sp <= r.sp + 1;
-            memAAddr <= r.sp;
-            memAWriteEnable <= '1';
-            memAWrite <= r.topOfStack;
-
-            w.topOfStack <= (others => '0');
-            if r.topOfStack=memARead then
-              w.topOfStack(0) <= '1';
-            end if;
-
             w.state <= State_Decode;
 
           when Decoded_Store =>
