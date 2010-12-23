@@ -79,6 +79,8 @@ signal trace_sp:            std_logic_vector(maxAddrBitIncIO downto minAddrBit);
 signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 
+signal doInterrupt:         std_logic;
+
 -- state machine.
 type State_Type is
 (
@@ -112,7 +114,6 @@ type DecodedOpcodeType is
 (
 Decoded_Nop,
 Decoded_Im,
-Decoded_ImShift,
 Decoded_LoadSP,
 Decoded_Dup,
 Decoded_StoreSP,
@@ -356,16 +357,13 @@ begin
     begin_inst<='0';
 
     w <= r;
+    doInterrupt <= '0';
 
     spOffset(4):=not opcode(4);
     spOffset(3 downto 0) := unsigned(opcode(3 downto 0));
 
     if interrupt='0' then
-      w.inInterrupt<='0';
-    else
-      if r.state=State_Decode and r.idim='0' then
-        w.inInterrupt<=interrupt;
-      end if;
+          w.inInterrupt<='0';
     end if;
 
     case r.state is
@@ -384,9 +382,22 @@ begin
       when State_Decode =>
 
         memAAddr <= r.sp + 1;
-        if interrupt='0' or r.inInterrupt='1' then
+        
+        if interrupt='0' then
           w.pc <= r.pc + 1;
+        else
+          if r.state=State_Decode and r.idim='0' and r.inInterrupt='0' then
+            if interrupt='1' then
+              doInterrupt<='1';
+              w.inInterrupt<='1';
+            else
+              w.pc <= r.pc + 1;
+            end if;
+          else
+            w.pc <= r.pc + 1;
+          end if;
         end if;
+
         w.state <= State_Execute;
 
       when State_Execute =>
@@ -580,6 +591,14 @@ begin
             memAWrite <= r.topOfStack;
             w.state <= State_Decode;
 
+          when Decoded_Pop =>
+            w.sp <= r.sp + 1;
+            memAAddr <= r.sp;
+            memAWriteEnable <= '1';
+            memAWrite <= r.topOfStack;
+            w.topOfStack <= memARead;
+            w.state <= State_Decode;
+
           when Decoded_Eq =>
             w.sp <= r.sp + 1;
             memAAddr <= r.sp;
@@ -627,15 +646,19 @@ begin
 
           when Decoded_PopSP =>
             -- The long lag...
-            -- We don't need to sync top of stack here.
+            -- We don't need to sync top of stack here. Do we ?
 
             memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             w.sp <= r.topOfStack(maxAddrBit downto minAddrBit);
 
             w.state <= State_Resync2;
 
+          when Decoded_Break =>
+            w.break <= '1';
+
           when others =>
             w.break <= '1';
+
         end case;
 
       when State_LoadSP =>
@@ -667,7 +690,7 @@ begin
         end if;
 
       when others =>
-
+         null;
     end case;
 
   end process;
@@ -684,7 +707,7 @@ begin
         r.break <= '0';
         r.inInterrupt<='1';
       else
-        if interrupt='1' and r.inInterrupt='0' and r.state=State_Decode and r.idim='0' then
+        if doInterrupt='1' then
           decodedOpcode <= Decoded_Interrupt;
           report "Interrupt!" severity note;
         else
