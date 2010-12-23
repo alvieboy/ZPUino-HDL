@@ -290,15 +290,15 @@ begin
 
 
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
---      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
---        sampledDecodedOpcode<=Decoded_Neqbranch;
+      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+        sampledDecodedOpcode<=Decoded_Neqbranch;
 --      if (tOpcode(5 downto 0)=OpCode_Eq) then
 --        sampledDecodedOpcode<=Decoded_Eq;
 --      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
 --        sampledDecodedOpcode<=Decoded_Storeb;
---      else
+      else
         sampledDecodedOpcode<=Decoded_Emulate;
---      end if;
+      end if;
     elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
       if localspOffset=0 then
         sampledDecodedOpcode<=Decoded_Shift;
@@ -384,17 +384,23 @@ begin
         memAAddr <= r.sp + 1;
         
         if interrupt='0' then
-          w.pc <= r.pc + 1;
+          if sampledDecodedOpcode/=Decoded_Neqbranch then
+            w.pc <= r.pc + 1;
+          end if;
         else
           if r.state=State_Decode and r.idim='0' and r.inInterrupt='0' then
             if interrupt='1' then
               doInterrupt<='1';
               w.inInterrupt<='1';
             else
-              w.pc <= r.pc + 1;
+              if sampledDecodedOpcode/=Decoded_Neqbranch then
+                w.pc <= r.pc + 1;
+              end if;
             end if;
           else
-            w.pc <= r.pc + 1;
+            if sampledDecodedOpcode/=Decoded_Neqbranch then
+              w.pc <= r.pc + 1;
+            end if;
           end if;
         end if;
 
@@ -655,6 +661,20 @@ begin
 
           when Decoded_Break =>
             w.break <= '1';
+
+          when Decoded_Neqbranch =>
+
+            w.sp <= r.sp + 2;
+            if memARead/=0 then
+              w.pc <= r.pc + r.topOfStack(maxAddrBit downto 0);
+--              memAAddr(maxAddrBit downto minAddrBit) <= r.pc + r.topOfStack(maxAddrBit downto 0);
+            else
+              w.pc <= r.pc + 1;
+--              memAAddr <= r.pc + 1;
+            end if;
+
+            w.state <= State_Resync1;
+            
 
           when others =>
             w.break <= '1';
