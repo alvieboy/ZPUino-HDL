@@ -294,8 +294,8 @@ begin
         sampledDecodedOpcode<=Decoded_Neqbranch;
       elsif (tOpcode(5 downto 0)=OpCode_Eq) then
         sampledDecodedOpcode<=Decoded_Eq;
---      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
---        sampledDecodedOpcode<=Decoded_Storeb;
+      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
+        sampledDecodedOpcode<=Decoded_Storeb;
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
@@ -663,14 +663,39 @@ begin
             w.sp <= r.sp + 2;
             if memARead/=0 then
               w.pc <= r.pc + r.topOfStack(maxAddrBit downto 0);
---              memAAddr(maxAddrBit downto minAddrBit) <= r.pc + r.topOfStack(maxAddrBit downto 0);
             else
               w.pc <= r.pc + 1;
---              memAAddr <= r.pc + 1;
             end if;
-
             w.state <= State_Resync1;
-            
+
+          when Decoded_StoreB =>
+            -- This can never target IO devices.
+            memAWrite <= (others => DontCareValue);
+            memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            case r.topOfStack(1 downto 0) is
+            when "00" =>
+              memAWriteMask <= "1000";
+              memAWrite(31 downto 24) <= memARead(7 downto 0);
+              
+            when "01" =>
+              memAWriteMask <= "0100";
+              memAWrite(23 downto 16) <= memARead(7 downto 0);
+
+            when "10" =>
+              memAWriteMask <= "0010";
+              memAWrite(15 downto 8) <= memARead(7 downto 0);
+
+            when "11" =>
+              memAWriteMask <= "0001";
+              memAWrite(7 downto 0) <= memARead(7 downto 0);
+
+            when others =>
+            end case;
+
+            memAWriteEnable <= '1';
+            w.sp <= r.sp + 2;
+            w.state <= State_Resync1;
 
           when others =>
             w.break <= '1';
