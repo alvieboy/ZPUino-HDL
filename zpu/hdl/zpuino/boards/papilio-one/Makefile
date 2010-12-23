@@ -21,7 +21,7 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -p ${PART} \
-	-cm area -detail -ir off -ignore_keep_hierarchy -pr b -c 100 -bp \
+	-cm area -detail -ir off -ignore_keep_hierarchy -pr b -c 100 -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd

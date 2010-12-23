@@ -36,7 +36,7 @@ run
 -shift_extract YES
 -xor_collapse YES
 -rom_style Auto
--auto_bram_packing YES
+-auto_bram_packing NO
 -mux_extract Yes
 -resource_sharing YES
 -async_to_sync NO
