@@ -86,6 +86,7 @@ type State_Type is
 (
 State_Fetch,
 State_WriteIODone,
+State_WaitIO,
 State_Execute,
 State_StoreToStack,
 State_Add,
@@ -637,6 +638,8 @@ begin
             --memAAddr <= r.sp + 2;
             if io_busy='0' then
               w.state <= State_Resync1;
+            else
+              w.state <= State_WaitIO;
             end if;
 
           when Decoded_Load =>
@@ -705,6 +708,23 @@ begin
             w.break <= '1';
 
         end case;
+
+      when State_WaitIO =>
+        if io_busy='0' then
+          w.sp <= r.sp + 2;
+        end if;
+
+        io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+        io_write <= std_logic_vector(memARead);
+
+        --memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+        memAAddr <= r.sp + 1;
+
+        io_wr <='1';
+
+        if io_busy='0' then
+          w.state <= State_Resync1;
+        end if;
 
       when State_LoadSP =>
 
