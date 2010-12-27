@@ -616,12 +616,15 @@ begin
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
+            if io_busy='0' then
+              w.sp <= r.sp + 2;
+            end if;
 
-            w.sp <= r.sp + 2;
             io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
             io_write <= std_logic_vector(memARead);
             memBWrite <= memARead;
             memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+            memAAddr <= r.sp + 1;
 
             if r.topOfStack(maxAddrBitIncIO)='1' then
               io_wr <='1';
@@ -632,8 +635,9 @@ begin
 
             -- TODO: fix this
             --memAAddr <= r.sp + 2;
-
-            w.state <= State_Resync1;
+            if io_busy='0' then
+              w.state <= State_Resync1;
+            end if;
 
           when Decoded_Load =>
 
