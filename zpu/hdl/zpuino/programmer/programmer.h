@@ -1,6 +1,7 @@
 #ifndef __PROGRAMMER_H__
 #define __PROGRAMMER_H__
 
+#include "sysdeps.h"
 
 #define HDLC_frameFlag 0x7E
 #define HDLC_escapeFlag 0x7D

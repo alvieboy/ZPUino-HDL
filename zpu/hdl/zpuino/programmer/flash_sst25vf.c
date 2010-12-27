@@ -3,7 +3,7 @@
 #include "programmer.h"
 #include <stdio.h>
 #include <string.h>
-
+/*
 static int sst25vf_get_status(int fd)
 {
 	int status;
@@ -20,7 +20,7 @@ static int sst25vf_get_status(int fd)
 
 	return status;
 }
-
+*/
 static int sst25vf_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
 {
 	buffer_t *b;
@@ -243,7 +243,7 @@ static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, 
 	unsigned int addr = page * 256;
 	buffer_t *b;
 	unsigned int psize = 6;
-    int status;
+	//int status;
 
 	if (size!=256)
 		return -1;
