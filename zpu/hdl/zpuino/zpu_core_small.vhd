@@ -720,7 +720,7 @@ begin
         --memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
         memAAddr <= r.sp + 1;
 
-        io_wr <='1';
+        --io_wr <='1';
 
         if io_busy='0' then
           w.state <= State_Resync1;
