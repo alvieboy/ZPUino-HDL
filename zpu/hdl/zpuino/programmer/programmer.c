@@ -1,9 +1,6 @@
 #include <stdio.h>
-#include <termios.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <fcntl.h>
-#include <sys/select.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,24 +9,30 @@
 #include "transport.h"
 #include "programmer.h"
 #include <unistd.h>
+
 #ifdef __linux__
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
 #endif
 
 static unsigned char *packet;
 static size_t packetoffset;
 static int syncSeen=0;
 static int unescaping=0;
-static unsigned int verbose = 0;
+
+unsigned int verbose = 0;
+
 static char *binfile=NULL;
 static char *serialport=NULL;
 static int is_simulator=0;
 static int only_read=0;
 static int ignore_limit=0;
 static int user_offset=-1;
-static int serial_speed = B1000000;
+static speed_t serial_speed = DEFAULT_SPEED;
 static int dry_run = 0;
 static int serial_reset = 0;
 
@@ -41,23 +44,6 @@ unsigned short get_programmer_version()
 }
 
 
-static int set_speed(char *value)
-{
-	int v = atoi(value);
-	switch (v) {
-	case 1000000:
-		serial_speed = B1000000;
-		break;
-	case 115200:
-		serial_speed = B115200;
-		break;
-	default:
-		printf("Baud rate '%s' not supported\n",value);
-		return -1;
-	}
-	return 0;
-}
-
 int parse_arguments(int argc,char **const argv)
 {
 	while (1) {
@@ -68,7 +54,7 @@ int parse_arguments(int argc,char **const argv)
 			verbose++;
 			break;
 		case 's':
-			if (set_speed(optarg)<0)
+			if (conn_parse_speed(optarg,&serial_speed)<0)
 				return -1;
 			break;
 		case 'b':
@@ -112,6 +98,7 @@ int help(char *name)
 	printf("  -R\t\tPerform serial reset before programming\n");
 	printf("  -s speed\tUse specified serial port speed (default: 1000000)\n");
 	printf("  -v\t\tIncrease verbosity\n");
+	return -1;
 }
 
 void crc16_update(uint16_t *crc, uint8_t data)
@@ -169,9 +156,12 @@ buffer_t *handle();
 buffer_t *process(unsigned char *buffer, size_t size);
 
 
-static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
+static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
 {
+#ifdef __linux__
 	fd_set rfs;
+#endif
+
 	unsigned char tmpbuf[32];
 	struct timeval tv;
 	int rd;
@@ -187,8 +177,8 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 	}
     sendpacket(fd,txbuf2,size+1);
 
-
-	do {
+	/*
+	 do {
 		FD_ZERO(&rfs);
 		FD_SET(fd, &rfs);
 		tv.tv_sec = timeout / 1000;
@@ -223,7 +213,7 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 						free(txbuf2);
 						return ret;
 					}
-					/* Check return */
+					// Check return
 					if (ret->size<1) {
 						buffer_free(ret);
 						free(txbuf2);
@@ -232,7 +222,7 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 					}
 					// Check explicit CRC error
 					if (ret->buf[0] == 0xff) {
-						/* Resend */
+						// Resend
 						if (verbose>0) {
 							printf("Reported CRC error %02x%02x / %02x%02x\n",
 								   ret->buf[1],
@@ -261,84 +251,23 @@ static buffer_t *sendreceivecommand_i(int fd, unsigned char cmd, unsigned char *
 				return NULL;
 			}
 		}
-	} while (1);
+		} while (1);
+		*/
 }
 
-buffer_t *sendreceivecommand(int fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout)
+buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout)
 {
-	return sendreceivecommand_i(fd,cmd,txbuf,size,timeout,1);
+	return sendreceivecommand_i(conn,cmd,txbuf,size,timeout,1);
 }
-buffer_t *sendreceive(int fd, unsigned char *txbuf, size_t size, int timeout)
+
+buffer_t *sendreceive(connection_t conn, unsigned char *txbuf, size_t size, int timeout)
 {
-	return sendreceivecommand_i(fd,txbuf[0],txbuf+1,size-1,timeout,0);
-}
-
-int open_serial_device(char *device)
-{
-	struct termios termset;
-	int fd;
-	int status;
-
-	fd = open(device, O_RDWR|O_NOCTTY|O_NONBLOCK|O_EXCL);
-	if (fd<0) {
-		perror("open");
-		return -1;
-	}
-
-	if (verbose>2)
-		printf("Opened device '%s'\n", device);
-
-	tcgetattr(fd, &termset);
-	termset.c_iflag = IGNBRK;
-
-	termset.c_oflag &= ~OPOST;
-	termset.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	termset.c_cflag &= ~(CSIZE | PARENB| HUPCL);
-	termset.c_cflag |= CS8;
-	termset.c_cc[VMIN]=1;
-	termset.c_cc[VTIME]=5;
-
-	cfsetospeed(&termset,serial_speed);
-	cfsetispeed(&termset,serial_speed);
-
-	tcsetattr(fd,TCSANOW,&termset);
-
-	ioctl(fd, TIOCMGET, &status); 
-
-	status |= ( TIOCM_DTR | TIOCM_RTS );
-
-	ioctl(fd, TIOCMSET, &status);
-	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) |O_NONBLOCK);
-
-	return fd;
-}
-
-void do_serial_reset(int fd)
-{
-	struct termios termset;
-	unsigned char reset[] = { 0, 0xFF, 0 };
-
-	tcgetattr(fd, &termset);
-	cfsetospeed(&termset,B300);
-	cfsetispeed(&termset,B300);
-	tcsetattr(fd,TCSANOW,&termset);
-
-	// Send reset sequence
-
-	write(fd, reset,sizeof(reset));
-	tcflush(fd, TCOFLUSH);
-
-	// delay a bit. It takes about 80ms to get sequence into board
-	usleep(80000);
-
-	cfsetospeed(&termset,serial_speed);
-	cfsetispeed(&termset,serial_speed);
-
-	tcsetattr(fd,TCSANOW,&termset);
+	return sendreceivecommand_i(conn,txbuf[0],txbuf+1,size-1,timeout,0);
 }
 
 
-int open_simulator_device(const char *device)
+
+int open_simulator_device(const char *device,connection_t *conn)
 {
 #ifndef __linux__
 	return -1;
@@ -365,16 +294,17 @@ int open_simulator_device(const char *device)
 		return -1;
 	}
 	fcntl(s, F_SETFL, fcntl(s, F_GETFL) |O_NONBLOCK);
-	return s;
+	*conn =  s;
+	return 0;
 #endif
 }
 
-int open_device(char *device)
+int open_device(char *device,connection_t *conn)
 {
 	if (is_simulator)
-		return open_simulator_device(device);
+		return open_simulator_device(device,conn);
 	else
-		return open_serial_device(device);
+		return conn_open(device,serial_speed,conn);
 }
 
 buffer_t *handle()
@@ -466,7 +396,7 @@ void buffer_free(buffer_t *b)
 		free(b);
 	}
 }
-
+/*
 static int flash_read_status(fd)
 {
 	buffer_t *b;
@@ -485,7 +415,7 @@ static int flash_read_status(fd)
 	buffer_free(b);
 	return 0;
 }
-
+*/
 void dump_buffer(unsigned char *start,size_t size)
 {
 	unsigned int i;
@@ -520,13 +450,13 @@ int main(int argc, char **argv)
 	uint32_t spioffset_sector;
 	uint32_t codesize;
 	struct timeval start,end,delta;
+	connection_t conn;
 
 	flash_info_t *flash;
 	int retries;
 
 	struct stat st;
 	buffer_t *b;
-	int cnt;
 
 	if (parse_arguments(argc,argv)<0) {
 		return help(argv[0]);
@@ -536,14 +466,14 @@ int main(int argc, char **argv)
 		return help(argv[0]);
 	}
 
-	int fd = open_device(serialport);
-	if (fd<0) {
+	if (open_device(serialport,&conn)<0) {
 		return -1;
 	}
 
 	retries = 100;
+
 	if (serial_reset) {
-		do_serial_reset(fd);
+		conn_reset(conn);
 	} else {
 		fprintf(stderr,"Press RESET now\n");
 	}
@@ -551,9 +481,9 @@ int main(int argc, char **argv)
 		/* Reset */
 		buffer[0] = HDLC_frameFlag;
 		buffer[1] = HDLC_frameFlag;
-		write(fd,buffer,2);
+		conn_write(conn,buffer,2);
 
-		b = sendreceivecommand(fd,BOOTLOADER_CMD_VERSION,NULL,0,200);
+		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
 		if (b)
 			break;
 		retries--;
@@ -585,7 +515,7 @@ int main(int argc, char **argv)
 
 	} else {
 		fprintf(stderr,"Cannot get programmer version, aborting\n");
-		close(fd);
+		conn_close(conn);
 		return -1;
 	}
 
@@ -598,7 +528,7 @@ int main(int argc, char **argv)
 		spioffset=user_offset;
 	}
 
-	b = sendreceivecommand(fd,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
 
 	if (b) {
 		if (verbose>0)
@@ -609,7 +539,7 @@ int main(int argc, char **argv)
 
 		if (NULL==flash) {
 			fprintf(stderr,"Unknown flash type, exiting\n");
-			close(fd);
+			conn_close(conn);
 			buffer_free(b);
 			return -1;
 		}
@@ -617,7 +547,7 @@ int main(int argc, char **argv)
 			printf("Detected %s flash\n", flash->name);
 	} else {
 		fprintf(stderr,"Cannot identify flash\n");
-		close(fd);
+		conn_close(conn);
 		return -1;
 	}
 
@@ -633,19 +563,19 @@ int main(int argc, char **argv)
 	if (!only_read) {
 		if (spioffset % flash->pagesize!=0) {
 			fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
-			close(fd);
+			conn_close(conn);
 			return -1;
 		}
 		if (spioffset % flash->sectorsize!=0) {
 			fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
-			close(fd);
+			conn_close(conn);
 			return -1;
 		}
 	}
 
-	unsigned int size_bytes;
-	unsigned int pages;
-	unsigned char *buf;
+	unsigned int size_bytes=0;
+	unsigned int pages=0;
+	unsigned char *buf=NULL;
 
 	buffer_free(b);
 
@@ -665,7 +595,10 @@ int main(int argc, char **argv)
 		pages = size_bytes/flash->pagesize;
 
 		if (verbose>0)
-			printf("Need to program %d %d bytes (%d pages)\n",st.st_size,size_bytes,pages);
+			printf("Need to program %u %u bytes (%d pages)\n",
+				   (unsigned)st.st_size,
+				   size_bytes,
+				   pages);
 
 		/* Ensure there's enough space */
 		if (ignore_limit) {
@@ -673,8 +606,9 @@ int main(int argc, char **argv)
 
 		} else {
 			if (st.st_size > codesize) {
-				fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n", st.st_size,codesize);
-				close(fd);
+				fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
+						(unsigned)st.st_size,codesize);
+				conn_close(conn);
 				close(fin);
 				return -1;
 			}
@@ -689,17 +623,17 @@ int main(int argc, char **argv)
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
 	unsigned int saddr = spioffset_sector;
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
 	if (b) {
 		buffer_free(b);
 	} else {
 		fprintf(stderr,"Cannot enter program mode\n");
-		close(fd);
+		conn_close(conn);
 		return -1;
 	}
 
 	if (only_read) {
-		return read_flash(fd,flash,spioffset/flash->pagesize);
+		return read_flash(conn,flash,spioffset/flash->pagesize);
 	}
 
 	if (verbose>0) {
@@ -708,15 +642,15 @@ int main(int argc, char **argv)
 
 	while (sectors--) {
 		if (!dry_run)
-			if (flash->driver->enable_writes(flash,fd)<0)
+			if (flash->driver->enable_writes(flash,conn)<0)
 				return -1;
 
 		if (verbose>0) {
-			printf("Erasing sector at 0x%08x...\r",saddr);
+			printf("Erasing sector %d at 0x%08x...\r",saddr, saddr*flash->sectorsize);
 			fflush(stdout);
 		}
 
-		if (!dry_run && flash->driver->erase_sector(flash, fd, saddr)<0) {
+		if (!dry_run && flash->driver->erase_sector(flash, conn, saddr)<0) {
 			fprintf(stderr,"\nSector erase failed!\n");
 			return -1;
 		}
@@ -735,7 +669,7 @@ int main(int argc, char **argv)
 
 	while (pages--) {
 		if (!dry_run)
-			if (flash->driver->enable_writes(flash,fd)<0) {
+			if (flash->driver->enable_writes(flash,conn)<0) {
 				fprintf(stderr,"Cannot enable writes ?\n");
 				return -1;
 			}
@@ -746,7 +680,7 @@ int main(int argc, char **argv)
 		}
 
 		if (!dry_run)
-			if (flash->driver->program_page(flash, fd, saddr, sptr,flash->pagesize)<0) {
+			if (flash->driver->program_page(flash, conn, saddr, sptr,flash->pagesize)<0) {
 				fprintf(stderr,"\nCannot program page!\n");
 				return -1;
 			}
@@ -772,7 +706,7 @@ int main(int argc, char **argv)
 				printf("Verifying page %d at 0x%08x...\r",saddr, saddr * flash->pagesize);
 				fflush(stdout);
 			}
-			b = flash->driver->read_page(flash, fd, saddr);
+			b = flash->driver->read_page(flash, conn, saddr);
 
 			if (NULL==b) {
 				fprintf(stderr,"\nCannot read page?\n");
@@ -796,21 +730,20 @@ int main(int argc, char **argv)
 			printf("\nVerification done.\n");
 	}
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );
 	if (b) {
 		buffer_free(b);
 	} else {
 		fprintf(stderr,"Cannot leave program mode");
-		close(fd);
+		conn_close(conn);
 		return -1;
 	}
-
-	//if (verbose>0)
+	conn_close(conn);
 
 	gettimeofday(&end,NULL);
-
+#ifdef __linux__
 	timersub(&end,&start,&delta);
-
+#endif
 	printf("Programming completed successfully in %.02f seconds.\n", (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
 
 	return 0;

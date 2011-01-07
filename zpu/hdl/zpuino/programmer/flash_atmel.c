@@ -83,7 +83,7 @@ static buffer_t *atmel_read_page(flash_info_t *flash, int fd, unsigned int page)
 	unsigned char wbuf[9];
 	buffer_t *b;
 
-	int status = atmel_wait_ready(fd);
+	atmel_wait_ready(fd);
 
 	wbuf[0] = 0;
 	wbuf[1] = 5; // Tx bytes

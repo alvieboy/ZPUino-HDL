@@ -113,33 +113,59 @@ foreach my $ram (@rams)
     print ");\n";
     $index++;
 }
+print "signal wea: std_logic_vector(3 downto 0);\n";
+print "signal web: std_logic_vector(3 downto 0);\n";
+
+# XST bug. We need to perform read decomposition.
+
+for ($index=0;$index<4;$index++) {
+    print "signal memaread${index}: std_logic_vector(7 downto 0);\n";
+    print "signal membread${index}: std_logic_vector(7 downto 0);\n";
+}
+
+
+
 
 print "\nbegin\n";
 
-my $index = 0;
+for ($index=0;$index<4;$index++) {
+    print "  wea(${index}) <= memAWriteEnable and memAWriteMask(${index});\n";
+    print "  web(${index}) <= memBWriteEnable and memBWriteMask(${index});\n";
+}
+
+for ($index=0;$index<4;$index++) {
+    my $start = (($index+1)*8)-1;
+    my $end = $index*8;
+    print "memARead($start downto $end) <= memaread${index};\n";
+    print "memBRead($start downto $end) <= membread${index};\n";
+}
+
+
+$index = 0;
 
 foreach my $ram (@rams)
 {
     my $start = (($index+1)*8)-1;
     my $end = $index*8;
-print <<EOM;
+    print <<EOM;
+
   process (clk)
   begin
     if rising_edge(clk) then
-    if memAWriteEnable='1' and memAWriteMask(${index})='1' then
+    if wea(${index})='1' then
       RAM${index}( conv_integer(memAAddr) ) := memAWrite($start downto $end);
       end if;
-      memARead($start downto $end) <= RAM${index}(conv_integer(memAAddr)) ;
+    memaread${index} <= RAM${index}(conv_integer(memAAddr)) ;
     end if;
   end process;  
 
   process (clk)
   begin
     if rising_edge(clk) then
-      if memBWriteEnable='1' and memBWriteMask(${index})='1' then
+      if web(${index})='1' then
          RAM${index}( conv_integer(memBAddr) ) := memBWrite($start downto $end);
       end if;
-      memBRead($start downto $end) <= RAM${index}(conv_integer(memBAddr)) ;
+      membread${index} <= RAM${index}(conv_integer(memBAddr)) ;
     end if;
   end process;  
 EOM
