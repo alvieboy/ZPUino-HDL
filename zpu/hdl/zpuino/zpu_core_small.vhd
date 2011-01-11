@@ -107,8 +107,10 @@ State_Exception,
 State_Neqbranch,
 State_Eq,
 State_Storeb,
-State_LoadSP
-
+State_Storeh,
+State_LoadSP,
+State_Loadb,
+State_Ashiftleft
 );
 
 type DecodedOpcodeType is
@@ -137,7 +139,11 @@ Decoded_PopSP,
 Decoded_Interrupt,
 Decoded_Neqbranch,
 Decoded_Eq,
-Decoded_Storeb
+Decoded_Storeb,
+Decoded_Storeh,
+Decoded_Ulessthan,
+Decoded_Ashiftleft,
+Decoded_Loadb
 );
 
 
@@ -156,6 +162,8 @@ type zpuregs is record
   state:      State_Type;
   break:      std_logic;
   inInterrupt:std_logic;
+  shiftAmount:unsigned(4 downto 0);
+  shiftValue: unsigned(wordSize-1 downto 0);
 end record;
 
 signal r: zpuregs;
@@ -291,12 +299,30 @@ begin
 
 
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
+
+      -- Emulated instructions implemented in hardware
+
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
         sampledDecodedOpcode<=Decoded_Neqbranch;
+
       elsif (tOpcode(5 downto 0)=OpCode_Eq) then
         sampledDecodedOpcode<=Decoded_Eq;
+
       elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
         sampledDecodedOpcode<=Decoded_Storeb;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Storeh) then
+        sampledDecodedOpcode<=Decoded_Storeh;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Ulessthan) then
+        sampledDecodedOpcode<=Decoded_Ulessthan;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
+        sampledDecodedOpcode<=Decoded_Ashiftleft;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
+        sampledDecodedOpcode<=Decoded_Loadb;
+
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
@@ -540,6 +566,15 @@ begin
             end if;
             w.state <= State_Decode;
 
+          when Decoded_Ulessthan =>
+            w.sp <= r.sp + 1;
+
+            w.topOfStack <= (others => '0');
+            if r.topOfStack < memARead then
+              w.topOfStack(0) <= '1';
+            end if;
+            w.state <= State_Decode;
+
           when Decoded_Or =>
 
             w.sp <= r.sp + 1;
@@ -704,10 +739,76 @@ begin
             w.sp <= r.sp + 2;
             w.state <= State_Resync1;
 
+          when Decoded_StoreH =>
+            -- This can never target IO devices.
+            memAWrite <= (others => DontCareValue);
+            memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            case r.topOfStack(1) is
+            when '0' =>
+              memAWriteMask <= "1100";
+              memAWrite(31 downto 16) <= memARead(15 downto 0);
+              
+            when '1' =>
+              memAWriteMask <= "0011";
+              memAWrite(15 downto 0) <= memARead(15 downto 0);
+
+            when others =>
+            end case;
+
+            memAWriteEnable <= '1';
+            w.sp <= r.sp + 2;
+            w.state <= State_Resync1;
+
+          when Decoded_Loadb =>
+
+            memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+            w.state <= State_Loadb;
+
+          when Decoded_Ashiftleft =>
+
+            w.shiftAmount <= r.topOfStack(4 downto 0);
+            w.shiftValue <= memARead;
+            w.sp <= r.sp + 1;
+            w.state <= State_Ashiftleft;
+
           when others =>
             w.break <= '1';
 
         end case;
+
+      when State_Loadb =>
+
+        w.topOfStack <= (others => '0');
+
+        case r.topOfStack(1 downto 0) is
+          when "00" =>
+            w.topOfStack(7 downto 0) <= memARead(31 downto 24);
+          when "01" =>
+            w.topOfStack(7 downto 0) <= memARead(23 downto 16);
+          when "10" =>
+            w.topOfStack(7 downto 0) <= memARead(15 downto 8);
+          when "11" =>
+            w.topOfStack(7 downto 0) <= memARead(7 downto 0);
+          when others =>
+        end case;
+
+        w.state <= State_Decode;
+        memAAddr <= r.sp + 1;
+        memBAddr <= pc_to_memaddr(r.pc);
+
+      when State_Ashiftleft =>
+        -- Can we interrupt ????
+        if r.shiftAmount=0 then
+          w.state <= State_Decode;
+          w.topOfStack <= r.shiftValue;
+          memAAddr <= r.sp + 1;
+          memBAddr <= pc_to_memaddr(r.pc);
+        else
+          w.shiftValue(wordSize-1 downto 1) <= r.shiftValue(wordSize-2 downto 0);
+          w.shiftValue(0) <= '0';
+          w.shiftAmount <= r.shiftAmount - 1;
+        end if;
 
       when State_WaitIO =>
         if io_busy='0' then

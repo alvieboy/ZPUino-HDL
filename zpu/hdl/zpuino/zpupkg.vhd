@@ -170,6 +170,7 @@ package zpupkg is
 	constant	OpCode_NA2		: std_logic_vector(3 downto 0) := "1110";
 	constant	OpCode_NA		: std_logic_vector(3 downto 0) := "1111";
 	
+	constant	OpCode_Storeh				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(35, 6));
 	constant	OpCode_Lessthan				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(36, 6));
 	constant	OpCode_Lessthanorequal		: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(37, 6));
 	constant	OpCode_Ulessthan			: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(38, 6));
