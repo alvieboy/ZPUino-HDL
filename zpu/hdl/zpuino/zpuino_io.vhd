@@ -423,7 +423,7 @@ begin
 	 	areset    => areset,
     read      => crc16_read,
     write     => io_write,
-    address   => io_address(3 downto 2),
+    address   => io_address(4 downto 2),
     we        => crc16_we,
     re        => crc16_re,
     busy      => crc16_busy
