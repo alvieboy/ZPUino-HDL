@@ -15,7 +15,7 @@ run
 -rtlview Yes
 -glob_opt AllClockNets
 -read_cores YES
--write_timing_constraints NO
+-write_timing_constraints YES
 -cross_clock_analysis NO
 -hierarchy_separator /
 -bus_delimiter <>
@@ -38,7 +38,7 @@ run
 -rom_style Auto
 -auto_bram_packing NO
 -mux_extract Yes
--resource_sharing YES
+-resource_sharing NO
 -async_to_sync NO
 -mult_style Auto
 -iobuf YES

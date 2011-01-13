@@ -44,8 +44,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10.4166666667 ns;
-
+  constant period : time := 10.86956521739 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
   --signal gpio:  std_logic_vector(31 downto 0);
