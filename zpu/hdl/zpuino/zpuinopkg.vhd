@@ -174,8 +174,8 @@ package zpuinopkg is
     re:       in std_logic;
 
     -- Connection to GPIO pin
-    spp_data: out std_logic;
-    spp_en:   out std_logic;
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0);
 
     busy:     out std_logic;
     interrupt:out std_logic

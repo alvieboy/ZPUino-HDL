@@ -113,11 +113,12 @@
 #define IOPIN_SPI_MISO    2
 #define IOPIN_SPI_MOSI    3
 #define IOPIN_SPI_SCK     4
-#define IOPIN_SIGMADELTA  5
+#define IOPIN_SIGMADELTA0 5
 #define IOPIN_TIMER0_OC   6
 #define IOPIN_TIMER1_OC   7
 #define IOPIN_USPI_MISO   8
 #define IOPIN_USPI_MOSI   9
 #define IOPIN_USPI_SCK    10
+#define IOPIN_SIGMADELTA1 15
 
 #endif
