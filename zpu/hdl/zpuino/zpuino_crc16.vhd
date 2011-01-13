@@ -13,7 +13,7 @@ entity zpuino_crc16 is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(1 downto 0);
+    address:  in std_logic_vector(2 downto 0);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic
@@ -23,6 +23,8 @@ end entity zpuino_crc16;
 architecture behave of zpuino_crc16 is
 
 signal crc_q: std_logic_vector(15 downto 0);
+signal crcA_q: std_logic_vector(15 downto 0);
+signal crcB_q: std_logic_vector(15 downto 0);
 signal poly_q: std_logic_vector(15 downto 0);
 signal data_q: std_logic_vector(7 downto 0);
 signal count_q: integer range 0 to 7;
@@ -35,12 +37,18 @@ busy<='1' when ready_q='0' and ( re='1' or we='1') else '0';
 process(address,crc_q,poly_q)
 begin
   case address is
-    when "00" =>
+    when "000" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= crc_q;
-    when "01" =>
+    when "001" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= poly_q;
+    when "100" =>
+      read(31 downto 16) <= (others => '0');
+      read(15 downto 0) <= crcA_q;
+    when "101" =>
+      read(31 downto 16) <= (others => '0');
+      read(15 downto 0) <= crcB_q;
     when others =>
       read <= (others => DontCareValue);
   end case;
@@ -57,14 +65,16 @@ begin
     else
       if we='1' and ready_q='1' then
         case address is
-          when "00" =>
+          when "000" =>
             crc_q <= write(15 downto 0);
-          when "01" =>
+          when "001" =>
             poly_q <= write(15 downto 0);
-          when "10" =>
+          when "010" =>
             ready_q <= '0';
             count_q <= 0;
             data_q <= write(7 downto 0);
+            crcA_q <= crc_q;
+            crcB_q <= crcA_q;
           when others =>
         end case;
       end if;
