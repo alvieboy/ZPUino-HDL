@@ -107,8 +107,8 @@ architecture behave of zpuino_io is
   signal sigmadelta_read:     std_logic_vector(wordSize-1 downto 0);
   signal sigmadelta_re:  std_logic;
   signal sigmadelta_we:  std_logic;
-  signal sigmadelta_spp_en:  std_logic;
-  signal sigmadelta_spp_data:  std_logic;
+  signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
+  signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
 
   signal crc16_read:     std_logic_vector(wordSize-1 downto 0);
   signal crc16_re:  std_logic;
@@ -474,8 +474,8 @@ begin
     gpio_spp_en(4) <= spi_enabled;          -- PPS4 : SPI SCK
     gpio_spp_data(4) <= spi_pf_sck;
 
-    gpio_spp_en(5) <= sigmadelta_spp_en;    -- PPS5 : SIGMADELTA DATA
-    gpio_spp_data(5) <= sigmadelta_spp_data;
+    gpio_spp_en(5) <= sigmadelta_spp_en(0);    -- PPS5 : SIGMADELTA DATA
+    gpio_spp_data(5) <= sigmadelta_spp_data(0);
 
     gpio_spp_en(6) <= timers_spp_en(0);     -- PPS6 : TIMER0
     gpio_spp_data(6) <= timers_spp_data(0);
@@ -505,6 +505,9 @@ begin
       gpio_spp_en(14) <= adc_enabled;         -- PPS14 : ADC SELN
       gpio_spp_data(14) <= adc_seln;
     end if;
+
+    gpio_spp_en(15) <= sigmadelta_spp_en(1);    -- PPS15 : SIGMADELTA1 DATA
+    gpio_spp_data(15) <= sigmadelta_spp_data(1);
 
   end process;
 

@@ -60,8 +60,8 @@ entity zpuino_sigmadelta is
     re:       in std_logic;
 
     -- Connection to GPIO pin
-    spp_data: out std_logic;
-    spp_en:   out std_logic;
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0);
 
     busy:     out std_logic;
     interrupt:out std_logic
@@ -70,14 +70,21 @@ end entity zpuino_sigmadelta;
 
 architecture behave of zpuino_sigmadelta is
 
-signal delta_adder: unsigned(BITS+1 downto 0);
-signal sigma_adder: unsigned(BITS+1 downto 0);
-signal sigma_latch: unsigned(BITS+1 downto 0);
-signal delta_b:     unsigned(BITS+1 downto 0);
+signal delta_adder1: unsigned(BITS+1 downto 0);
+signal sigma_adder1: unsigned(BITS+1 downto 0);
+signal sigma_latch1: unsigned(BITS+1 downto 0);
+signal delta_b1:     unsigned(BITS+1 downto 0);
 
-signal dat_q: unsigned(BITS+1 downto 0);
-signal sd_en_q: std_logic;
-signal sdout: std_logic;
+signal delta_adder2: unsigned(BITS+1 downto 0);
+signal sigma_adder2: unsigned(BITS+1 downto 0);
+signal sigma_latch2: unsigned(BITS+1 downto 0);
+signal delta_b2:     unsigned(BITS+1 downto 0);
+
+signal dat_q1: unsigned(BITS+1 downto 0);
+signal dat_q2: unsigned(BITS+1 downto 0);
+
+signal sd_en_q: std_logic_vector(1 downto 0);
+signal sdout: std_logic_vector(1 downto 0);
 
 begin
 
@@ -89,17 +96,21 @@ process(clk)
 begin
   if rising_edge(clk) then
     if areset='1' then
-      dat_q <= (others =>'0');
-      dat_q(BITS-1) <= '1';
-      sd_en_q <= '0';
+      dat_q1 <= (others =>'0');
+      dat_q1(BITS-1) <= '1';
+      dat_q2 <= (others =>'0');
+      dat_q2(BITS-1) <= '1';
+      sd_en_q <= (others =>'0');
     else 
 	    if we='1' then
         case address is
           when "0" =>
-            sd_en_q <= write(0);
+            sd_en_q(0) <= write(0);
+            sd_en_q(1) <= write(1);
           when "1" =>
             --report "SigmaDelta set: " & hstr(write(BITS-1 downto 0)) severity note;
-  		      dat_q(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
+  		      dat_q1(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
+            dat_q2(BITS-1 downto 0) <= unsigned(write(BITS+BITS-1 downto BITS));
           when others =>
         end case;
       end if;
@@ -107,34 +118,54 @@ begin
   end if;
 end process;
 
-process(sigma_latch)
+process(sigma_latch1)
 begin
-	--delta_b <= ( sigma_latch(BITS+1) & sigma_latch(BITS+1) ) << BITS;
-  delta_b(BITS+1) <= sigma_latch(BITS+1);
-  delta_b(BITS) <= sigma_latch(BITS+1);
-  delta_b(BITS-1 downto 0) <= (others => '0');
+  delta_b1(BITS+1) <= sigma_latch1(BITS+1);
+  delta_b1(BITS) <= sigma_latch1(BITS+1);
+  delta_b1(BITS-1 downto 0) <= (others => '0');
 end process;
 
-process(dat_q, delta_b)
+process(sigma_latch2)
 begin
-	delta_adder <= dat_q + delta_b;
+  delta_b2(BITS+1) <= sigma_latch2(BITS+1);
+  delta_b2(BITS) <= sigma_latch2(BITS+1);
+  delta_b2(BITS-1 downto 0) <= (others => '0');
 end process;
 
-process(delta_adder,sigma_latch)
+process(dat_q1, delta_b1)
 begin
-	sigma_adder <= delta_adder + sigma_latch;
+	delta_adder1 <= dat_q1 + delta_b1;
+end process;
+
+process(dat_q2, delta_b2)
+begin
+	delta_adder2 <= dat_q2 + delta_b2;
+end process;
+
+process(delta_adder1,sigma_latch1)
+begin
+	sigma_adder1 <= delta_adder1 + sigma_latch1;
+end process;
+
+process(delta_adder2,sigma_latch2)
+begin
+	sigma_adder2 <= delta_adder2 + sigma_latch2;
 end process;
 
 process(clk)
 begin
   if rising_edge(clk) then
 	  if areset='1' then
-      sigma_latch <= (others => '0');
-		  sigma_latch(BITS+1) <= '1';
-		  sdout <= '0';
+      sigma_latch1 <= (others => '0');
+		  sigma_latch1(BITS+1) <= '1';
+		  sdout <= (others=>'0');
+      sigma_latch2 <= (others => '0');
+		  sigma_latch2(BITS+1) <= '1';
 	  else
-		  sigma_latch <= sigma_adder;
-		  sdout <= sigma_latch(BITS+1);
+		  sigma_latch1 <= sigma_adder1;
+      sigma_latch2 <= sigma_adder2;
+		  sdout(0) <= sigma_latch1(BITS+1);
+      sdout(1) <= sigma_latch1(BITS+1);
   	end if;
   end if;
 end process;
