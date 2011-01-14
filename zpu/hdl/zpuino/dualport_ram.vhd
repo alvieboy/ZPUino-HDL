@@ -78,20 +78,22 @@ architecture behave of dualport_ram is
   signal memBWriteEnable_i:   std_logic;
   constant nullAddr: std_logic_vector(maxAddrBit downto 12) := (others => '0');
 
+  constant protectionEnabled: std_logic := '0';
+
 begin
   -- Boot loader address: 000XXXXXXXXXX
   -- Disallow any writes to bootloader protected code (first 4096 bytes, 0x1000 hex (0x000 to 0xFFF)
 
-  memAWriteEnable_i <= memAWriteEnable when memAAddr(maxAddrBit downto 12)/=nullAddr else '0';
-  memBWriteEnable_i <= memBWriteEnable when memBAddr(maxAddrBit downto 12)/=nullAddr else '0';
+  memAWriteEnable_i <= memAWriteEnable when ( memAAddr(maxAddrBit downto 12)/=nullAddr or protectionEnabled='0') else '0';
+  memBWriteEnable_i <= memBWriteEnable when ( memBAddr(maxAddrBit downto 12)/=nullAddr or protectionEnabled='0') else '0';
 
   process(memAWriteEnable,memAAddr(maxAddrBit downto 12),memBWriteEnable,memBAddr(maxAddrBit downto 12))
   begin
     memErr <= '0';
-    if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" then
+    if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
       memErr<='1';
     end if;
-    if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" then
+    if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
       memErr<='1';
     end if;
   end process;
@@ -100,7 +102,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" then
+      if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
         report "Write to BOOTLOADER port A not allowed!!! " severity note;
       end if;
     end if;
@@ -110,7 +112,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" then
+      if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
         report "Write to BOOTLOADER port B not allowed!!!" severity note;
       end if;
     end if;
