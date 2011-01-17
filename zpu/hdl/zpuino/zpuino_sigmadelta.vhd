@@ -165,7 +165,7 @@ begin
 		  sigma_latch1 <= sigma_adder1;
       sigma_latch2 <= sigma_adder2;
 		  sdout(0) <= sigma_latch1(BITS+1);
-      sdout(1) <= sigma_latch1(BITS+1);
+      sdout(1) <= sigma_latch2(BITS+1);
   	end if;
   end if;
 end process;
