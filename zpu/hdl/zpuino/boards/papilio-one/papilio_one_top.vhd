@@ -79,8 +79,10 @@ architecture behave of papilio_one_top is
 
     gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
 
+    tx:       out std_logic;
+    rx:       in std_logic
   );
   end component zpuino_top;
 
@@ -103,6 +105,9 @@ architecture behave of papilio_one_top is
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
+  signal rx: std_logic;
+  signal tx: std_logic;
+
 begin
 
   rstgen: zpuino_serialreset
@@ -111,7 +116,7 @@ begin
     )
     port map (
       clk       => sysclk,
-      rx        => gpio_i(48),
+      rx        => rx,
       rstin     => clkgen_rst,
       rstout    => sysrst
     );
@@ -144,9 +149,9 @@ begin
 
   -- Other ports are special, we need to avoid outputs on input-only pins
 
-  ibufrx:   IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => RXD,        O => gpio_i(48) );
+  ibufrx:   IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => RXD,        O => rx );
   ibufmiso: IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => SPI_MISO,   O => gpio_i(49) );
-  obuftx:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(50), O => TXD );
+  obuftx:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => tx, O => TXD );
   ospiclk:  OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(51), O => SPI_SCK );
   ospics:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(52), O => SPI_CS );
   ospimosi: OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(53), O => SPI_MOSI );
@@ -159,7 +164,10 @@ begin
 
     gpio_i        => gpio_i,
     gpio_t        => gpio_t,
-    gpio_o        => gpio_o
+    gpio_o        => gpio_o,
+
+    rx => rx,
+    tx => tx
   );
 
 end behave;

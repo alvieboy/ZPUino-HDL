@@ -58,7 +58,10 @@ entity zpuino_io is
     -- GPIO
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
+    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+
+    tx: out std_logic;
+    rx: in std_logic
   );
 end entity zpuino_io;
 
@@ -459,11 +462,12 @@ begin
     gpio_spp_en(zpuino_gpio_count-1 downto 0) <= (others=>'0');
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_en(0) <= uart_enabled;         -- PPS1 : UART RX
-    uart_rx <= gpio_spp_read(0);
-
-    gpio_spp_en(1) <= uart_enabled;         -- PPS0 : UART TX
-    gpio_spp_data(1) <= uart_tx;
+    gpio_spp_en(0) <= '0';--uart_enabled;         -- PPS1 : UART RX
+--    uart_rx <= gpio_spp_read(0);
+    uart_rx <= rx;
+    gpio_spp_en(1) <= '0';--uart_enabled;         -- PPS0 : UART TX
+--    gpio_spp_data(1) <= uart_tx;
+    tx <= uart_tx;
 
     gpio_spp_en(2) <= spi_enabled;          -- PPS2 : SPI MISO
     spi_pf_miso <= gpio_spp_read(2);

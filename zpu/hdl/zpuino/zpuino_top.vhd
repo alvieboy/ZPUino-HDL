@@ -49,7 +49,9 @@ entity zpuino_top is
 
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
+    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+    rx:       in std_logic;
+    tx:       out std_logic
   );
 end entity zpuino_top;
 
@@ -105,7 +107,9 @@ begin
       intready      => poppc_inst,
       gpio_i        => gpio_i,
       gpio_o        => gpio_o,
-      gpio_t        => gpio_t
+      gpio_t        => gpio_t,
+      rx            => rx,
+      tx            => tx
     );
 
 end behave;
