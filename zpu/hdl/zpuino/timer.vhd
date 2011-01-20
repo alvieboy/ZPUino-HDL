@@ -75,32 +75,37 @@ architecture behave of timer is
   );
   end component prescaler;
 
-signal tmr0_cnt_q: unsigned(15 downto 0);
-signal tmr0_cmp_q: unsigned(15 downto 0);
-signal tmr0_oc_q: unsigned(15 downto 0);
-signal tmr0_en_q: std_logic;
-signal tmr0_dir_q: std_logic;
-signal tmr0_ccm_q: std_logic;
-signal tmr0_ien_q: std_logic;
-signal tmr0_oce_q: std_logic;
-signal tmr0_intr:  std_logic;
 
-signal tmr0_prescale_rst: std_logic;
-signal tmr0_prescale: std_logic_vector(2 downto 0);
-signal tmr0_prescale_event: std_logic;
+  type regs is record
+    cnt:  unsigned(15 downto 0);
+    cmp:  unsigned(15 downto 0);
+    oc:   unsigned(15 downto 0);
+    en:   std_logic;
+    dir:  std_logic;
+    ccm:  std_logic;
+    ien:  std_logic;
+    oce:  std_logic;
+    TSC:  unsigned(wordSize-1 downto 0);
+    pres: std_logic_vector(2 downto 0);
+    intr: std_logic;
+  end record;
 
-signal TSC_q: unsigned(wordSize-1 downto 0);
+
+signal tmr_prescale_rst: std_logic;
+signal tmr_prescale_event: std_logic;
+
+signal r,w: regs;
 
 begin
 
-  interrupt <= tmr0_intr;
+  interrupt <= r.intr;
   busy <= '0';
 
   tmr0prescale_inst: prescaler
     port map (
       clk     => clk,
       rst     => tmr0_prescale_rst,
-      prescale=> tmr0_prescale,
+      prescale=> r.pres,
       event   => tmr0_prescale_event
     );
 
@@ -109,34 +114,34 @@ begin
   begin
     if rising_edge(clk) then
       if areset='1' then
-        TSC_q <= (others => '0');
+        w.TSC <= (others => '0');
       else
-        TSC_q <= TSC_q + 1;
+        w.TSC <= w.TSC + 1;
       end if;
     end if;
   end process;
   end generate;
 
   -- Read
-  process(address,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr,TSC_q,tmr0_oce_q)
+  process(address,r)
   begin
     read <= (others => '0');
     case address is
       when "00" =>
-        read(0) <= tmr0_en_q;
-        read(1) <= tmr0_ccm_q;
-        read(2) <= tmr0_dir_q;
-        read(3) <= tmr0_ien_q;
-        read(6 downto 4) <= tmr0_prescale;
-        read(7) <= tmr0_intr;
-        read(8) <= tmr0_oce_q;
+        read(0) <= r.en;
+        read(1) <= r.ccm;
+        read(2) <= r.dir;
+        read(3) <= r.ien;
+        read(6 downto 4) <= r.prescale;
+        read(7) <= r.intr;
+        read(8) <= r.oce;
       when "01" =>
-        read(15 downto 0) <= std_logic_vector(tmr0_cnt_q);
+        read(15 downto 0) <= std_logic_vector(r.cnt);
       when "10" =>
-        read(15 downto 0) <= std_logic_vector(tmr0_cmp_q);
+        read(15 downto 0) <= std_logic_vector(r.cmp);
       when others =>
         if TSCENABLED then
-          read <= std_logic_vector(TSC_q);
+          read <= std_logic_vector(r.TSC);
         else
           read <= (others => DontCareValue );
         end if;
@@ -148,30 +153,35 @@ begin
   begin
     if rising_edge(clk) then
       if areset='1' then
-        tmr0_en_q <= '0';
-        tmr0_ccm_q <= '0';
-        tmr0_dir_q <= '1';
-        tmr0_ien_q <= '0';
-        tmr0_oce_q <= '0';
-        tmr0_cmp_q <= (others => '1');
-        tmr0_prescale <= (others => '0');
-        tmr0_prescale_rst <= '1';
+
+        r.en    <= '0';
+        r.ccm   <= '0';
+        r.dir_q <= '1';
+        r.ien_q <= '0';
+        r.oce_q <= '0';
+        r.cmp_q <= (others => '1');
+        r.pres  <= (others => '0');
+
+        prescale_rst <= '1';
       else
-        tmr0_prescale_rst <= not tmr0_en_q;
+
+        tmr0_prescale_rst <= not r.en;
+
+        w <= r;
+
         if we='1' then
           case address is
             when "00" =>
-              tmr0_en_q <= write(0);
-              tmr0_ccm_q <= write(1);
-              tmr0_dir_q <= write(2);
-              tmr0_ien_q <= write(3);
-              tmr0_prescale <= write(6 downto 4);
-              tmr0_oce_q <= write(8);
-              --tmr0_prescale_rst <= '1';
+              w.en  <= write(0);
+              w.ccm <= write(1);
+              w.dir <= write(2);
+              w.ien <= write(3);
+              w.pres<= write(6 downto 4);
+              w.oce <= write(8);
             when "10" =>
-              tmr0_cmp_q <= unsigned(write(15 downto 0));
+              w.cmp <= unsigned(write(15 downto 0));
             when "11" =>
-              tmr0_oc_q <= unsigned(write(15 downto 0));
+              w.oc <= unsigned(write(15 downto 0));
 
             when others =>
           end case;
@@ -197,8 +207,12 @@ begin
             end if;
           end if;
           if tmr0_en_q='1' and tmr0_prescale_event='1' then -- Timer enabled..
-            if tmr0_cnt_q=tmr0_cmp_q and tmr0_ien_q='1' then
-              tmr0_intr <= '1';
+            if tmr0_cnt_q=tmr0_cmp_q then
+              if tmr0_ien_q='1' then
+                tmr0_intr <= '1';
+              end if;
+
+              tmr0_output_compare0 <= '1';
             end if;
 
             if tmr0_cnt_q=tmr0_cmp_q and tmr0_ccm_q='1' then
@@ -224,7 +238,7 @@ begin
   process(clk)
   begin
     if rising_edge(clk) then
-      if tmr0_oc_q >= tmr0_cnt_q then
+      if r.oc >= r.cnt then
         spp_data <= '1';
       else
         spp_data <= '0';
@@ -232,6 +246,6 @@ begin
     end if;
   end process;
 
-  spp_en <= tmr0_oce_q; -- Output compare enable
+  spp_en <= r.oce; -- Output compare enable
 
 end behave;

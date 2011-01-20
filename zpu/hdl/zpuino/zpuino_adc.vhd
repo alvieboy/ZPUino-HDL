@@ -57,6 +57,7 @@ entity zpuino_adc is
     busy:     out std_logic;
     interrupt:out std_logic;
 
+    trigger:  in std_logic; -- External trigger
 
     -- GPIO SPI pins
 
