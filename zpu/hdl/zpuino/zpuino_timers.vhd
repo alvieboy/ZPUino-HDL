@@ -55,6 +55,7 @@ entity zpuino_timers is
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
     busy:     out std_logic;
+    comp:     out std_logic;
     interrupt:out std_logic_vector(1 downto 0)
   );
 end entity zpuino_timers;
@@ -79,6 +80,8 @@ architecture behave of zpuino_timers is
     spp_data: out std_logic;
     spp_en:   out std_logic;
 
+    comp:     out std_logic;
+
     busy:     out std_logic;
     interrupt:out std_logic
   );
@@ -89,6 +92,7 @@ architecture behave of zpuino_timers is
   signal timer0_we:         std_logic;
   signal timer0_interrupt:  std_logic;
   signal timer0_busy:       std_logic;
+  signal timer0_comp:       std_logic;
   signal timer0_spp_data:   std_logic;
   signal timer0_spp_en  :   std_logic;
 
@@ -105,6 +109,8 @@ begin
   interrupt(0) <= timer0_interrupt;
   interrupt(1) <= timer1_interrupt;
 
+  comp <= timer0_comp;
+
   timer0_inst: timer
     generic map (
       TSCENABLED => true
@@ -120,6 +126,7 @@ begin
       spp_data=> timer0_spp_data,
       spp_en  => timer0_spp_en,
       busy    => timer0_busy,
+      comp    => timer0_comp,
       interrupt=>timer0_interrupt
     );
 

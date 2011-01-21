@@ -57,7 +57,7 @@ entity zpuino_adc is
     busy:     out std_logic;
     interrupt:out std_logic;
 
-    trigger:  in std_logic; -- External trigger
+    sample:   in std_logic; -- External trigger
 
     -- GPIO SPI pins
 
@@ -132,13 +132,22 @@ architecture behave of zpuino_adc is
   -- Configuration registers
 
   signal adc_enabled_q: std_logic;
+  signal adc_source_external_q: std_logic;
 
   signal run_spi: std_logic;
+  signal do_sample: std_logic;
 
 begin
 
   enabled <= adc_enabled_q;
-  seln <= not spi_enable;
+
+  process(spi_enable,spi_ready)
+  begin
+    seln<='1';
+    if spi_enable='1' or spi_ready='0' then
+      seln<='0';
+    end if;
+  end process;
 
   adcspi: spi
     port map (
@@ -193,13 +202,19 @@ begin
 
 
   -- READ muxer
-  process(address)
+  process(address,fifo_read,request_samples_q,current_sample_q)
   begin
+    read <= (others => DontCareValue);
     case address is
+      when "000" =>
+        if (request_samples_q /= current_sample_q) then
+          read(0) <= '0';
+        else
+          read(0) <= '1';
+        end if;
       when "101" =>
         read <= fifo_read;
       when others =>
-        read <= (others => DontCareValue);
     end case;
   end process;
 
@@ -231,7 +246,8 @@ begin
     );
 
 
-  spi_enable <= '1' when run_spi='1' and spi_ready='1' else '0';
+  spi_enable <= '1' when run_spi='1' and spi_ready='1' and do_sample='1' else '0';
+  do_sample <= sample when adc_source_external_q='1' else '1';
 
   -- Main process
   process(clk)
@@ -242,6 +258,7 @@ begin
         current_sample_q <= (others => '0');
         run_spi <= '0';
         fifo_wr <= '0';
+        adc_source_external_q <= '0';
       else
 
         fifo_wr <= '0';
@@ -250,6 +267,7 @@ begin
           case address is
             when "000" =>
               -- Write configuration
+              adc_source_external_q <= write(1);
             when "001" =>
               -- Write request samples
               request_samples_q <= unsigned(write(10 downto 0));
@@ -263,8 +281,10 @@ begin
             -- Sampling right now.
               if spi_ready='1' then
                 -- Add delay here.
-                fifo_wr <= '1';
-                run_spi <= '1';
+                if do_sample='1' then
+                  fifo_wr <= '1';
+                  run_spi <= '1';
+                end if;
               end if;
           else
             run_spi <= '0';

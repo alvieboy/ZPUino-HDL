@@ -97,6 +97,7 @@ architecture behave of zpuino_io is
   signal timers_interrupt:  std_logic_vector(1 downto 0);
   signal timers_spp_data: std_logic_vector(1 downto 0);
   signal timers_spp_en: std_logic_vector(1 downto 0);
+  signal timers_comp: std_logic;
 
   signal intr_read:     std_logic_vector(wordSize-1 downto 0);
   signal intr_re:  std_logic;
@@ -208,7 +209,7 @@ begin
   ivecs(15 downto 2) <= (others => '0');
 
   -- MUX read signals
-  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read,crc16_read)
+  process(io_address,spi_read,uart_read,gpio_read,timers_read,intr_read,sigmadelta_read,spi2_read,crc16_read,adc_read)
   begin
     case io_address(14 downto 11) is
       when "0000" =>
@@ -382,6 +383,7 @@ begin
     spp_data  => timers_spp_data,
     spp_en    => timers_spp_en,
     busy      => open,
+    comp      => timers_comp,
     interrupt => timers_interrupt
   );
 
@@ -442,6 +444,7 @@ begin
     re        => adc_re,
     busy      => open,
     interrupt => open,
+    sample    => timers_comp,
     mosi      => adc_mosi,
     miso      => adc_miso,
     sck       => adc_sck,
