@@ -149,7 +149,7 @@ begin
     w.prst <= not r.en;
 
     if TSCENABLED then
-      w.TSC <= w.TSC + 1;
+      w.TSC <= r.TSC + 1;
     end if;
 
     if we='1' then
