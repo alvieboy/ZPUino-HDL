@@ -113,7 +113,7 @@ architecture behave of zpuino_adc is
   signal current_sample_q: unsigned(10 downto 0); -- Current sample
 
   signal read_fifo_ptr_q: unsigned(10 downto 2);
-  signal write_fifo_ptr_q: unsigned(10 downto 0);
+--  signal write_fifo_ptr_q: unsigned(10 downto 0);
   signal dly_interval_q: unsigned(31 downto 0); -- Additional clock delay between samples
 
 
@@ -259,6 +259,7 @@ begin
         run_spi <= '0';
         fifo_wr <= '0';
         adc_source_external_q <= '0';
+        adc_enabled_q<='0';
       else
 
         fifo_wr <= '0';
@@ -267,6 +268,7 @@ begin
           case address is
             when "000" =>
               -- Write configuration
+              adc_enabled_q <= write(0);
               adc_source_external_q <= write(1);
             when "001" =>
               -- Write request samples
