@@ -46,6 +46,11 @@ library UNISIM;
 use UNISIM.VCOMPONENTS.all;
 
 entity zpuino_adc is
+  generic (
+    fifo_width_bits: integer := 16;
+    upper_offset: integer := 15;
+    lower_offset: integer := 4
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -108,19 +113,24 @@ architecture behave of zpuino_adc is
   );
   end component spiclkgen;
 
+  constant fifo_lower_bit: integer := fifo_width_bits/8;
 
-  signal request_samples_q: unsigned(10 downto 0); -- Maximum 4K samples
-  signal current_sample_q: unsigned(10 downto 0); -- Current sample
+  signal request_samples_q: unsigned(11-fifo_lower_bit downto 0); -- Maximum 4K samples
+  signal current_sample_q: unsigned(11-fifo_lower_bit downto 0); -- Current sample
 
   signal read_fifo_ptr_q: unsigned(10 downto 2);
---  signal write_fifo_ptr_q: unsigned(10 downto 0);
-  signal dly_interval_q: unsigned(31 downto 0); -- Additional clock delay between samples
+
+--  signal dly_interval_q: unsigned(31 downto 0); -- Additional clock delay between samples
 
 
   signal fifo_read: std_logic_vector(31 downto 0);
   signal fifo_read_address: std_logic_vector(10 downto 2);
-  signal fifo_write_address: std_logic_vector(10 downto 0);
-  signal fifo_write: std_logic_vector(7 downto 0);
+
+
+  signal fifo_write_address: std_logic_vector(11-fifo_lower_bit downto 0);
+  signal fifo_write: std_logic_vector(fifo_width_bits-1 downto 0);
+
+
   signal fifo_wr: std_logic;
 
   signal spi_dout: std_logic_vector(31 downto 0);
@@ -221,7 +231,13 @@ begin
   fifo_write_address <= std_logic_vector(current_sample_q);
   fifo_read_address <= std_logic_vector(read_fifo_ptr_q);
 
-  fifo_write <= spi_dout(11 downto 4); -- Data from SPI
+  process(spi_dout)
+  begin
+    fifo_write <= (others => '0');
+    fifo_write(upper_offset-lower_offset downto 0) <= spi_dout(upper_offset downto lower_offset); -- Data from SPI
+  end process;
+
+  ram8: if fifo_width_bits=8 generate
 
   ram: RAMB16_S9_S36
     port map (
@@ -244,6 +260,32 @@ begin
       WEA   => fifo_wr,
       WEB   => '0'
     );
+  end generate;
+
+  ram16: if fifo_width_bits=16 generate
+
+  ram: RAMB16_S18_S36
+    port map (
+      DOA  => open,
+      DOB  => fifo_read,
+      DOPA => open,
+      DOPB => open,
+      ADDRA => fifo_write_address,
+      ADDRB => fifo_read_address,
+      CLKA  => clk,
+      CLKB  => clk,
+      DIA   => fifo_write,
+      DIB   => (others => '0'),
+      DIPA  => (others => '0'),
+      DIPB  => (others => '0'),
+      ENA   => '1',
+      ENB   => '1',
+      SSRA  => '0',
+      SSRB  => '0',
+      WEA   => fifo_wr,
+      WEB   => '0'
+    );
+  end generate;
 
 
   spi_enable <= '1' when run_spi='1' and spi_ready='1' and do_sample='1' else '0';
@@ -272,7 +314,7 @@ begin
               adc_source_external_q <= write(1);
             when "001" =>
               -- Write request samples
-              request_samples_q <= unsigned(write(10 downto 0));
+              request_samples_q <= unsigned(write(11-fifo_lower_bit downto 0));
               current_sample_q <= (others => '1'); -- WARNING - this will overwrite last value on RAM
               run_spi <= '1';
             when others =>
