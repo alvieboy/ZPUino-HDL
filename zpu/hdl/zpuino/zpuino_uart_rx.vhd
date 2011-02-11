@@ -46,7 +46,10 @@ entity zpuino_uart_rx is
     clk:      in std_logic;
 	 	rst:      in std_logic;
     rx:       in std_logic;
-    rxclk:    in std_logic
+    rxclk:    in std_logic;
+    read:     in std_logic;
+    data:     out std_logic_vector(7 downto 0);
+    data_av:  out std_logic
   );
 end entity zpuino_uart_rx;
 
@@ -84,6 +87,8 @@ signal rxd: std_logic_vector(7 downto 0);
 signal datacount: unsigned(2 downto 0);
 signal baudreset: std_logic;
 signal filterreset: std_logic;
+signal datao: std_logic_vector(7 downto 0);
+signal dataready: std_logic;
 
 -- State
 type uartrxstate is (
@@ -97,7 +102,9 @@ signal state: uartrxstate;
 
 begin
 
-  filterreset <= baudreset or rxclk;
+  filterreset <= baudreset or baudtick;
+  data <= datao;
+  data_av <= dataready;
 
   rxmvfilter: zpuino_uart_mv_filter
   generic map (
@@ -128,8 +135,12 @@ begin
   if rising_edge(clk) then
     if rst='1' then
       state <= rx_idle;
+      dataready <= '0';
     else
       baudreset <= '0';
+      if read='1' then
+        dataready <= '0';
+      end if;
       case state is
         when rx_idle =>
           if rx='0' then       -- Start bit
@@ -158,6 +169,10 @@ begin
         when rx_end =>
           -- Check for framing errors ?
           if baudtick='1' then
+            if rxf='1' then
+              dataready<='1';
+              datao <= rxd;
+            end if;
             state <= rx_idle;
           end if;
         when others =>
