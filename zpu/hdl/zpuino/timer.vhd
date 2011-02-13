@@ -59,6 +59,8 @@ entity timer is
     spp_data: out std_logic;
     spp_en:   out std_logic;
 
+    comp:     out std_logic; -- Compare output
+
     busy:     out std_logic;
     interrupt:out std_logic
   );
@@ -84,6 +86,7 @@ signal tmr0_ccm_q: std_logic;
 signal tmr0_ien_q: std_logic;
 signal tmr0_oce_q: std_logic;
 signal tmr0_intr:  std_logic;
+signal tmr0_cout:  std_logic;
 
 signal tmr0_prescale_rst: std_logic;
 signal tmr0_prescale: std_logic_vector(2 downto 0);
@@ -94,6 +97,8 @@ signal TSC_q: unsigned(wordSize-1 downto 0);
 begin
 
   interrupt <= tmr0_intr;
+  comp <= tmr0_cout;
+
   busy <= '0';
 
   tmr0prescale_inst: prescaler
@@ -187,6 +192,7 @@ begin
       if areset='1' then
         tmr0_cnt_q <= (others => '0');
         tmr0_intr <= '0';
+        tmr0_cout <= '0';
       else
         if we='1' and address="01" then
           tmr0_cnt_q <= unsigned(write(15 downto 0));
@@ -196,9 +202,15 @@ begin
               tmr0_intr <= '0';
             end if;
           end if;
+
+          tmr0_cout <= '0';
+
           if tmr0_en_q='1' and tmr0_prescale_event='1' then -- Timer enabled..
-            if tmr0_cnt_q=tmr0_cmp_q and tmr0_ien_q='1' then
-              tmr0_intr <= '1';
+            if tmr0_cnt_q=tmr0_cmp_q then
+              if tmr0_ien_q='1' then
+                tmr0_intr <= '1';
+              end if;
+              tmr0_cout <= '1';
             end if;
 
             if tmr0_cnt_q=tmr0_cmp_q and tmr0_ccm_q='1' then

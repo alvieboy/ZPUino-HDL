@@ -61,16 +61,18 @@ end entity zpuino_uart;
 
 architecture behave of zpuino_uart is
 
-  component RxUnit is
-   port(
-      clk_i    : in  std_logic;  -- System clock signal
-      reset_i  : in  std_logic;  -- Reset input (sync)
-      enable_i : in  std_logic;  -- Enable input (rate*4)
-      read_i   : in  std_logic;  -- Received Byte Read
-      rxd_i    : in  std_logic;  -- RS-232 data input
-      rxav_o   : out std_logic;  -- Byte available
-      datao_o  : out std_logic_vector(7 downto 0)); -- Byte received
-  end component RxUnit;
+  component zpuino_uart_rx is
+  port (
+    clk:      in std_logic;
+	 	rst:      in std_logic;
+    rx:       in std_logic;
+    rxclk:    in std_logic;
+    read:     in std_logic;
+    data:     out std_logic_vector(7 downto 0);
+    data_av:  out std_logic
+  );
+  end component zpuino_uart_rx;
+
 
   component TxUnit is
   port (
@@ -109,7 +111,7 @@ architecture behave of zpuino_uart is
 
   signal uart_read: std_logic;
   signal uart_write: std_logic;
-  signal divider_tx: std_logic_vector(15 downto 0) := x"0003";
+  signal divider_tx: std_logic_vector(15 downto 0) := x"000f";
 
   signal divider_rx_q: std_logic_vector(15 downto 0);
 
@@ -131,18 +133,19 @@ begin
 
   enabled <= enabled_q;
 
-  rx_inst: RxUnit
+  rx_inst: zpuino_uart_rx
     port map(
-      clk_i     => clk,
-      reset_i   => areset,
-      enable_i  => rx_br,
-      read_i    => uart_read,
-      rxd_i     => rx,
-      rxav_o    => data_ready,
-      datao_o   => received_data
+      clk     => clk,
+      rst     => areset,
+      rxclk   => rx_br,
+      read    => uart_read,
+      rx      => rx,
+      data_av => data_ready,
+      data    => received_data
    );
 
-  uart_read <= '1' when re='1' and address="0" else '0';
+  --uart_read <= '1' when re='1' and address="0" else '0';
+  uart_read <= dready_q;
 
   tx_core: TxUnit
     port map(

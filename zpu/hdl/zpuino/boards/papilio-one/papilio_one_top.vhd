@@ -88,7 +88,7 @@ architecture behave of papilio_one_top is
 
   component zpuino_serialreset is
   generic (
-    SYSTEM_CLOCK_MHZ: integer := 100
+    SYSTEM_CLOCK_MHZ: integer := 96
   );
   port (
     clk:      in std_logic;
