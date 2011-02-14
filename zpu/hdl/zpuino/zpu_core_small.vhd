@@ -156,6 +156,7 @@ signal sampledDecodedOpcode : DecodedOpcodeType;
 
 type zpuregs is record
   pc:         unsigned(maxAddrBit downto 0);
+  pcdly:      unsigned(maxAddrBit downto 0);
   sp:         unsigned(maxAddrBit downto minAddrBit);
   topOfStack: unsigned(wordSize-1 downto 0);
   idim:       std_logic;
@@ -389,6 +390,8 @@ begin
     spOffset(4):=not opcode(4);
     spOffset(3 downto 0) := unsigned(opcode(3 downto 0));
 
+    w.pcdly <= r.pc; -- Save PC for Neqbranch operations
+
     if interrupt='0' then
           w.inInterrupt<='0';
     end if;
@@ -411,23 +414,23 @@ begin
         memAAddr <= r.sp + 1;
         
         if interrupt='0' then
-          if sampledDecodedOpcode/=Decoded_Neqbranch then
+          --if sampledDecodedOpcode/=Decoded_Neqbranch then
             w.pc <= r.pc + 1;
-          end if;
+          --end if;
         else
           if r.state=State_Decode and r.idim='0' and r.inInterrupt='0' then
             if interrupt='1' then
               doInterrupt<='1';
               w.inInterrupt<='1';
             else
-              if sampledDecodedOpcode/=Decoded_Neqbranch then
+             -- if sampledDecodedOpcode/=Decoded_Neqbranch then
                 w.pc <= r.pc + 1;
-              end if;
+             -- end if;
             end if;
           else
-            if sampledDecodedOpcode/=Decoded_Neqbranch then
+            --if sampledDecodedOpcode/=Decoded_Neqbranch then
               w.pc <= r.pc + 1;
-            end if;
+            --end if;
           end if;
         end if;
 
@@ -704,9 +707,9 @@ begin
 
             w.sp <= r.sp + 2;
             if memARead/=0 then
-              w.pc <= r.pc + r.topOfStack(maxAddrBit downto 0);
-            else
-              w.pc <= r.pc + 1;
+              w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
+--            else
+--              w.pc <= r.pc + 1;
             end if;
             w.state <= State_Resync1;
 
