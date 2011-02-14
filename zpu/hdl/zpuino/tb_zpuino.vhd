@@ -65,8 +65,9 @@ architecture behave of tb_zpuino is
 
     gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
-
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
+    rx:       in std_logic;
+    tx:       out std_logic
   );
   end component zpuino_top;
 
@@ -140,7 +141,9 @@ begin
 	 	  areset   => w_rst,
       gpio_i => gpio_i,
       gpio_o => gpio_o,
-      gpio_t => gpio_t
+      gpio_t => gpio_t,
+      rx => '1',
+      tx => open
   );
 
   -- These values were taken from post-P&R timing analysis
