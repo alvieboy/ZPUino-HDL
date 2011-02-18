@@ -89,6 +89,10 @@ signal baudreset: std_logic;
 signal filterreset: std_logic;
 signal datao: std_logic_vector(7 downto 0);
 signal dataready: std_logic;
+signal start: std_logic;
+
+signal debug_synctick_q: std_logic;
+signal debug_baudreset_q: std_logic;
 
 -- State
 type uartrxstate is (
@@ -102,7 +106,6 @@ signal state: uartrxstate;
 
 begin
 
-  filterreset <= baudreset or baudtick;
   data <= datao;
   data_av <= dataready;
 
@@ -120,6 +123,9 @@ begin
     enable  => rxclk
   );
 
+  filterreset <= start;
+  istart <= start;
+
 
   baudgen: uart_brgen
     port map (
@@ -136,8 +142,11 @@ begin
     if rst='1' then
       state <= rx_idle;
       dataready <= '0';
+      baudreset <= '0';
+      start<='0';
     else
       baudreset <= '0';
+      start<='0';
       if read='1' then
         dataready <= '0';
       end if;
@@ -146,6 +155,7 @@ begin
           if rx='0' then       -- Start bit
             state <= rx_start;
             baudreset <= '1';
+            start <='1';
           end if;
         when rx_start =>
           if baudtick='1' then
@@ -168,11 +178,16 @@ begin
           end if;
         when rx_end =>
           -- Check for framing errors ?
+
+          -- Do fast recovery here.
+          if rxf='1' then
+            dataready<='1';
+            datao <= rxd;
+            state <= rx_idle;
+          end if;
+
           if baudtick='1' then
-            if rxf='1' then
-              dataready<='1';
-              datao <= rxd;
-            end if;
+            -- Framing error.
             state <= rx_idle;
           end if;
         when others =>
