@@ -123,7 +123,7 @@ begin
     enable  => rxclk
   );
 
-  filterreset <= start;
+  filterreset <= baudreset or baudtick;
   --istart <= start;
 
 
