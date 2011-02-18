@@ -124,7 +124,7 @@ begin
   );
 
   filterreset <= start;
-  istart <= start;
+  --istart <= start;
 
 
   baudgen: uart_brgen
