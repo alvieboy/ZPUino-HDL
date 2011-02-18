@@ -128,12 +128,22 @@ architecture behave of tb_zpuino is
   signal gpio_i: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_t: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal rxsim: std_logic;
+
+  component uart_pty_tx is
+   port(
+      clk:    in  std_logic;
+      rst:    in  std_logic;
+      tx:     out std_logic
+   );
+  end component uart_pty_tx;
+
 begin
 
-  uart_rx <= '1';--uart_tx after 7 us;
+  uart_rx <= rxsim;--uart_tx after 7 us;
 
   uart_tx <= gpio_o(1);
-  gpio_i(0) <= uart_rx;
+  gpio_i(48) <= uart_rx;
 
   top: zpuino_top
     port map (
@@ -143,6 +153,13 @@ begin
       gpio_o => gpio_o,
       gpio_t => gpio_t
   );
+
+  rxs: uart_pty_tx
+   port map(
+      clk => w_clk,
+      rst => w_rst,
+      tx  => rxsim
+   );
 
   -- These values were taken from post-P&R timing analysis
 
