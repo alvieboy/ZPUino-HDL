@@ -40,6 +40,8 @@ library work;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
 use work.zpuino_config.all;
+use work.pad.all;
+
 library unisim;
 use unisim.vcomponents.all;
 
@@ -127,29 +129,24 @@ begin
   );
 
   bufgen: for i in 0 to 47 generate
-    iob: IOBUF
-      generic map (
-        IBUF_DELAY_VALUE => "0",
-        SLEW => "FAST",
-        DRIVE => 8,
-        IFD_DELAY_VALUE => "0"
-      )
+    iop: IOPAD
       port map(
         I => gpio_o(i),
         O => gpio_i(i),
         T => gpio_t(i),
-        IO => gpio(i)
+        C => sysclk,
+        PAD => gpio(i)
       );
   end generate;
 
   -- Other ports are special, we need to avoid outputs on input-only pins
 
-  ibufrx:   IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => RXD,        O => gpio_i(48) );
-  ibufmiso: IBUF generic map ( IBUF_DELAY_VALUE => "0", IFD_DELAY_VALUE => "0" ) port map ( I => SPI_MISO,   O => gpio_i(49) );
-  obuftx:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(50), O => TXD );
-  ospiclk:  OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(51), O => SPI_SCK );
-  ospics:   OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(52), O => SPI_CS );
-  ospimosi: OBUF generic map ( SLEW => "FAST", DRIVE => 8 ) port map ( I => gpio_o(53), O => SPI_MOSI );
+  ibufrx:   IPAD port map ( PAD => RXD,        O => gpio_i(48), C => sysclk );
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
+  obuftx:   OPAD port map ( I => gpio_o(50),   PAD => TXD );
+  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
+  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
+  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
 
 
   zpuino:zpuino_top
