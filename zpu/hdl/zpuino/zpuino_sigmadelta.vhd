@@ -50,9 +50,9 @@ entity zpuino_sigmadelta is
   generic (
     BITS: integer := 16
   );
-	port (
+ port (
     clk:      in std_logic;
-	 	areset:   in std_logic;
+    areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
     address:  in std_logic_vector(0 downto 0);
@@ -86,6 +86,9 @@ signal dat_q2: unsigned(BITS+1 downto 0);
 signal sd_en_q: std_logic_vector(1 downto 0);
 signal sdout: std_logic_vector(1 downto 0);
 
+signal sdtick: std_logic;
+signal sdcnt: integer;
+
 begin
 
   read <= (others => DontCareValue);
@@ -102,14 +105,14 @@ begin
       dat_q2(BITS-1) <= '1';
       sd_en_q <= (others =>'0');
     else 
-	    if we='1' then
+      if we='1' then
         case address is
           when "0" =>
             sd_en_q(0) <= write(0);
             sd_en_q(1) <= write(1);
           when "1" =>
             --report "SigmaDelta set: " & hstr(write(BITS-1 downto 0)) severity note;
-  		      dat_q1(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
+            dat_q1(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
             dat_q2(BITS-1 downto 0) <= unsigned(write(BITS+BITS-1 downto BITS));
           when others =>
         end case;
@@ -134,39 +137,61 @@ end process;
 
 process(dat_q1, delta_b1)
 begin
-	delta_adder1 <= dat_q1 + delta_b1;
+  delta_adder1 <= dat_q1 + delta_b1;
 end process;
 
 process(dat_q2, delta_b2)
 begin
-	delta_adder2 <= dat_q2 + delta_b2;
+  delta_adder2 <= dat_q2 + delta_b2;
 end process;
 
 process(delta_adder1,sigma_latch1)
 begin
-	sigma_adder1 <= delta_adder1 + sigma_latch1;
+  sigma_adder1 <= delta_adder1 + sigma_latch1;
 end process;
 
 process(delta_adder2,sigma_latch2)
 begin
-	sigma_adder2 <= delta_adder2 + sigma_latch2;
+  sigma_adder2 <= delta_adder2 + sigma_latch2;
+end process;
+
+-- Divider
+
+process(clk)
+begin
+  if rising_edge(clk) then
+    if areset='1' then
+      sdtick<='0';
+      sdcnt<=3;
+    else
+      if sdcnt/=0 then
+        sdcnt<=sdcnt-1;
+        sdtick<='0';
+      else
+        sdtick<='1';
+        sdcnt<=3;
+      end if;
+    end if;
+  end if;
 end process;
 
 process(clk)
 begin
   if rising_edge(clk) then
-	  if areset='1' then
+   if areset='1' then
       sigma_latch1 <= (others => '0');
-		  sigma_latch1(BITS+1) <= '1';
-		  sdout <= (others=>'0');
+      sigma_latch1(BITS+1) <= '1';
+      sdout <= (others=>'0');
       sigma_latch2 <= (others => '0');
-		  sigma_latch2(BITS+1) <= '1';
-	  else
-		  sigma_latch1 <= sigma_adder1;
-      sigma_latch2 <= sigma_adder2;
-		  sdout(0) <= sigma_latch1(BITS+1);
-      sdout(1) <= sigma_latch2(BITS+1);
-  	end if;
+      sigma_latch2(BITS+1) <= '1';
+   else
+      if sdtick='1' then
+        sigma_latch1 <= sigma_adder1;
+        sigma_latch2 <= sigma_adder2;
+        sdout(0) <= sigma_latch1(BITS+1);
+        sdout(1) <= sigma_latch2(BITS+1);
+      end if;
+   end if;
   end if;
 end process;
 
