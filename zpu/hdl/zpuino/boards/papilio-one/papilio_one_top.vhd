@@ -141,12 +141,12 @@ begin
 
   -- Other ports are special, we need to avoid outputs on input-only pins
 
-  ibufrx:   IPAD port map ( PAD => RXD,        O => gpio_i(48), C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
-  obuftx:   OPAD port map ( I => gpio_o(50),   PAD => TXD );
-  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
-  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
+  ibufrx:   IPAD port map ( PAD => RXD,        O => gpio_i(48), C => sysclk);
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk);
+  obuftx:   OPAD port map ( I => gpio_o(50),   PAD => TXD     , C => sysclk);
+  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK , C => sysclk);
+  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS  , C => sysclk);
+  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI, C => sysclk);
 
 
   zpuino:zpuino_top
