@@ -19,11 +19,6 @@
 #include <sys/select.h>
 #endif
 
-static unsigned char *packet;
-static size_t packetoffset;
-static int syncSeen=0;
-static int unescaping=0;
-
 unsigned int verbose = 0;
 
 static char *binfile=NULL;
@@ -101,73 +96,18 @@ int help(char *name)
 	return -1;
 }
 
-void crc16_update(uint16_t *crc, uint8_t data)
-{
-	data ^= *crc&0xff;
-	data ^= data << 4;
-	*crc = ((((uint16_t)data << 8) | ((*crc>>8)&0xff)) ^ (uint8_t)(data >> 4)
-		   ^ ((uint16_t)data << 3));
-}
-
-void writeEscaped(unsigned char c, unsigned char **dest)
-{
-	if (c==HDLC_frameFlag || c==HDLC_escapeFlag) {
-		*(*dest)=HDLC_escapeFlag;
-		(*dest)++;
-		*(*dest)=(c ^ HDLC_escapeXOR);
-	} else
-		*(*dest)=c;
-	(*dest)++;
-}
-
-int sendpacket(int fd, unsigned char *buffer, size_t size)
-{
-	unsigned char txbuf[1024];
-	unsigned char *txptr = &txbuf[0];
-
-	uint16_t crc = 0xFFFF;
-	size_t i;
-
-	*txptr++=HDLC_frameFlag;
-	if (verbose>2) {
-		printf("Send packet, size %u\n",size);
-	}
-	for (i=0;i<size;i++) {
-		crc16_update(&crc,buffer[i]);
-		writeEscaped(buffer[i],&txptr);
-	}
-
-	writeEscaped( (crc>>8)&0xff, &txptr);
-	writeEscaped( crc&0xff, &txptr);
-
-	*txptr++= HDLC_frameFlag;
-
-	if(verbose>2) {
-		printf("Tx:");
-		for (i=0; i<txptr-(&txbuf[0]); i++) {
-			printf(" 0x%02x", txbuf[i]);
-		}
-		printf("\n");
-	}
-	return write(fd, txbuf, txptr-(&txbuf[0]));
-}
-
 buffer_t *handle();
 buffer_t *process(unsigned char *buffer, size_t size);
 
 
 static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
 {
-#ifdef __linux__
-	fd_set rfs;
-#endif
-
-	unsigned char tmpbuf[32];
-	struct timeval tv;
-	int rd;
+	//unsigned char tmpbuf[32];
+	//struct timeval tv;
+	//int rd;
     buffer_t *ret=NULL;
 	unsigned char *txbuf2;
-	int retries=3;
+	//int retries=3;
 
 
 	txbuf2=malloc( size + 1);
@@ -175,8 +115,21 @@ static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsign
 	if (size) {
 		memcpy(&txbuf2[1], txbuf,size);
 	}
-    sendpacket(fd,txbuf2,size+1);
+	do {
+		ret = conn_transmit(fd,txbuf2,size+1,timeout);
+		if (NULL==ret)
+			return ret;
 
+		if (ret->buf[0] != REPLY(cmd)) {
+			if (verbose>0) {
+				printf("Invalid reply 0x%02x to command 0x%02x\n",
+					   ret->buf[0],REPLY(cmd));
+			}
+			buffer_free(ret);
+		} else {
+			return ret;
+		}
+	} while(1);
 	/*
 	 do {
 		FD_ZERO(&rfs);
@@ -307,86 +260,6 @@ int open_device(char *device,connection_t *conn)
 		return conn_open(device,serial_speed,conn);
 }
 
-buffer_t *handle()
-{
-    buffer_t*ret = NULL;
-	unsigned short crc = 0xFFFF;
-    unsigned short pcrc;
-	int i;
-
-	if (packetoffset<3) {
-		if (verbose>0)
-			printf("Short packet\n");
-		goto out;
-	}
-
-	for (i=0; i<packetoffset-2; i++) {
-		crc16_update(&crc,packet[i]);
-	}
-	pcrc = packet[packetoffset-2] << 8;
-    pcrc += packet[packetoffset-1];
-
-	if (crc!=pcrc) {
-		if (verbose>0) {
-			printf("CRC error, expected 0x%02x, got 0x%02x\n",
-				   crc,
-				   pcrc);
-		}
-        goto out;
-	}
-
-	ret = malloc(sizeof (buffer_t) );
-	if (ret==NULL)
-		goto out;
-
-	ret->buf = malloc(packetoffset-2);
-	ret->size = packetoffset-2;
-	memcpy(ret->buf, packet, ret->size);
-	if (verbose>2)
-		printf("Got packet size %d\n",ret->size);
-out:
-	free(packet);
-	packet = NULL;
-    packetoffset = 0;
-    return ret;
-}
-
-buffer_t *process(unsigned char *buffer, size_t size)
-{
-	size_t s;
-	unsigned int i;
-	for (s=0;s<size;s++) {
-		i = buffer[s];
-
-		if (syncSeen) {
-			if (i==HDLC_frameFlag) {
-				syncSeen=0;
-				return handle();
-
-			} else if (i==HDLC_escapeFlag) {
-				unescaping=1;
-			} else if (packetoffset<1024) {
-				if (unescaping) {
-					unescaping=0;
-					i^=HDLC_escapeXOR;
-				}
-				packet[packetoffset++]=i;
-			} else {
-				syncSeen=0;
-				free(packet);
-				packet = NULL;
-			}
-		} else {
-			if (i==HDLC_frameFlag) {
-				packet = malloc(1024);
-				packetoffset=0;
-				syncSeen=1;
-				unescaping=0;
-			}
-		}
-	}
-	return NULL;
-}
 
 void buffer_free(buffer_t *b)
 {
@@ -469,8 +342,7 @@ int main(int argc, char **argv)
 	if (open_device(serialport,&conn)<0) {
 		return -1;
 	}
-
-	retries = 100;
+	retries = 10;
 
 	if (serial_reset) {
 		conn_reset(conn);
@@ -479,10 +351,10 @@ int main(int argc, char **argv)
 	}
 	while (retries>0) {
 		/* Reset */
-		buffer[0] = HDLC_frameFlag;
-		buffer[1] = HDLC_frameFlag;
-		conn_write(conn,buffer,2);
-
+		conn_prepare(conn);
+		if (verbose>2) {
+			printf("Connecting...\n");
+		}
 		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
 		if (b)
 			break;

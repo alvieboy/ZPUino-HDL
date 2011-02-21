@@ -3,10 +3,6 @@
 
 #include "sysdeps.h"
 
-#define HDLC_frameFlag 0x7E
-#define HDLC_escapeFlag 0x7D
-#define HDLC_escapeXOR 0x20
-
 #define TIMEOUT 30
 
 #define BOOTLOADER_CMD_VERSION 0x01
