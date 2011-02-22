@@ -61,7 +61,6 @@ end component ipad;
 component opad is
   port  (
     I: in std_logic;
-    C: in std_logic;
     PAD: out std_logic
   );
 end component opad;
@@ -93,11 +92,8 @@ entity isync is
 end entity isync;
 
 architecture behave of isync is
-  signal s: std_logic;
-  attribute iob: string;
-  attribute iob of ff: label is "true";
-  attribute iob of latch: label is "true";
 
+  signal s: std_logic;
 begin
 
   latch: ILD
@@ -134,9 +130,6 @@ entity iopad is
 end entity iopad;
 
 architecture behave of iopad is
-  signal s: std_logic;
-  attribute iob: string;
-  attribute iob of off: label is "true";
 begin
 
   sync: isync
@@ -148,21 +141,12 @@ begin
 
   -- Tristate generator
 
-  -- Put a FF, so we stay at IOB
-  off: FD
-    port map (
-      D => I,
-      Q => s,
-      C => C
-    );
-
-
   process(I,T)
   begin
     if T='1' then
       PAD<='Z';
     else
-      PAD<=s;
+      PAD<=I;
     end if;
   end process;
 
@@ -207,27 +191,16 @@ use unisim.vcomponents.all;
 entity opad is
   port  (
     I: in std_logic;
-    C: in std_logic;
     PAD: out std_logic
   );
 end entity opad;
 
 architecture behave of opad is
-  signal s: std_logic;
-  attribute iob: string;
-  attribute iob of off: label is "true";
 begin
-
-  off: FD
-    port map  (
-      D => I,
-      Q => s,
-      C => C
-    );
 
   obuf: OBUF
     port map (
-      I => s,
+      I => I,
       O => PAD
   );
 
