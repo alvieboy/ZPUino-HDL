@@ -17,7 +17,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x03
+#define VERSION_LOW  0x05
 
 /* Commands for programmer */
 
@@ -211,7 +211,6 @@ void __attribute__((noreturn)) spi_copy()
 #ifdef VERBOSE_LOADER
 	printstring("Starting sketch\r\n");
 #endif
-//	UARTCTL &= ~(BIT(UARTEN));
 
 	__asm__("im %0\n"
 			"popsp\n"
@@ -229,13 +228,12 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	unsigned int count = SPICODESIZE >> 2; // 0x7000
 
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+	unsigned int sketchsize;
+	unsigned int sketchcrc;
 
 #ifdef VERBOSE_LOADER
-//	UARTCTL |= BIT(UARTEN);
 	printstring("Starting copy...\r\n");
- //   UARTCTL &= ~(BIT(UARTEN));
 #endif
-
 
 	spi_enable();
 
@@ -244,33 +242,61 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spiwrite(SPIOFFSET >> 8);
 	spiwrite(SPIOFFSET);
 	spiwrite(0);
-	while (count--) {
-		spiwrite(0);
-		spiwrite(0);
-		spiwrite(0);
-		spiwrite(0);
 
+	// Read size.
+
+	spiwrite(0);
+	spiwrite(0);
+	sketchsize = spiread() & 0xffff;
+
+	spiwrite(0);
+	spiwrite(0);
+	sketchcrc= spiread() & 0xffff;
+
+	if (sketchsize>SPICODESIZE) {
+		printstring("Sketch too long");
+		while(1) {}
+	}
+
+	CRC16ACC=0xFFFF;
+
+	while (sketchsize--) {
+		spiwrite(0);
+		CRC16APP=spiread();
+		spiwrite(0);
+		CRC16APP=spiread();
+		spiwrite(0);
+		CRC16APP=spiread();
+		spiwrite(0);
+		CRC16APP=spiread();
 		*target++ = spiread();
 	}
 
-	// Need to reset stack also
 	spi_disable();
+
+	if (sketchcrc != CRC16ACC) {
+		printstring("CRC error, please reset\r\n");
+		printhex(sketchcrc);
+		printstring(" ");
+		printhex(CRC16ACC);
+		printstring("\r\n");
+		while(1) {};
+	}
+
 #ifdef VERBOSE_LOADER
-//	UARTCTL |= BIT(UARTEN);
 	printstring("Loaded, starting...\r\n");
-//	UARTCTL &= ~(BIT(UARTEN));
 #endif
 	SPICTL &= ~(BIT(SPIEN));
 #ifdef __ZPUINO_S3E_EVAL__
 	digitalWriteS<FPGA_LED_0, LOW>::apply();
 #endif
 	// Reset settings
-    /*
-	GPIOTRIS(0) = 0xffffffff;
-	GPIOTRIS(1) = 0xffffffff;
-	GPIOTRIS(2) = 0xffffffff;
-	GPIOTRIS(3) = 0xffffffff;
-    */
+	/*
+	 GPIOTRIS(0) = 0xffffffff;
+	 GPIOTRIS(1) = 0xffffffff;
+	 GPIOTRIS(2) = 0xffffffff;
+	 GPIOTRIS(3) = 0xffffffff;
+	 */
 	ivector = (void (*)(void))0x100C;
 
 	__asm__("im %0\n"

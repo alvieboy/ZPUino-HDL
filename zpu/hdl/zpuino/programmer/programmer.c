@@ -33,6 +33,8 @@ static int serial_reset = 0;
 
 unsigned short version;
 
+extern void crc16_update(uint16_t *crc, uint8_t data);
+
 unsigned short get_programmer_version()
 {
 	return version;
@@ -463,12 +465,22 @@ int main(int argc, char **argv)
 
 		fstat(fin,&st);
 
-		size_bytes = ALIGN(st.st_size,flash->pagesize);
+		unsigned binsize = st.st_size;
+
+		if (version>0x0104 && user_offset==-1) {
+			// Add placeholders for size and CRC
+			binsize += sizeof(uint32_t);
+		}
+
+		size_bytes = ALIGN(binsize,flash->pagesize);
 		pages = size_bytes/flash->pagesize;
+
+		unsigned int aligned_toword_size = ALIGN(st.st_size,sizeof(uint32_t));
+		unsigned int size_words = aligned_toword_size/sizeof(uint32_t);
 
 		if (verbose>0)
 			printf("Need to program %u %u bytes (%d pages)\n",
-				   (unsigned)st.st_size,
+				   (unsigned) binsize,
 				   size_bytes,
 				   pages);
 
@@ -477,19 +489,44 @@ int main(int argc, char **argv)
 			printf("Ignoring space limit for programming\n");
 
 		} else {
-			if (st.st_size > codesize) {
+			if (aligned_toword_size > codesize) {
 				fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
-						(unsigned)st.st_size,codesize);
+						(unsigned)aligned_toword_size,codesize);
 				conn_close(conn);
 				close(fin);
 				return -1;
 			}
 		}
 
-		buf = malloc(size_bytes);
-		read(fin,buf,size_bytes);
+		buf = calloc(1,size_bytes);
+
+		unsigned char *bufp = buf;
+
+		if (version>0x0104 && user_offset==-1) {
+			// Move pointer up, so we can write sketchsize and CRC
+			bufp += sizeof(uint32_t);
+		}
+
+		read(fin,bufp,st.st_size);
 		close(fin);
+
+		// Compute checksum if needed
+
+		if (version>0x0104 && user_offset==-1) {
+			uint16_t *sketchsize = (uint16_t*)buf;
+			uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
+			uint16_t tcrc = 0xffff;
+			uint16_t i;
+
+			*sketchsize = cpu_to_le16(size_words);
+			// Go, compute cksum
+			for (i=0;i<aligned_toword_size;i++) {
+				crc16_update(&tcrc,bufp[i]);
+			}
+			*crc = cpu_to_le16(tcrc);
+		}
 	}
+
 	// compute sector erase
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
