@@ -6,13 +6,13 @@
 #include <stdlib.h>
 
 
-static int atmel_wait_ready(int fd)
+static int atmel_wait_ready(connection_t conn)
 {
 	buffer_t *b;
 	int status;
 
 	if (get_programmer_version() > 0x0102) {
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 		if (NULL==b)
 			return -1;
@@ -31,7 +31,7 @@ static int atmel_wait_ready(int fd)
 			wbuf[3] = 1; // Rx bytes
 			wbuf[4] = 0x57;
 
-			b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+			b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 			if (NULL==b)
 				return -1;
 
@@ -43,7 +43,7 @@ static int atmel_wait_ready(int fd)
     return status;
 }
 
-static int atmel_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
+static int atmel_erase_sector(flash_info_t *flash, connection_t conn, unsigned int sector)
 {
 	buffer_t *b;
 	unsigned char wbuf[8];
@@ -60,30 +60,30 @@ static int atmel_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
 	wbuf[6] = (sector>>8) & 0xff;
 	wbuf[7] = (sector) & 0xff;
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 	if (NULL==b)
 		return -1;
 
 	buffer_free(b);
 
-	if (atmel_wait_ready(fd)<0)
+	if (atmel_wait_ready(conn)<0)
 		return -1;
 
 	return 0;
 }
 
-static int atmel_enable_writes(flash_info_t *flash, int fd)
+static int atmel_enable_writes(flash_info_t *flash, connection_t conn)
 {
 	return 0;
 }
 
-static buffer_t *atmel_read_page(flash_info_t *flash, int fd, unsigned int page)
+static buffer_t *atmel_read_page(flash_info_t *flash, connection_t conn, unsigned int page)
 {
 	unsigned int addr = page << 9;//* flash->pagesize;
 	unsigned char wbuf[9];
 	buffer_t *b;
 
-	atmel_wait_ready(fd);
+	atmel_wait_ready(conn);
 
 	wbuf[0] = 0;
 	wbuf[1] = 5; // Tx bytes
@@ -97,7 +97,7 @@ static buffer_t *atmel_read_page(flash_info_t *flash, int fd, unsigned int page)
 	wbuf[7] = (addr) & 0xff;
 	wbuf[8] = 0; /* Dummy */
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot read page\n");
@@ -106,7 +106,7 @@ static buffer_t *atmel_read_page(flash_info_t *flash, int fd, unsigned int page)
 	return b;
 }
 
-static int atmel_program_page(flash_info_t *flash, int fd, unsigned int page, const unsigned char *buf,size_t size)
+static int atmel_program_page(flash_info_t *flash, connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char *wbuf;
 	unsigned int addr = page << 9;//* flash->pagesize;
@@ -128,7 +128,7 @@ static int atmel_program_page(flash_info_t *flash, int fd, unsigned int page, co
 
 	memcpy(&wbuf[8], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 8 + flash->pagesize, 5000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 8 + flash->pagesize, 5000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot write page buffer!\n");
@@ -145,7 +145,7 @@ static int atmel_program_page(flash_info_t *flash, int fd, unsigned int page, co
 
 	//memcpy(&wbuf[8], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 8, 5000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 8, 5000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot program page\n");
@@ -156,7 +156,7 @@ static int atmel_program_page(flash_info_t *flash, int fd, unsigned int page, co
 	buffer_free(b);
 	free(wbuf);
 
-	if (atmel_wait_ready(fd)<0)
+	if (atmel_wait_ready(conn)<0)
 		return -1;
 
 	return 0;

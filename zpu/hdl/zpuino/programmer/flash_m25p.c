@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static int m25p_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
+static int m25p_erase_sector(flash_info_t *flash, connection_t conn, unsigned int sector)
 {
 	buffer_t *b;
 	unsigned char wbuf[8];
@@ -19,13 +19,13 @@ static int m25p_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
 	wbuf[6] = (sector>>8) & 0xff;
 	wbuf[7] = (sector) & 0xff;
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 	if (NULL==b)
 		return -1;
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
 
 	if (NULL==b)
 		return -1;
@@ -35,7 +35,7 @@ static int m25p_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
 	return 0;
 }
 
-static int m25p_enable_writes(flash_info_t *flash, int fd)
+static int m25p_enable_writes(flash_info_t *flash, connection_t conn)
 {
 	buffer_t *b;
 	unsigned char wbuf[5];
@@ -46,7 +46,7 @@ static int m25p_enable_writes(flash_info_t *flash, int fd)
 	wbuf[3] = 0; // Rx bytes
 	wbuf[4] = 0x06; // Enable Write
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b)
 		return -1;
@@ -56,7 +56,7 @@ static int m25p_enable_writes(flash_info_t *flash, int fd)
 	return 0;
 }
 
-static buffer_t *m25p_read_page(flash_info_t *flash, int fd, unsigned int page)
+static buffer_t *m25p_read_page(flash_info_t *flash, connection_t conn, unsigned int page)
 {
 	unsigned int addr = page * 256;
 	unsigned char wbuf[9];
@@ -74,7 +74,7 @@ static buffer_t *m25p_read_page(flash_info_t *flash, int fd, unsigned int page)
 	wbuf[7] = (addr) & 0xff;
 	wbuf[8] = 0; /* Dummy */
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot read page\n");
@@ -83,7 +83,7 @@ static buffer_t *m25p_read_page(flash_info_t *flash, int fd, unsigned int page)
 	return b;
 }
 
-static int m25p_program_page(flash_info_t *flash, int fd, unsigned int page, const unsigned char *buf,size_t size)
+static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char wbuf[256 + 8];
 	unsigned int addr = page * 256;
@@ -104,7 +104,7 @@ static int m25p_program_page(flash_info_t *flash, int fd, unsigned int page, con
 
 	memcpy(&wbuf[8], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 5000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 5000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot program page\n");
@@ -113,7 +113,7 @@ static int m25p_program_page(flash_info_t *flash, int fd, unsigned int page, con
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 	if (NULL==b)
 		return -1;

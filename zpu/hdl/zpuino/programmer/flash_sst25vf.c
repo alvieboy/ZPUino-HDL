@@ -21,7 +21,7 @@ static int sst25vf_get_status(int fd)
 	return status;
 }
 */
-static int sst25vf_erase_sector(flash_info_t *flash, int fd, unsigned int sector)
+static int sst25vf_erase_sector(flash_info_t *flash, connection_t conn, unsigned int sector)
 {
 	buffer_t *b;
 	unsigned char wbuf[8];
@@ -38,20 +38,20 @@ static int sst25vf_erase_sector(flash_info_t *flash, int fd, unsigned int sector
 	wbuf[6] = (sector>>8) & 0xff;
 	wbuf[7] = (sector) & 0xff;
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
 
 	if (NULL==b)
 		return -1;
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 	if (NULL==b)
 		return -1;
 
 	buffer_free(b);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 30000);
 
 	if (NULL==b)
 		return -1;
@@ -71,7 +71,7 @@ static int sst25vf_erase_sector(flash_info_t *flash, int fd, unsigned int sector
 #define SST_STATUS_AAI  64
 #define SST_STATUS_BPL  128
 
-static int sst25vf_enable_writes(flash_info_t *flash, int fd)
+static int sst25vf_enable_writes(flash_info_t *flash, connection_t conn)
 {
 	buffer_t *b;
 	unsigned char wbuf[6];
@@ -80,7 +80,7 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 
 	// Read status first
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 	if (NULL==b)
 		return -1;
@@ -113,7 +113,7 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 		wbuf[2] = 0;
 		wbuf[3] = 0; // Rx bytes
 		wbuf[4] = 0x50; // Enable Write status register
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 5, 1000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 5, 1000);
 		if (NULL==b)  {
 			fprintf(stderr,"Cannot write enable status register ??\n");
 			return -1;
@@ -128,14 +128,14 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 		wbuf[4] = 0x01; // Write status register
 		wbuf[5] = newstatus;
 		//printf("Sending new status %02x\n",newstatus);
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 6, 1000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 6, 1000);
 		if (NULL==b)  {
 			fprintf(stderr,"Cannot write status register ??\n");
 			return -1;
 		}
 		buffer_free(b);
 
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 		if (NULL==b)
 			return -1;
@@ -154,7 +154,7 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 		wbuf[3] = 0; // Rx bytes
 		wbuf[4] = 0x06; // Enable Write
 
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 5, 1000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, 5, 1000);
 
 		if (NULL==b) {
 			fprintf(stderr,"Cannot enable write???\n");
@@ -165,7 +165,7 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 
 	// Ensure WEL is up
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_WAITREADY, NULL, 0, 1000);
 
 	if (NULL==b)
 		return -1;
@@ -177,7 +177,7 @@ static int sst25vf_enable_writes(flash_info_t *flash, int fd)
 	return -1;
 }
 
-static buffer_t *sst25vf_read_page(flash_info_t *flash, int fd, unsigned int page)
+static buffer_t *sst25vf_read_page(flash_info_t *flash, connection_t conn, unsigned int page)
 {
 	unsigned int addr = page * 256;
 	unsigned char wbuf[9];
@@ -195,7 +195,7 @@ static buffer_t *sst25vf_read_page(flash_info_t *flash, int fd, unsigned int pag
 	wbuf[7] = (addr) & 0xff;
 	wbuf[8] = 0; /* Dummy */
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, sizeof(wbuf), 1000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot read page\n");
@@ -207,7 +207,7 @@ static buffer_t *sst25vf_read_page(flash_info_t *flash, int fd, unsigned int pag
 extern unsigned short version;
 
 
-static int sst25vf_program_page_aai(int fd, unsigned int page, const unsigned char *buf,size_t size)
+static int sst25vf_program_page_aai(connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char wbuf[256 + 5];
 	unsigned int addr = page * 256;
@@ -225,7 +225,7 @@ static int sst25vf_program_page_aai(int fd, unsigned int page, const unsigned ch
 
 	memcpy( &wbuf[5], buf, size);
 
-	b = sendreceivecommand(fd, BOOTLOADER_CMD_SSTAAIPROGRAM, wbuf, sizeof(wbuf), 5000);
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_SSTAAIPROGRAM, wbuf, sizeof(wbuf), 5000);
 
 	if (NULL==b) {
 		fprintf(stderr,"Cannot program page\n");
@@ -237,7 +237,7 @@ static int sst25vf_program_page_aai(int fd, unsigned int page, const unsigned ch
 	return 0;
 }
 
-static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, const unsigned char *buf,size_t size)
+static int sst25vf_program_page(flash_info_t *flash, connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char wbuf[256 + 8];
 	unsigned int addr = page * 256;
@@ -250,7 +250,7 @@ static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, 
 
 
 	if (version>=0x0102)
-		return sst25vf_program_page_aai(fd,page,buf,size);
+		return sst25vf_program_page_aai(conn,page,buf,size);
 
 	wbuf[0] = 0x00;
 	wbuf[1] = psize;
@@ -267,7 +267,7 @@ static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, 
 
 		memcpy(&wbuf[ 4 + psize - 2 ], buf, 2);
 
-		b = sendreceivecommand(fd, BOOTLOADER_CMD_RAWREADWRITE, wbuf, psize + 4, 5000);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_RAWREADWRITE, wbuf, psize + 4, 5000);
 
 		if (NULL==b) {
 			fprintf(stderr,"Cannot program page\n");
@@ -297,7 +297,7 @@ static int sst25vf_program_page(flash_info_t *flash, int fd, unsigned int page, 
 	wbuf[3] =0 ;
 	wbuf[4] =0x4 ;
 
-	b = sendreceivecommand(fd,BOOTLOADER_CMD_RAWREADWRITE,wbuf,5,1000);
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_RAWREADWRITE,wbuf,5,1000);
 	if (NULL==b)
 		return -1;
 	buffer_free(b);

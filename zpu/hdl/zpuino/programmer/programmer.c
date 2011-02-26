@@ -43,8 +43,10 @@ unsigned short get_programmer_version()
 
 int parse_arguments(int argc,char **const argv)
 {
+	int p;
+
 	while (1) {
-		switch (getopt(argc,argv,"RDvb:d:ro:ls:")) {
+		switch ((p=getopt(argc,argv,"RDvb:d:ro:ls:"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -300,9 +302,9 @@ void dump_buffer(unsigned char *start,size_t size)
 	printf("\n");
 }
 
-int read_flash(int fd, flash_info_t *flash, size_t page)
+int read_flash(connection_t conn, flash_info_t *flash, size_t page)
 {
-	buffer_t *b = flash->driver->read_page(flash,fd,page);
+	buffer_t *b = flash->driver->read_page(flash,conn,page);
 
 	if (verbose>0)
 		printf("Reading page nr %d (offset 0x%08x)\n",page,page*flash->pagesize);
@@ -336,6 +338,9 @@ int main(int argc, char **argv)
 	if (parse_arguments(argc,argv)<0) {
 		return help(argv[0]);
 	}
+
+	setvbuf(stderr,0,_IONBF,0);
+	setvbuf(stdout,0,_IONBF,0);
 
 	if ((NULL==binfile&&only_read==0) || NULL==serialport) {
 		return help(argv[0]);
@@ -507,6 +512,10 @@ int main(int argc, char **argv)
 			bufp += sizeof(uint32_t);
 		}
 
+		if(verbose>2) {
+			fprintf(stderr,"Reading data, %lu bytes\n",st.st_size);
+		}
+
 		read(fin,bufp,st.st_size);
 		close(fin);
 
@@ -516,12 +525,22 @@ int main(int argc, char **argv)
 			uint16_t *sketchsize = (uint16_t*)buf;
 			uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
 			uint16_t tcrc = 0xffff;
-			uint16_t i;
+			unsigned i;
+
+			if(verbose>2) {
+				fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
+			}
 
 			*sketchsize = cpu_to_le16(size_words);
 			// Go, compute cksum
 			for (i=0;i<aligned_toword_size;i++) {
 				crc16_update(&tcrc,bufp[i]);
+				if(verbose>3 && (i%32)==0) {
+					fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
+				}
+			}
+			if(verbose>2) {
+				fprintf(stderr,"Final CRC: %04x\n",tcrc);
 			}
 			*crc = cpu_to_le16(tcrc);
 		}
@@ -531,7 +550,9 @@ int main(int argc, char **argv)
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
 	unsigned int saddr = spioffset_sector;
-
+	if(verbose>2) {
+		fprintf(stderr,"Entering program mode\n");
+	}
 	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
 	if (b) {
 		buffer_free(b);
@@ -652,7 +673,15 @@ int main(int argc, char **argv)
 	gettimeofday(&end,NULL);
 #ifdef __linux__
 	timersub(&end,&start,&delta);
+#else
+	delta.tv_sec = end.tv_sec - start.tv_sec;
+	delta.tv_usec = end.tv_usec - start.tv_usec;
+	if (delta.tv_usec<0) {
+		delta.tv_sec-=1;
+		delta.tv_usec += 1000000;
+	}
 #endif
+
 	printf("Programming completed successfully in %.02f seconds.\n", (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
 
 	return 0;
