@@ -1,3 +1,25 @@
+/*
+ * ZPUino programmer
+ * Copyright (C) 2010-2011 Alvaro Lopes (alvieboy@alvie.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ NOTE: this code heavily borrows from RXTX 'termios.c' code. A special thanks to them.
+ */
+
 #ifdef __WIN32__
 
 #include "sysdeps.h"
@@ -66,25 +88,12 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	port->dcb.XoffLim         = 0;
 	port->dcb.fParity = TRUE;
 
-	//if ( EV_BREAK|EV_CTS|EV_DSR|EV_ERR|EV_RING|( EV_RLSD & EV_RXFLAG ) )
-	  //  dcb.EvtChar = '\n';
-	//	else
 	port->dcb.EvtChar = '\0';
 
 	if ( !SetCommState( port->hcomm, &port->dcb ) )
 	{
 		return -1;
 	}
-    /*
-	if ( !SetCommTimeouts( hCommPort, &Timeout ) )
-	{
-		YACK();
-		report( "SetCommTimeouts\n" );
-		return( -1 );
-	}
-	LEAVE( "FillDCB" );
-	return ( TRUE ) ;
-	*/
 
 	memset( &port->rol, 0, sizeof( OVERLAPPED ) );
 	memset( &port->wol, 0, sizeof( OVERLAPPED ) );
@@ -180,115 +189,7 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 		}
 	}
 
-	//SetCommMask( index->hComm, index->event_flag );
-	/* ClearErrors( index, &Stat ); */
-	//index->event_flag = old_flag;
-	//index->tx_happened = 1;
-	//LEAVE( "serial_write" );
 	return nBytes;
-
-}
-
-buffer_t* do_read(connection_t conn)
-{
-	//int err;
-	unsigned char tmpbuf[8192];
-    unsigned char *tmpptr2;
-	buffer_t *ret;
-	unsigned long nBytes,ErrCode = 0;
-	COMSTAT Stat;
-
-	ClearCommError( conn->hcomm, &ErrCode, &Stat );
-
-	debug("Bytes in queue: %lu\n",Stat.cbInQue);
-
-
-	conn->rol.Offset = conn->rol.OffsetHigh = 0;
-	ResetEvent( conn->rol.hEvent );
-
-	tmpptr2=tmpbuf;
-
-	ReadFile( conn->hcomm, tmpptr2, Stat.cbInQue, &nBytes, &conn->rol );
-
-	debug("Read %lu\n",nBytes);
-
-	//nBytes = tmpptr2-tmpbuf;
-
-	if (verbose>2) {
-		int i;
-		printf("Rx:");
-		for (i=0; i<nBytes; i++) {
-			printf(" 0x%02x",tmpbuf[i]);
-		}
-		printf("\n");
-	}
-
-	/*
-	if ( !err )
-	{
-		switch ( GetLastError() )
-		{
-		case ERROR_BROKEN_PIPE:
-			report( "ERROR_BROKEN_PIPE\n ");
-			nBytes = 0;
-			break;
-		case ERROR_MORE_DATA:
-			report( "ERROR_MORE_DATA\n" );
-			break;
-		case ERROR_IO_PENDING:
-			while( ! GetOverlappedResult(
-										 index->hComm,
-										 &index->rol,
-										 &nBytes,
-										 TRUE ) )
-			{
-				if( GetLastError() !=
-				   ERROR_IO_INCOMPLETE )
-				{
-					ClearErrors(
-								index,
-								&stat);
-					return( total );
-				}
-			}
-			size -= nBytes;
-			total += nBytes;
-			if (size > 0) {
-				now = GetTickCount();
-				sprintf(message, "size > 0: spent=%ld have=%d\n", now-start, index->ttyset->c_cc[VTIME]*100);
-				report( message );
-				if ( index->ttyset->c_cc[VTIME] && now-start >= (index->ttyset->c_cc[VTIME]*100)) {
-					report( "TO " );
-					return total;
-				}
-			}
-			sprintf(message, "end nBytes=%ld] ", nBytes);
-			report( message );
-			report( "ERROR_IO_PENDING\n" );
-			break;
-		default:
-			YACK();
-			return -1;
-		}
-	}
-	else 
-	{    */
-		/*
-		 usleep(1000);
-		 */
-	//clear_errors(conn);
-
-	ret = hdlc_process(tmpbuf,nBytes);
-	debug("Process: returns %p\n",ret);
-	if (ret) {
-		if (ret->size<1) {
-			buffer_free(ret);
-			return NULL;
-		}
-		return ret;
-	}
-    return NULL;
-	
 }
 
 unsigned int get_bytes_in_rxqueue(connection_t conn)
