@@ -47,9 +47,6 @@ use work.zpu_config.all;
 use work.zpuinopkg.all;
 
 entity zpuino_sigmadelta is
-  generic (
-    BITS: integer := 16
-  );
 	port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -70,21 +67,23 @@ end entity zpuino_sigmadelta;
 
 architecture behave of zpuino_sigmadelta is
 
-signal delta_adder1: unsigned(BITS+1 downto 0);
-signal sigma_adder1: unsigned(BITS+1 downto 0);
-signal sigma_latch1: unsigned(BITS+1 downto 0);
-signal delta_b1:     unsigned(BITS+1 downto 0);
+signal delta_adder1: unsigned(17 downto 0);
+signal sigma_adder1: unsigned(17 downto 0);
+signal sigma_latch1: unsigned(17 downto 0);
+signal delta_b1:     unsigned(17 downto 0);
 
-signal delta_adder2: unsigned(BITS+1 downto 0);
-signal sigma_adder2: unsigned(BITS+1 downto 0);
-signal sigma_latch2: unsigned(BITS+1 downto 0);
-signal delta_b2:     unsigned(BITS+1 downto 0);
+signal delta_adder2: unsigned(17 downto 0);
+signal sigma_adder2: unsigned(17 downto 0);
+signal sigma_latch2: unsigned(17 downto 0);
+signal delta_b2:     unsigned(17 downto 0);
 
-signal dat_q1: unsigned(BITS+1 downto 0);
-signal dat_q2: unsigned(BITS+1 downto 0);
+signal dat_q1: unsigned(17 downto 0);
+signal dat_q2: unsigned(17 downto 0);
 
 signal sd_en_q: std_logic_vector(1 downto 0);
 signal sdout: std_logic_vector(1 downto 0);
+
+signal le_q: std_logic;
 
 begin
 
@@ -93,13 +92,14 @@ begin
   busy <= '0';
 
 process(clk)
+  variable in_le1,in_le2: std_logic_vector(15 downto 0);
 begin
   if rising_edge(clk) then
     if areset='1' then
       dat_q1 <= (others =>'0');
-      dat_q1(BITS-1) <= '1';
+      dat_q1(15) <= '1';
       dat_q2 <= (others =>'0');
-      dat_q2(BITS-1) <= '1';
+      dat_q2(15) <= '1';
       sd_en_q <= (others =>'0');
     else 
 	    if we='1' then
@@ -107,10 +107,22 @@ begin
           when "0" =>
             sd_en_q(0) <= write(0);
             sd_en_q(1) <= write(1);
+            le_q <= write(2);
           when "1" =>
-            --report "SigmaDelta set: " & hstr(write(BITS-1 downto 0)) severity note;
-  		      dat_q1(BITS-1 downto 0) <= unsigned(write(BITS-1 downto 0));
-            dat_q2(BITS-1 downto 0) <= unsigned(write(BITS+BITS-1 downto BITS));
+            --report "SigmaDelta set: " & hstr(write(15 downto 0)) severity note;
+            case le_q is
+              when '0' =>
+    		        dat_q1(15 downto 0) <= unsigned(write(15 downto 0));
+                dat_q2(15 downto 0) <= unsigned(write(16+15 downto 16));
+              when '1' =>
+                in_le1(15 downto 8) := write(7 downto 0);
+                in_le1(7 downto 0) := write(15 downto 8);
+                in_le2(15 downto 8) := write(23 downto 16);
+                in_le2(7 downto 0) := write(31 downto 24);
+                dat_q1(15 downto 0) <= unsigned(in_le1);
+                dat_q2(15 downto 0) <= unsigned(in_le2);
+              when others =>
+            end case;
           when others =>
         end case;
       end if;
@@ -120,16 +132,16 @@ end process;
 
 process(sigma_latch1)
 begin
-  delta_b1(BITS+1) <= sigma_latch1(BITS+1);
-  delta_b1(BITS) <= sigma_latch1(BITS+1);
-  delta_b1(BITS-1 downto 0) <= (others => '0');
+  delta_b1(17) <= sigma_latch1(17);
+  delta_b1(16) <= sigma_latch1(17);
+  delta_b1(15 downto 0) <= (others => '0');
 end process;
 
 process(sigma_latch2)
 begin
-  delta_b2(BITS+1) <= sigma_latch2(BITS+1);
-  delta_b2(BITS) <= sigma_latch2(BITS+1);
-  delta_b2(BITS-1 downto 0) <= (others => '0');
+  delta_b2(17) <= sigma_latch2(17);
+  delta_b2(16) <= sigma_latch2(17);
+  delta_b2(15 downto 0) <= (others => '0');
 end process;
 
 process(dat_q1, delta_b1)
@@ -157,15 +169,15 @@ begin
   if rising_edge(clk) then
 	  if areset='1' then
       sigma_latch1 <= (others => '0');
-		  sigma_latch1(BITS+1) <= '1';
+		  sigma_latch1(17) <= '1';
 		  sdout <= (others=>'0');
       sigma_latch2 <= (others => '0');
-		  sigma_latch2(BITS+1) <= '1';
+		  sigma_latch2(17) <= '1';
 	  else
 		  sigma_latch1 <= sigma_adder1;
       sigma_latch2 <= sigma_adder2;
-		  sdout(0) <= sigma_latch1(BITS+1);
-      sdout(1) <= sigma_latch2(BITS+1);
+		  sdout(0) <= sigma_latch1(17);
+      sdout(1) <= sigma_latch2(17);
   	end if;
   end if;
 end process;
