@@ -419,7 +419,8 @@ begin
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
     busy      => open,
-    interrupt => open
+    interrupt => open,
+    sync_in   => timers_comp
   );
 
   crc16_inst: zpuino_crc16

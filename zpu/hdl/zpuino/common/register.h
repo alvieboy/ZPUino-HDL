@@ -94,7 +94,9 @@
 #define SPITS1   9
 
 /* Sigma-Delta bits */
-#define SDENA    0 /* Sigma-delta enable */
+#define SDENA0    0 /* Sigma-delta enable */
+#define SDENA1    1
+#define SDLE      2 /* Little-endian */
 
 /* Baud rate computation */
 
