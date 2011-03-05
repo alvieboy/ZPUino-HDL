@@ -364,7 +364,7 @@ begin
   end process;
 
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read)
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read,io_busy)
     variable spOffset: unsigned(4 downto 0);
   begin
 
