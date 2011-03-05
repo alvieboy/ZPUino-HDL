@@ -55,6 +55,7 @@ entity zpuino_sigmadelta is
     address:  in std_logic_vector(0 downto 0);
     we:       in std_logic;
     re:       in std_logic;
+    sync_in:  in std_logic;
 
     -- Connection to GPIO pin
     spp_data: out std_logic_vector(1 downto 0);
@@ -80,10 +81,15 @@ signal delta_b2:     unsigned(17 downto 0);
 signal dat_q1: unsigned(17 downto 0);
 signal dat_q2: unsigned(17 downto 0);
 
+signal sync_dat_q1: unsigned(17 downto 0);
+signal sync_dat_q2: unsigned(17 downto 0);
+
 signal sd_en_q: std_logic_vector(1 downto 0);
 signal sdout: std_logic_vector(1 downto 0);
 
 signal le_q: std_logic;
+signal do_sync: std_logic;
+signal extsync_q: std_logic;
 
 begin
 
@@ -108,17 +114,20 @@ begin
             sd_en_q(0) <= write(0);
             sd_en_q(1) <= write(1);
             le_q <= write(2);
+            extsync_q <= write(3);
           when "1" =>
             --report "SigmaDelta set: " & hstr(write(15 downto 0)) severity note;
             case le_q is
               when '0' =>
     		        dat_q1(15 downto 0) <= unsigned(write(15 downto 0));
-                dat_q2(15 downto 0) <= unsigned(write(16+15 downto 16));
+                dat_q2(15 downto 0) <= unsigned(write(31 downto 16));
               when '1' =>
                 in_le1(15 downto 8) := write(7 downto 0);
                 in_le1(7 downto 0) := write(15 downto 8);
+
                 in_le2(15 downto 8) := write(23 downto 16);
                 in_le2(7 downto 0) := write(31 downto 24);
+
                 dat_q1(15 downto 0) <= unsigned(in_le1);
                 dat_q2(15 downto 0) <= unsigned(in_le2);
               when others =>
@@ -126,6 +135,25 @@ begin
           when others =>
         end case;
       end if;
+    end if;
+  end if;
+end process;
+
+process(extsync_q,sync_in)
+begin
+  if extsync_q='1' then
+    do_sync <= sync_in;
+  else
+    do_sync <='1';
+  end if;
+end process;
+
+process(clk)
+begin
+  if rising_edge(clk) then
+    if do_sync='1' then
+      sync_dat_q1 <= dat_q1;
+      sync_dat_q2 <= dat_q2;
     end if;
   end if;
 end process;
@@ -144,14 +172,14 @@ begin
   delta_b2(15 downto 0) <= (others => '0');
 end process;
 
-process(dat_q1, delta_b1)
+process(sync_dat_q1, delta_b1)
 begin
-	delta_adder1 <= dat_q1 + delta_b1;
+  delta_adder1 <= sync_dat_q1 + delta_b1;
 end process;
 
-process(dat_q2, delta_b2)
+process(sync_dat_q2, delta_b2)
 begin
-	delta_adder2 <= dat_q2 + delta_b2;
+  delta_adder2 <= sync_dat_q2 + delta_b2;
 end process;
 
 process(delta_adder1,sigma_latch1)
