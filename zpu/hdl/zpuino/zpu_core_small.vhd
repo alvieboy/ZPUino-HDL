@@ -91,6 +91,7 @@ signal io_we: std_logic;
 -- state machine.
 type State_Type is
 (
+State_Start,
 State_Fetch,
 State_WriteIODone,
 State_WaitIO,
@@ -129,6 +130,7 @@ State_Mult5
 type DecodedOpcodeType is
 (
 Decoded_Nop,
+Decoded_Idle,
 Decoded_Im,
 Decoded_LoadSP,
 Decoded_Dup,
@@ -167,11 +169,14 @@ signal sampledOpcode: std_logic_vector(OpCode_Size-1 downto 0);
 signal opcode: std_logic_vector(OpCode_Size-1 downto 0);
 
 signal decodedOpcode : DecodedOpcodeType;
+signal i_decodedOpcode : DecodedOpcodeType;
 signal sampledDecodedOpcode : DecodedOpcodeType;
 
+signal pc:         unsigned(maxAddrBit downto 0);
+signal pce:        unsigned(maxAddrBit downto 0);
+signal pcnext:     unsigned(maxAddrBit downto 0);
+
 type zpuregs is record
-  pc:         unsigned(maxAddrBit downto 0);
-  pcdly:      unsigned(maxAddrBit downto 0);
   sp:         unsigned(maxAddrBit downto minAddrBit);
   topOfStack: unsigned(wordSize-1 downto 0);
   idim:       std_logic;
@@ -223,12 +228,13 @@ begin
   return r;
 end pc_to_memaddr;
 
--- Multiplication stuff.
+-- Decoder control
 
-signal mult0: unsigned(wordSize-1 downto 0);
-signal mult1: unsigned(wordSize-1 downto 0);
-signal mult2: unsigned(wordSize-1 downto 0);
-signal mult3: unsigned(wordSize-1 downto 0);
+signal decode_wait: std_logic;
+signal decode_jump: std_logic;
+signal decode_valid_q: std_logic;
+signal decode_valid_dly_q: std_logic;
+signal jump_address: unsigned(maxAddrBit downto 0);
 
 begin
 
@@ -283,12 +289,12 @@ begin
   memBRead <= unsigned(memBRead_stdlogic);
   wb_we_o <= io_we;
 
-  tOpcode_sel <= to_integer(r.pc(minAddrBit-1 downto 0));
+  tOpcode_sel <= to_integer(pc(minAddrBit-1 downto 0));
 
   -- move out calculation of the opcode to a seperate process
   -- to make things a bit easier to read
   decodeControl:
-  process(memBRead, r.pc, tOpcode_sel)
+  process(memBRead, tOpcode_sel)
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
   begin
@@ -415,8 +421,67 @@ begin
     end if;
   end process;
 
+  -- Decode unit
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,wb_dat_i,wb_ack_i,mult0,wb_inta_i)
+  -- Input: wait
+  -- Input: jump
+
+  process(pc,jump_address,decode_jump)
+  begin
+    if decode_jump='1' then
+      pcnext <= jump_address;
+    else
+      pcnext <= pc + 1;
+    end if;
+  end process;
+
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if rst='1' then
+        --decodedOpcode <= Decoded_Idle;
+        pc <= (others => '1');
+        decode_valid_q <= '0';
+      else
+
+
+        i_decodedOpcode <= sampledDecodedOpcode;
+
+        decode_valid_q<='1';
+        opcode <= sampledOpcode;
+
+        pce <= pc;
+
+        if decode_jump='1' then
+          decode_valid_q <= '0';
+        end if;
+
+        if decode_wait='0' then
+          pc <= pcnext;
+        else
+          decode_valid_q <= '0';
+        end if;
+        
+          
+        opcode <= sampledOpcode;
+
+        decode_valid_dly_q<=decode_valid_q;
+      end if;
+    end if;
+  end process;
+
+
+  process(i_decodedOpcode, decode_valid_q )
+  begin
+    if decode_valid_q='1' then
+      decodedOpcode <= i_decodedOpcode;
+    else
+      decodedOpcode <= Decoded_Idle;
+    end if;
+  end process;
+
+
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read,io_busy,pc)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -429,13 +494,14 @@ begin
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
 
-    wb_cyc_o <= '0';
-    wb_stb_o <= '0';
-    io_we <= '0';
+    decode_wait <= '0';
+    decode_jump <= '0';
+    jump_address <= (others => DontCareValue);
 
-    wb_adr_o <= (others => DontCareValue);
-    wb_dat_o <= (others => DontCareValue);
-
+    io_wr <= '0';
+    io_rd <= '0';
+    io_addr <= (others => DontCareValue);
+    io_write <= (others => DontCareValue);
     poppc_inst <= '0';
     begin_inst<='0';
 
@@ -447,22 +513,28 @@ begin
     spOffset(4):=not opcode(4);
     spOffset(3 downto 0) := unsigned(opcode(3 downto 0));
 
-    w.pcdly <= r.pc; -- Save PC for Neqbranch operations
+    --w.pcdly <= r.pc; -- Save PC for Neqbranch operations
 
-    if wb_inta_i='0' then
-          w.inInterrupt<='0';
+    if interrupt='0' then
+      w.inInterrupt<='0';
     end if;
 
     case r.state is
 
+      when State_Start =>
+        w.state <= State_Resync1;
+
       when State_Resync1 =>
         memAAddr <= r.sp;
-        memBAddr <= pc_to_memaddr(r.pc);
+        memBAddr <= pc_to_memaddr(pcnext);
+        decode_wait <= '1';
         w.state <= State_Resync2;
 
       when State_Resync2 =>
         memAAddr <= r.sp + 1;
-        w.pc <= r.pc + 1;
+        --w.pc <= r.pc + 1;
+        --decode_wait<='1';
+        decode_wait <= '1';
         w.topOfStack <= memARead;
         w.state <= State_Execute;
   
@@ -472,21 +544,21 @@ begin
         
         if wb_inta_i='0' then
           --if sampledDecodedOpcode/=Decoded_Neqbranch then
-            w.pc <= r.pc + 1;
+        --    w.pc <= r.pc + 1;
           --end if;
         else
-          if r.state=State_Decode and r.idim='0' and r.inInterrupt='0' then
-            if wb_inta_i='1' then
+          if r.idim='0' and r.inInterrupt='0' then
+           if interrupt='1' then
               doInterrupt<='1';
               w.inInterrupt<='1';
             else
              -- if sampledDecodedOpcode/=Decoded_Neqbranch then
-                w.pc <= r.pc + 1;
+          --      w.pc <= r.pc + 1;
              -- end if;
             end if;
           else
             --if sampledDecodedOpcode/=Decoded_Neqbranch then
-              w.pc <= r.pc + 1;
+          --    w.pc <= r.pc + 1;
             --end if;
           end if;
         end if;
@@ -501,13 +573,15 @@ begin
       when State_Execute =>
 
         w.idim <= '0';
-        memBAddr <= pc_to_memaddr(r.pc);
+        memBAddr <= pc_to_memaddr(pcnext);
 
         -- Trace
-        begin_inst<='1';
+        if decodedOpcode/=Decoded_Idle then
+          begin_inst<='1';
+        end if;
 
         trace_pc <= (others => '0');
-        trace_pc(maxAddrBit downto 0) <= std_logic_vector(r.pc - 1);
+        trace_pc(maxAddrBit downto 0) <= std_logic_vector(pce);
         trace_opcode <= opcode;
         trace_sp <= (others => '0');
         trace_sp(maxAddrBit downto minAddrBit) <= std_logic_vector(r.sp);
@@ -520,6 +594,8 @@ begin
 
             w.idim <= '1';
 
+            memAAddr <= r.sp + 1;
+
             if r.idim='0' then
                 w.sp <= r.sp - 1;
                 for i in wordSize-1 downto 7 loop
@@ -528,7 +604,6 @@ begin
 
                 w.topOfStack(6 downto 0) <= unsigned(opcode(6 downto 0));
                 -- Write back
-                memAAddr <= r.sp;
                 memAWriteEnable <= '1';
                 memAWrite <= r.topOfStack;
 
@@ -537,7 +612,7 @@ begin
                 w.topOfStack(6 downto 0) <= unsigned(opcode(6 downto 0));
               end if;
 
-              w.state <= State_Decode;
+              --w.state <= State_Decode;
 
           when Decoded_Nop =>
 
@@ -546,11 +621,12 @@ begin
             memAWriteMask <= (others => '1');
             memAWrite <= r.topOfStack;
 
-            w.state <= State_Decode;
+            --w.state <= State_Decode;
 
           when Decoded_PopPC =>
-
-            w.pc <= r.topOfStack(maxAddrBit downto 0);
+            decode_jump <= '1';
+            jump_address <= r.topOfStack(maxAddrBit downto 0);
+            --w.pc <= r.topOfStack(maxAddrBit downto 0);
             w.topOfStack <= memARead;
             w.sp <= r.sp + 1;
             poppc_inst <= '1';
@@ -560,14 +636,16 @@ begin
             memAWrite <= r.topOfStack;
             memAWriteEnable <= '1';
 
-            w.state <= State_Decode;
+            --w.state <= State_Decode;
 
           when Decoded_Interrupt =>
 
-            w.pc <= to_unsigned(32, maxAddrBit+1);
+            --w.pc <= to_unsigned(32, maxAddrBit+1);
+            jump_address <= to_unsigned(32, maxAddrBit+1);
+            decode_jump <= '1';
 
             w.topOfStack <= (others => '0');
-            w.topOfStack(maxAddrBit downto 0) <= r.pc;
+            w.topOfStack(maxAddrBit downto 0) <= pc;
             w.sp <= r.sp - 1;
 
             memBAddr <= (others => '0');
@@ -586,10 +664,14 @@ begin
             memAAddr <= r.sp;
             memAWrite <= r.topOfStack;
             w.topOfStack <= (others => '0');
-            w.topOfStack(maxAddrBit downto 0) <= r.pc;
+            w.topOfStack(maxAddrBit downto 0) <= pc;
 
-            w.pc <= (others => '0');
-            w.pc(9 downto 5) <= unsigned(opcode(4 downto 0));
+            --w.pc <= (others => '0');
+            --w.pc(9 downto 5) <= unsigned(opcode(4 downto 0));
+
+            decode_jump <= '1';
+            jump_address <= (others => '0');
+            jump_address(9 downto 5) <= unsigned(opcode(4 downto 0));
 
             memBAddr <= (others => '0');
             memBAddr(9 downto 5) <= unsigned(opcode(4 downto 0));
@@ -791,7 +873,11 @@ begin
 
             w.sp <= r.sp + 2;
             if memARead/=0 then
-              w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
+              --w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
+              decode_jump <= '1';
+              jump_address <= pce + r.topOfStack(maxAddrBit downto 0);
+--            else
+--              w.pc <= r.pc + 1;
             end if;
             w.state <= State_Resync1;
 
@@ -856,20 +942,9 @@ begin
             w.shiftValue <= memARead;
             w.sp <= r.sp + 1;
             w.state <= State_Ashiftleft;
-
-          when Decoded_Ashiftright =>
-
-            w.shiftAmount <= r.topOfStack(4 downto 0);
-            w.shiftValue <= memARead;
-            w.sp <= r.sp + 1;
-            w.state <= State_Ashiftright;
-
-          when Decoded_Mult =>
-            w.sp <= r.sp + 1;
-            w.multInA <= r.topOfStack;
-            w.multInB <= memAread;
-            w.state <= State_Mult1;
-
+          when Decoded_Idle =>
+            -- Restore idim!!!
+            --memBAddr <=
           when others =>
             w.break <= '1';
 
@@ -912,7 +987,7 @@ begin
 
         w.state <= State_Decode;
         memAAddr <= r.sp + 1;
-        memBAddr <= pc_to_memaddr(r.pc);
+        memBAddr <= pc_to_memaddr(pcnext);
 
       when State_Ashiftleft =>
         -- Can we interrupt ????
@@ -920,7 +995,7 @@ begin
           w.state <= State_Decode;
           w.topOfStack <= r.shiftValue;
           memAAddr <= r.sp + 1;
-          memBAddr <= pc_to_memaddr(r.pc);
+          memBAddr <= pc_to_memaddr(pcnext);
         else
           w.shiftValue(wordSize-1 downto 1) <= r.shiftValue(wordSize-2 downto 0);
           w.shiftValue(0) <= '0';
@@ -958,22 +1033,20 @@ begin
 
       when State_LoadSP =>
 
-        memBAddr <= pc_to_memaddr(r.pc);
+        memBAddr <= pc_to_memaddr(pcnext);
         -- We have now value to load.
         w.topOfStack <= memBRead;
         w.state <= State_Decode;
 
       when State_AddSP =>
 
-        memBAddr <= pc_to_memaddr(r.pc);
+        memBAddr <= pc_to_memaddr(pcnext);
         -- We have now value to load.
         w.topOfStack <= r.topOfStack + memARead;
         w.state <= State_Decode;
         
       when State_Load =>
-
-        memBAddr <= pc_to_memaddr(r.pc);
-        wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+        memBAddr <= pc_to_memaddr(pcnext);
 
         -- TODO: add wait here
         if r.topOfStack(maxAddrBitIncIO)='1' then
@@ -1001,20 +1074,12 @@ begin
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
         r.sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
-        r.pc <= (others => '0');
-        r.state <= State_Resync1;
+        r.state <= State_Start;
         r.idim <= '0';
         r.topOfStack <= (others => '0');
         r.break <= '0';
         r.inInterrupt<='1';
       else
-        if doInterrupt='1' then
-          decodedOpcode <= Decoded_Interrupt;
-          report "Interrupt!" severity note;
-        else
-          decodedOpcode <= sampledDecodedOpcode;
-        end if;
-        opcode <= sampledOpcode;
         r <= w;
         if w.break='1' then
           report "BREAK" severity failure;
