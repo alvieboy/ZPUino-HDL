@@ -180,6 +180,8 @@ signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
 signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 signal memErr: std_logic;
 
+constant minimal_implementation: boolean := true;
+
 subtype index is integer range 0 to 3;
 
 signal tOpcode_sel : index;
@@ -302,7 +304,9 @@ begin
     elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
 
       -- Emulated instructions implemented in hardware
-
+      if minimal_implementation then
+        sampledDecodedOpcode<=Decoded_Emulate;
+      else
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
         sampledDecodedOpcode<=Decoded_Neqbranch;
 
@@ -326,6 +330,7 @@ begin
 
       else
         sampledDecodedOpcode<=Decoded_Emulate;
+      end if;
       end if;
     elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
       if localspOffset=0 then
