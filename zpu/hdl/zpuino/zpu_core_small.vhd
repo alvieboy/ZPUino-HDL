@@ -596,7 +596,7 @@ begin
 
           when Decoded_Nop =>
 
-
+            memAAddr <= r.sp;
             memAWriteEnable <= '1';
             memAWriteMask <= (others => '1');
             memAWrite <= r.topOfStack;
@@ -615,7 +615,7 @@ begin
             memAWrite <= r.topOfStack;
             memAWriteEnable <= '1';
 
-            --w.state <= State_Decode;
+            w.state <= State_WaitSP;
 
           when Decoded_Interrupt =>
 
@@ -681,8 +681,8 @@ begin
 
             w.sp <= r.sp + 1;
             w.topOfStack <= r.topOfStack and memARead;
-
-            w.state <= State_Execute;
+            decode_freeze<='1';
+            w.state <= State_WaitSP;
 
           when Decoded_Eq =>
             w.sp <= r.sp + 1;
@@ -691,7 +691,9 @@ begin
             if memARead = r.topOfStack then
               w.topOfStack(0) <= '1';
             end if;
-            w.state <= State_Execute;
+
+            decode_freeze<='1';
+            w.state <= State_WaitSP;
 
           when Decoded_Ulessthan =>
             w.sp <= r.sp + 1;
@@ -707,7 +709,8 @@ begin
             w.sp <= r.sp + 1;
             w.topOfStack <= r.topOfStack or memARead;
 
-            w.state <= State_Execute;
+            decode_freeze<='1';
+            w.state <= State_WaitSP;
 
           when Decoded_Not =>
 
@@ -752,6 +755,8 @@ begin
           when Decoded_AddSP =>
 
             memAAddr <= r.sp + spOffset;
+            decode_freeze <= '1';
+
             w.state <= State_AddSP;
 
           when Decoded_Shift =>
@@ -770,14 +775,18 @@ begin
             memAWrite <= r.topOfStack;
             w.topOfStack <= memARead;
 
-            w.state <= State_Execute;
+            decode_freeze <= '1';
+
+            w.state <= State_WaitSP;
 
           when Decoded_PopDown =>
             w.sp <= r.sp + 1;
             memAAddr <= r.sp;
             memAWriteEnable <= '1';
             memAWrite <= r.topOfStack;
-            w.state <= State_Execute;
+
+            decode_freeze <= '1';
+            w.state <= State_WaitSP;
 
           when Decoded_Pop =>
             w.sp <= r.sp + 1;
@@ -785,7 +794,11 @@ begin
             memAWriteEnable <= '1';
             memAWrite <= r.topOfStack;
             w.topOfStack <= memARead;
-            w.state <= State_Execute;
+
+            decode_freeze <= '1';
+
+            w.state <= State_WaitSP;
+
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
@@ -1016,7 +1029,7 @@ begin
       when State_AddSP =>
 
         memBAddr <= pc_to_memaddr(pcnext);
-        -- We have now value to load.
+
         w.topOfStack <= r.topOfStack + memARead;
         w.state <= State_Execute;
         

@@ -66,6 +66,7 @@ architecture behave of trace is
   
   
 file 		l_file		: TEXT open write_mode is log_file;
+signal cnt: unsigned(63 downto 0);
 
 
 begin
@@ -99,6 +100,7 @@ counter := (others => '0');
    while true loop
 
 		counter := counter + 1;
+    cnt <= counter;
 		if begin_inst = '1' then
 			t(maxAddrBitIncIO downto 2):=sp;
 			t2:=pc;
