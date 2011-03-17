@@ -92,6 +92,7 @@ signal io_we: std_logic;
 type State_Type is
 (
 State_Start,
+State_Start2,
 State_Fetch,
 State_WriteIODone,
 State_WaitIO,
@@ -107,7 +108,6 @@ State_Load,
 State_FetchNext,
 State_AddSP,
 State_ReadIODone,
-State_Decode,
 State_Resync1,
 State_Resync2,
 State_Interrupt,
@@ -119,12 +119,7 @@ State_Storeh,
 State_LoadSP,
 State_Loadb,
 State_Ashiftleft,
-State_Ashiftright,
-State_Mult1,
-State_Mult2,
-State_Mult3,
-State_Mult4,
-State_Mult5
+State_WaitSP
 );
 
 type DecodedOpcodeType is
@@ -195,6 +190,8 @@ end record;
 signal r: zpuregs;
 signal w: zpuregs;
 
+constant minimal_implementation: boolean := true;
+
 
 subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
 signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
@@ -230,9 +227,13 @@ end pc_to_memaddr;
 
 -- Decoder control
 
-signal decode_wait: std_logic;
+signal decode_freeze: std_logic;
+signal decode_freeze_q: std_logic;
+
 signal decode_jump: std_logic;
 signal decode_valid_q: std_logic;
+--signal decode_membusy: std_logic;
+
 signal decode_valid_dly_q: std_logic;
 signal jump_address: unsigned(maxAddrBit downto 0);
 
@@ -444,28 +445,29 @@ begin
         decode_valid_q <= '0';
       else
 
-
-        i_decodedOpcode <= sampledDecodedOpcode;
+        decode_freeze_q <= decode_freeze;
 
         decode_valid_q<='1';
-        opcode <= sampledOpcode;
+--        opcode <= sampledOpcode;
 
-        pce <= pc;
 
         if decode_jump='1' then
           decode_valid_q <= '0';
         end if;
 
-        if decode_wait='0' then
+  
+        if decode_freeze='0' then
           pc <= pcnext;
-        else
-          decode_valid_q <= '0';
         end if;
-        
-          
-        opcode <= sampledOpcode;
+
+        if decode_freeze_q='0' then
+            pce <= pc;
+            opcode <= sampledOpcode;
+            i_decodedOpcode <= sampledDecodedOpcode;
+        end if;
 
         decode_valid_dly_q<=decode_valid_q;
+
       end if;
     end if;
   end process;
@@ -481,7 +483,7 @@ begin
   end process;
 
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read,io_busy,pc)
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read,io_busy,pc,pcnext)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -494,8 +496,9 @@ begin
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
 
-    decode_wait <= '0';
+    decode_freeze <= '0';
     decode_jump <= '0';
+
     jump_address <= (others => DontCareValue);
 
     io_wr <= '0';
@@ -519,49 +522,27 @@ begin
       w.inInterrupt<='0';
     end if;
 
+    memAAddr <= r.sp + 1; -- NOTE : optimize this
+    memBAddr <= pc_to_memaddr(pcnext);
+
     case r.state is
 
       when State_Start =>
+        w.state <= State_Start2;
+
+      when State_Start2 =>
+        decode_freeze <= '1';
         w.state <= State_Resync1;
 
       when State_Resync1 =>
         memAAddr <= r.sp;
-        memBAddr <= pc_to_memaddr(pcnext);
-        decode_wait <= '1';
+        decode_freeze <= '1';
         w.state <= State_Resync2;
 
       when State_Resync2 =>
         memAAddr <= r.sp + 1;
-        --w.pc <= r.pc + 1;
-        --decode_wait<='1';
-        decode_wait <= '1';
+        --decode_freeze <= '1';
         w.topOfStack <= memARead;
-        w.state <= State_Execute;
-  
-      when State_Decode =>
-
-        memAAddr <= r.sp + 1;
-        
-        if wb_inta_i='0' then
-          --if sampledDecodedOpcode/=Decoded_Neqbranch then
-        --    w.pc <= r.pc + 1;
-          --end if;
-        else
-          if r.idim='0' and r.inInterrupt='0' then
-           if interrupt='1' then
-              doInterrupt<='1';
-              w.inInterrupt<='1';
-            else
-             -- if sampledDecodedOpcode/=Decoded_Neqbranch then
-          --      w.pc <= r.pc + 1;
-             -- end if;
-            end if;
-          else
-            --if sampledDecodedOpcode/=Decoded_Neqbranch then
-          --    w.pc <= r.pc + 1;
-            --end if;
-          end if;
-        end if;
 
         -- ALU result
         if r.aluop='1' then
@@ -569,11 +550,10 @@ begin
         end if;
 
         w.state <= State_Execute;
-
+  
       when State_Execute =>
 
         w.idim <= '0';
-        memBAddr <= pc_to_memaddr(pcnext);
 
         -- Trace
         if decodedOpcode/=Decoded_Idle then
@@ -606,7 +586,7 @@ begin
                 -- Write back
                 memAWriteEnable <= '1';
                 memAWrite <= r.topOfStack;
-
+                memAAddr <= r.sp;
               else
                 w.topOfStack(wordSize-1 downto 7) <= r.topOfStack(wordSize-8 downto 0);
                 w.topOfStack(6 downto 0) <= unsigned(opcode(6 downto 0));
@@ -616,7 +596,7 @@ begin
 
           when Decoded_Nop =>
 
-            memAAddr <= r.sp;
+
             memAWriteEnable <= '1';
             memAWriteMask <= (others => '1');
             memAWrite <= r.topOfStack;
@@ -631,7 +611,6 @@ begin
             w.sp <= r.sp + 1;
             poppc_inst <= '1';
 
-            memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             memAAddr <= r.sp;
             memAWrite <= r.topOfStack;
             memAWriteEnable <= '1';
@@ -647,7 +626,7 @@ begin
             w.topOfStack <= (others => '0');
             w.topOfStack(maxAddrBit downto 0) <= pc;
             w.sp <= r.sp - 1;
-
+            report "FIXME" severity failure;
             memBAddr <= (others => '0');
             memBAddr(minAddrBit+3 downto minAddrBit) <= "1000";
 
@@ -655,7 +634,7 @@ begin
             memAWrite <= r.topOfStack;
             memAWriteEnable <= '1';
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Emulate =>
 
@@ -676,7 +655,7 @@ begin
             memBAddr <= (others => '0');
             memBAddr(9 downto 5) <= unsigned(opcode(4 downto 0));
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_PushSP =>
 
@@ -688,23 +667,22 @@ begin
             w.topOfStack <= (others => '0');
             w.topOfStack(maxAddrBit downto minAddrBit) <= r.sp;
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Add =>
 
             w.sp <= r.sp + 1;
-            w.aluresult <= r.topOfStack + memARead;
-            w.topOfStack <= (others => DontCareValue);
-            w.aluop<='1';
-            w.state <= State_Decode;
+            w.topOfStack <= r.topOfStack + memARead;
+            decode_freeze<='1';
+
+            w.state <= State_WaitSP;
 
           when Decoded_And =>
 
             w.sp <= r.sp + 1;
-            w.aluresult <= r.topOfStack and memARead;
-            w.topOfStack <= (others => DontCareValue);
-            w.aluop <= '1';
-            w.state <= State_Decode;
+            w.topOfStack <= r.topOfStack and memARead;
+
+            w.state <= State_Execute;
 
           when Decoded_Eq =>
             w.sp <= r.sp + 1;
@@ -713,7 +691,7 @@ begin
             if memARead = r.topOfStack then
               w.topOfStack(0) <= '1';
             end if;
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Ulessthan =>
             w.sp <= r.sp + 1;
@@ -722,15 +700,14 @@ begin
             if r.topOfStack < memARead then
               w.topOfStack(0) <= '1';
             end if;
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Or =>
 
             w.sp <= r.sp + 1;
-            w.aluresult <= r.topOfStack or memARead;
-            w.topOfStack <= (others => DontCareValue);
-            w.aluop <= '1';
-            w.state <= State_Decode;
+            w.topOfStack <= r.topOfStack or memARead;
+
+            w.state <= State_Execute;
 
           when Decoded_Not =>
 
@@ -738,7 +715,7 @@ begin
             w.aluresult <= not r.topOfStack;
             w.topOfStack <= (others => DontCareValue);
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Flip =>
 
@@ -748,7 +725,7 @@ begin
             end loop;
             w.topOfStack <= (others => DontCareValue);
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_LoadSP =>
 
@@ -757,7 +734,11 @@ begin
             memAAddr <= r.sp;
             memAWrite <= r.topOfStack;
             -- We need to load here next value.
+            decode_freeze <= '1';
+            -- This will interfer with opcode
+
             memBAddr <= r.sp + spOffset;
+
             w.state <= State_LoadSP;
 
           when Decoded_Dup =>
@@ -766,7 +747,7 @@ begin
             memAWriteEnable <= '1';
             memAAddr <= r.sp;
             memAWrite <= r.topOfStack;
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_AddSP =>
 
@@ -779,7 +760,7 @@ begin
             w.aluresult <= r.topOfStack + r.topOfStack;
             w.topOfStack <= (others => DontCareValue);
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_StoreSP =>
 
@@ -789,14 +770,14 @@ begin
             memAWrite <= r.topOfStack;
             w.topOfStack <= memARead;
 
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_PopDown =>
             w.sp <= r.sp + 1;
             memAAddr <= r.sp;
             memAWriteEnable <= '1';
             memAWrite <= r.topOfStack;
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Pop =>
             w.sp <= r.sp + 1;
@@ -804,7 +785,7 @@ begin
             memAWriteEnable <= '1';
             memAWrite <= r.topOfStack;
             w.topOfStack <= memARead;
-            w.state <= State_Decode;
+            w.state <= State_Execute;
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
@@ -816,6 +797,9 @@ begin
             wb_dat_o <= std_logic_vector(memARead);
 
             memBWrite <= memARead;
+
+            decode_freeze<='1';
+
             memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             memAAddr <= r.sp + 1;
 
@@ -855,6 +839,8 @@ begin
 
             end if;
 
+            decode_freeze<='1';
+
             w.state <= State_Load;
 
           when Decoded_PopSP =>
@@ -863,6 +849,7 @@ begin
 
             memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             w.sp <= r.topOfStack(maxAddrBit downto minAddrBit);
+            decode_freeze <= '1';
 
             w.state <= State_Resync2;
 
@@ -944,31 +931,18 @@ begin
             w.state <= State_Ashiftleft;
           when Decoded_Idle =>
             -- Restore idim!!!
-            --memBAddr <=
+
           when others =>
             w.break <= '1';
 
         end case;
 
-      when State_Mult1 =>
-        w.state <= State_Mult2;
+      when State_WaitSP =>
 
-      when State_Mult2 =>
-        w.state <= State_Mult3;
+        memBAddr <= pc_to_memaddr(pcnext);
 
-      when State_Mult3 =>
-        w.state <= State_Mult4;
-
-      when State_Mult4 =>
-        w.state <= State_Mult5;
-
-      when State_Mult5 =>
-        w.topOfStack <= mult0;
-        w.state <= State_Decode;
-        memBAddr <= pc_to_memaddr(r.pc);
-
-
-
+        w.state <= State_Execute;
+  
       when State_Loadb =>
 
         w.topOfStack <= (others => '0');
@@ -985,14 +959,14 @@ begin
           when others =>
         end case;
 
-        w.state <= State_Decode;
+        w.state <= State_Execute;
         memAAddr <= r.sp + 1;
         memBAddr <= pc_to_memaddr(pcnext);
 
       when State_Ashiftleft =>
         -- Can we interrupt ????
         if r.shiftAmount=0 then
-          w.state <= State_Decode;
+          w.state <= State_Execute;
           w.topOfStack <= r.shiftValue;
           memAAddr <= r.sp + 1;
           memBAddr <= pc_to_memaddr(pcnext);
@@ -1021,8 +995,8 @@ begin
         wb_stb_o <= '1';
         io_we <= '1'; -- Always comes from Store
 
-        wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
-        wb_dat_o <= std_logic_vector(memARead);
+        --io_wr <='1';
+        decode_freeze <= '1';
 
         memAAddr <= r.sp + 1;
 
@@ -1033,34 +1007,31 @@ begin
 
       when State_LoadSP =>
 
-        memBAddr <= pc_to_memaddr(pcnext);
+        --memBAddr <= pc_to_memaddr(pcnext);
         -- We have now value to load.
+
         w.topOfStack <= memBRead;
-        w.state <= State_Decode;
+        w.state <= State_Execute;
 
       when State_AddSP =>
 
         memBAddr <= pc_to_memaddr(pcnext);
         -- We have now value to load.
         w.topOfStack <= r.topOfStack + memARead;
-        w.state <= State_Decode;
+        w.state <= State_Execute;
         
       when State_Load =>
         memBAddr <= pc_to_memaddr(pcnext);
 
         -- TODO: add wait here
         if r.topOfStack(maxAddrBitIncIO)='1' then
-          if wb_ack_i='1' then
-            w.topOfStack <= unsigned(wb_dat_i);
-            w.state <= State_Decode;
-          end if;--else
-            -- Keep lines up ?
-            wb_stb_o <= '1';
-            wb_cyc_o <= '1';
-          --end if;
+          if io_busy='0' then
+            w.topOfStack <= unsigned(io_read);
+            w.state <= State_Execute;
+          end if;
         else
           w.topOfStack <= memARead;
-          w.state <= State_Decode;
+          w.state <= State_Execute;
         end if;
 
       when others =>
