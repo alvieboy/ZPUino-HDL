@@ -173,6 +173,7 @@ signal opcode : std_logic_vector(OpCode_Size-1 downto 0);
 signal decodedOpcode : DecodedOpcodeType;
 signal sampledDecodedOpcode : DecodedOpcodeType;
 
+constant minimal_implementation: boolean := false;
 
 signal state : State_Type;
 
@@ -305,6 +306,9 @@ begin
 		elsif (tOpcode(7 downto 5)=OpCode_LoadSP) then
 			sampledDecodedOpcode<=Decoded_LoadSP;
 		elsif (tOpcode(7 downto 5)=OpCode_Emulate) then
+      if minimal_implementation then
+        sampledDecodedOpcode<=Decoded_Emulate;
+      else
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
 			  sampledDecodedOpcode<=Decoded_Neqbranch;
       elsif (tOpcode(5 downto 0)=OpCode_Eq) then
@@ -313,6 +317,7 @@ begin
 			  sampledDecodedOpcode<=Decoded_Storeb;
       else
         sampledDecodedOpcode<=Decoded_Emulate;
+      end if;
       end if;
 		elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
 			sampledDecodedOpcode<=Decoded_AddSP;
