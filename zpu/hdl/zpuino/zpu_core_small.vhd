@@ -898,6 +898,8 @@ begin
             io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
             io_write <= std_logic_vector(stack_b_read);
 
+            stack_a_writeenable <= '0';
+
             --memBWrite <= memARead;
 
             decode_freeze<='1';
@@ -979,6 +981,8 @@ begin
         if io_busy='0' then
           spnext <= sp + 2;
         end if;
+
+        stack_a_writeenable <= '0';
 
         io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
         io_write <= stack_b_read;
