@@ -180,7 +180,7 @@ signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
 signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 signal memErr: std_logic;
 
-constant minimal_implementation: boolean := true;
+constant minimal_implementation: boolean := false;
 
 subtype index is integer range 0 to 3;
 
