@@ -190,9 +190,11 @@ end record;
 signal r: zpuregs;
 signal w: zpuregs;
 
-signal sp:         unsigned(10 downto 2);
-signal spnext:     unsigned(10 downto 2);
-signal spnext_b:   unsigned(10 downto 2);
+constant spMaxBit: integer := 10;
+
+signal sp:         unsigned(spMaxBit downto 2);
+signal spnext:     unsigned(spMaxBit downto 2);
+signal spnext_b:   unsigned(spMaxBit downto 2);
 
 constant minimal_implementation: boolean := true;
 
@@ -540,7 +542,6 @@ begin
   end process;
 
   memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
-  stack_b_write <= std_logic_vector(topOfStack_read);
 
   -- IO Accesses
   io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
@@ -587,6 +588,8 @@ begin
       w.inInterrupt<='0';
     end if;
 
+    stack_b_write <= std_logic_vector(topOfStack_read);
+
     memBAddr <= pc_to_memaddr(pcnext);
           --memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
     case state is
@@ -597,6 +600,7 @@ begin
       when State_Resync2 =>
 
       when State_Pop =>
+        --decode_freeze <= '1';
         spnext <= sp + 1;
         spnext_b <= sp + 2;
 
@@ -779,11 +783,19 @@ begin
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
             if io_busy='0' then
-              spnext <= sp + 2;      -- REMOVE THIS PLEASE
-              spnext_b <= sp + 3;
+              spnext <= sp + 1;      -- REMOVE THIS PLEASE
+              spnext_b <= sp + 2;
             end if;
 
             decode_freeze<='1';
+
+            -- If stack access, change SP immediatly
+            if topOfStack_read(31)='1' then
+              spnext_b <= topOfStack_read(spMaxBit downto 2);
+              stack_b_writeenable <= '1';
+              stack_b_write <= std_logic_vector(stack_b_read);
+
+            end if;
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
               io_wr <='1';
@@ -793,6 +805,11 @@ begin
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
               io_rd <= '1';
+            end if;
+
+            -- If stack access, change SP immediatly
+            if topOfStack_read(31)='1' then
+              spnext_b <= topOfStack_read(spMaxBit downto 2);
             end if;
 
             decode_freeze<='1';
@@ -810,9 +827,10 @@ begin
 
           when Decoded_Neqbranch =>
 
-            spnext <= sp + 2;
-            spnext_b <= sp + 3;
+            spnext <= sp + 1;
+            spnext_b <= sp + 2;
 
+            decode_freeze <= '1';
             if unsigned(stack_b_read)/=0 then
               --w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
               decode_jump <= '1';
@@ -834,8 +852,8 @@ begin
   
       when State_WaitIO =>
         if io_busy='0' then
-          spnext <= sp + 2;
-          spnext_b <= sp + 3;
+          spnext <= sp + 1;
+          spnext_b <= sp + 2;
         end if;
 
         decode_freeze <= '1';
@@ -940,6 +958,7 @@ begin
           when Decoded_PushSP =>
 
             topOfStack_write <= (others => '0');
+            topOfStack_write(31) <= '1'; -- Stack address
             topOfStack_write(10 downto 2) <= sp;
 
           when Decoded_Add =>
@@ -1034,6 +1053,10 @@ begin
         stack_a_writeenable<='0';
         topOfStack_write <= (others => DontCareValue);
   
+      when State_Pop =>
+        stack_a_writeenable<='0';
+        topOfStack_write <= (others => DontCareValue);
+
       when State_WaitIO =>
 
 
@@ -1050,6 +1073,11 @@ begin
         
       when State_Load =>
 
+        if topOfStack_read(31) = '1' then
+          -- It's a stack access
+          topOfStack_write <= unsigned(stack_b_read);
+
+        else
         if topOfStack_read(maxAddrBitIncIO)='1' then
           if io_busy='0' then
             topOfStack_write <= unsigned(io_read);
@@ -1057,7 +1085,7 @@ begin
         else
           topOfStack_write <= memARead;
         end if;
-
+        end if;
       when others =>
 
     end case;
@@ -1085,6 +1113,9 @@ begin
         when State_Resync2 =>
           state <= State_Execute;
   
+        when State_Pop =>
+          state <= State_Execute;
+  
         when State_Execute =>
           case decodedOpcode is
             when Decoded_LoadSP =>
@@ -1107,7 +1138,7 @@ begin
 
             when Decoded_Store =>
               if io_busy='0' then
-                state <= State_Resync1;
+                state <= State_Pop;
               else
                 state <= State_WaitIO;
               end if;
@@ -1119,7 +1150,7 @@ begin
               state <= State_Resync2;
 
             when Decoded_Neqbranch =>
-              state <= State_Resync1;
+              state <= State_Pop;
 
           when others =>
         end case;
@@ -1129,7 +1160,7 @@ begin
   
         when State_WaitIO =>
           if io_busy='0' then
-            state <= State_Resync1;
+            state <= State_Pop;
           end if;
 
         when State_LoadSP =>
@@ -1139,6 +1170,9 @@ begin
           state <= State_Execute;
         
         when State_Load =>
+          if topOfStack_read(31)='1' then
+            state <= State_Execute;
+          else
 
           if topOfStack_read(maxAddrBitIncIO)='1' then
             if io_busy='0' then
@@ -1146,6 +1180,7 @@ begin
             end if;
           else
             state <= State_Execute;
+          end if;
           end if;
         when others =>
       end case;

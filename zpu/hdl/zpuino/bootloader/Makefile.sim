@@ -42,6 +42,6 @@ $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin.merged
-	perl ../gen-prom-generic-dualport_8_32 $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
+	../gen-prom-virtex-dualport_8_32 $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
 clean:	
 	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).bin.merged $(TARGET).s $(TARGET).S prom-simulation.vhd
