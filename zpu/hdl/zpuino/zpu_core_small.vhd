@@ -598,6 +598,8 @@ begin
         decode_freeze <= '1';
 
       when State_Resync2 =>
+        spnext <= sp;
+        spnext_b <= sp + 1;
 
       when State_Pop =>
         --decode_freeze <= '1';
@@ -871,40 +873,22 @@ begin
   end process;
 
 
-  -- Synchronous RAM write
-
-  process(clk)
+  process(state, decodedOpcode, topOfStack_read)
   begin
-    if rising_edge(clk) then
-      if rst='0' then
-        memAWriteEnable <= '0';
-      else
-
-        memAWriteEnable <= '0';
-        --memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
+    memAWriteEnable <= '0';
 
     case state is
-
       when State_Execute =>
-
         case decodedOpcode is
-
           when Decoded_Store =>
-
             if topOfStack_read(maxAddrBitIncIO)='0' then
               memAWriteEnable <= '1';
               memAWrite <= unsigned(stack_b_read);
             end if;
-
           when others =>
-
         end case;
-
       when others =>
     end case;
-
-    end if;
-  end if;
   end process;
 
 
@@ -1000,8 +984,8 @@ begin
 
           when Decoded_LoadSP =>
 
-            stack_a_writeenable<='0';
-            topOfStack_write<=(others => DontCareValue);
+            --stack_a_writeenable<='0';
+            --topOfStack_write<=(others => DontCareValue);
 
           when Decoded_Dup =>
 
