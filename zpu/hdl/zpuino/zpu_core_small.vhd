@@ -588,7 +588,8 @@ begin
       w.inInterrupt<='0';
     end if;
 
-    stack_b_write <= std_logic_vector(topOfStack_read);
+    --stack_b_write <= std_logic_vector(topOfStack_read);
+    stack_b_write<=(others => DontCareValue);
 
     memBAddr <= pc_to_memaddr(pcnext);
           --memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
@@ -673,8 +674,8 @@ begin
 
             report "FIXME" severity failure;
 
-            memBAddr <= (others => '0');
-            memBAddr(minAddrBit+3 downto minAddrBit) <= "1000";
+            --memBAddr <= (others => '0');
+            --memBAddr(minAddrBit+3 downto minAddrBit) <= "1000";
 
             --memAAddr <= r.sp;
             --memAWrite <= r.topOfStack;
@@ -695,8 +696,8 @@ begin
             jump_address <= (others => '0');
             jump_address(9 downto 5) <= unsigned(opcode(4 downto 0));
 
-            memBAddr <= (others => '0');
-            memBAddr(9 downto 5) <= unsigned(opcode(4 downto 0));
+            --memBAddr <= (others => '0');
+            --memBAddr(9 downto 5) <= unsigned(opcode(4 downto 0));
 
 
           when Decoded_PushSP =>
@@ -768,6 +769,8 @@ begin
             spnext_b <= sp + spOffset;
 
             stack_b_writeenable <= '1';
+            stack_b_write <= std_logic_vector(topOfStack_read);
+
             decode_freeze <= '1';
 
 
@@ -795,9 +798,9 @@ begin
             if topOfStack_read(31)='1' then
               spnext_b <= topOfStack_read(spMaxBit downto 2);
               stack_b_writeenable <= '1';
-              stack_b_write <= std_logic_vector(stack_b_read);
-
             end if;
+
+            stack_b_write <= std_logic_vector(stack_b_read);
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
               io_wr <='1';
@@ -876,6 +879,7 @@ begin
   process(state, decodedOpcode, topOfStack_read,stack_b_read)
   begin
     memAWriteEnable <= '0';
+    memAWrite <= (others => DontCareValue);
 
     case state is
       when State_Execute =>
@@ -1020,8 +1024,7 @@ begin
             topOfStack_write <= (others => DontCareValue);
 
           when Decoded_Break =>
-
-            stack_a_writeenable <= '0';
+            stack_a_writeenable <= DontCareValue;
             topOfStack_write <= (others => DontCareValue);
 
           when Decoded_Neqbranch =>
@@ -1029,6 +1032,7 @@ begin
           when Decoded_Idle =>
 
           when others =>
+            null;
 
         end case;
 
@@ -1063,9 +1067,10 @@ begin
 
         else
         if topOfStack_read(maxAddrBitIncIO)='1' then
-          if io_busy='0' then
+          --if io_busy='0' then
+          -- NOTE: keep writing even if IO is busy
             topOfStack_write <= unsigned(io_read);
-          end if;
+          --end if;
         else
           topOfStack_write <= memARead;
         end if;
