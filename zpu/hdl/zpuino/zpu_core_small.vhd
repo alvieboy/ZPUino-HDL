@@ -873,7 +873,7 @@ begin
   end process;
 
 
-  process(state, decodedOpcode, topOfStack_read)
+  process(state, decodedOpcode, topOfStack_read,stack_b_read)
   begin
     memAWriteEnable <= '0';
 
@@ -1086,7 +1086,8 @@ begin
       else
       case state is
         when State_Start =>
-          state <= State_Start2;
+          --state <= State_Start2;
+          state <= State_Resync1;
 
         when State_Start2 =>
           state <= State_Resync1;
