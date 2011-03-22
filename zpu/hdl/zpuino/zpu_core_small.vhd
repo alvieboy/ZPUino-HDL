@@ -813,9 +813,9 @@ begin
             end if;
 
             -- If stack access, change SP immediatly
-            if topOfStack_read(31)='1' then
+            --if topOfStack_read(31)='1' then
               spnext_b <= topOfStack_read(spMaxBit downto 2);
-            end if;
+            --end if;
 
             decode_freeze<='1';
 
@@ -1160,18 +1160,21 @@ begin
           state <= State_Execute;
         
         when State_Load =>
-          if topOfStack_read(31)='1' then
-            state <= State_Execute;
-          else
+          -- IO busy is always 0 when not accessing IO.
+          -- So we rely on busy here to be accurate.
 
-          if topOfStack_read(maxAddrBitIncIO)='1' then
+          --if topOfStack_read(31)='1' then
+          --  state <= State_Execute;
+          --else
+
+          --if topOfStack_read(maxAddrBitIncIO)='1' then
             if io_busy='0' then
               state <= State_Execute;
             end if;
-          else
-            state <= State_Execute;
-          end if;
-          end if;
+          --else
+          --  state <= State_Execute;
+          --end if;
+          --end if;
         when others =>
       end case;
     end if;
