@@ -47,7 +47,7 @@ entity zpuino_uart is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -132,6 +132,7 @@ architecture behave of zpuino_uart is
 begin
 
   enabled <= enabled_q;
+  interrupt <= '0';
 
   rx_inst: zpuino_uart_rx
     port map(
@@ -144,7 +145,6 @@ begin
       data    => received_data
    );
 
-  --uart_read <= '1' when re='1' and address="0" else '0';
   uart_read <= dready_q;
 
   tx_core: TxUnit
@@ -158,7 +158,7 @@ begin
       datai_i   => write(7 downto 0)
     );
 
-  uart_write <= '1' when we='1' and address="0" else '0';
+  uart_write <= '1' when we='1' and address(2)='0' else '0';
 
    -- Rx timing
   rx_timer: uart_brgen
@@ -213,18 +213,19 @@ begin
     );
   
 
-  fifo_rd<='1' when address="0" and re='1' else '0';
+  fifo_rd<='1' when address(2)='0' and re='1' else '0';
 
   process(address, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
   begin
     read <= (others => '0');
     case address is
-      when "1" =>
+      when "000000001" =>
         read(0) <= not fifo_empty;
         read(1) <= uart_busy;
-      when "0" =>
+      when "000000000" =>
         read(7 downto 0) <= fifo_data;
       when others =>
+        read <= (others => DontCareValue);
     end case;
   end process;
 
@@ -235,7 +236,7 @@ begin
         enabled_q<='0';
       else
         if we='1' then
-          if address="1" then
+          if address(2)='1' then
             divider_rx_q <= write(15 downto 0);
             enabled_q  <= write(16);
           end if;

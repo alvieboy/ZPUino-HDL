@@ -66,13 +66,28 @@ package zpuinopkg is
     );
   end component zpuino_io;
 
+  component zpuino_empty_device is
+  port (
+    clk:      in std_logic;
+	 	rst:      in std_logic;
+    read:     out std_logic_vector(wordSize-1 downto 0);
+    write:    in std_logic_vector(wordSize-1 downto 0);
+    address:  in std_logic_vector(10 downto 2);
+    we:       in std_logic;
+    re:       in std_logic;
+    busy:     out std_logic;
+    interrupt:out std_logic
+  );
+  end component zpuino_empty_device;
+
+
   component zpuino_spi is
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -92,7 +107,7 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -133,14 +148,15 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(2 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
     comp:     out std_logic;
     busy:     out std_logic;
-    interrupt:out std_logic_vector(1 downto 0)
+    interrupt0: out std_logic;
+    interrupt1: out std_logic
   );
   end component zpuino_timers;
 
@@ -150,7 +166,7 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
 
@@ -168,7 +184,7 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     sync_in:  in std_logic;
@@ -188,10 +204,11 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(2 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
-    busy:     out std_logic
+    busy:     out std_logic;
+    interrupt:out std_logic
   );
   end component zpuino_crc16;
 
@@ -201,7 +218,7 @@ package zpuinopkg is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(2 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;

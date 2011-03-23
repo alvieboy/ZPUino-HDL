@@ -49,14 +49,15 @@ entity zpuino_timers is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(2 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
     busy:     out std_logic;
     comp:     out std_logic;
-    interrupt:out std_logic_vector(1 downto 0)
+    interrupt0:out std_logic;
+    interrupt1:out std_logic
   );
 end entity zpuino_timers;
 
@@ -106,8 +107,8 @@ architecture behave of zpuino_timers is
 
 begin
 
-  interrupt(0) <= timer0_interrupt;
-  interrupt(1) <= timer1_interrupt;
+  interrupt0 <= timer0_interrupt;
+  interrupt1 <= timer1_interrupt;
 
   comp <= timer0_comp;
 
@@ -120,7 +121,7 @@ begin
       areset  => areset,
       read    => timer0_read,
       write   => write,
-      address => address(1 downto 0),
+      address => address(3 downto 2),
       re      => timer0_re,
       we      => timer0_we,
       spp_data=> timer0_spp_data,
@@ -136,7 +137,7 @@ begin
       areset  => areset,
       read    => timer1_read,
       write   => write,
-      address => address(1 downto 0),
+      address => address(3 downto 2),
       re      => timer1_re,
       we      => timer1_we,
       spp_data=> timer1_spp_data,
@@ -149,20 +150,21 @@ begin
   process(address,timer0_read,timer1_read)
   begin
     read <= (others => '0');
-    case address(2) is
-      when '0' =>
+    case address(10 downto 4) is
+      when "0000000" =>
         read <= timer0_read;
-      when '1' =>
+      when "0000001" =>
         read <= timer1_read;
       when others =>
+        read <= (others => DontCareValue);
     end case;
   end process;
 
-  timer0_re <= '1' when address(2)='0' and re='1' else '0';
-  timer1_re <= '1' when address(2)='1' and re='1' else '0';
+  timer0_re <= '1' when address(4)='0' and re='1' else '0';
+  timer1_re <= '1' when address(4)='1' and re='1' else '0';
 
-  timer0_we <= '1' when address(2)='0' and we='1' else '0';
-  timer1_we <= '1' when address(2)='1' and we='1' else '0';
+  timer0_we <= '1' when address(4)='0' and we='1' else '0';
+  timer1_we <= '1' when address(4)='1' and we='1' else '0';
 
   busy <= timer0_busy or timer1_busy;
   

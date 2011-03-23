@@ -84,6 +84,9 @@ signal gpio_i_q: std_logic_vector(127 downto 0);
 
 begin
 
+busy <= '0';
+interrupt <= '0';
+
 gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
 tgen: for i in 0 to gpio_count-1 generate

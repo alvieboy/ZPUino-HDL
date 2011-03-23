@@ -56,7 +56,7 @@ entity zpuino_adc is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(2 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -150,6 +150,9 @@ architecture behave of zpuino_adc is
 begin
 
   enabled <= adc_enabled_q;
+  busy <= '0';
+  interrupt <= '0';
+
 
   process(spi_enable,spi_ready)
   begin
@@ -198,10 +201,10 @@ begin
         read_fifo_ptr_q <= (others => '0');
       else
 
-        if we='1' and address="100" then
+        if we='1' and address(4 downto 2)="100" then
           read_fifo_ptr_q <= unsigned(write(10 downto 2));
         else
-          if re='1' and address="101" then
+          if re='1' and address(4 downto 2)="101" then
             -- FIFO read, increment address
             read_fifo_ptr_q <= read_fifo_ptr_q+1;
           end if;
@@ -216,13 +219,13 @@ begin
   begin
     read <= (others => DontCareValue);
     case address is
-      when "000" =>
+      when "000000000" =>
         if (request_samples_q /= current_sample_q) then
           read(0) <= '0';
         else
           read(0) <= '1';
         end if;
-      when "101" =>
+      when "000000101" =>
         read <= fifo_read;
       when others =>
     end case;
@@ -307,7 +310,7 @@ begin
         fifo_wr <= '0';
 
         if we='1' then
-          case address is
+          case address(4 downto 2) is
             when "000" =>
               -- Write configuration
               adc_enabled_q <= write(0);

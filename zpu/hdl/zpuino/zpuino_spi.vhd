@@ -48,7 +48,7 @@ entity zpuino_spi is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -152,10 +152,10 @@ begin
 
   -- Direct access (write) to SPI
 
-  spi_en <= '1' when we='1' and address="1" and spi_ready='1' else '0';
+  spi_en <= '1' when we='1' and address(2)='1' and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
-    busy <= '1' when address="1" and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
+    busy <= '1' when address(2)='1' and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
   end generate;
 
   nobusygen: if zpuino_spiblocking=false generate
@@ -178,7 +178,7 @@ begin
         spi_transfersize_q<=(others => '0');
       else
       if we='1' then
-        if address="0" then
+        if address(2)='0' then
           spi_clk_pres <= write(3 downto 1);
           cpol <= write(4);
           spi_samprise <= write(5);
@@ -194,17 +194,20 @@ begin
   process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
   begin
     read <= (others =>'0');
-    if address="0" then
-      read(0) <= spi_ready;
-      read(3 downto 1) <= spi_clk_pres;
-      read(4) <= cpol;
-      read(5) <= spi_samprise;
-      read(6) <= spi_enable_q;
-      read(7) <= spi_txblock_q;
-      read(9 downto 8) <= spi_transfersize_q;
-    else
-      read <= spi_read;
-    end if;
+    case address is
+      when "000000000" =>
+        read(0) <= spi_ready;
+        read(3 downto 1) <= spi_clk_pres;
+        read(4) <= cpol;
+        read(5) <= spi_samprise;
+        read(6) <= spi_enable_q;
+        read(7) <= spi_txblock_q;
+        read(9 downto 8) <= spi_transfersize_q;
+      when "000000001" =>
+        read <= spi_read;
+      when others =>
+        read <= (others => DontCareValue);
+    end case;
   end process;
 
 end behave;
