@@ -52,7 +52,7 @@ entity zpuino_sigmadelta is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
     sync_in:  in std_logic;
@@ -109,13 +109,13 @@ begin
       sd_en_q <= (others =>'0');
     else 
 	    if we='1' then
-        case address is
-          when "0" =>
+        case address(2) is
+          when '0' =>
             sd_en_q(0) <= write(0);
             sd_en_q(1) <= write(1);
             le_q <= write(2);
             extsync_q <= write(3);
-          when "1" =>
+          when '1' =>
             --report "SigmaDelta set: " & hstr(write(15 downto 0)) severity note;
             case le_q is
               when '0' =>

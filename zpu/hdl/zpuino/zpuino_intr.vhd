@@ -47,7 +47,7 @@ entity zpuino_intr is
     areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(0 downto 0);
+    address:  in std_logic_vector(10 downto 2);
     we:       in std_logic;
     re:       in std_logic;
 
@@ -69,6 +69,7 @@ architecture behave of zpuino_intr is
   signal interrupt_active: std_logic;
 begin
 
+busy <= '0';
 
 process(ivecs,mask_q)
 begin
@@ -83,11 +84,12 @@ process(address,mask_q,ien_q,intr_q)
 begin
   read <= (others => '0');
   case address is
-    when "0" =>
+    when "000000000" =>
       read(15 downto 0) <= intr_q;
-    when "1" =>
+    when "000000001" =>
       read(15 downto 0) <= mask_q;
     when others =>
+      read <= (others => DontCareValue);
   end case;
 end process;
 
@@ -104,11 +106,11 @@ begin
       intr_q <= (others =>'0');
     else
       if we='1' then
-        case address is
-          when "0" =>
+        case address(2) is
+          when '0' =>
             ien_q <= write(0); -- Interrupt enable
             interrupt <= '0';
-          when "1" =>
+          when '1' =>
             mask_q <= write(15 downto 0);
           when others =>
         end case;
