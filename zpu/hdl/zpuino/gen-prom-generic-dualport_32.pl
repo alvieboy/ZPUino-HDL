@@ -39,7 +39,8 @@ my $bits = ceil(logn($words,2));
 
 print STDERR "Need $bits bits for address\n";
 
-my $total_words = (2 ** $bits) / 4 + 1;
+my $total_words = (2 ** $bits) / 4;
+my $twcount = $total_words - 1;
 
 my $mybuf;
 
@@ -72,7 +73,7 @@ end entity prom_generic_dualport;
 architecture behave of prom_generic_dualport is
 
   subtype RAM_WORD is STD_LOGIC_VECTOR (7 downto 0);
-  type RAM_TABLE is array (0 to $total_words-1) of RAM_WORD;
+  type RAM_TABLE is array (0 to $twcount) of RAM_WORD;
 EOM
 
 # We use 4 rams here.
