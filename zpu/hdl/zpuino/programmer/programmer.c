@@ -543,6 +543,7 @@ int main(int argc, char **argv)
 			uint16_t *sketchsize = (uint16_t*)buf;
 			uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
 			uint16_t tcrc = 0xffff;
+
 			unsigned i;
 
 			if(verbose>2) {

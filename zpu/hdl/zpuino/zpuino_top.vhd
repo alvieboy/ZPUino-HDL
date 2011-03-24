@@ -49,7 +49,9 @@ entity zpuino_top is
 
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
+    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+    rx:       in std_logic;
+    tx:       out std_logic
   );
 end entity zpuino_top;
 
@@ -65,47 +67,27 @@ architecture behave of zpuino_top is
   end component clkgen;
 
 
-  signal mem_read:    std_logic_vector(wordSize-1 downto 0);
-  signal code_mem_read:    std_logic_vector(wordSize-1 downto 0);
-  signal io_mem_read:    std_logic_vector(wordSize-1 downto 0);
-  signal mem_write:   std_logic_vector(wordSize-1 downto 0);
-  signal mem_address: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal mem_we:      std_logic;
-  signal mem_re:      std_logic;
-  signal mem_busy:    std_logic;
+  signal io_read:    std_logic_vector(wordSize-1 downto 0);
+  signal io_write:   std_logic_vector(wordSize-1 downto 0);
+  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
+  signal io_we:      std_logic;
+  signal io_re:      std_logic;
+  signal io_busy:    std_logic;
   signal interrupt:   std_logic;
   signal poppc_inst:  std_logic;
 
-  signal io_we:       std_logic;
-  signal io_re:       std_logic;
-  signal io_busy:     std_logic;
-
-  -- signals for "medium" core
-
-  signal ram_we:      std_logic;
-  signal ram_mem_read:    std_logic_vector(wordSize-1 downto 0);
-  signal select_mem_or_io: std_logic;
 begin
-
-  io_we <= mem_we and select_mem_or_io;-- and mem_address(maxAddrBitIncIO-1);
-  io_re <= mem_re and select_mem_or_io;-- and mem_address(maxAddrBitIncIO-1);
-
-  select_mem_or_io <= '1'; -- Always IO coming from small core
-  mem_read <= io_mem_read; -- Always read from IO
-  mem_busy <= io_busy;
 
   core: zpu_core_small
     port map (
       clk           => clk,
-	 		areset        => areset,
-	 		enable        => '1',
-	 		in_mem_busy   => mem_busy,
-	 		mem_read      => mem_read,
-	 		mem_write     => mem_write,
-	 		out_mem_addr  => mem_address,
-			out_mem_writeEnable => mem_we,
-			out_mem_readEnable  => mem_re,
-	 		mem_writeMask => open,
+	 		rst           => areset,
+	 		io_busy       => io_busy,
+	 		io_read       => io_read,
+	 		io_write      => io_write,
+      io_addr       => io_address,
+			io_wr         => io_we,
+			io_rd         => io_re,
 	 		interrupt     => interrupt,
       poppc_inst    => poppc_inst,
 	 		break         => open
@@ -115,9 +97,9 @@ begin
     port map (
       clk           => clk,
 	 	  areset        => areset,
-      read          => io_mem_read,
-      write         => mem_write,
-      address       => mem_address,
+      read          => io_read,
+      write         => io_write,
+      address       => io_address,
       we            => io_we,
       re            => io_re,
       busy          => io_busy,
@@ -125,7 +107,9 @@ begin
       intready      => poppc_inst,
       gpio_i        => gpio_i,
       gpio_o        => gpio_o,
-      gpio_t        => gpio_t
+      gpio_t        => gpio_t,
+      rx            => rx,
+      tx            => tx
     );
 
 end behave;

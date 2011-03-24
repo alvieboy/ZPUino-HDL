@@ -44,8 +44,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10.4166666667 ns;
-
+  constant period : time := 10.86956521739 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
   --signal gpio:  std_logic_vector(31 downto 0);
@@ -66,8 +65,9 @@ architecture behave of tb_zpuino is
 
     gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
-
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
+    rx:       in std_logic;
+    tx:       out std_logic
   );
   end component zpuino_top;
 
@@ -151,7 +151,9 @@ begin
 	 	  areset   => w_rst,
       gpio_i => gpio_i,
       gpio_o => gpio_o,
-      gpio_t => gpio_t
+      gpio_t => gpio_t,
+      rx => '1',
+      tx => open
   );
 
   rxs: uart_pty_tx

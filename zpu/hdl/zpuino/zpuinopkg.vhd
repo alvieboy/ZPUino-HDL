@@ -59,7 +59,9 @@ package zpuinopkg is
       -- GPIO
       gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
       gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-      gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0)
+      gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+      tx: out std_logic;
+      rx: in std_logic
 
     );
   end component zpuino_io;

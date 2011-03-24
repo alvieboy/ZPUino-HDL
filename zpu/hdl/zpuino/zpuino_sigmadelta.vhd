@@ -49,7 +49,7 @@ use work.zpuinopkg.all;
 entity zpuino_sigmadelta is
 	port (
     clk:      in std_logic;
-	 	areset:   in std_logic;
+    areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
     address:  in std_logic_vector(10 downto 2);
@@ -87,6 +87,8 @@ signal sync_dat_q2: unsigned(17 downto 0);
 signal sd_en_q: std_logic_vector(1 downto 0);
 signal sdout: std_logic_vector(1 downto 0);
 
+signal sdtick: std_logic;
+signal sdcnt: integer;
 signal le_q: std_logic;
 signal do_sync: std_logic;
 signal extsync_q: std_logic;
@@ -184,28 +186,50 @@ end process;
 
 process(delta_adder1,sigma_latch1)
 begin
-	sigma_adder1 <= delta_adder1 + sigma_latch1;
+  sigma_adder1 <= delta_adder1 + sigma_latch1;
 end process;
 
 process(delta_adder2,sigma_latch2)
 begin
-	sigma_adder2 <= delta_adder2 + sigma_latch2;
+  sigma_adder2 <= delta_adder2 + sigma_latch2;
+end process;
+
+-- Divider
+
+process(clk)
+begin
+  if rising_edge(clk) then
+    if areset='1' then
+      sdtick<='0';
+      sdcnt<=3;
+    else
+      if sdcnt/=0 then
+        sdcnt<=sdcnt-1;
+        sdtick<='0';
+      else
+        sdtick<='1';
+        sdcnt<=3;
+      end if;
+    end if;
+  end if;
 end process;
 
 process(clk)
 begin
   if rising_edge(clk) then
-	  if areset='1' then
+   if areset='1' then
       sigma_latch1 <= (others => '0');
 		  sigma_latch1(17) <= '1';
 		  sdout <= (others=>'0');
       sigma_latch2 <= (others => '0');
 		  sigma_latch2(17) <= '1';
 	  else
-		  sigma_latch1 <= sigma_adder1;
-      sigma_latch2 <= sigma_adder2;
-		  sdout(0) <= sigma_latch1(17);
-      sdout(1) <= sigma_latch2(17);
+      if sdtick='1' then
+  		  sigma_latch1 <= sigma_adder1;
+        sigma_latch2 <= sigma_adder2;
+  		  sdout(0) <= sigma_latch1(17);
+        sdout(1) <= sigma_latch2(17);
+      end if;
   	end if;
   end if;
 end process;

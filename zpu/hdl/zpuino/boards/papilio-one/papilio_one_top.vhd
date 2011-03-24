@@ -81,8 +81,10 @@ architecture behave of papilio_one_top is
 
     gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0)
+    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
 
+    tx:       out std_logic;
+    rx:       in std_logic
   );
   end component zpuino_top;
 
@@ -105,6 +107,9 @@ architecture behave of papilio_one_top is
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
+  signal rx: std_logic;
+  signal tx: std_logic;
+
 begin
 
   rstgen: zpuino_serialreset
@@ -113,7 +118,7 @@ begin
     )
     port map (
       clk       => sysclk,
-      rx        => gpio_i(48),
+      rx        => rx,
       rstin     => clkgen_rst,
       rstout    => sysrst
     );
@@ -141,13 +146,12 @@ begin
 
   -- Other ports are special, we need to avoid outputs on input-only pins
 
-  ibufrx:   IPAD port map ( PAD => RXD,        O => gpio_i(48), C => sysclk );
+  ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
   ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
-  obuftx:   OPAD port map ( I => gpio_o(50),   PAD => TXD );
+  obuftx:   OPAD port map ( I => tx,   PAD => TXD );
   ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
   ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
-
 
   zpuino:zpuino_top
   port map (
@@ -156,7 +160,10 @@ begin
 
     gpio_i        => gpio_i,
     gpio_t        => gpio_t,
-    gpio_o        => gpio_o
+    gpio_o        => gpio_o,
+
+    rx => rx,
+    tx => tx
   );
 
 end behave;

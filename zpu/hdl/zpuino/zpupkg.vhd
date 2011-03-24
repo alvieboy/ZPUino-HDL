@@ -102,41 +102,22 @@ package zpupkg is
 			);
 	end component;
 
-	component zpu_core is
-    port ( clk : in std_logic;
-	 		  areset : in std_logic;
-	 		  enable : in std_logic; 
-	 		  in_mem_busy : in std_logic; 
-	 		  mem_read : in std_logic_vector(wordSize-1 downto 0);
-	 		  code_mem_read : in std_logic_vector(wordSize-1 downto 0); -- Faster BRAM read, from second port
-	 		  mem_write : out std_logic_vector(wordSize-1 downto 0);
-			  out_mem_addr : out std_logic_vector(maxAddrBitIncIO downto 0);
-			  out_mem_writeEnable : out std_logic; 
-			  out_mem_readEnable : out std_logic;
-	 		  mem_writeMask: out std_logic_vector(wordBytes-1 downto 0);
-	 		  interrupt : in std_logic;
-        poppc_inst: out std_logic;
-	 		  break : out std_logic);
-	end component;
+  component zpu_core_small is
+  port (
+    clk:            in std_logic;
+    rst:            in std_logic; -- Synchronous reset
+    io_busy:        in std_logic;
+    io_read:        in std_logic_vector(wordSize-1 downto 0);
+    io_write:       out std_logic_vector(wordSize-1 downto 0);
+    io_addr:        out std_logic_vector(maxAddrBitIncIO downto 0);
+    io_wr:          out std_logic;
+    io_rd:          out std_logic;
+    interrupt:      in std_logic;
+    poppc_inst:     out std_logic;
+    break:          out std_logic
+  );
+  end component zpu_core_small;
 
-	component zpu_core_small is
-    port ( clk : in std_logic;
-	 		  areset : in std_logic;
-	 		  enable : in std_logic; 
-	 		  in_mem_busy : in std_logic; 
-	 		  mem_read : in std_logic_vector(wordSize-1 downto 0);
-	 		  mem_write : out std_logic_vector(wordSize-1 downto 0);
-			  out_mem_addr : out std_logic_vector(maxAddrBitIncIO downto 0);
-			  out_mem_writeEnable : out std_logic; 
-			  out_mem_readEnable : out std_logic;
-	 		  mem_writeMask: out std_logic_vector(wordBytes-1 downto 0);
-	 		  interrupt : in std_logic;
-        poppc_inst: out std_logic;
-	 		  break : out std_logic);
-	end component;
-
-
-	
 	component timer is
 	  port(
 	       clk              : in std_logic;
@@ -189,6 +170,7 @@ package zpupkg is
 	constant	OpCode_NA2		: std_logic_vector(3 downto 0) := "1110";
 	constant	OpCode_NA		: std_logic_vector(3 downto 0) := "1111";
 	
+	constant	OpCode_Storeh				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(35, 6));
 	constant	OpCode_Lessthan				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(36, 6));
 	constant	OpCode_Lessthanorequal		: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(37, 6));
 	constant	OpCode_Ulessthan			: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(38, 6));
