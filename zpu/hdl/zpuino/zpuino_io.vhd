@@ -76,6 +76,7 @@ architecture behave of zpuino_io is
 
   signal uart_enabled:  std_logic;
 
+  -- SPP signal is one more than GPIO count
   signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 0);

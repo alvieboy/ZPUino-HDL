@@ -100,10 +100,29 @@ tgen: for i in 0 to gpio_count-1 generate
       pin_index := i;
     end if;
     if rising_edge(clk) then -- synchronous output
-      if spp_en( pin_index )='1' then
-        gpio_o(i) <= spp_data( pin_index );
+
+      -- Enforce RST on gpio_o
+      if areset='1' then
+        gpio_o(i)<='0';
       else
-        gpio_o(i) <= gpio_q(i);
+      if zpuino_pps_enabled then
+        -- Zero maps to own GPIO port.
+
+        if pin_index=0 then
+          gpio_o(i) <= gpio_q(i);
+        else
+          gpio_o(i) <= spp_data(pin_index-1); -- Offset -1
+        end if;
+
+      else
+        -- PPS disabled, map directly to pin
+        if spp_en( i )='1' then
+          gpio_o(i) <= spp_data(i);
+        else
+          gpio_o(i) <= gpio_q(i);
+        end if;
+
+      end if;
       end if;
     end if;
   end process;
