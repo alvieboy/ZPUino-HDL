@@ -43,6 +43,10 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_io is
+  generic (
+    spp_cap_in:  in std_logic_vector(zpuino_gpio_count-1 downto 0); -- SPP capable pin for INPUT
+    spp_cap_out:  in std_logic_vector(zpuino_gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -316,7 +320,9 @@ begin
 
     gpio_i      => gpio_i,
     gpio_t      => gpio_t,
-    gpio_o      => gpio_o
+    gpio_o      => gpio_o,
+    spp_cap_in   => (others => '1'),
+    spp_cap_out   => (others => '1')
   );
 
   --

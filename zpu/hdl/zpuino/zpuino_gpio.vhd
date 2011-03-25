@@ -62,7 +62,10 @@ entity zpuino_gpio is
     spp_en:   in std_logic_vector(gpio_count-1 downto 0);
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(gpio_count-1 downto 0)
+    gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
+
+    spp_cap_in:  in std_logic_vector(gpio_count-1 downto 0); -- SPP capable pin for INPUT
+    spp_cap_out:  in std_logic_vector(gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
   );
 end entity zpuino_gpio;
 
@@ -91,7 +94,7 @@ gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
 tgen: for i in 0 to gpio_count-1 generate
 
-  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data,clk )
+  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data,clk,spp_cap_out )
     variable pin_index: integer;
   begin
     if zpuino_pps_enabled then
@@ -108,7 +111,7 @@ tgen: for i in 0 to gpio_count-1 generate
       if zpuino_pps_enabled then
         -- Zero maps to own GPIO port.
 
-        if pin_index=0 then
+        if pin_index=0 or spp_cap_out(i) = '0' then
           gpio_o(i) <= gpio_q(i);
         else
           gpio_o(i) <= spp_data(pin_index-1); -- Offset -1
@@ -116,7 +119,7 @@ tgen: for i in 0 to gpio_count-1 generate
 
       else
         -- PPS disabled, map directly to pin
-        if spp_en( i )='1' then
+        if spp_en( i )='1' and spp_cap_out(i)='0' then
           gpio_o(i) <= spp_data(i);
         else
           gpio_o(i) <= gpio_q(i);
@@ -127,10 +130,10 @@ tgen: for i in 0 to gpio_count-1 generate
     end if;
   end process;
 
-  process( gpio_i_q(i), gpio_i(i), output_mapper_q(i),clk )
+  process( gpio_i_q(i), gpio_i(i), output_mapper_q(i),clk,spp_cap_in )
     variable pin_index: integer;
   begin
-    if zpuino_pps_enabled then
+    if zpuino_pps_enabled and spp_cap_in(i)='1' then
       pin_index := output_mapper_q(i);
     else
       pin_index := i;
