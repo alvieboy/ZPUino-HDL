@@ -29,6 +29,8 @@
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
 #define BOOTLOADER_CMD_SSTAAIPROGRAM 0x07
 
+#define BOOTLOADER_MAX_CMD 0x07
+
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 1
 #else
@@ -80,7 +82,7 @@ void sendByte(unsigned int i)
 		outbyte(i);
 }
 
-static inline void prepareSend()
+static void prepareSend()
 {
 	CRC16ACC=0xFFFF;
 	outbyte(HDLC_frameFlag);
@@ -147,7 +149,7 @@ void spi_disable()
 	digitalWriteS<SPI_FLASH_SEL_PIN,HIGH>::apply();
 }
 
-static inline void spi_enable()
+static void spi_enable()
 {
 	digitalWriteS<SPI_FLASH_SEL_PIN,LOW>::apply();
 }
@@ -352,7 +354,7 @@ static unsigned int spi_read_id()
 }
 
 
-static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
+static void cmd_raw_send_receive()
 {
 	unsigned int count;
 	unsigned int rxcount;
@@ -395,10 +397,11 @@ static void cmd_raw_send_receive(unsigned char *buffer,unsigned int size)
 }
 
 
-static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
+static void cmd_sst_aai_program()
 {
 	unsigned int count;
-    unsigned int txcount;
+	unsigned int txcount;
+#ifndef __ZPUINO_S3E_EVAL__
 
 	// buffer[1-2] is number of TX bytes
     // buffer[3-5] is address to program
@@ -441,6 +444,7 @@ static void cmd_sst_aai_program(unsigned char *buffer,unsigned int size)
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
+#endif
 }
 
 
@@ -518,8 +522,20 @@ static void cmd_leavepgm()
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_LEAVEPGM));
 	finishSend();
-
 }
+
+typedef void(*cmdhandler_t)(void);
+
+static const cmdhandler_t handlers[] = {
+	&cmd_version,
+	&cmd_identify,
+	&cmd_raw_send_receive,
+	&cmd_enterpgm,
+	&cmd_leavepgm,
+	&cmd_waitready,
+	&cmd_sst_aai_program
+};
+
 
 void processCommand()
 {
@@ -535,42 +551,15 @@ void processCommand()
 	tcrc|=buffer[--bufferpos]<<8;
 	unsigned int rcrc=CRC16ACC;
 	if (rcrc!=tcrc) {
-		prepareSend();
-		sendByte(0xff);
-		sendByte( tcrc >> 8 );
-		sendByte( tcrc );
-		sendByte( rcrc >> 8 );
-		sendByte( rcrc );
-		/* Send received packet */
-		for (pos=0;pos<bufferpos;pos++)
-			sendByte(buffer[pos]);
-		finishSend();
 		return;
 	}
-	/* CRC ok */
-	switch(buffer[0]) {
-	case BOOTLOADER_CMD_VERSION:
-		cmd_version();
-		break;
-	case BOOTLOADER_CMD_IDENTIFY:
-		cmd_identify();
-		break;
-	case BOOTLOADER_CMD_RAWREADWRITE:
-		cmd_raw_send_receive(buffer, bufferpos);
-		break;
-	case BOOTLOADER_CMD_ENTERPGM:
-		cmd_enterpgm();
-		break;
-	case BOOTLOADER_CMD_LEAVEPGM:
-		cmd_leavepgm();
-		break;
-	case BOOTLOADER_CMD_WAITREADY:
-		cmd_waitready();
-		break;
-	case BOOTLOADER_CMD_SSTAAIPROGRAM:
-		cmd_sst_aai_program(buffer,bufferpos);
-		break;
-	}
+
+	pos=buffer[0];
+
+	if (pos>BOOTLOADER_MAX_CMD)
+		return;
+	pos--;
+	handlers[pos]();
 }
 
 #ifdef SIMULATION
