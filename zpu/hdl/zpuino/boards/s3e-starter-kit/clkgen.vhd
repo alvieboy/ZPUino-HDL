@@ -1,5 +1,5 @@
 --
---  System Clock generator for ZPUINO
+--  System Clock generator for ZPUINO (Nexys2 board)
 -- 
 --  Copyright 2010 Alvaro Lopes <alvieboy@alvie.com>
 -- 
@@ -52,25 +52,29 @@ end entity clkgen;
 
 architecture behave of clkgen is
 
-signal dcmlocked: std_logic;
+signal dcmlocked_a: std_logic;
+signal dcmlocked_b: std_logic;
 signal dcmclock: std_logic;
+signal dcmclock_b: std_logic;
 
 signal rst1_q: std_logic;
 signal rst2_q: std_logic;
 signal clkout_i: std_logic;
+signal clkout_tmp: std_logic;
 signal clkin_i: std_logic;
 signal clkfb: std_logic;
+signal clkfb_b: std_logic;
 signal clk0: std_logic;
-
+signal clk0_b: std_logic;
 begin
 
   clkout <= clkout_i;
 
   rstout <= rst1_q;
 
-  process(dcmlocked, clkout_i, rstin)
+  process(dcmlocked_a,dcmlocked_b, clkout_i, rstin)
   begin
-    if dcmlocked='0' or rstin='1' then
+    if dcmlocked_a='0' or dcmlocked_b='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -83,9 +87,16 @@ begin
 
   -- Clock buffers
 
-  clkfx_inst: BUFG
+--  clkfx_inst: BUFG
+--    port map (
+--      I =>  dcmclock,
+--      O =>  clkout_tmp
+--    );
+  clkout_tmp <= dcmclock;
+
+  clkfx2_inst: BUFG
     port map (
-      I =>  dcmclock,
+      I =>  dcmclock_b,
       O =>  clkout_i
     );
    
@@ -101,14 +112,20 @@ begin
       O=> clkfb
     );
 
+  clkfb2_inst: BUFG
+    port map (
+      I=> clk0_b,
+      O=> clkfb_b
+    );
 
-DCM_inst : DCM
+
+DCM_inst : DCM -- Generate a 32MHz clock
   generic map (
     CLKDV_DIVIDE => 2.0,          -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
-    CLKFX_DIVIDE => 1,            -- Can be any integer from 1 to 32
-    CLKFX_MULTIPLY => 2,          -- Can be any integer from 1 to 32
+    CLKFX_DIVIDE => 25,--8,            -- Can be any integer from 1 to 32
+    CLKFX_MULTIPLY => 16,--23,          -- Can be any integer from 1 to 32
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
-    CLKIN_PERIOD => 20.0,         -- Specify period of input clock
+    CLKIN_PERIOD => 20.00,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
     CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
     DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
@@ -129,7 +146,7 @@ DCM_inst : DCM
     CLKDV => open, -- Divided DCM CLK out (CLKDV_DIVIDE)
     CLKFX => dcmclock, -- DCM CLK synthesis out (M/D)
     CLKFX180 => open, -- 180 degree CLK synthesis out
-    LOCKED => dcmlocked, -- DCM LOCK status output
+    LOCKED => dcmlocked_a, -- DCM LOCK status output
     PSDONE => open, -- Dynamic phase adjust done output
     STATUS => open, -- 8-bit DCM status bits output
     CLKFB => clkfb, -- DCM clock feedback
@@ -139,4 +156,46 @@ DCM_inst : DCM
     PSINCDEC => '0', -- Dynamic phase adjust increment/decrement
     RST => '0' -- DCM asynchronous reset input
   );
+
+
+DCM2_inst : DCM -- Generate 96Mhz
+  generic map (
+    CLKDV_DIVIDE => 2.0,          -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
+    CLKFX_DIVIDE => 1,--8,            -- Can be any integer from 1 to 32
+    CLKFX_MULTIPLY => 3,--23,          -- Can be any integer from 1 to 32
+    CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
+    CLKIN_PERIOD => 31.25,         -- Specify period of input clock
+    CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
+    CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
+    DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
+    DFS_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for frequency synthesis
+    DLL_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for DLL
+    DUTY_CYCLE_CORRECTION => TRUE,          -- Duty cycle correction, TRUE or FALSE
+    FACTORY_JF => X"C080",                  -- FACTORY JF Values
+    PHASE_SHIFT => 0,                       -- Amount of fixed phase shift from -255 to 255
+    STARTUP_WAIT => FALSE                   -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
+    ) 
+  port map (
+    CLK0 => clk0_b, -- 0 degree DCM CLK ouptput
+    CLK180 => open, -- 180 degree DCM CLK output
+    CLK270 => open, -- 270 degree DCM CLK output
+    CLK2X => open, -- 2X DCM CLK output
+    CLK2X180 => open, -- 2X, 180 degree DCM CLK out
+    CLK90 => open, -- 90 degree DCM CLK output
+    CLKDV => open, -- Divided DCM CLK out (CLKDV_DIVIDE)
+    CLKFX => dcmclock_b, -- DCM CLK synthesis out (M/D)
+    CLKFX180 => open, -- 180 degree CLK synthesis out
+    LOCKED => dcmlocked_b, -- DCM LOCK status output
+    PSDONE => open, -- Dynamic phase adjust done output
+    STATUS => open, -- 8-bit DCM status bits output
+    CLKFB => clkfb_b, -- DCM clock feedback
+    CLKIN => clkout_tmp, -- Clock input (from IBUFG, BUFG or DCM)
+    PSCLK => '0', -- Dynamic phase adjust clock input
+    PSEN => '0', -- Dynamic phase adjust enable input
+    PSINCDEC => '0', -- Dynamic phase adjust increment/decrement
+    RST => '0' -- DCM asynchronous reset input
+  );
+
+
+
 end behave;
