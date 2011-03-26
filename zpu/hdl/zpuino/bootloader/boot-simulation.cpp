@@ -10,7 +10,25 @@
 
 unsigned int _memreg[4];
 
+
+
 extern "C" void (*ivector)(void);
+
+void spi_disable()
+{
+	digitalWriteS<SPI_FLASH_SEL_PIN,HIGH>::apply();
+}
+
+static inline void spi_enable()
+{
+	digitalWriteS<SPI_FLASH_SEL_PIN,LOW>::apply();
+}
+
+static inline void spiwrite(unsigned int i)
+{
+	SPIDATA=i;
+}
+
 
 void __attribute__((noreturn)) spi_copy()
 {
@@ -53,16 +71,31 @@ void configure_pins()
 	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+
+	GPIOPPSOUT( 0 ) = IOPIN_UART_TX;
+	GPIOPPSOUT( 4 ) = IOPIN_SPI_SCK;
+	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
+	GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
+	GPIOPPSIN( IOPIN_UART_RX ) = 1;
+
 	pinModeS<IOPIN_UART_TX,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();
-	pinModeS<FPGA_SS_B,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_MISO,INPUT>::apply();
+
+	pinModeS<FPGA_SS_B,OUTPUT>::apply();
+
+	spi_disable();
+	spi_enable();
+	spiwrite(0xaa);
+    spi_disable();
+
 }
 
 extern "C" int main(int argc,char**argv)
 {
 //	ivector = &_zpu_interrupt;
+	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	configure_pins();
 

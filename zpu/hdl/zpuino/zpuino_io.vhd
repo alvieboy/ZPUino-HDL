@@ -321,8 +321,8 @@ begin
     gpio_i      => gpio_i,
     gpio_t      => gpio_t,
     gpio_o      => gpio_o,
-    spp_cap_in   => (others => '1'),
-    spp_cap_out   => (others => '1')
+    spp_cap_in   => spp_cap_in,
+    spp_cap_out  => spp_cap_out
   );
 
   --

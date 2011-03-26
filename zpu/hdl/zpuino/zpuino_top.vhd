@@ -99,6 +99,10 @@ begin
     );
 
   io: zpuino_io
+    generic map (
+      spp_cap_in => spp_cap_in,
+      spp_cap_out => spp_cap_out
+    )
     port map (
       clk           => clk,
 	 	  areset        => areset,

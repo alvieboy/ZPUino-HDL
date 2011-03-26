@@ -44,6 +44,10 @@ use work.zpuino_config.all;
 package zpuinopkg is
 
   component zpuino_io is
+    generic (
+      spp_cap_in:  in std_logic_vector(zpuino_gpio_count-1 downto 0); -- SPP capable pin for INPUT
+      spp_cap_out:  in std_logic_vector(zpuino_gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
+    );
     port (
       clk:      in std_logic;
   	 	areset:   in std_logic;

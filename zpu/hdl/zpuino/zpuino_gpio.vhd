@@ -205,8 +205,8 @@ begin
       gpio_q <= (others => DontCareValue);
       -- Default values for input/output mapper
       for i in 0 to 127 loop
-        input_mapper_q(i) <= i;
-        output_mapper_q(i) <= i;
+        input_mapper_q(i) <= 0;
+        output_mapper_q(i) <= 0;
       end loop;
     elsif we='1' then
       case address(8 downto 7) is

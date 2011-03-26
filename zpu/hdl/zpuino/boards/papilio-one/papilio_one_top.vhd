@@ -75,6 +75,10 @@ architecture behave of papilio_one_top is
   end component clkgen;
 
   component zpuino_top is
+  generic (
+    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
+    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -109,6 +113,11 @@ architecture behave of papilio_one_top is
 
   signal rx: std_logic;
   signal tx: std_logic;
+
+  constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+    "111111111111111111111111111111111111111111111111111000";
+  constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+    "111111111111111111111111111111111111111111111111101111";
 
 begin
 
@@ -154,6 +163,10 @@ begin
   ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
 
   zpuino:zpuino_top
+  generic map (
+    spp_cap_in => spp_cap_in,
+    spp_cap_out => spp_cap_out
+  )
   port map (
     clk           => sysclk,
 	 	areset        => sysrst,
