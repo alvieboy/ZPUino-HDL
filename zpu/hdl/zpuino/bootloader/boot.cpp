@@ -689,7 +689,7 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-	UARTCTL = BAUDRATEGEN(1000000) | BIT(UARTEN);
+	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
