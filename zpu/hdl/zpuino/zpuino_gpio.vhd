@@ -62,7 +62,10 @@ entity zpuino_gpio is
     spp_en:   in std_logic_vector(gpio_count-1 downto 0);
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(gpio_count-1 downto 0)
+    gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
+
+    spp_cap_in:  in std_logic_vector(gpio_count-1 downto 0); -- SPP capable pin for INPUT
+    spp_cap_out:  in std_logic_vector(gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
   );
 end entity zpuino_gpio;
 
@@ -91,7 +94,7 @@ gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
 tgen: for i in 0 to gpio_count-1 generate
 
-  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data,clk )
+  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data,clk,spp_cap_out )
     variable pin_index: integer;
   begin
     if zpuino_pps_enabled then
@@ -100,18 +103,37 @@ tgen: for i in 0 to gpio_count-1 generate
       pin_index := i;
     end if;
     if rising_edge(clk) then -- synchronous output
-      if spp_en( pin_index )='1' then
-        gpio_o(i) <= spp_data( pin_index );
+
+      -- Enforce RST on gpio_o
+      if areset='1' then
+        gpio_o(i)<='0';
       else
-        gpio_o(i) <= gpio_q(i);
+      if zpuino_pps_enabled then
+        -- Zero maps to own GPIO port.
+
+        if pin_index=0 or spp_cap_out(i) = '0' then
+          gpio_o(i) <= gpio_q(i);
+        else
+          gpio_o(i) <= spp_data(pin_index-1); -- Offset -1
+        end if;
+
+      else
+        -- PPS disabled, map directly to pin
+        if spp_en( i )='1' and spp_cap_out(i)='0' then
+          gpio_o(i) <= spp_data(i);
+        else
+          gpio_o(i) <= gpio_q(i);
+        end if;
+
+      end if;
       end if;
     end if;
   end process;
 
-  process( gpio_i_q(i), gpio_i(i), output_mapper_q(i),clk )
+  process( gpio_i_q(i), gpio_i(i), output_mapper_q(i),clk,spp_cap_in )
     variable pin_index: integer;
   begin
-    if zpuino_pps_enabled then
+    if zpuino_pps_enabled and spp_cap_in(i)='1' then
       pin_index := output_mapper_q(i);
     else
       pin_index := i;
@@ -183,8 +205,8 @@ begin
       gpio_q <= (others => DontCareValue);
       -- Default values for input/output mapper
       for i in 0 to 127 loop
-        input_mapper_q(i) <= i;
-        output_mapper_q(i) <= i;
+        input_mapper_q(i) <= 0;
+        output_mapper_q(i) <= 0;
       end loop;
     elsif we='1' then
       case address(8 downto 7) is

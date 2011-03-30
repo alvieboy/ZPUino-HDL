@@ -59,6 +59,10 @@ architecture behave of tb_zpuino is
 
 
   component zpuino_top is
+  generic (
+    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
+    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -146,6 +150,11 @@ begin
   gpio_i(48) <= uart_rx;
 
   top: zpuino_top
+    generic map (
+    spp_cap_in => (others => '1'),
+    spp_cap_out=> (others => '1')
+   )
+
     port map (
       clk     => w_clk,
 	 	  areset   => w_rst,

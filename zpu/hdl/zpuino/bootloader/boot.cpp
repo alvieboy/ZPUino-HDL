@@ -570,11 +570,21 @@ void configure_pins()
 	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+
+	GPIOPPSOUT( 0 ) = IOPIN_UART_TX;
+	GPIOPPSOUT( 4 ) = IOPIN_SPI_SCK;
+	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
+
+	GPIOPPSOUT( 40 ) = IOPIN_GPIO;
+
 	pinModeS<IOPIN_UART_TX,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();
 	pinModeS<FPGA_SS_B,OUTPUT>::apply();
+
+	GPIOPPSIN( IOPIN_UART_RX ) = 1;
 	pinModeS<IOPIN_SPI_MISO,INPUT>::apply();
+
 }
 
 #else

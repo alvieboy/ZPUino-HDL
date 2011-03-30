@@ -43,6 +43,10 @@ use work.zpuinopkg.all;
 use work.zpuino_config.all;
 
 entity zpuino_top is
+  generic (
+    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
+    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -50,6 +54,7 @@ entity zpuino_top is
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+
     rx:       in std_logic;
     tx:       out std_logic
   );
@@ -94,6 +99,10 @@ begin
     );
 
   io: zpuino_io
+    generic map (
+      spp_cap_in => spp_cap_in,
+      spp_cap_out => spp_cap_out
+    )
     port map (
       clk           => clk,
 	 	  areset        => areset,
