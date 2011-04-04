@@ -72,13 +72,12 @@ void configure_pins()
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
 
-	GPIOPPSOUT( 0 ) = IOPIN_UART_TX;
 	GPIOPPSOUT( 4 ) = IOPIN_SPI_SCK;
 	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
-	GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
-	GPIOPPSIN( IOPIN_UART_RX ) = 1;
+	GPIOPPSIN( IOPIN_SPI_MISO ) = 2;
 
-	pinModeS<IOPIN_UART_TX,OUTPUT>::apply();
+	GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
+
 	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_MISO,INPUT>::apply();
@@ -88,7 +87,15 @@ void configure_pins()
 	spi_disable();
 	spi_enable();
 	spiwrite(0xaa);
-    spi_disable();
+	spi_disable();
+
+	// Read ID
+	spi_enable();
+	spiwrite(0x9F);
+	spiwrite(0x00);
+	spiwrite(0x00);
+	spiwrite(0x00);
+	spi_disable();
 
 }
 

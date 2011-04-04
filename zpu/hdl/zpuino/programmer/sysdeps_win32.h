@@ -41,6 +41,9 @@ typedef struct win32_port *connection_t;
 
 #define cpu_to_le16(x) ((((x)&0x00ff)<<8)|((x)&0x00ff))
 
+/* ARGV helpers */
+
+int makeargv( char *string, char ***argv );
+void freemakeargv(char **argv);
 
 #endif
-

@@ -47,3 +47,13 @@ template<unsigned int pin, bool val>
 				pinModeOutputS<pin>::apply();
 		}
 	};
+
+static inline __attribute((always_inline)) void pinModeIndirect(unsigned int pa[4],int pin, int direction)
+{
+	if (direction) {
+		pa[pin/32] &= ~(1<<(pin%32));
+	} else {
+		pa[pin/32] |= 1<<(pin%32);
+	}
+}
+

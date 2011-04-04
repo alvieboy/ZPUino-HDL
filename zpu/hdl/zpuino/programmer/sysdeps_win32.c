@@ -34,9 +34,48 @@
 	fprintf(stderr,x); \
     fflush(stderr);
   */
-#define debug(x...)
+#define debug(x...) do { printf(x); fflush(stdout); } while (0)
 
 extern int verbose;
+
+int conn_set_speed(connection_t conn, speed_t speed)
+{
+	struct win32_port *port = (struct win32_port*)conn;
+
+	port->dcb.DCBlength = sizeof( DCB );
+	if ( !GetCommState( port->hcomm, &port->dcb ) )
+	{
+		fprintf(stderr,"GetCommState: %lu\n",GetLastError());
+		return -1;
+	}
+
+	port->dcb.BaudRate        = speed;
+	port->dcb.ByteSize        = 8;
+	port->dcb.Parity          = NOPARITY;
+	port->dcb.StopBits        = ONESTOPBIT;
+	port->dcb.fDtrControl     = DTR_CONTROL_DISABLE;
+	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
+	port->dcb.fOutxCtsFlow    = FALSE;
+	port->dcb.fOutxDsrFlow    = FALSE;
+	port->dcb.fDsrSensitivity = FALSE;
+	port->dcb.fOutX           = FALSE;
+	port->dcb.fInX            = FALSE;
+	port->dcb.fTXContinueOnXoff = FALSE;
+	port->dcb.XonChar         = 0x11;
+	port->dcb.XoffChar        = 0x13;
+	port->dcb.XonLim          = 0;
+	port->dcb.XoffLim         = 0;
+	port->dcb.fParity = TRUE;
+
+	port->dcb.EvtChar = '\0';
+
+	if ( !SetCommState( port->hcomm, &port->dcb ) )
+	{
+		fprintf(stderr,"SetCommState: %lu\n",GetLastError());
+		return -1;
+	}
+	return 0;
+}
 
 int conn_open(const char *device,speed_t speed, connection_t *conn)
 {
@@ -63,35 +102,8 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	}
     debug("Port %s opened\n",device);
 
-	port->dcb.DCBlength = sizeof( DCB );
-	if ( !GetCommState( port->hcomm, &port->dcb ) )
-	{
-		fprintf(stderr,"GetCommState: %lu\n",GetLastError());
-		return -1;
-	}
-
-	port->dcb.BaudRate        = speed ;
-	port->dcb.ByteSize        = 8;
-	port->dcb.Parity          = NOPARITY;
-	port->dcb.StopBits        = ONESTOPBIT;
-	port->dcb.fDtrControl     = DTR_CONTROL_DISABLE;
-	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
-	port->dcb.fOutxCtsFlow    = FALSE;
-	port->dcb.fOutxDsrFlow    = FALSE;
-	port->dcb.fDsrSensitivity = FALSE;
-	port->dcb.fOutX           = FALSE;
-	port->dcb.fInX            = FALSE;
-	port->dcb.fTXContinueOnXoff = FALSE;
-	port->dcb.XonChar         = 0x11;
-	port->dcb.XoffChar        = 0x13;
-	port->dcb.XonLim          = 0;
-	port->dcb.XoffLim         = 0;
-	port->dcb.fParity = TRUE;
-
-	port->dcb.EvtChar = '\0';
-
-	if ( !SetCommState( port->hcomm, &port->dcb ) )
-	{
+	if(conn_set_speed((connection_t)conn, CBR_115200)<0) {
+		fprintf(stderr,"Cannot set port flags: %ld\n",GetLastError());
 		return -1;
 	}
 
@@ -119,7 +131,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	*conn = port;
 
-    debug("Port %s ready\n",device);
+	debug("Port %s ready\n",device);
 
 	return 0;
 }
@@ -332,5 +344,130 @@ void conn_prepare(connection_t conn)
 	conn_write(conn,buffer,1);
 }
 
+
+#define PARSER_MAX_ARGS 128
+
+void remove_quotes( char *string )
+{
+	char *source = string;
+	char *dest = string;
+
+	while (*source) {
+		if (*source == '"') {
+			source++;
+            continue;
+		}
+		if (source!=dest) {
+            *dest = *source;
+		}
+		source++;
+        dest++;
+	}
+    *dest = '\0';
+}
+
+int makeargv( char *string, char ***argv )
+{
+	enum {
+		READ_ARG_CHAR,
+		READ_STR_CHAR,
+		READ_DELIMITER
+	} state = READ_ARG_CHAR;
+
+	char *current_argv[ PARSER_MAX_ARGS ];
+	unsigned int current_token = 0;
+	char *current_token_start = string;
+	char *current_char = string;
+	int i;
+
+
+	while ( *current_char != '\0' ) {
+		switch ( state ) {
+		case READ_ARG_CHAR:
+			switch ( *current_char ) {
+			case '\n':
+			case '\t':
+			case ' ':
+				*current_char = '\0';
+				state = READ_DELIMITER;
+				current_argv[ current_token ] = current_token_start;
+				current_token++;
+				break;
+
+			case '"':
+				/* String coming, probably. */
+				state = READ_STR_CHAR;
+				break;
+			default:
+				break;
+			}
+			break;
+
+		case READ_STR_CHAR:
+			switch (*current_char) {
+			case '"':
+				state = READ_ARG_CHAR;
+				break;
+			default:
+				break;
+			}
+			break;
+		case READ_DELIMITER:
+			switch (*current_char) {
+			case '\n':
+			case '\t':
+			case ' ':
+				*current_char = '\0';
+				break;
+			case '"':
+				state = READ_STR_CHAR;
+				current_token_start = current_char;
+				break;
+			default:
+				state = READ_ARG_CHAR;
+				current_token_start = current_char;
+				break;
+			}
+		}
+		current_char++;
+	}
+
+	/* Remaining */
+
+	if ( *current_token_start ) {
+		current_argv[current_token++] = current_token_start;
+	}
+
+	/* Allocate */
+	if (current_token==0) {
+		*argv = NULL;
+		return 0;
+	}
+
+	*argv = (char**)malloc((current_token+1)*sizeof(char *));
+
+	for (i=0; i<current_token; i++) {
+		remove_quotes( current_argv[i] );
+		*(*argv+i) = strdup(current_argv[i]);
+	}
+
+	*(*argv+i) = NULL;
+
+	return current_token;
+}
+
+
+void freemakeargv(char **argv)
+{
+	char **saveargv = argv;
+	if (argv == NULL)
+		return;
+
+	while (*argv != NULL) {
+		free(*argv);
+		argv++;
+	}
+	free(saveargv);
+}
 
 #endif

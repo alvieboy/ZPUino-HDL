@@ -111,17 +111,15 @@
 /* PPS configuration */
 
 #define IOPIN_GPIO        0
-#define IOPIN_UART_RX     1
-#define IOPIN_UART_TX     2
-#define IOPIN_SPI_MISO    3
-#define IOPIN_SPI_MOSI    4
-#define IOPIN_SPI_SCK     5
-#define IOPIN_SIGMADELTA0 6
-#define IOPIN_TIMER0_OC   7
-#define IOPIN_TIMER1_OC   8
-#define IOPIN_USPI_MISO   9
-#define IOPIN_USPI_MOSI   10
-#define IOPIN_USPI_SCK    11
-#define IOPIN_SIGMADELTA1 16
+#define IOPIN_SPI_MISO    1
+#define IOPIN_SPI_MOSI    2
+#define IOPIN_SPI_SCK     3
+#define IOPIN_SIGMADELTA0 4
+#define IOPIN_TIMER0_OC   5
+#define IOPIN_TIMER1_OC   6
+#define IOPIN_USPI_MISO   7
+#define IOPIN_USPI_MOSI   8
+#define IOPIN_USPI_SCK    9
+#define IOPIN_SIGMADELTA1 14
 
 #endif

@@ -44,6 +44,7 @@ static char *serialport=NULL;
 static int is_simulator=0;
 static int only_read=0;
 static int ignore_limit=0;
+static int upload_only=0;
 static int user_offset=-1;
 static speed_t serial_speed = DEFAULT_SPEED;
 static int dry_run = 0;
@@ -62,9 +63,8 @@ unsigned short get_programmer_version()
 int parse_arguments(int argc,char **const argv)
 {
 	int p;
-
 	while (1) {
-		switch ((p=getopt(argc,argv,"RDvb:d:ro:ls:"))) {
+		switch ((p=getopt(argc,argv,"RDvb:d:ro:ls:U"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -97,6 +97,9 @@ int parse_arguments(int argc,char **const argv)
 			if (strncmp(serialport,"socket:",7)==0)
 				is_simulator=1;
 			break;
+		case 'U':
+			upload_only=1;
+			break;
 		default:
 			return 0;
 		}
@@ -113,6 +116,7 @@ int help(char *name)
 	printf("  -b binfile\tBinary file to program\n");
 	printf("  -l\t\tIgnore programming limit sent by bootloader\n");
 	printf("  -R\t\tPerform serial reset before programming\n");
+    printf("  -U\t\tUpload only, do not program flash\n");
 	printf("  -s speed\tUse specified serial port speed (default: 1000000)\n");
 	printf("  -v\t\tIncrease verbosity\n");
 	return -1;
@@ -121,13 +125,49 @@ int help(char *name)
 buffer_t *handle();
 buffer_t *process(unsigned char *buffer, size_t size);
 
+int set_baudrate(connection_t conn, speed_t baud)
+{
+	/* Request new baudrate */
+    buffer_t *b;
+	unsigned char txbuf;
+	int retries = 30;
+	speed_t speed;
+#ifdef WIN32
+	txbuf = 1;
+	speed = 250000;
+#else
+	txbuf = 2;
+	speed = 1000000;
+#endif
+
+	sendreceive(conn,&txbuf,1,300);
+	conn_set_speed(conn, speed);
+
+	while (retries>0) {
+		/* Reset */
+		conn_prepare(conn);
+		if (verbose>2) {
+			printf("Connecting at new speed...\n");
+		}
+		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
+		if (b)
+			break;
+		retries--;
+	}
+	if (b) {
+		buffer_free(b);
+		return -1;
+	}
+	return 0;
+}
+
 
 static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
 {
 	//unsigned char tmpbuf[32];
 	//struct timeval tv;
 	//int rd;
-    buffer_t *ret=NULL;
+	buffer_t *ret=NULL;
 	unsigned char *txbuf2;
 	//int retries=3;
 
@@ -152,82 +192,6 @@ static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsign
 			return ret;
 		}
 	} while(1);
-	/*
-	 do {
-		FD_ZERO(&rfs);
-		FD_SET(fd, &rfs);
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
-
-		switch (select(fd+1,&rfs,NULL,NULL,&tv)) {
-		case -1:
-			return NULL;
-		case 0:
-			// Timeout
-			if (!(--retries))
-				return NULL;
-			else
-				// Resend
-				sendpacket(fd,txbuf2,size+1);
-
-		default:
-			rd = read(fd,tmpbuf,sizeof(tmpbuf));
-			if (rd>0) {
-				if (verbose>2) {
-					int i;
-					printf("Rx:");
-					for (i=0; i<rd; i++) {
-						printf(" 0x%02x",tmpbuf[i]);
-					}
-					printf("\n");
-				}
-				ret = process(tmpbuf,rd);
-				if (ret) {
-					if (!validate) {
-
-						free(txbuf2);
-						return ret;
-					}
-					// Check return
-					if (ret->size<1) {
-						buffer_free(ret);
-						free(txbuf2);
-
-						return NULL;
-					}
-					// Check explicit CRC error
-					if (ret->buf[0] == 0xff) {
-						// Resend
-						if (verbose>0) {
-							printf("Reported CRC error %02x%02x / %02x%02x\n",
-								   ret->buf[1],
-								   ret->buf[2],
-								   ret->buf[3],
-								   ret->buf[4]);
-						}
-						sendpacket(fd,txbuf2,size+1);
-                        continue;
-					}
-
-					if (ret->buf[0] != REPLY(cmd)) {
-						if (verbose>0) {
-							printf("Invalid reply 0x%02x to command 0x%02x\n",
-								   ret->buf[0],REPLY(cmd));
-						}
-						buffer_free(ret);
-					}
-					free(txbuf2);
-					return ret;
-				}
-			} else {
-				if (errno==EINTR || errno==EAGAIN)
-					continue;
-				fprintf(stderr,"Cannot read from connection (%d) errno %d: %s\n",rd,errno,strerror(errno));
-				return NULL;
-			}
-		}
-		} while (1);
-		*/
 }
 
 buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout)
@@ -337,6 +301,61 @@ int read_flash(connection_t conn, flash_info_t *flash, size_t page)
 	return 0;
 }
 
+int do_upload(connection_t conn)
+{
+	struct stat st;
+	const unsigned int blocksize=512;
+	unsigned char dbuf[blocksize + 4];
+	unsigned int address = 0x1000;
+	int fin;
+	unsigned int size;
+
+	if (binfile) {
+		fin = open(binfile,O_RDONLY);
+		if (fin<0) {
+			perror("Cannot open input file");
+			return -1;
+		}
+
+		// STAT
+
+		fstat(fin,&st);
+		size = st.st_size;
+	} else {
+		fprintf(stderr,"Cannot upload without a binary file\n");
+		return -1;
+	}
+
+	if (verbose>0) {
+		printf("Uploading sketch, %d bytes\n",size);
+	}
+
+	do {
+		unsigned int blk = size>blocksize?blocksize:size;
+
+		if (read(fin,dbuf + 4, blk)<0)
+		{
+			perror("read");
+			return -1;
+		}
+		dbuf[0] = address>>8;
+		dbuf[1] = address&0xff;
+		dbuf[2] = blk>>8;
+		dbuf[3] = blk & 0xff;
+
+		buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 512 + 4, 500 );
+		if (b==NULL) {
+			fprintf(stderr,"Error programming memory\n");
+			close(fin);
+			return -1;
+		}
+		size-=blk;
+	} while (size);
+	close(fin);
+	return 0;
+
+}
+
 int main(int argc, char **argv)
 {
 	unsigned char buffer[8192];
@@ -350,12 +369,37 @@ int main(int argc, char **argv)
 	flash_info_t *flash;
 	int retries;
 
+	unsigned int size_bytes=0;
+	unsigned int pages=0;
+	unsigned char *buf=NULL;
+
 	struct stat st;
 	buffer_t *b;
+
+#ifdef WIN32
+	char **winargv;
+	char *win_command_line = GetCommandLine();
+	argc = makeargv(win_command_line,&winargv);
+    /*
+	printf("ARGC: %d\n",argc);
+	{
+		int i;
+		for (i=0;i<argc;i++) {
+			printf("ARGV %d: '%s'\n",i, winargv[i]);
+		}
+	}
+    */
+	if (parse_arguments(argc,winargv)<0) {
+		return help(winargv[0]);
+	}
+
+#else
 
 	if (parse_arguments(argc,argv)<0) {
 		return help(argv[0]);
 	}
+
+#endif
 
 	setvbuf(stderr,0,_IONBF,0);
 	setvbuf(stdout,0,_IONBF,0);
@@ -365,6 +409,7 @@ int main(int argc, char **argv)
 	}
 
 	if (open_device(serialport,&conn)<0) {
+		fprintf(stderr,"Could not open port, exiting...\n");
 		return -1;
 	}
 	retries = 10;
@@ -418,151 +463,159 @@ int main(int argc, char **argv)
 
 	buffer_free(b);
 
-	gettimeofday(&start,NULL);
+	/* Upload only does not care about flash chips */
+	if (!upload_only) {
 
-	if (user_offset>=0) {
-		printf("Using user-specified offset 0x%08x\n",user_offset);
-		spioffset=user_offset;
-	}
+		gettimeofday(&start,NULL);
 
-	b = sendreceivecommand(conn,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
-
-	if (b) {
-		if (verbose>0)
-			printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
-
-		/* Find flash */
-		flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
-
-		if (NULL==flash) {
-			fprintf(stderr,"Unknown flash type, exiting\n");
-			conn_close(conn);
-			buffer_free(b);
-			return -1;
-		}
-		if (verbose>0)
-			printf("Detected %s flash\n", flash->name);
-	} else {
-		fprintf(stderr,"Cannot identify flash\n");
-		conn_close(conn);
-		return -1;
-	}
-
-	/* Align offset */
-	spioffset_page = spioffset / flash->pagesize;
-	spioffset_sector = spioffset / flash->sectorsize;
-
-	if (verbose>0) {
-		printf("Will program sector %d (page %d), original offset 0x%08x\n", spioffset_sector,spioffset_page,spioffset);
-	}
-
-	/* Ensure SPI offset is aligned */
-	if (!only_read) {
-		if (spioffset % flash->pagesize!=0) {
-			fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
-			conn_close(conn);
-			return -1;
-		}
-		if (spioffset % flash->sectorsize!=0) {
-			fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
-			conn_close(conn);
-			return -1;
-		}
-	}
-
-	unsigned int size_bytes=0;
-	unsigned int pages=0;
-	unsigned char *buf=NULL;
-
-	buffer_free(b);
-
-	// Get file
-	if (binfile) {
-		int fin = open(binfile,O_RDONLY);
-		if (fin<0) {
-			perror("Cannot open input file");
-			return -1;
+		if (user_offset>=0) {
+			printf("Using user-specified offset 0x%08x\n",user_offset);
+			spioffset=user_offset;
 		}
 
-		// STAT
+		b = sendreceivecommand(conn,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
 
-		fstat(fin,&st);
+		if (b) {
+			if (verbose>0)
+				printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
 
-		unsigned binsize = st.st_size;
+			/* Find flash */
+			flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
 
-		if (version>0x0104 && user_offset==-1) {
-			// Add placeholders for size and CRC
-			binsize += sizeof(uint32_t);
-		}
-
-		size_bytes = ALIGN(binsize,flash->pagesize);
-		pages = size_bytes/flash->pagesize;
-
-		unsigned int aligned_toword_size = ALIGN(st.st_size,sizeof(uint32_t));
-		unsigned int size_words = aligned_toword_size/sizeof(uint32_t);
-
-		if (verbose>0)
-			printf("Need to program %u %u bytes (%d pages)\n",
-				   (unsigned) binsize,
-				   size_bytes,
-				   pages);
-
-		/* Ensure there's enough space */
-		if (ignore_limit) {
-			printf("Ignoring space limit for programming\n");
-
-		} else {
-			if (aligned_toword_size > codesize) {
-				fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
-						(unsigned)aligned_toword_size,codesize);
+			if (NULL==flash) {
+				fprintf(stderr,"Unknown flash type, exiting\n");
 				conn_close(conn);
-				close(fin);
+				buffer_free(b);
+				return -1;
+			}
+			if (verbose>0)
+				printf("Detected %s flash\n", flash->name);
+		} else {
+			fprintf(stderr,"Cannot identify flash\n");
+			conn_close(conn);
+			return -1;
+		}
+
+		/* Align offset */
+		spioffset_page = spioffset / flash->pagesize;
+		spioffset_sector = spioffset / flash->sectorsize;
+
+		if (verbose>0) {
+			printf("Will program sector %d (page %d), original offset 0x%08x\n", spioffset_sector,spioffset_page,spioffset);
+		}
+
+		/* Ensure SPI offset is aligned */
+		if (!only_read) {
+			if (spioffset % flash->pagesize!=0) {
+				fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
+				conn_close(conn);
+				return -1;
+			}
+			if (spioffset % flash->sectorsize!=0) {
+				fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
+				conn_close(conn);
 				return -1;
 			}
 		}
 
-		buf = calloc(1,size_bytes);
+		buffer_free(b);
 
-		unsigned char *bufp = buf;
-
-		if (version>0x0104 && user_offset==-1) {
-			// Move pointer up, so we can write sketchsize and CRC
-			bufp += sizeof(uint32_t);
-		}
-
-		if(verbose>2) {
-			fprintf(stderr,"Reading data, %lu bytes\n",st.st_size);
-		}
-
-		read(fin,bufp,st.st_size);
-		close(fin);
-
-		// Compute checksum if needed
-
-		if (version>0x0104 && user_offset==-1) {
-			uint16_t *sketchsize = (uint16_t*)buf;
-			uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
-			uint16_t tcrc = 0xffff;
-
-			unsigned i;
-
-			if(verbose>2) {
-				fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
+		// Get file
+		if (binfile) {
+			int fin = open(binfile,O_RDONLY);
+			if (fin<0) {
+				perror("Cannot open input file");
+				return -1;
 			}
 
-			*sketchsize = cpu_to_le16(size_words);
-			// Go, compute cksum
-			for (i=0;i<aligned_toword_size;i++) {
-				crc16_update(&tcrc,bufp[i]);
-				if(verbose>3 && (i%32)==0) {
-					fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
+			// STAT
+
+			fstat(fin,&st);
+
+			unsigned binsize = st.st_size;
+
+			if (version>0x0104 && user_offset==-1) {
+				// Add placeholders for size and CRC
+				binsize += sizeof(uint32_t);
+			}
+
+			size_bytes = ALIGN(binsize,flash->pagesize);
+			pages = size_bytes/flash->pagesize;
+
+			unsigned int aligned_toword_size = ALIGN(st.st_size,sizeof(uint32_t));
+			unsigned int size_words = aligned_toword_size/sizeof(uint32_t);
+
+			if (verbose>0)
+				printf("Need to program %u %u bytes (%d pages)\n",
+					   (unsigned) binsize,
+					   size_bytes,
+					   pages);
+
+			/* Ensure there's enough space */
+			if (ignore_limit) {
+				printf("Ignoring space limit for programming\n");
+
+			} else {
+				if (aligned_toword_size > codesize) {
+					fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
+							(unsigned)aligned_toword_size,codesize);
+					conn_close(conn);
+					close(fin);
+					return -1;
 				}
 			}
-			if(verbose>2) {
-				fprintf(stderr,"Final CRC: %04x\n",tcrc);
+
+			buf = calloc(1,size_bytes);
+
+			unsigned char *bufp = buf;
+
+			if (version>0x0104 && user_offset==-1) {
+				// Move pointer up, so we can write sketchsize and CRC
+				bufp += sizeof(uint32_t);
 			}
-			*crc = cpu_to_le16(tcrc);
+
+			if(verbose>2) {
+				fprintf(stderr,"Reading data, %lu bytes\n",st.st_size);
+			}
+
+			read(fin,bufp,st.st_size);
+			close(fin);
+
+			// Compute checksum if needed
+
+			if (version>0x0104 && user_offset==-1) {
+				uint16_t *sketchsize = (uint16_t*)buf;
+				uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
+				uint16_t tcrc = 0xffff;
+
+				unsigned i;
+
+				if(verbose>2) {
+					fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
+				}
+
+				*sketchsize = cpu_to_le16(size_words);
+				// Go, compute cksum
+				for (i=0;i<aligned_toword_size;i++) {
+					crc16_update(&tcrc,bufp[i]);
+					if(verbose>3 && (i%32)==0) {
+						fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
+					}
+				}
+				if(verbose>2) {
+					fprintf(stderr,"Final CRC: %04x\n",tcrc);
+				}
+				*crc = cpu_to_le16(tcrc);
+			}
 		}
+	}
+	// Switch to correct baud rate
+	set_baudrate(conn,serial_speed);
+
+	if (upload_only) {
+		int r = do_upload(conn);
+		conn_close(conn);
+		return r;
 	}
 
 	// compute sector erase
@@ -702,6 +755,10 @@ int main(int argc, char **argv)
 #endif
 
 	printf("Programming completed successfully in %.02f seconds.\n", (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
+
+#ifdef WIN32
+	freemakeargv(argv);
+#endif
 
 	return 0;
 }

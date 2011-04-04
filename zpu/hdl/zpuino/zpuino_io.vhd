@@ -81,9 +81,9 @@ architecture behave of zpuino_io is
   signal uart_enabled:  std_logic;
 
   -- SPP signal is one more than GPIO count
-  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
-  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
-  signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 1);
+  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 1);
+  --signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 1);
 
   signal timers_interrupt:  std_logic_vector(1 downto 0);
   signal timers_spp_data: std_logic_vector(1 downto 0);
@@ -316,7 +316,7 @@ begin
 
     spp_data  => gpio_spp_data,
     spp_read  => gpio_spp_read,
-    spp_en    => gpio_spp_en,
+    --spp_en    => gpio_spp_en,
 
     gpio_i      => gpio_i,
     gpio_t      => gpio_t,
@@ -575,7 +575,8 @@ begin
   );
 
 
-
+  uart_rx <= rx;
+  tx <= uart_tx;
 
   process(spi_enabled,spi2_enabled,spi_enabled,
           uart_enabled,sigmadelta_spp_en, uart_tx,
@@ -583,59 +584,25 @@ begin
           sigmadelta_spp_data,timers_spp_data,
           spi2_mosi,spi2_sck,timers_spp_en)
   begin
-    gpio_spp_en(zpuino_gpio_count-1 downto 0) <= (others=>'0');
+
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_en(0) <= '0';--uart_enabled;         -- PPS1 : UART RX
---    uart_rx <= gpio_spp_read(0);
-    uart_rx <= rx;
-    gpio_spp_en(1) <= '0';--uart_enabled;         -- PPS0 : UART TX
---    gpio_spp_data(1) <= uart_tx;
-    tx <= uart_tx;
-
-    gpio_spp_en(2) <= spi_enabled;          -- PPS2 : SPI MISO
-    spi_pf_miso <= gpio_spp_read(2);
-
-    gpio_spp_en(3) <= spi_enabled;          -- PPS3 : SPI MOSI
-    gpio_spp_data(3) <= spi_pf_mosi;
-
-    gpio_spp_en(4) <= spi_enabled;          -- PPS4 : SPI SCK
-    gpio_spp_data(4) <= spi_pf_sck;
-
-    gpio_spp_en(5) <= sigmadelta_spp_en(0);    -- PPS5 : SIGMADELTA DATA
-    gpio_spp_data(5) <= sigmadelta_spp_data(0);
-
-    gpio_spp_en(6) <= timers_spp_en(0);     -- PPS6 : TIMER0
-    gpio_spp_data(6) <= timers_spp_data(0);
-
-    gpio_spp_en(7) <= timers_spp_en(1);     -- PPS7 : TIMER1
-    gpio_spp_data(7) <= timers_spp_data(1);
-
-    gpio_spp_en(8) <= spi2_enabled;         -- PPS8 : USPI MISO
-    spi2_miso <= gpio_spp_read(8);
-
-    gpio_spp_en(9) <= spi2_enabled;         -- PPS9 : USPI MOSI
-    gpio_spp_data(9) <= spi2_mosi;
-
-    gpio_spp_en(10) <= spi2_enabled;         -- PPS10: USPI SCK
-    gpio_spp_data(10) <= spi2_sck;
-
+    spi_pf_miso <= gpio_spp_read(1);            -- PPS1 : SPI MISO
+    gpio_spp_data(2) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
+    gpio_spp_data(3) <= spi_pf_sck;             -- PPS3 : SPI SCK
+    gpio_spp_data(4) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
+    gpio_spp_data(5) <= timers_spp_data(0);     -- PPS5 : TIMER0
+    gpio_spp_data(6) <= timers_spp_data(1);     -- PPS6 : TIMER1
+    spi2_miso <= gpio_spp_read(7);              -- PPS7 : USPI MISO
+    gpio_spp_data(8) <= spi2_mosi;              -- PPS8 : USPI MOSI
+    gpio_spp_data(9) <= spi2_sck;               -- PPS9: USPI SCK
     if zpuino_adc_enabled then
-      gpio_spp_en(11) <= adc_enabled;         -- PPS11: ADC SCK
-      gpio_spp_data(11) <= adc_sck;
-
-      gpio_spp_en(12) <= adc_enabled;         -- PPS12 : ADC MISO
-      adc_miso <= gpio_spp_read(12);
-
-      gpio_spp_en(13) <= adc_enabled;         -- PPS13 : ADC MOSI
-      gpio_spp_data(13) <= adc_mosi;
-
-      gpio_spp_en(14) <= adc_enabled;         -- PPS14 : ADC SELN
-      gpio_spp_data(14) <= adc_seln;
+      gpio_spp_data(10) <= adc_sck;           -- PPS10: ADC SCK
+      adc_miso <= gpio_spp_read(11);          -- PPS11 : ADC MISO
+      gpio_spp_data(12) <= adc_mosi;          -- PPS12 : ADC MOSI
+      gpio_spp_data(13) <= adc_seln;          -- PPS13 : ADC SELN
     end if;
-
-    gpio_spp_en(15) <= sigmadelta_spp_en(1);    -- PPS15 : SIGMADELTA1 DATA
-    gpio_spp_data(15) <= sigmadelta_spp_data(1);
+    gpio_spp_data(14) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
 
   end process;
 

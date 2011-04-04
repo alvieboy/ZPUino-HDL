@@ -57,9 +57,11 @@ entity zpuino_gpio is
     re:       in std_logic;
     busy:     out std_logic;
     interrupt:out std_logic;
-    spp_data: in std_logic_vector(gpio_count-1 downto 0);
-    spp_read: out std_logic_vector(gpio_count-1 downto 0);
-    spp_en:   in std_logic_vector(gpio_count-1 downto 0);
+
+    spp_data: in std_logic_vector(gpio_count-1 downto 1);
+    spp_read: out std_logic_vector(gpio_count-1 downto 1);
+    --spp_en:   in std_logic_vector(gpio_count-1 downto 1);
+
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
@@ -92,65 +94,40 @@ interrupt <= '0';
 
 gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
+
+ -- Generate muxers for output.
+
 tgen: for i in 0 to gpio_count-1 generate
-
-  process( gpio_q(i), spp_en, input_mapper_q(i), spp_data,clk,spp_cap_out )
-    variable pin_index: integer;
+  process( gpio_q(i), input_mapper_q(i), spp_data,clk,spp_cap_out )
   begin
-    if zpuino_pps_enabled then
-      pin_index := input_mapper_q(i);
-    else
-      pin_index := i;
-    end if;
     if rising_edge(clk) then -- synchronous output
-
       -- Enforce RST on gpio_o
       if areset='1' then
         gpio_o(i)<='0';
       else
-      if zpuino_pps_enabled then
-        -- Zero maps to own GPIO port.
-
-        if pin_index=0 or spp_cap_out(i) = '0' then
-          gpio_o(i) <= gpio_q(i);
-        else
-          gpio_o(i) <= spp_data(pin_index-1); -- Offset -1
-        end if;
-
-      else
-        -- PPS disabled, map directly to pin
-        if spp_en( i )='1' and spp_cap_out(i)='0' then
-          gpio_o(i) <= spp_data(i);
-        else
-          gpio_o(i) <= gpio_q(i);
-        end if;
-
-      end if;
+        case input_mapper_q(i) is
+          when 0 =>
+            gpio_o(i) <= gpio_q(i);
+          when others => 
+            gpio_o(i) <= spp_data(input_mapper_q(i));
+        end case;
       end if;
     end if;
   end process;
+end generate;
 
-  process( gpio_i_q(i), gpio_i(i), output_mapper_q(i),clk,spp_cap_in )
-    variable pin_index: integer;
-  begin
-    if zpuino_pps_enabled and spp_cap_in(i)='1' then
-      pin_index := output_mapper_q(i);
-    else
-      pin_index := i;
-    end if;
-    spp_read(i) <= gpio_i_q(pin_index);
-  end process;
+-- Generate muxers for input
 
-  process(clk, gpio_i(i))
+spprgen: for i in 1 to gpio_count-1 generate -- spp_read(0) is invalid.
+
+  gpio_i_q(i) <= gpio_i(i);
+
+  process( gpio_i_q(i), output_mapper_q(i), spp_cap_in )
   begin
-    -- This actually causes some trouble due to IOB FF delay.
---    if rising_edge(clk) then
-      gpio_i_q(i) <= gpio_i(i);
---    end if;
+    spp_read(i) <= gpio_i_q( output_mapper_q(i) );
   end process;
 
 end generate;
-
 
 ilink1: for i in 0 to gpio_count-1 generate
   gpio_r_i(i) <= gpio_i_q(i);

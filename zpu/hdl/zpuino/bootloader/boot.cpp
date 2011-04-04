@@ -28,8 +28,10 @@
 #define BOOTLOADER_CMD_ENTERPGM 0x05
 #define BOOTLOADER_CMD_LEAVEPGM 0x06
 #define BOOTLOADER_CMD_SSTAAIPROGRAM 0x07
-
-#define BOOTLOADER_MAX_CMD 0x07
+#define BOOTLOADER_CMD_SETBAUDRATE 0x08
+#define BOOTLOADER_CMD_PROGMEM 0x09
+#define BOOTLOADER_CMD_START 0x0A
+#define BOOTLOADER_MAX_CMD 0x0A
 
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 1
@@ -80,6 +82,12 @@ void sendByte(unsigned int i)
 		outbyte(i ^ HDLC_escapeXOR);
 	} else
 		outbyte(i);
+}
+
+void sendBuffer(const unsigned char *buf, unsigned int size)
+{
+	while (size--!=0)
+		sendByte(*buf++);
 }
 
 static void prepareSend()
@@ -224,6 +232,19 @@ void __attribute__((noreturn)) spi_copy()
 	while (1) {}
 }
 
+extern "C" void __attribute__((noreturn)) start()
+{
+	ivector = (void (*)(void))0x100C;
+
+	__asm__("im %0\n"
+			"popsp\n"
+			"im __sketch_start\n"
+			"poppc\n"
+			:
+			: "i" (STACKTOP));
+	while(1) {}
+}
+
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
@@ -263,25 +284,30 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	CRC16ACC=0xFFFF;
 
 	while (sketchsize--) {
+		for (int i=4;i!=0;i--) {
+			spiwrite(0);
+			CRC16APP=spiread();
+		}
+        /*
 		spiwrite(0);
 		CRC16APP=spiread();
 		spiwrite(0);
 		CRC16APP=spiread();
 		spiwrite(0);
-		CRC16APP=spiread();
-		spiwrite(0);
-		CRC16APP=spiread();
+		CRC16APP=spiread();*/
 		*target++ = spiread();
 	}
 
 	spi_disable();
 
 	if (sketchcrc != CRC16ACC) {
-		printstring("CRC error, please reset\r\n");
+//		printstring("CRC error, please reset\r\n");
+		/*
 		printhex(sketchcrc);
 		printstring(" ");
 		printhex(CRC16ACC);
 		printstring("\r\n");
+		*/
 		while(1) {};
 	}
 
@@ -299,15 +325,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(2) = 0xffffffff;
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
-	ivector = (void (*)(void))0x100C;
-
-	__asm__("im %0\n"
-			"popsp\n"
-			"im __sketch_start\n"
-			"poppc\n"
-			:
-			: "i" (STACKTOP));
-	while(1) {}
+	start();
 }
 
 
@@ -351,6 +369,28 @@ static unsigned int spi_read_id()
 	ret = spiread();
 	spi_disable();
 	return ret;
+}
+
+static void cmd_progmem()
+{
+	/* Directly program memory */
+
+	/*
+	 buffer[1-2] is address.
+	 buffer[3-4] is size
+	 buffer[5..] is data to program
+	 */
+	unsigned int address, size,i=5;
+	volatile unsigned char *mem;
+
+	address=buffer[1]<<8;
+	address+=buffer[2];
+	size=buffer[3]<<8;
+	size+=buffer[4];
+	mem = (volatile unsigned char*)address;
+	while (size--) {
+		*mem++=buffer[i++];
+	}
 }
 
 
@@ -447,6 +487,25 @@ static void cmd_sst_aai_program()
 #endif
 }
 
+static void cmd_set_baudrate()
+{
+    /*
+	unsigned int bsel = buffer[1] << 24 +
+		buffer[2]<<16 + buffer[3] << 8 + buffer[4];
+
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_SETBAUDRATE));
+	finishSend();
+
+	// We ought to wait here, to ensure output is properly drained.
+	outbyte(0xff);
+
+	while ((UARTCTL&0x2)==2);
+	
+
+	UARTCTL = bsel | BIT(UARTEN);
+    */
+}
 
 
 static void cmd_waitready()
@@ -468,20 +527,25 @@ static void cmd_waitready()
 	finishSend();
 }
 
+const unsigned char vstring[] = {
+	VERSION_HIGH,
+	VERSION_LOW,
+	SPIOFFSET>>16,
+	SPIOFFSET>>8,
+	SPIOFFSET&0xff,
+	SPICODESIZE>>16,
+	SPICODESIZE>>8,
+	SPICODESIZE&0xff
+};
+
 static void cmd_version()
 {
 	// Reset boot counter
 	milisseconds = 0;
-    prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
-	sendByte(VERSION_HIGH);
-	sendByte(VERSION_LOW);
-	sendByte(SPIOFFSET>>16);
-	sendByte(SPIOFFSET>>8);
-	sendByte(SPIOFFSET);
-	sendByte(SPICODESIZE>>16);
-	sendByte(SPICODESIZE>>8);
-	sendByte(SPICODESIZE);
+	prepareSend();
+    sendByte(REPLY(BOOTLOADER_CMD_VERSION));
+
+	sendBuffer(vstring,sizeof(vstring));
 	finishSend();
 }
 
@@ -524,6 +588,11 @@ static void cmd_leavepgm()
 	finishSend();
 }
 
+void cmd_start()
+{
+	start();
+}
+
 typedef void(*cmdhandler_t)(void);
 
 static const cmdhandler_t handlers[] = {
@@ -533,7 +602,10 @@ static const cmdhandler_t handlers[] = {
 	&cmd_enterpgm,
 	&cmd_leavepgm,
 	&cmd_waitready,
-	&cmd_sst_aai_program
+	&cmd_sst_aai_program,
+	&cmd_set_baudrate,
+	&cmd_progmem,
+	&cmd_start
 };
 
 
@@ -594,11 +666,7 @@ void configure_pins()
 void configure_pins()
 {
 	// For S3E Eval
-
-	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+	unsigned int pmode[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
 
 	digitalWriteS<FPGA_AD_CONV,LOW>::apply();
 	digitalWriteS<FPGA_DAC_CS,HIGH>::apply();
@@ -606,40 +674,51 @@ void configure_pins()
 	digitalWriteS<FPGA_SF_CE0,HIGH>::apply();
 	digitalWriteS<FPGA_SS_B,HIGH>::apply();
 
-	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
-
-	GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
-	pinModeS<FPGA_PIN_M14,OUTPUT>::apply();
+	//GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
+	//GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
 
 	GPIOPPSOUT( FPGA_PIN_T4  ) = IOPIN_SPI_MOSI;
-	pinModeS<FPGA_PIN_T4,OUTPUT>::apply();
-
 	GPIOPPSOUT( FPGA_PIN_U16 ) = IOPIN_SPI_SCK;
-	pinModeS<FPGA_PIN_U16,OUTPUT>::apply();
-
-	GPIOPPSOUT( FPGA_PIN_U3 ) = FPGA_SS_B; // SPI_SS_B
-	pinModeS<FPGA_PIN_U3,OUTPUT>::apply();
-
 	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_N10;
-	pinModeS<FPGA_PIN_N10,INPUT>::apply();
+    GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
 
 	// Pins that need output to disable other SPI devices
-
-	GPIOPPSOUT( FPGA_PIN_P11 ) = FPGA_AD_CONV; // AD_CONV
-	pinModeS<FPGA_PIN_P11,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N8 ) = FPGA_DAC_CS; // DAC_CS
-	pinModeS<FPGA_PIN_N8,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_N7 ) = FPGA_AMP_CS; // AMP_CS
-	pinModeS<FPGA_PIN_N7,OUTPUT>::apply();
-	GPIOPPSOUT( FPGA_PIN_D16 ) = FPGA_SF_CE0; // SF_CE0
-	pinModeS<FPGA_PIN_D16,OUTPUT>::apply();
-
-	pinModeS<FPGA_LED_0,OUTPUT>::apply();
-	digitalWriteS<FPGA_LED_0, HIGH>::apply();
-	pinModeS<FPGA_LED_1,OUTPUT>::apply();
+	
+	GPIOPPSOUT( FPGA_AD_CONV ) = IOPIN_GPIO;
+	GPIOPPSOUT( FPGA_DAC_CS ) = IOPIN_GPIO;
+	GPIOPPSOUT( FPGA_AMP_CS ) = IOPIN_GPIO;
+	GPIOPPSOUT( FPGA_SF_CE0 ) = IOPIN_GPIO;
+	/*
+	 GPIOPPSOUT( FPGA_LED_0 ) = IOPIN_GPIO;
+	 GPIOPPSOUT( FPGA_LED_1) = IOPIN_GPIO;
+	 GPIOPPSOUT( FPGA_LED_2) = IOPIN_GPIO;
+     */
+	/*
 	digitalWriteS<FPGA_LED_1, LOW>::apply();
-	pinModeS<FPGA_LED_2,OUTPUT>::apply();
 	digitalWriteS<FPGA_LED_2, LOW>::apply();
+    */
+	pinModeIndirect(pmode, FPGA_PIN_T4, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_M14, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_U16, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_U3, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_P11, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_N8, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_N7, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_D16, OUTPUT);
+	pinModeIndirect(pmode, FPGA_PIN_M14, OUTPUT);
+	/*
+	 pinModeIndirect(pmode, FPGA_LED_0, OUTPUT);
+	 pinModeIndirect(pmode, FPGA_LED_1, OUTPUT);
+	 pinModeIndirect(pmode, FPGA_LED_2, OUTPUT);
+
+	 digitalWriteS<FPGA_LED_0, HIGH>::apply();
+	 digitalWriteS<FPGA_LED_1, HIGH>::apply();
+	 digitalWriteS<FPGA_LED_2, HIGH>::apply();
+	*/
+	GPIOTRIS(0) = pmode[0];
+	GPIOTRIS(1) = pmode[1];
+	GPIOTRIS(2) = pmode[2];
+	GPIOTRIS(3) = pmode[3];
 }
 #endif
 
@@ -647,30 +726,25 @@ void configure_pins()
 void configure_pins()
 {
 	// For Papilio One
-
-	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+	unsigned int pmode[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
 
 
-	GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_UART_RX;
-
-	GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
-
-	pinModeS<FPGA_PIN_UART_TX,OUTPUT>::apply();
-
+	//GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_UART_RX;
+	//GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
 	GPIOPPSOUT( FPGA_PIN_SPI_MOSI  ) = IOPIN_SPI_MOSI;
-	pinModeS<FPGA_PIN_SPI_MOSI,OUTPUT>::apply();
-
 	GPIOPPSOUT( FPGA_PIN_SPI_SCK ) = IOPIN_SPI_SCK;
-	pinModeS<FPGA_PIN_SPI_SCK,OUTPUT>::apply();
-
 	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = FPGA_PIN_FLASHCS; // SPI_SS_B
-	pinModeS<FPGA_PIN_FLASHCS,OUTPUT>::apply();
-
 	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_SPI_MISO;
-	pinModeS<FPGA_PIN_SPI_MISO,INPUT>::apply();
+
+	//pinModeIndirect(FPGA_PIN_UART_TX, OUTPUT);
+	pinModeIndirect(pmode,FPGA_PIN_SPI_MOSI,OUTPUT);
+	pinModeIndirect(pmode,FPGA_PIN_SPI_SCK, OUTPUT);
+	pinModeIndirect(pmode,FPGA_PIN_FLASHCS, OUTPUT);
+
+	GPIOTRIS(0) = pmode[0];
+	GPIOTRIS(1) = pmode[1];
+	GPIOTRIS(2) = pmode[2];
+	GPIOTRIS(3) = pmode[3];
 
 }
 #endif
