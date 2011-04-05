@@ -590,6 +590,9 @@ static void cmd_leavepgm()
 
 void cmd_start()
 {
+	prepareSend();
+	sendByte(REPLY(BOOTLOADER_CMD_START));
+	finishSend();
 	start();
 }
 
@@ -706,19 +709,23 @@ void configure_pins()
 	pinModeIndirect(pmode, FPGA_PIN_N7, OUTPUT);
 	pinModeIndirect(pmode, FPGA_PIN_D16, OUTPUT);
 	pinModeIndirect(pmode, FPGA_PIN_M14, OUTPUT);
-	/*
-	 pinModeIndirect(pmode, FPGA_LED_0, OUTPUT);
-	 pinModeIndirect(pmode, FPGA_LED_1, OUTPUT);
-	 pinModeIndirect(pmode, FPGA_LED_2, OUTPUT);
 
-	 digitalWriteS<FPGA_LED_0, HIGH>::apply();
-	 digitalWriteS<FPGA_LED_1, HIGH>::apply();
-	 digitalWriteS<FPGA_LED_2, HIGH>::apply();
-	*/
+	pinModeIndirect(pmode, FPGA_LED_0, OUTPUT);
+	pinModeIndirect(pmode, FPGA_LED_1, OUTPUT);
+	pinModeIndirect(pmode, FPGA_LED_2, OUTPUT);
+
 	GPIOTRIS(0) = pmode[0];
 	GPIOTRIS(1) = pmode[1];
 	GPIOTRIS(2) = pmode[2];
 	GPIOTRIS(3) = pmode[3];
+
+	digitalWriteS<FPGA_LED_0, HIGH>::apply();
+
+	GPIOPPSOUT(FPGA_LED_1)=IOPIN_GPIO;
+
+	digitalWriteS<FPGA_LED_1, HIGH>::apply();
+	digitalWriteS<FPGA_LED_2, HIGH>::apply();
+
 }
 #endif
 
@@ -733,18 +740,23 @@ void configure_pins()
 	//GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
 	GPIOPPSOUT( FPGA_PIN_SPI_MOSI  ) = IOPIN_SPI_MOSI;
 	GPIOPPSOUT( FPGA_PIN_SPI_SCK ) = IOPIN_SPI_SCK;
-	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = FPGA_PIN_FLASHCS; // SPI_SS_B
+	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = IOPIN_GPIO; //FPGA_PIN_FLASHCS; // SPI_SS_B
 	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_SPI_MISO;
+
+	GPIOPPSOUT(WING_C_0) = IOPIN_GPIO;
 
 	//pinModeIndirect(FPGA_PIN_UART_TX, OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_SPI_MOSI,OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_SPI_SCK, OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_FLASHCS, OUTPUT);
-
+	pinModeIndirect(pmode,WING_C_0, OUTPUT);
+	
 	GPIOTRIS(0) = pmode[0];
 	GPIOTRIS(1) = pmode[1];
 	GPIOTRIS(2) = pmode[2];
 	GPIOTRIS(3) = pmode[3];
+
+	digitalWriteS<WING_C_0,HIGH>::apply();
 
 }
 #endif

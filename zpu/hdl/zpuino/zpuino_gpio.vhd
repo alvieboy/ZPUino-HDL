@@ -99,18 +99,18 @@ gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
 tgen: for i in 0 to gpio_count-1 generate
   process( gpio_q(i), input_mapper_q(i), spp_data,clk,spp_cap_out )
+    variable data_output: std_logic_vector(gpio_count-1 downto 0);
   begin
+
+    data_output(gpio_count-1 downto 1) := spp_data;
+    data_output(0) := gpio_q(i);
+
     if rising_edge(clk) then -- synchronous output
       -- Enforce RST on gpio_o
       if areset='1' then
         gpio_o(i)<='0';
       else
-        case input_mapper_q(i) is
-          when 0 =>
-            gpio_o(i) <= gpio_q(i);
-          when others => 
-            gpio_o(i) <= spp_data(input_mapper_q(i));
-        end case;
+        gpio_o(i) <= data_output(input_mapper_q(i));
       end if;
     end if;
   end process;
