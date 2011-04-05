@@ -47,6 +47,7 @@ static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
 static speed_t serial_speed = DEFAULT_SPEED;
+static unsigned int serial_speed_int = DEFAULT_SPEED_INT;
 static int dry_run = 0;
 static int serial_reset = 0;
 
@@ -71,7 +72,8 @@ int parse_arguments(int argc,char **const argv)
 			verbose++;
 			break;
 		case 's':
-			if (conn_parse_speed(optarg,&serial_speed)<0)
+			serial_speed_int = atoi(optarg);
+			if (conn_parse_speed(serial_speed_int,&serial_speed)<0)
 				return -1;
 			break;
 		case 'b':
@@ -125,29 +127,35 @@ int help(char *name)
 buffer_t *handle();
 buffer_t *process(unsigned char *buffer, size_t size);
 
-int set_baudrate(connection_t conn, speed_t baud)
+int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 {
 	/* Request new baudrate */
     buffer_t *b;
-	unsigned char txbuf;
+	unsigned int divider;
+	unsigned char txbuf[4];
 	int retries = 30;
 	speed_t speed;
-#ifdef WIN32
-	txbuf = 1;
-	speed = 250000;
-#else
-	txbuf = 2;
-	speed = 1000000;
-#endif
 
-	sendreceive(conn,&txbuf,1,300);
+	divider = ((freq/baud_int)/16)-1;
+	txbuf[0] = divider>>24;
+	txbuf[1] = divider>>16;
+	txbuf[2] = divider>>8;
+    txbuf[3] = divider;
+	if (verbose>1) {
+		printf("Settting baudrate divider to %u\n",divider);
+	}
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_SETBAUDRATE, txbuf,4,300);
+	if (b)
+		buffer_free(b);
+
+    conn_parse_speed(baud_int,&speed);
 	conn_set_speed(conn, speed);
 
 	while (retries>0) {
 		/* Reset */
 		conn_prepare(conn);
 		if (verbose>2) {
-			printf("Connecting at new speed...\n");
+			printf("Connecting at new speed (%u)...\n",baud_int);
 		}
 		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
 		if (b)
@@ -363,6 +371,7 @@ int main(int argc, char **argv)
 	uint32_t spioffset_page;
 	uint32_t spioffset_sector;
 	uint32_t codesize;
+	uint32_t freq;
 	struct timeval start,end,delta;
 	connection_t conn;
 
@@ -451,6 +460,16 @@ int main(int argc, char **argv)
 		codesize += b->buf[7];
 		codesize<<=8;
 		codesize += b->buf[8];
+		if (version>=0x0106) {
+			freq = b->buf[9];
+			freq<<=8;
+			freq += b->buf[10];
+			freq<<=8;
+			freq += b->buf[11];
+			freq<<=8;
+			freq += b->buf[12];
+			printf("CPU frequency: %u Hz\n",freq);
+		}
 
 		if (verbose>0)
 			printf("CODE size: %u\n",codesize);
@@ -610,7 +629,7 @@ int main(int argc, char **argv)
 		}
 	}
 	// Switch to correct baud rate
-	set_baudrate(conn,serial_speed);
+	set_baudrate(conn,serial_speed_int,freq);
 
 	if (upload_only) {
 		int r = do_upload(conn);

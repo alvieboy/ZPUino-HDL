@@ -76,7 +76,7 @@ void configure_pins()
 	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
 	GPIOPPSIN( IOPIN_SPI_MISO ) = 2;
 
-	GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
+	GPIOPPSMODE(0) = BIT(4)|BIT(3);
 
 	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
 	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();

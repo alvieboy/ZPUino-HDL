@@ -17,7 +17,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x05
+#define VERSION_LOW  0x06
 
 /* Commands for programmer */
 
@@ -162,7 +162,7 @@ static void spi_enable()
 	digitalWriteS<SPI_FLASH_SEL_PIN,LOW>::apply();
 }
 
-static inline void spi_reset()
+static void spi_reset()
 {
 	spi_disable();
 	spi_enable();
@@ -277,7 +277,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	sketchcrc= spiread() & 0xffff;
 
 	if (sketchsize>SPICODESIZE) {
-		printstring("Sketch too long");
+		//printstring("Sketch too long");
 		while(1) {}
 	}
 
@@ -487,24 +487,31 @@ static void cmd_sst_aai_program()
 #endif
 }
 
+static void simpleReply(unsigned int r)
+{
+	prepareSend();
+	sendByte(REPLY(r));
+	finishSend();
+}
+
 static void cmd_set_baudrate()
 {
-    /*
-	unsigned int bsel = buffer[1] << 24 +
-		buffer[2]<<16 + buffer[3] << 8 + buffer[4];
 
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_SETBAUDRATE));
-	finishSend();
+	unsigned int bsel = buffer[1];
+	bsel<<=8;
+	bsel |= buffer[2];
+	bsel<<=8;
+	bsel |= buffer[3];
+	bsel<<=8;
+    bsel |= buffer[4];
+
+	simpleReply(BOOTLOADER_CMD_SETBAUDRATE);
 
 	// We ought to wait here, to ensure output is properly drained.
 	outbyte(0xff);
-
 	while ((UARTCTL&0x2)==2);
-	
 
 	UARTCTL = bsel | BIT(UARTEN);
-    */
 }
 
 
@@ -535,7 +542,11 @@ const unsigned char vstring[] = {
 	SPIOFFSET&0xff,
 	SPICODESIZE>>16,
 	SPICODESIZE>>8,
-	SPICODESIZE&0xff
+	SPICODESIZE&0xff,
+	CLK_FREQ >> 24,
+	CLK_FREQ >> 16,
+	CLK_FREQ >> 8,
+	CLK_FREQ,
 };
 
 static void cmd_version()
@@ -566,15 +577,13 @@ static void cmd_identify()
 	finishSend();
 }
 
+
 static void cmd_enterpgm()
 {
 	inprogrammode = 1;
 	// Disable timer.
-    TMR0CTL = 0;
-	
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_ENTERPGM));
-	finishSend();
+	TMR0CTL = 0;
+	simpleReply(BOOTLOADER_CMD_ENTERPGM);
 }
 
 static void cmd_leavepgm()
@@ -582,33 +591,29 @@ static void cmd_leavepgm()
 	inprogrammode = 0;
 
 	enableTimer();
-
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_LEAVEPGM));
-	finishSend();
+	simpleReply(BOOTLOADER_CMD_LEAVEPGM);
 }
+ 
 
 void cmd_start()
 {
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_START));
-	finishSend();
+	simpleReply(BOOTLOADER_CMD_START);
 	start();
 }
 
 typedef void(*cmdhandler_t)(void);
 
 static const cmdhandler_t handlers[] = {
-	&cmd_version,
-	&cmd_identify,
-	&cmd_raw_send_receive,
-	&cmd_enterpgm,
-	&cmd_leavepgm,
-	&cmd_waitready,
-	&cmd_sst_aai_program,
-	&cmd_set_baudrate,
-	&cmd_progmem,
-	&cmd_start
+	&cmd_version,         /* CMD1 */
+	&cmd_identify,        /* CMD2 */
+	&cmd_waitready,       /* CMD3 */
+	&cmd_raw_send_receive,/* CMD4 */
+	&cmd_enterpgm,        /* CMD5 */
+	&cmd_leavepgm,        /* CMD6 */
+	&cmd_sst_aai_program, /* CMD7 */
+	&cmd_set_baudrate,    /* CMD8 */
+	&cmd_progmem,         /* CMD9 */
+	&cmd_start            /* CMD10 */
 };
 
 
@@ -740,23 +745,25 @@ void configure_pins()
 	//GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
 	GPIOPPSOUT( FPGA_PIN_SPI_MOSI  ) = IOPIN_SPI_MOSI;
 	GPIOPPSOUT( FPGA_PIN_SPI_SCK ) = IOPIN_SPI_SCK;
-	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = IOPIN_GPIO; //FPGA_PIN_FLASHCS; // SPI_SS_B
+//	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = IOPIN_GPIO; //FPGA_PIN_FLASHCS; // SPI_SS_B
 	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_SPI_MISO;
 
-	GPIOPPSOUT(WING_C_0) = IOPIN_GPIO;
+//	GPIOPPSOUT(WING_C_0) = IOPIN_GPIO;
+	pinModePPS(FPGA_PIN_SPI_MOSI);
+	pinModePPS(FPGA_PIN_SPI_SCK);
 
 	//pinModeIndirect(FPGA_PIN_UART_TX, OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_SPI_MOSI,OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_SPI_SCK, OUTPUT);
 	pinModeIndirect(pmode,FPGA_PIN_FLASHCS, OUTPUT);
-	pinModeIndirect(pmode,WING_C_0, OUTPUT);
+	//pinModeIndirect(pmode,WING_C_0, OUTPUT);
 	
 	GPIOTRIS(0) = pmode[0];
 	GPIOTRIS(1) = pmode[1];
 	GPIOTRIS(2) = pmode[2];
 	GPIOTRIS(3) = pmode[3];
 
-	digitalWriteS<WING_C_0,HIGH>::apply();
+	//digitalWriteS<WING_C_0,HIGH>::apply();
 
 }
 #endif
@@ -790,8 +797,7 @@ extern "C" int main(int argc,char**argv)
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	// Reset flash
-	spi_enable();
-	spi_disable();
+	spi_reset();
 #ifdef __ZPUINO_PAPILIO_ONE__
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash

@@ -57,3 +57,8 @@ static inline __attribute((always_inline)) void pinModeIndirect(unsigned int pa[
 	}
 }
 
+static inline __attribute((always_inline)) void pinModePPS(int pin)
+{
+	GPIOPPSMODE(pin/32) |= 1<<(pin%32);
+}
+

@@ -58,9 +58,8 @@ entity zpuino_gpio is
     busy:     out std_logic;
     interrupt:out std_logic;
 
-    spp_data: in std_logic_vector(gpio_count-1 downto 1);
-    spp_read: out std_logic_vector(gpio_count-1 downto 1);
-    --spp_en:   in std_logic_vector(gpio_count-1 downto 1);
+    spp_data: in std_logic_vector(gpio_count-1 downto 0);
+    spp_read: out std_logic_vector(gpio_count-1 downto 0);
 
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
@@ -76,6 +75,7 @@ architecture behave of zpuino_gpio is
 
 signal gpio_q:        std_logic_vector(127 downto 0); -- GPIO output data FFs
 signal gpio_tris_q:   std_logic_vector(127 downto 0); -- Tristate FFs
+signal ppspin_q:      std_logic_vector(127 downto 0); -- SPP pin mode FFs
 
 subtype input_number is integer range 0 to 127;
 type mapper_q_type is array(0 to 127) of input_number;
@@ -98,19 +98,19 @@ gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
  -- Generate muxers for output.
 
 tgen: for i in 0 to gpio_count-1 generate
-  process( gpio_q(i), input_mapper_q(i), spp_data,clk,spp_cap_out )
-    variable data_output: std_logic_vector(gpio_count-1 downto 0);
+  process( clk )
   begin
-
-    data_output(gpio_count-1 downto 1) := spp_data;
-    data_output(0) := gpio_q(i);
 
     if rising_edge(clk) then -- synchronous output
       -- Enforce RST on gpio_o
       if areset='1' then
         gpio_o(i)<='0';
       else
-        gpio_o(i) <= data_output(input_mapper_q(i));
+        if ppspin_q(i)='1' then
+          gpio_o(i) <= spp_data( input_mapper_q(i));
+        else
+          gpio_o(i) <= gpio_q(i);
+        end if;
       end if;
     end if;
   end process;
@@ -118,7 +118,7 @@ end generate;
 
 -- Generate muxers for input
 
-spprgen: for i in 1 to gpio_count-1 generate -- spp_read(0) is invalid.
+spprgen: for i in 0 to gpio_count-1 generate -- spp_read(0) is invalid.
 
   gpio_i_q(i) <= gpio_i(i);
 
@@ -140,10 +140,10 @@ ilink2: for i in gpio_count to 127 generate
 end generate;
 
 
-process(address,gpio_r_i,gpio_tris_r_i)
+process(address,gpio_r_i,gpio_tris_r_i,ppspin_q)
 begin
-  case address(2) is
-    when '0' =>
+  case address(3 downto 2) is
+    when "00" =>
 
       case address(1 downto 0) is
         when "00" =>
@@ -157,7 +157,7 @@ begin
         when others =>
       end case;
 
-    when '1' =>
+    when "01" =>
       case address(1 downto 0) is
         when "00" =>
           read <= gpio_tris_r_i(31 downto 0);
@@ -167,6 +167,19 @@ begin
           read <= gpio_tris_r_i(95 downto 64);
         when "11" =>
           read <= gpio_tris_r_i(127 downto 96);
+        when others =>
+      end case;
+
+    when "10" =>
+      case address(1 downto 0) is
+        when "00" =>
+          read <= ppspin_q(31 downto 0);
+        when "01" =>
+          read <= ppspin_q(63 downto 32);
+        when "10" =>
+          read <= ppspin_q(95 downto 64);
+        when "11" =>
+          read <= ppspin_q(127 downto 96);
         when others =>
       end case;
     when others =>
@@ -179,17 +192,18 @@ begin
   if rising_edge(clk) then
     if areset='1' then
       gpio_tris_q <= (others => '1');
+      ppspin_q <= (others => '0');
       gpio_q <= (others => DontCareValue);
       -- Default values for input/output mapper
-      for i in 0 to 127 loop
-        input_mapper_q(i) <= 0;
-        output_mapper_q(i) <= 0;
-      end loop;
+      --for i in 0 to 127 loop
+      --  input_mapper_q(i) <= 0;
+      --  output_mapper_q(i) <= 0;
+      --end loop;
     elsif we='1' then
       case address(8 downto 7) is
         when "00" =>
-          case address(2) is
-            when '0' =>
+          case address(3 downto 2) is
+            when "00" =>
               case address(1 downto 0) is
                 when "00" =>
                   gpio_q(31 downto 0) <= write;
@@ -201,7 +215,7 @@ begin
                   gpio_q(127 downto 96) <= write;
                 when others =>
               end case;
-            when '1' =>
+            when "01" =>
               case address(1 downto 0) is
                 when "00" =>
                   gpio_tris_q(31 downto 0) <= write;
@@ -213,7 +227,22 @@ begin
                   gpio_tris_q(127 downto 96) <= write;
                 when others =>
               end case;
+            when "10" =>
+              if zpuino_pps_enabled then
+                case address(1 downto 0) is
+                  when "00" =>
+                    ppspin_q(31 downto 0) <= write;
+                  when "01" =>
+                    ppspin_q(63 downto 32) <= write;
+                  when "10" =>
+                    ppspin_q(95 downto 64) <= write;
+                  when "11" =>
+                    ppspin_q(127 downto 96) <= write;
+                  when others =>
+                end case;
+              end if;
             when others =>
+
           end case;
         when "01" =>
           if zpuino_pps_enabled then

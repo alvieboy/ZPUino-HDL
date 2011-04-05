@@ -39,6 +39,7 @@
 
 #define GPIODATA(x)  REGISTER(GPIOBASE,x)
 #define GPIOTRIS(x)  REGISTER(GPIOBASE,4+x)
+#define GPIOPPSMODE(x)  REGISTER(GPIOBASE,8+x)
 
 #define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(128 + x))
 #define GPIOPPSIN(x)  REGISTER(GPIOBASE,(256 + x))
@@ -110,16 +111,15 @@
 
 /* PPS configuration */
 
-#define IOPIN_GPIO        0
-#define IOPIN_SPI_MISO    1
-#define IOPIN_SPI_MOSI    2
-#define IOPIN_SPI_SCK     3
-#define IOPIN_SIGMADELTA0 4
-#define IOPIN_TIMER0_OC   5
-#define IOPIN_TIMER1_OC   6
-#define IOPIN_USPI_MISO   7
-#define IOPIN_USPI_MOSI   8
-#define IOPIN_USPI_SCK    9
-#define IOPIN_SIGMADELTA1 14
+#define IOPIN_SPI_MISO    0
+#define IOPIN_SPI_MOSI    1
+#define IOPIN_SPI_SCK     2
+#define IOPIN_SIGMADELTA0 3
+#define IOPIN_TIMER0_OC   4
+#define IOPIN_TIMER1_OC   5
+#define IOPIN_USPI_MISO   6
+#define IOPIN_USPI_MOSI   7
+#define IOPIN_USPI_SCK    8
+#define IOPIN_SIGMADELTA1 13
 
 #endif

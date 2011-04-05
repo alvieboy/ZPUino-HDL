@@ -137,12 +137,13 @@ package zpuinopkg is
     re:       in std_logic;
     busy:     out std_logic;
     interrupt:out std_logic;
-    spp_data: in std_logic_vector(gpio_count-1 downto 1);
-    spp_read: out std_logic_vector(gpio_count-1 downto 1);
-    --spp_en:   in std_logic_vector(gpio_count-1 downto 1);
+    spp_data: in std_logic_vector(gpio_count-1 downto 0);
+    spp_read: out std_logic_vector(gpio_count-1 downto 0);
+
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
+
     spp_cap_in:  in std_logic_vector(gpio_count-1 downto 0); -- SPP capable pin for INPUT
     spp_cap_out:  in std_logic_vector(gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
   );

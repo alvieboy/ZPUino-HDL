@@ -81,8 +81,9 @@ architecture behave of zpuino_io is
   signal uart_enabled:  std_logic;
 
   -- SPP signal is one more than GPIO count
-  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 1);
-  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 1);
+  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
+
   --signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 1);
 
   signal timers_interrupt:  std_logic_vector(1 downto 0);
@@ -316,7 +317,6 @@ begin
 
     spp_data  => gpio_spp_data,
     spp_read  => gpio_spp_read,
-    --spp_en    => gpio_spp_en,
 
     gpio_i      => gpio_i,
     gpio_t      => gpio_t,
@@ -587,22 +587,22 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    spi_pf_miso <= gpio_spp_read(1);            -- PPS1 : SPI MISO
-    gpio_spp_data(2) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
-    gpio_spp_data(3) <= spi_pf_sck;             -- PPS3 : SPI SCK
-    gpio_spp_data(4) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
-    gpio_spp_data(5) <= timers_spp_data(0);     -- PPS5 : TIMER0
-    gpio_spp_data(6) <= timers_spp_data(1);     -- PPS6 : TIMER1
-    spi2_miso <= gpio_spp_read(7);              -- PPS7 : USPI MISO
-    gpio_spp_data(8) <= spi2_mosi;              -- PPS8 : USPI MOSI
-    gpio_spp_data(9) <= spi2_sck;               -- PPS9: USPI SCK
+    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
+    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
+    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
+    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
+    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
+    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
+    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
+    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
+    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
     if zpuino_adc_enabled then
-      gpio_spp_data(10) <= adc_sck;           -- PPS10: ADC SCK
-      adc_miso <= gpio_spp_read(11);          -- PPS11 : ADC MISO
-      gpio_spp_data(12) <= adc_mosi;          -- PPS12 : ADC MOSI
-      gpio_spp_data(13) <= adc_seln;          -- PPS13 : ADC SELN
+      gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
+      adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
+      gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
+      gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
     end if;
-    gpio_spp_data(14) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
+    gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
 
   end process;
 
