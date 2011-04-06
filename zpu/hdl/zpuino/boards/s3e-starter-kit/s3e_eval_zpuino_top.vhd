@@ -51,7 +51,7 @@ entity s3e_eval_zpuino is
     RST:          in std_logic;
     UART_RX:      in std_logic;
     UART_TX:      out std_logic;
-    GPIO:         inout std_logic_vector(zpuino_gpio_count-1 downto 2);
+    GPIO:         inout std_logic_vector(zpuino_gpio_count-1 downto 0);
     FPGA_INIT_B:  out std_logic
   );
 end entity s3e_eval_zpuino;
@@ -109,9 +109,9 @@ architecture behave of s3e_eval_zpuino is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "1111111111111111111111111111111111111111111100";
+    "1111111111111111111111111111111111111111111111";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "1111111111111111111111111111111111111111111100";
+    "1111111111111111111111111111111111111111111111";
 
 
 begin
@@ -135,20 +135,10 @@ begin
     rstout  => clkgen_rst
   );
 
-    -- Signals to disable (write '1')
---    DAC_CS <= '1';
+  FPGA_INIT_B<='0';
 
---    SF_CE0 <= '1';
-    FPGA_INIT_B<='0';
-
---    AMP_CS<='1';
-    -- Signals to disable (write '0')
---    AD_CONV<='0';
-
---    SPI_MOSI <= spi_mosi_i;
-
-  bufgen: for i in 2 to zpuino_gpio_count-1 generate
-    iob: IOPAD
+  bufgen: for i in 0 to zpuino_gpio_count-1 generate
+    iop: IOPAD
       port map(
         I => gpio_o(i),
         O => gpio_i(i),

@@ -313,10 +313,11 @@ int do_upload(connection_t conn)
 {
 	struct stat st;
 	const unsigned int blocksize=512;
-	unsigned char dbuf[blocksize + 4];
+	unsigned char dbuf[4];
 	unsigned int address = 0x1000;
 	int fin;
-	unsigned int size;
+	unsigned int size,pos;
+	unsigned char *prog;
 
 	if (binfile) {
 		fin = open(binfile,O_RDONLY);
@@ -338,28 +339,41 @@ int do_upload(connection_t conn)
 		printf("Uploading sketch, %d bytes\n",size);
 	}
 
-	do {
-		unsigned int blk = size>blocksize?blocksize:size;
+	dbuf[0] = address>>8;
+	dbuf[1] = address&0xff;
+	dbuf[2] = size>>8;
+	dbuf[3] = size & 0xff;
 
-		if (read(fin,dbuf + 4, blk)<0)
-		{
-			perror("read");
-			return -1;
-		}
-		dbuf[0] = address>>8;
-		dbuf[1] = address&0xff;
-		dbuf[2] = blk>>8;
-		dbuf[3] = blk & 0xff;
+	buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 4, 500 );
+	if (b==NULL) {
+		fprintf(stderr,"Error programming memory\n");
+		close(fin);
+		return -1;
+	}
 
-		buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 512 + 4, 500 );
-		if (b==NULL) {
-			fprintf(stderr,"Error programming memory\n");
-			close(fin);
-			return -1;
-		}
-		size-=blk;
-	} while (size);
+	if (read(fin,prog,size)!=size) {
+		fprintf(stderr,"Cannot load file\n");
+		close(fin);
+		return -1;
+	}
 	close(fin);
+
+	for (pos=0;pos<size;pos++) {
+		if (conn_write(conn, &prog[pos],1)<0) {
+			fprintf(stderr,"Cannot write!\n");
+			return -1;
+		}
+		/* Load and check */
+		if (conn_read(conn,dbuf,1,100)!=1) {
+			fprintf(stderr,"Cannot read!\n");
+			return -1;
+		}
+		if (dbuf[0]!=prog[pos]) {
+			fprintf(stderr,"Error programming (sent 0x%02x, got 0x%02x)\n",
+					prog[pos],dbuf[0]);
+			return -1;
+		}
+	}
 	return 0;
 
 }

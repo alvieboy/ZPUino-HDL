@@ -8,8 +8,8 @@
 #define IOBASE 0x8000
 #define IO_SLOT_OFFSET_BIT 11
 
-#define FPGA_PIN_R7 0
-#define FPGA_PIN_M14 1
+#define FPGA_PIN_G14 0
+#define FPGA_PIN_G13 1
 #define FPGA_PIN_N10 2
 #define FPGA_PIN_T4 3
 #define FPGA_PIN_U16 4

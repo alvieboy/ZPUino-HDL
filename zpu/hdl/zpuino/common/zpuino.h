@@ -1,64 +1,70 @@
 #include "register.h"
 
-template<unsigned int pin>
-	struct digitalUpS {
-		static void apply() {
-			GPIODATA( pin / 32 ) |= (1<<(pin%32));
-		}
-	};
-
-template<unsigned int pin>
-	struct digitalDownS {
-		static void apply() {
-			GPIODATA( pin / 32 ) &= ~(1<<(pin%32));
-		}
-	};
-
-template<unsigned int pin>
-	struct pinModeInputS {
-		static void apply() {
-			GPIOTRIS( pin / 32 ) |= (1<<(pin%32));
-		}
-	};
-
-template<unsigned int pin>
-	struct pinModeOutputS {
-		static void apply() {
-			GPIOTRIS( pin / 32 ) &= ~(1<<(pin%32));
-		}
-	};
-
-template<unsigned int pin, bool val>
-	struct digitalWriteS {
-		static void apply() {
-			if (val)
-				digitalUpS<pin>::apply();
-			else
-				digitalDownS<pin>::apply();
-		}
-	};
-
-template<unsigned int pin, bool val>
-	struct pinModeS {
-		static void apply() {
-			if (val)
-				pinModeInputS<pin>::apply();
-			else
-				pinModeOutputS<pin>::apply();
-		}
-	};
-
-static inline __attribute((always_inline)) void pinModeIndirect(unsigned int pa[4],int pin, int direction)
+static inline __attribute__((always_inline)) register_t outputRegisterForPin(unsigned int pin)
 {
-	if (direction) {
-		pa[pin/32] &= ~(1<<(pin%32));
+	return &GPIODATA(pin/32);
+}
+
+static inline __attribute__((always_inline)) register_t inputRegisterForPin(unsigned int pin)
+{
+	return &GPIODATA(pin/32);
+}
+
+static inline __attribute__((always_inline)) register_t modeRegisterForPin(unsigned int pin)
+{
+	return &GPIOTRIS(pin/32);
+}
+
+static inline __attribute__((always_inline)) register_t PPSmodeRegisterForPin(unsigned int pin)
+{
+	return &GPIOPPSMODE(pin/32);
+}
+
+static inline __attribute__((always_inline)) unsigned int bitMaskForPin(unsigned int pin)
+{
+    return (1<<(pin%32));
+}
+
+static inline __attribute__((always_inline)) void digitalWrite(unsigned int pin, int value)
+{
+	if (value) {
+		*outputRegisterForPin(pin) |= bitMaskForPin(pin);
 	} else {
-		pa[pin/32] |= 1<<(pin%32);
+		*outputRegisterForPin(pin) &= ~bitMaskForPin(pin);
 	}
 }
 
-static inline __attribute((always_inline)) void pinModePPS(int pin)
+static inline __attribute__((always_inline)) int digitalRead(unsigned int pin)
 {
-	GPIOPPSMODE(pin/32) |= 1<<(pin%32);
+	return !!(*inputRegisterForPin(pin) & bitMaskForPin(pin));
 }
+
+static inline __attribute__((always_inline)) void pinMode(unsigned int pin, int mode)
+{
+	if (mode) {
+		*modeRegisterForPin(pin) |= bitMaskForPin(pin);
+	} else {
+		*modeRegisterForPin(pin) &= ~bitMaskForPin(pin);
+	}
+}
+
+
+static inline __attribute((always_inline)) void pinModePPS(int pin, int value)
+{
+	if (value) {
+		*PPSmodeRegisterForPin(pin) |= bitMaskForPin(pin);
+	} else {
+		*PPSmodeRegisterForPin(pin) &= ~bitMaskForPin(pin);
+	}
+}
+
+static inline __attribute((always_inline)) void outputPinForFunction(int pin, int function)
+{
+	GPIOPPSOUT(pin)=function;
+}
+static inline __attribute((always_inline)) void inputPinForFunction(int pin, int function)
+{
+    GPIOPPSIN(function)=pin;
+}
+
 

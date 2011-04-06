@@ -20,7 +20,7 @@ CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../co
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
-all: prom-generic-dp-32.vhd Makefile
+all: prom-generic-dp-32.vhd Makefile $(TARGET).S
 
 .PHONY: boot.cpp
 
@@ -33,6 +33,9 @@ $(TARGET).bin: $(TARGET).elf
 
 $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
+	
+$(TARGET).S: boot.cpp
+	$(CXX) $(CXXFLAGS) -S $+ -o $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin
 	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin $(SIZE) > prom-generic-dp-32.vhd || rm -f prom-generic-dp-32.vhd	

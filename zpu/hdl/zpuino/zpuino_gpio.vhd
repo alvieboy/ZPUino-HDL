@@ -104,7 +104,7 @@ tgen: for i in 0 to gpio_count-1 generate
     if rising_edge(clk) then -- synchronous output
       -- Enforce RST on gpio_o
       if areset='1' then
-        gpio_o(i)<='0';
+        gpio_o(i)<='1';
       else
         if ppspin_q(i)='1' then
           gpio_o(i) <= spp_data( input_mapper_q(i));

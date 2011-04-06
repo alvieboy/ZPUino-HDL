@@ -13,6 +13,7 @@
 
 #define SPIISBLOCKING 1
 
+typedef volatile unsigned int* register_t;
 
 #define BIT(x) (1<<x)
 

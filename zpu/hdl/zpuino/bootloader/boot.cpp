@@ -154,12 +154,12 @@ void outbyte(int c)
 
 void spi_disable()
 {
-	digitalWriteS<SPI_FLASH_SEL_PIN,HIGH>::apply();
+	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
 }
 
 static void spi_enable()
 {
-	digitalWriteS<SPI_FLASH_SEL_PIN,LOW>::apply();
+	digitalWrite(SPI_FLASH_SEL_PIN,LOW);
 }
 
 static void spi_reset()
@@ -315,9 +315,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	printstring("Loaded, starting...\r\n");
 #endif
 	SPICTL &= ~(BIT(SPIEN));
-#ifdef __ZPUINO_S3E_EVAL__
-	digitalWriteS<FPGA_LED_0, LOW>::apply();
-#endif
+
 	// Reset settings
 	/*
 	 GPIOTRIS(0) = 0xffffffff;
@@ -373,12 +371,13 @@ static unsigned int spi_read_id()
 
 static void cmd_progmem()
 {
-	/* Directly program memory */
+	/* Directly program memory. This must be streamed
+	 because we are using the >0x1000 addresses for .data section.
+	 */
 
 	/*
 	 buffer[1-2] is address.
 	 buffer[3-4] is size
-	 buffer[5..] is data to program
 	 */
 	unsigned int address, size,i=5;
 	volatile unsigned char *mem;
@@ -389,8 +388,14 @@ static void cmd_progmem()
 	size+=buffer[4];
 	mem = (volatile unsigned char*)address;
 	while (size--) {
-		*mem++=buffer[i++];
+		unsigned int v;
+		while (UARTCTL&0x1 != 0);
+		v=UARTDATA;
+		*mem++=v;
+		outbyte(v);
 	}
+	/* Now that we're done, jump along */
+	start();
 }
 
 
@@ -651,19 +656,17 @@ void configure_pins()
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
 
-	GPIOPPSOUT( 0 ) = IOPIN_UART_TX;
-	GPIOPPSOUT( 4 ) = IOPIN_SPI_SCK;
-	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
+	//outputPinForFunction( 0, IOPIN_UART_TX);
+	outputPinForFunction( 4 , IOPIN_SPI_SCK);
+	outputPinForFunction( 3 , IOPIN_SPI_MOSI);
 
-	GPIOPPSOUT( 40 ) = IOPIN_GPIO;
+	pinMode(IOPIN_UART_TX,OUTPUT);
+	pinMode(IOPIN_SPI_MOSI,OUTPUT);
+	pinMode(IOPIN_SPI_SCK,OUTPUT);
+	pinMode(FPGA_SS_B,OUTPUT);
 
-	pinModeS<IOPIN_UART_TX,OUTPUT>::apply();
-	pinModeS<IOPIN_SPI_MOSI,OUTPUT>::apply();
-	pinModeS<IOPIN_SPI_SCK,OUTPUT>::apply();
-	pinModeS<FPGA_SS_B,OUTPUT>::apply();
-
-	GPIOPPSIN( IOPIN_UART_RX ) = 1;
-	pinModeS<IOPIN_SPI_MISO,INPUT>::apply();
+	inputPinForFunction( 1, IOPIN_UART_RX);
+	//pinMode(IOPIN_SPI_MISO,INPUT);
 
 }
 
@@ -674,62 +677,36 @@ void configure_pins()
 void configure_pins()
 {
 	// For S3E Eval
-	unsigned int pmode[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
-
-	digitalWriteS<FPGA_AD_CONV,LOW>::apply();
-	digitalWriteS<FPGA_DAC_CS,HIGH>::apply();
-	digitalWriteS<FPGA_AMP_CS,HIGH>::apply();
-	digitalWriteS<FPGA_SF_CE0,HIGH>::apply();
-	digitalWriteS<FPGA_SS_B,HIGH>::apply();
-
-	//GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_R7;
-	//GPIOPPSOUT( FPGA_PIN_M14 ) = IOPIN_UART_TX;
-
-	GPIOPPSOUT( FPGA_PIN_T4  ) = IOPIN_SPI_MOSI;
-	GPIOPPSOUT( FPGA_PIN_U16 ) = IOPIN_SPI_SCK;
-	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_N10;
-    GPIOPPSOUT( FPGA_SS_B ) = IOPIN_GPIO;
-
-	// Pins that need output to disable other SPI devices
-	
-	GPIOPPSOUT( FPGA_AD_CONV ) = IOPIN_GPIO;
-	GPIOPPSOUT( FPGA_DAC_CS ) = IOPIN_GPIO;
-	GPIOPPSOUT( FPGA_AMP_CS ) = IOPIN_GPIO;
-	GPIOPPSOUT( FPGA_SF_CE0 ) = IOPIN_GPIO;
-	/*
-	 GPIOPPSOUT( FPGA_LED_0 ) = IOPIN_GPIO;
-	 GPIOPPSOUT( FPGA_LED_1) = IOPIN_GPIO;
-	 GPIOPPSOUT( FPGA_LED_2) = IOPIN_GPIO;
-     */
-	/*
-	digitalWriteS<FPGA_LED_1, LOW>::apply();
-	digitalWriteS<FPGA_LED_2, LOW>::apply();
-    */
-	pinModeIndirect(pmode, FPGA_PIN_T4, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_M14, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_U16, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_U3, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_P11, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_N8, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_N7, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_D16, OUTPUT);
-	pinModeIndirect(pmode, FPGA_PIN_M14, OUTPUT);
-
-	pinModeIndirect(pmode, FPGA_LED_0, OUTPUT);
-	pinModeIndirect(pmode, FPGA_LED_1, OUTPUT);
-	pinModeIndirect(pmode, FPGA_LED_2, OUTPUT);
-
-	GPIOTRIS(0) = pmode[0];
+/*	GPIOTRIS(0) = pmode[0];
 	GPIOTRIS(1) = pmode[1];
 	GPIOTRIS(2) = pmode[2];
 	GPIOTRIS(3) = pmode[3];
+  */
 
-	digitalWriteS<FPGA_LED_0, HIGH>::apply();
+	digitalWrite(FPGA_AD_CONV,LOW);
+	digitalWrite(FPGA_DAC_CS,HIGH);
+	digitalWrite(FPGA_AMP_CS,HIGH);
+	digitalWrite(FPGA_SF_CE0,HIGH);
+	digitalWrite(FPGA_SS_B,HIGH);
 
-	GPIOPPSOUT(FPGA_LED_1)=IOPIN_GPIO;
+	outputPinForFunction( FPGA_PIN_T4, IOPIN_SPI_MOSI);
+	outputPinForFunction( FPGA_PIN_U16, IOPIN_SPI_SCK);
+	inputPinForFunction( IOPIN_SPI_MISO, FPGA_PIN_N10);
 
-	digitalWriteS<FPGA_LED_1, HIGH>::apply();
-	digitalWriteS<FPGA_LED_2, HIGH>::apply();
+	pinModePPS( FPGA_PIN_T4, HIGH );
+	pinModePPS( FPGA_PIN_U16, HIGH );
+
+	pinMode(FPGA_PIN_T4, OUTPUT);
+	pinMode(FPGA_PIN_U16, OUTPUT);
+	pinMode(FPGA_PIN_U3, OUTPUT);
+	pinMode(FPGA_PIN_P11, OUTPUT);
+	pinMode(FPGA_PIN_N8, OUTPUT);
+	pinMode(FPGA_PIN_N7, OUTPUT);
+	pinMode(FPGA_PIN_D16, OUTPUT);
+
+	pinMode(FPGA_LED_0, OUTPUT);
+
+	digitalWrite(FPGA_LED_0, HIGH);
 
 }
 #endif
@@ -737,33 +714,26 @@ void configure_pins()
 #ifdef __ZPUINO_PAPILIO_ONE__
 void configure_pins()
 {
-	// For Papilio One
-	unsigned int pmode[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
+	/*GPIOTRIS(0)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
+	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
+    */
+	outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
+	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
+	inputPinForFunction( IOPIN_SPI_MISO, FPGA_PIN_SPI_MISO);
 
+	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
+	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinModePPS(WING_C_0,LOW);
 
-	//GPIOPPSIN( IOPIN_UART_RX ) = FPGA_PIN_UART_RX;
-	//GPIOPPSOUT( FPGA_PIN_UART_TX ) = IOPIN_UART_TX;
-	GPIOPPSOUT( FPGA_PIN_SPI_MOSI  ) = IOPIN_SPI_MOSI;
-	GPIOPPSOUT( FPGA_PIN_SPI_SCK ) = IOPIN_SPI_SCK;
-//	GPIOPPSOUT( FPGA_PIN_FLASHCS ) = IOPIN_GPIO; //FPGA_PIN_FLASHCS; // SPI_SS_B
-	GPIOPPSIN( IOPIN_SPI_MISO ) = FPGA_PIN_SPI_MISO;
-
-//	GPIOPPSOUT(WING_C_0) = IOPIN_GPIO;
-	pinModePPS(FPGA_PIN_SPI_MOSI);
-	pinModePPS(FPGA_PIN_SPI_SCK);
-
-	//pinModeIndirect(FPGA_PIN_UART_TX, OUTPUT);
-	pinModeIndirect(pmode,FPGA_PIN_SPI_MOSI,OUTPUT);
-	pinModeIndirect(pmode,FPGA_PIN_SPI_SCK, OUTPUT);
-	pinModeIndirect(pmode,FPGA_PIN_FLASHCS, OUTPUT);
-	//pinModeIndirect(pmode,WING_C_0, OUTPUT);
+	pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
+	pinMode(FPGA_PIN_SPI_SCK, OUTPUT);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+	pinMode(WING_C_0, OUTPUT);
 	
-	GPIOTRIS(0) = pmode[0];
-	GPIOTRIS(1) = pmode[1];
-	GPIOTRIS(2) = pmode[2];
-	GPIOTRIS(3) = pmode[3];
-
-	//digitalWriteS<WING_C_0,HIGH>::apply();
+	digitalWrite(WING_C_0,HIGH);
 
 }
 #endif
