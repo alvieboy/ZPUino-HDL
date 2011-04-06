@@ -759,7 +759,7 @@ extern "C" int main(int argc,char**argv)
 
 	CRC16POLY = 0x8408; // CRC16-CCITT
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
+	SPICTL=BIT(SPICPOL)|BIT(SPICP1)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	// Reset flash
 	spi_reset();
