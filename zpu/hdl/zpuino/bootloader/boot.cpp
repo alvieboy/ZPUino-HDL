@@ -691,7 +691,7 @@ void configure_pins()
 
 	outputPinForFunction( FPGA_PIN_T4, IOPIN_SPI_MOSI);
 	outputPinForFunction( FPGA_PIN_U16, IOPIN_SPI_SCK);
-	inputPinForFunction( IOPIN_SPI_MISO, FPGA_PIN_N10);
+	inputPinForFunction( FPGA_PIN_N10, IOPIN_SPI_MISO);
 
 	pinModePPS( FPGA_PIN_T4, HIGH );
 	pinModePPS( FPGA_PIN_U16, HIGH );
@@ -714,14 +714,9 @@ void configure_pins()
 #ifdef __ZPUINO_PAPILIO_ONE__
 void configure_pins()
 {
-	/*GPIOTRIS(0)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
-    */
 	outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
 	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
-	inputPinForFunction( IOPIN_SPI_MISO, FPGA_PIN_SPI_MISO);
+	inputPinForFunction( FPGA_PIN_SPI_MISO, IOPIN_SPI_MISO);
 
 	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
 	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);
