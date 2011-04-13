@@ -91,7 +91,7 @@ architecture behave of zpuino_io is
   signal timers_spp_en: std_logic_vector(1 downto 0);
   signal timers_comp: std_logic;
 
-  signal ivecs: std_logic_vector(15 downto 0);
+  signal ivecs: std_logic_vector(17 downto 0);
 
   signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
@@ -351,6 +351,9 @@ begin
   --
 
   intr_inst: zpuino_intr
+  generic map (
+    INTERRUPT_LINES =>  18
+  )
   port map (
     clk       => clk,
 	 	areset    => areset,
@@ -363,7 +366,8 @@ begin
     interrupt => interrupt, -- Interrupt signal to core
 
     poppc_inst=> intready,
-    ivecs     => ivecs
+    intr_in     => ivecs,
+    intr_cfglvl => "110000000000000000"
   );
 
   --
@@ -603,6 +607,10 @@ begin
       gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
     end if;
     gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
+
+    -- External interrupt lines
+    ivecs(16) <= gpio_spp_read(1);
+    ivecs(17) <= gpio_spp_read(2);
 
   end process;
 

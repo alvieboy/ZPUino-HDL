@@ -168,6 +168,9 @@ package zpuinopkg is
   end component zpuino_timers;
 
   component zpuino_intr is
+  generic (
+    INTERRUPT_LINES: integer := 16
+  );
   port (
     clk:      in std_logic;
 	 	areset:   in std_logic;
@@ -181,7 +184,8 @@ package zpuinopkg is
     interrupt:out std_logic;
     poppc_inst:in std_logic;
 
-    ivecs:    in std_logic_vector(15 downto 0)
+    intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
+    intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0)
   );
   end component zpuino_intr;
 

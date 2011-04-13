@@ -56,6 +56,8 @@ typedef volatile unsigned int* register_t;
 #define TMR1OCR  REGISTER(TIMERSBASE,7)
 
 #define INTRCTL  REGISTER(INTRBASE,0)
+#define INTRMASK  REGISTER(INTRBASE,1)
+#define INTRLEVEL  REGISTER(INTRBASE,2)
 
 #define SIGMADELTACTL   REGISTER(SIGMADELTABASE,0)
 #define SIGMADELTADATA  REGISTER(SIGMADELTABASE,1)
@@ -122,5 +124,12 @@ typedef volatile unsigned int* register_t;
 #define IOPIN_USPI_MOSI   7
 #define IOPIN_USPI_SCK    8
 #define IOPIN_SIGMADELTA1 13
+
+/* Current interrupts (might not be implemented) */
+
+#define INTRLINE_TIMER0 3
+#define INTRLINE_TIMER1 4
+#define INTRLINE_EXT1 16
+#define INTRLINE_EXT2 17
 
 #endif
