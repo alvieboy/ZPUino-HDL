@@ -11,12 +11,13 @@ OBJDUMP=$(CROSS)objdump
 
 BOARD?=
 SIZE?=
+DEFINES=?
 
 DHRYSRC=.
 
 OBJ=boot.o boot-c.o syscall.o boot-s.o
 
-CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_$(BOARD)__ $(EXTRACFLAGS)
+CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_$(BOARD)__ $(EXTRACFLAGS) $(DEFINES)
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 

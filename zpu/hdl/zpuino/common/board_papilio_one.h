@@ -2,7 +2,15 @@
 #define __BOARD_H__
 
 #define CLK_FREQ 96000000UL
+
+#if defined(__S3E_250__)
 #define BOARD_MEMORYSIZE 0x4000
+#elif defined (__S3E_500__)
+#define BOARD_MEMORYSIZE 0x8000
+#else
+#error Undefined board size. Please define __S3E_250__ or __S3E_500__.
+#endif
+
 #define SPIOFFSET 0x00042000
 
 #define BOARD_SPI_DIVIDER BIT(SPICP0)

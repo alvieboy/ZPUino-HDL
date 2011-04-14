@@ -1,0 +1,79 @@
+##################################################################################
+## papilio_one.ucf
+##
+## Author: Alvaro Lopes, Jack Gasset
+##
+## Contains assignment and iostandard information for
+## all used pins as well as timing and area constraints for 
+## Papilio One Version 2.03 and greater that uses 32Mhz oscillator.
+##
+##################################################################################
+
+# Crystal Clock - use 32MHz onboard oscillator
+#NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.25ns ;
+NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.00ns ;
+
+# Wing1 Column A
+NET "gpio<0>" LOC = "P18" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A0
+NET "gpio<1>" LOC = "P23" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A1
+NET "gpio<2>" LOC = "P26" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A2
+NET "gpio<3>" LOC = "P33" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A3
+NET "gpio<4>" LOC = "P35" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A4
+NET "gpio<5>" LOC = "P40" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A5
+NET "gpio<6>" LOC = "P53" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A6
+NET "gpio<7>" LOC = "P57" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A7
+NET "gpio<8>" LOC = "P60" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#A8
+NET "gpio<9>" LOC = "P62" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ; 	#A9
+NET "gpio<10>" LOC = "P65" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A10
+NET "gpio<11>" LOC = "P67" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A11
+NET "gpio<12>" LOC = "P70" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A12
+NET "gpio<13>" LOC = "P79" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A13
+NET "gpio<14>" LOC = "P84" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A14
+NET "gpio<15>" LOC = "P86" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A15
+
+# Wing1 Column B
+NET "gpio<16>" LOC = "P85" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B0
+NET "gpio<17>" LOC = "P83" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B1
+NET "gpio<18>" LOC = "P78" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B2
+NET "gpio<19>" LOC = "P71" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B3
+NET "gpio<20>" LOC = "P68" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B4
+NET "gpio<21>" LOC = "P66" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B5
+NET "gpio<22>" LOC = "P63" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B6
+NET "gpio<23>" LOC = "P61" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B7
+NET "gpio<24>" LOC = "P58" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B8
+NET "gpio<25>" LOC = "P54" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B9
+NET "gpio<26>" LOC = "P41" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B10
+NET "gpio<27>" LOC = "P36" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B11
+NET "gpio<28>" LOC = "P34" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B12
+NET "gpio<29>" LOC = "P32" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B13
+NET "gpio<30>" LOC = "P25" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B14
+NET "gpio<31>" LOC = "P22" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#B15
+
+# Wing2 Column A
+NET "gpio<32>" LOC = "P91" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C0
+NET "gpio<33>" LOC = "P92" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C1
+NET "gpio<34>" LOC = "P94" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C2
+NET "gpio<35>" LOC = "P95" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C3
+NET "gpio<36>" LOC = "P98" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C4
+NET "gpio<37>" LOC = "P2" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C5
+NET "gpio<38>" LOC = "P3" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C6
+NET "gpio<39>" LOC = "P4" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C7
+NET "gpio<40>" LOC = "P5" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  	#C8
+NET "gpio<41>" LOC = "P9" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;    #C9
+NET "gpio<42>" LOC = "P10" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C10
+NET "gpio<43>" LOC = "P11" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C11
+NET "gpio<44>" LOC = "P12" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C12
+NET "gpio<45>" LOC = "P15" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C13
+NET "gpio<46>" LOC = "P16" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C14
+NET "gpio<47>" LOC = "P17" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#C15
+
+## RS232
+NET "rxd"  LOC = "P88" | IOSTANDARD = LVTTL ;
+NET "txd"  LOC = "P90" | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+
+## SPI flash
+NET "SPI_CS"   LOC = "P24" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8;
+NET "SPI_SCK"  LOC = "P50" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;
+NET "SPI_MISO" LOC = "P44" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;
+NET "SPI_MOSI" LOC = "P27" | IOSTANDARD = LVCMOS33 ;
+
