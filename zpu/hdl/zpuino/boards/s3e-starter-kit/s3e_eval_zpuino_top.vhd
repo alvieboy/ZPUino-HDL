@@ -109,9 +109,9 @@ architecture behave of s3e_eval_zpuino is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "1111111111111111111111111111111111111111111111";
+    "00000001111111111111111111111111111111111111111111111";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "1111111111111111111111111111111111111111111111";
+    "00000001111111111111111111111111111111111111111111111";
 
 
 begin

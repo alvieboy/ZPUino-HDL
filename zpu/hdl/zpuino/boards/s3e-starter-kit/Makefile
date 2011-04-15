@@ -4,11 +4,12 @@ PART=xc3s500e-fg320-4
 # For bootloader
 BOARD=S3E_EVAL
 SIZE=32768
+DEFINES=
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 prom-generic-dp-32.vhd:
-	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE)
+	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
 	cp ../../bootloader/prom-generic-dp-32.vhd .
 	
 ${PROJECT}.ngc: prom-generic-dp-32.vhd
