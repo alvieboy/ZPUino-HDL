@@ -106,7 +106,7 @@ tgen: for i in 0 to gpio_count-1 generate
       if areset='1' then
         gpio_o(i)<='1';
       else
-        if ppspin_q(i)='1' then
+        if ppspin_q(i)='1' and spp_cap_out(i)='1' then
           gpio_o(i) <= spp_data( input_mapper_q(i));
         else
           gpio_o(i) <= gpio_q(i);
@@ -120,9 +120,9 @@ end generate;
 
 spprgen: for i in 0 to gpio_count-1 generate -- spp_read(0) is invalid.
 
-  gpio_i_q(i) <= gpio_i(i);
+  gpio_i_q(i) <= gpio_i(i) when spp_cap_in(i)='1' else DontCareValue;
 
-  process( gpio_i_q(i), output_mapper_q(i), spp_cap_in )
+  process( gpio_i_q(i), output_mapper_q(i) )
   begin
     spp_read(i) <= gpio_i_q( output_mapper_q(i) );
   end process;
@@ -130,7 +130,7 @@ spprgen: for i in 0 to gpio_count-1 generate -- spp_read(0) is invalid.
 end generate;
 
 ilink1: for i in 0 to gpio_count-1 generate
-  gpio_r_i(i) <= gpio_i_q(i);
+  gpio_r_i(i) <= gpio_i(i);
   gpio_tris_r_i(i) <= gpio_tris_q(i);
 end generate;
 
