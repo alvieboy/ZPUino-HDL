@@ -12,3 +12,9 @@ ivector:
         .globl __sketch_start
 __sketch_start:
 	nop
+
+.section ".vectors"
+
+	.org 0x0008
+        .globl _memreg
+_memreg:
