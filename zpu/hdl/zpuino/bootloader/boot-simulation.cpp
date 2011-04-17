@@ -8,7 +8,7 @@
 # undef SPI_FLASH_SEL_PIN
 # define SPI_FLASH_SEL_PIN FPGA_SS_B
 
-unsigned int _memreg[4];
+//unsigned int _memreg[4];
 
 
 
