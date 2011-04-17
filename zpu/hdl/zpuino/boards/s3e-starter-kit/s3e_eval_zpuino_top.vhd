@@ -52,7 +52,11 @@ entity s3e_eval_zpuino is
     UART_RX:      in std_logic;
     UART_TX:      out std_logic;
     GPIO:         inout std_logic_vector(zpuino_gpio_count-1 downto 0);
-    FPGA_INIT_B:  out std_logic
+    FPGA_INIT_B:  out std_logic;
+    -- Rotary signals
+    ROT_A:        in std_logic;
+    ROT_B:        in std_logic;
+    ROT_CENTER:   in std_logic
   );
 end entity s3e_eval_zpuino;
 
@@ -109,9 +113,9 @@ architecture behave of s3e_eval_zpuino is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00000001111111111111111111111111111111111111111111111";
+    "00000000001111111111111111111111111111111111111111111111";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00000001111111111111111111111111111111111111111111111";
+    "00000000001111111111111111111111111111111111111111111111";
 
 
 begin
@@ -137,7 +141,7 @@ begin
 
   FPGA_INIT_B<='0';
 
-  bufgen: for i in 0 to zpuino_gpio_count-1 generate
+  bufgen: for i in 0 to zpuino_gpio_count-1-3 generate
     iop: IOPAD
       port map(
         I => gpio_o(i),
@@ -150,6 +154,11 @@ begin
 
   ibufrx: IPAD port map ( PAD => UART_RX,  O => rx,  C => sysclk );
   obuftx: OPAD port map ( I => tx,   PAD => UART_TX );
+
+  -- Rotary encoder
+  rotapad: IPAD port map ( PAD => ROT_A,  O => gpio_i(53),  C => sysclk );
+  rotbpad: IPAD port map ( PAD => ROT_B,  O => gpio_i(54),  C => sysclk );
+  rotcpad: IPAD port map ( PAD => ROT_CENTER,  O => gpio_i(55),  C => sysclk );
   
   zpuino:zpuino_top
   generic map (
