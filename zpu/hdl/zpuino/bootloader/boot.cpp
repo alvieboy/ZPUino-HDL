@@ -46,7 +46,7 @@
 #define HDLC_escapeXOR 0x20
 
 
-unsigned int _memreg[4];
+//unsigned int _memreg[4];
 unsigned int ZPU_ID;
 
 extern "C" void (*ivector)(void);
@@ -559,7 +559,7 @@ static void cmd_version()
 	// Reset boot counter
 	milisseconds = 0;
 	prepareSend();
-    sendByte(REPLY(BOOTLOADER_CMD_VERSION));
+	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
 
 	sendBuffer(vstring,sizeof(vstring));
 	finishSend();
