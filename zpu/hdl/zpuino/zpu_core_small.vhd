@@ -254,6 +254,8 @@ signal dipa,dipb: std_logic_vector(3 downto 0) := (others => '0');
 
 signal stack_b_addr_is_offset: std_logic;
 
+signal stack_mem_enable: std_logic;
+
 begin
 
   stack_a_write <= std_logic_vector(topOfStack_write);
@@ -280,14 +282,16 @@ begin
     DIB   => stack_b_write,
     DIPA  => dipa,
     DIPB  => dipb,
-    ENA   => '1',
-    ENB   => '1',
+    ENA   => stack_mem_enable,
+    ENB   => stack_mem_enable,
     SSRA  => '0',
     SSRB  => '0',
     WEA   => stack_a_writeenable,
     WEB   => stack_b_writeenable
     );
 
+
+  stack_mem_enable <= not io_busy;
 
   -- generate a trace file.
   -- 
@@ -787,10 +791,10 @@ begin
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
-            if io_busy='0' then
-              spnext <= sp + 1;      -- REMOVE THIS PLEASE
-              spnext_b <= sp + 2;
-            end if;
+            --if io_busy='0' then
+            --  spnext <= sp + 1;      -- REMOVE THIS PLEASE
+            --  spnext_b <= sp + 2;
+            --end if;
 
             decode_freeze<='1';
 
@@ -868,7 +872,9 @@ begin
       when State_AddSP =>
         
       when State_Load =>
-
+         if io_busy='1' then
+          decode_freeze<='1'; -- Don't push ops while busy
+         end if;
       when others =>
          null;
     end case;
@@ -1127,11 +1133,11 @@ begin
               state <= State_WaitSP;
 
             when Decoded_Store =>
-              if io_busy='0' then
-                state <= State_Pop;
-              else
+              --if io_busy='0' then
+              --  state <= State_Pop;
+             -- else
                 state <= State_WaitIO;
-              end if;
+              --end if;
 
             when Decoded_Load =>
               state <= State_Load;
