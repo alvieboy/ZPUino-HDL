@@ -104,44 +104,25 @@ package zpupkg is
 
   component zpu_core_small is
   port (
-    clk:            in std_logic;
-    rst:            in std_logic; -- Synchronous reset
-    io_busy:        in std_logic;
-    io_read:        in std_logic_vector(wordSize-1 downto 0);
-    io_write:       out std_logic_vector(wordSize-1 downto 0);
-    io_addr:        out std_logic_vector(maxAddrBitIncIO downto 0);
-    io_wr:          out std_logic;
-    io_rd:          out std_logic;
-    interrupt:      in std_logic;
+    wb_clk_i:       in std_logic;
+    wb_rst_i:       in std_logic;
+
+    -- Master wishbone interface
+
+    wb_ack_i:       in std_logic;
+    wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    wb_cyc_o:       out std_logic;
+    wb_stb_o:       out std_logic;
+    wb_we_o:        out std_logic;
+
+    wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
     break:          out std_logic
   );
   end component zpu_core_small;
 
-	component timer is
-	  port(
-	       clk              : in std_logic;
-			 areset				: in std_logic;
-			 we					: in std_logic;
-			 din					: in std_logic_vector(7 downto 0);
-			 adr					: in std_logic_vector(2 downto 0);
-			 dout					: out std_logic_vector(7 downto 0));
-	end component;
-
-	component  zpuio is
-		port (	areset			: in std_logic;
-				cpu_clk			: in std_logic;
-				clk_status		: in std_logic_vector(2 downto 0);
-				cpu_din			: in std_logic_vector(15 downto 0);
-				cpu_a			: in std_logic_vector(20 downto 0);
-				cpu_we			: in std_logic_vector(1 downto 0);
-				cpu_re			: in std_logic;
-				cpu_dout		: inout std_logic_vector(15 downto 0));
-	end component;
-
-
-
-	
 	-- opcode decode constants
 	constant	OpCode_Im		: std_logic_vector(7 downto 7) := "1";
 	constant	OpCode_StoreSP	: std_logic_vector(7 downto 5) := "010";

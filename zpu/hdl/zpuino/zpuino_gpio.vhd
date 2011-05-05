@@ -48,15 +48,16 @@ entity zpuino_gpio is
     gpio_count: integer := 32
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(8 downto 0);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(8 downto 0);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     spp_data: in std_logic_vector(gpio_count-1 downto 0);
     spp_read: out std_logic_vector(gpio_count-1 downto 0);
@@ -89,8 +90,8 @@ signal gpio_i_q: std_logic_vector(127 downto 0);
 
 begin
 
-busy <= '0';
-interrupt <= '0';
+wb_ack_o <= wb_cyc_i and wb_stb_i;
+wb_inta_o <= '0';
 
 gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
 
@@ -98,12 +99,12 @@ gpio_t <= gpio_tris_q(gpio_count-1 downto 0);
  -- Generate muxers for output.
 
 tgen: for i in 0 to gpio_count-1 generate
-  process( clk )
+  process( wb_clk_i )
   begin
 
-    if rising_edge(clk) then -- synchronous output
+    if rising_edge(wb_clk_i) then -- synchronous output
       -- Enforce RST on gpio_o
-      if areset='1' then
+      if wb_rst_i='1' then
         gpio_o(i)<='1';
       else
         if ppspin_q(i)='1' and spp_cap_out(i)='1' then
@@ -140,57 +141,57 @@ ilink2: for i in gpio_count to 127 generate
 end generate;
 
 
-process(address,gpio_r_i,gpio_tris_r_i,ppspin_q)
+process(wb_adr_i,gpio_r_i,gpio_tris_r_i,ppspin_q)
 begin
-  case address(3 downto 2) is
+  case wb_adr_i(3 downto 2) is
     when "00" =>
 
-      case address(1 downto 0) is
+      case wb_adr_i(1 downto 0) is
         when "00" =>
-          read <= gpio_r_i(31 downto 0);  
+          wb_dat_o <= gpio_r_i(31 downto 0);  
         when "01" =>
-          read <= gpio_r_i(63 downto 32);
+          wb_dat_o <= gpio_r_i(63 downto 32);
         when "10" =>
-          read <= gpio_r_i(95 downto 64);
+          wb_dat_o <= gpio_r_i(95 downto 64);
         when "11" =>
-          read <= gpio_r_i(127 downto 96);
+          wb_dat_o <= gpio_r_i(127 downto 96);
         when others =>
       end case;
 
     when "01" =>
-      case address(1 downto 0) is
+      case wb_adr_i(1 downto 0) is
         when "00" =>
-          read <= gpio_tris_r_i(31 downto 0);
+          wb_dat_o <= gpio_tris_r_i(31 downto 0);
         when "01" =>
-          read <= gpio_tris_r_i(63 downto 32);
+          wb_dat_o <= gpio_tris_r_i(63 downto 32);
         when "10" =>
-          read <= gpio_tris_r_i(95 downto 64);
+          wb_dat_o <= gpio_tris_r_i(95 downto 64);
         when "11" =>
-          read <= gpio_tris_r_i(127 downto 96);
+          wb_dat_o <= gpio_tris_r_i(127 downto 96);
         when others =>
       end case;
 
     when "10" =>
-      case address(1 downto 0) is
+      case wb_adr_i(1 downto 0) is
         when "00" =>
-          read <= ppspin_q(31 downto 0);
+          wb_dat_o <= ppspin_q(31 downto 0);
         when "01" =>
-          read <= ppspin_q(63 downto 32);
+          wb_dat_o <= ppspin_q(63 downto 32);
         when "10" =>
-          read <= ppspin_q(95 downto 64);
+          wb_dat_o <= ppspin_q(95 downto 64);
         when "11" =>
-          read <= ppspin_q(127 downto 96);
+          wb_dat_o <= ppspin_q(127 downto 96);
         when others =>
       end case;
     when others =>
-      read <= (others => DontCareValue);
+      wb_dat_o <= (others => DontCareValue);
   end case;
 end process;
 
-process(clk)
+process(wb_clk_i)
 begin
-  if rising_edge(clk) then
-    if areset='1' then
+  if rising_edge(wb_clk_i) then
+    if wb_rst_i='1' then
       gpio_tris_q <= (others => '1');
       ppspin_q <= (others => '0');
       gpio_q <= (others => DontCareValue);
@@ -199,45 +200,45 @@ begin
       --  input_mapper_q(i) <= 0;
       --  output_mapper_q(i) <= 0;
       --end loop;
-    elsif we='1' then
-      case address(8 downto 7) is
+    elsif wb_we_i='1' then
+      case wb_adr_i(8 downto 7) is
         when "00" =>
-          case address(3 downto 2) is
+          case wb_adr_i(3 downto 2) is
             when "00" =>
-              case address(1 downto 0) is
+              case wb_adr_i(1 downto 0) is
                 when "00" =>
-                  gpio_q(31 downto 0) <= write;
+                  gpio_q(31 downto 0) <= wb_dat_i;
                 when "01" =>
-                  gpio_q(63 downto 32) <= write;
+                  gpio_q(63 downto 32) <= wb_dat_i;
                 when "10" =>
-                  gpio_q(95 downto 64) <= write;
+                  gpio_q(95 downto 64) <= wb_dat_i;
                 when "11" =>
-                  gpio_q(127 downto 96) <= write;
+                  gpio_q(127 downto 96) <= wb_dat_i;
                 when others =>
               end case;
             when "01" =>
-              case address(1 downto 0) is
+              case wb_adr_i(1 downto 0) is
                 when "00" =>
-                  gpio_tris_q(31 downto 0) <= write;
+                  gpio_tris_q(31 downto 0) <= wb_dat_i;
                 when "01" =>
-                  gpio_tris_q(63 downto 32) <= write;
+                  gpio_tris_q(63 downto 32) <= wb_dat_i;
                 when "10" =>
-                  gpio_tris_q(95 downto 64) <= write;
+                  gpio_tris_q(95 downto 64) <= wb_dat_i;
                 when "11" =>
-                  gpio_tris_q(127 downto 96) <= write;
+                  gpio_tris_q(127 downto 96) <= wb_dat_i;
                 when others =>
               end case;
             when "10" =>
               if zpuino_pps_enabled then
-                case address(1 downto 0) is
+                case wb_adr_i(1 downto 0) is
                   when "00" =>
-                    ppspin_q(31 downto 0) <= write;
+                    ppspin_q(31 downto 0) <= wb_dat_i;
                   when "01" =>
-                    ppspin_q(63 downto 32) <= write;
+                    ppspin_q(63 downto 32) <= wb_dat_i;
                   when "10" =>
-                    ppspin_q(95 downto 64) <= write;
+                    ppspin_q(95 downto 64) <= wb_dat_i;
                   when "11" =>
-                    ppspin_q(127 downto 96) <= write;
+                    ppspin_q(127 downto 96) <= wb_dat_i;
                   when others =>
                 end case;
               end if;
@@ -246,11 +247,11 @@ begin
           end case;
         when "01" =>
           if zpuino_pps_enabled then
-            input_mapper_q( conv_integer(address(6 downto 0)) ) <= conv_integer(write(6 downto 0));
+            input_mapper_q( conv_integer(wb_adr_i(6 downto 0)) ) <= conv_integer(wb_dat_i(6 downto 0));
           end if;
         when "10" =>
           if zpuino_pps_enabled then
-            output_mapper_q( conv_integer(address(6 downto 0)) ) <= conv_integer(write(6 downto 0));
+            output_mapper_q( conv_integer(wb_adr_i(6 downto 0)) ) <= conv_integer(wb_dat_i(6 downto 0));
           end if;
         when others =>
       end case;

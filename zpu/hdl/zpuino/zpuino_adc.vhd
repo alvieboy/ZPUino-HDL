@@ -52,15 +52,16 @@ entity zpuino_adc is
     lower_offset: integer := 4
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(10 downto 2);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     sample:   in std_logic; -- External trigger
 
@@ -150,8 +151,8 @@ architecture behave of zpuino_adc is
 begin
 
   enabled <= adc_enabled_q;
-  busy <= '0';
-  interrupt <= '0';
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
+  wb_inta_o <= '0';
 
 
   process(spi_enable,spi_ready)
@@ -164,8 +165,8 @@ begin
 
   adcspi: spi
     port map (
-      clk           => clk,
-      rst           => areset,
+      clk           => wb_clk_i,
+      rst           => wb_rst_i,
       din           => (others => '0'), -- Change to channel number
       dout          => spi_dout,
       en            => spi_enable,
@@ -183,8 +184,8 @@ begin
 
   acdclkgen: spiclkgen
     port map (
-      clk     => clk,
-      rst     => areset,
+      clk     => wb_clk_i,
+      rst     => wb_rst_i,
       en      => spi_clk_en,
       cpol    => '1',
       pres    => "010", -- Fixed
@@ -194,18 +195,18 @@ begin
       spiclk  => sck
   );
 
-  process (clk)
+  process (wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         read_fifo_ptr_q <= (others => '0');
       else
 
-        if we='1' and address(4 downto 2)="100" then
-          read_fifo_ptr_q <= unsigned(write(10 downto 2));
+        if wb_we_i='1' and wb_adr_i(4 downto 2)="100" then
+          read_fifo_ptr_q <= unsigned(wb_dat_i(10 downto 2));
         else
-          if re='1' and address(4 downto 2)="101" then
-            -- FIFO read, increment address
+          if wb_cyc_i='1' and wb_we_i='0' and wb_stb_i='1' and wb_adr_i(4 downto 2)="101" then
+            -- FIFO wb_dat_o, increment wb_adr_i
             read_fifo_ptr_q <= read_fifo_ptr_q+1;
           end if;
         end if;
@@ -215,18 +216,18 @@ begin
 
 
   -- READ muxer
-  process(address,fifo_read,request_samples_q,current_sample_q)
+  process(wb_adr_i,fifo_read,request_samples_q,current_sample_q)
   begin
-    read <= (others => DontCareValue);
-    case address is
+    wb_dat_o <= (others => DontCareValue);
+    case wb_adr_i is
       when "000000000" =>
         if (request_samples_q /= current_sample_q) then
-          read(0) <= '0';
+          wb_dat_o(0) <= '0';
         else
-          read(0) <= '1';
+          wb_dat_o(0) <= '1';
         end if;
       when "000000101" =>
-        read <= fifo_read;
+        wb_dat_o <= fifo_read;
       when others =>
     end case;
   end process;
@@ -250,8 +251,8 @@ begin
       DOPB => open,
       ADDRA => fifo_write_address,
       ADDRB => fifo_read_address,
-      CLKA  => clk,
-      CLKB  => clk,
+      CLKA  => wb_clk_i,
+      CLKB  => wb_clk_i,
       DIA   => fifo_write,
       DIB   => (others => '0'),
       DIPA  => (others => '0'),
@@ -275,8 +276,8 @@ begin
       DOPB => open,
       ADDRA => fifo_write_address,
       ADDRB => fifo_read_address,
-      CLKA  => clk,
-      CLKB  => clk,
+      CLKA  => wb_clk_i,
+      CLKB  => wb_clk_i,
       DIA   => fifo_write,
       DIB   => (others => '0'),
       DIPA  => (others => '0'),
@@ -295,10 +296,10 @@ begin
   do_sample <= sample when adc_source_external_q='1' else '1';
 
   -- Main process
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         request_samples_q <= (others => '0');
         current_sample_q <= (others => '0');
         run_spi <= '0';
@@ -309,15 +310,15 @@ begin
 
         fifo_wr <= '0';
 
-        if we='1' then
-          case address(4 downto 2) is
+        if wb_we_i='1' then
+          case wb_adr_i(4 downto 2) is
             when "000" =>
               -- Write configuration
-              adc_enabled_q <= write(0);
-              adc_source_external_q <= write(1);
+              adc_enabled_q <= wb_dat_i(0);
+              adc_source_external_q <= wb_dat_i(1);
             when "001" =>
               -- Write request samples
-              request_samples_q <= unsigned(write(11-fifo_lower_bit downto 0));
+              request_samples_q <= unsigned(wb_dat_i(11-fifo_lower_bit downto 0));
               current_sample_q <= (others => '1'); -- WARNING - this will overwrite last value on RAM
               run_spi <= '1';
             when others =>

@@ -10,15 +10,16 @@ use work.zpuinopkg.all;
 
 entity zpuino_empty_device is
   port (
-    clk:      in std_logic;
-	 	rst:      in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(10 downto 2);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
   );
 end entity zpuino_empty_device;
 
@@ -26,10 +27,9 @@ architecture behave of zpuino_empty_device is
 
 begin
 
-  busy <= '0';
-  interrupt <= '0';
-  read <= (others => DontCareValue);
-
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
+  wb_inta_o <= '0';
+  wb_dat_o <= (others => DontCareValue);
 
 end behave;
 

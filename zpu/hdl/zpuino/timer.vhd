@@ -48,21 +48,21 @@ entity timer is
     TSCENABLED: boolean := false
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(1 downto 0);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i:      in std_logic;
+	 	wb_rst_i:   in std_logic;
+    wb_dat_o:     out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i:    in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i:  in std_logic_vector(1 downto 0);
+    wb_we_i:       in std_logic;
+    wb_cyc_i:       in std_logic;
+    wb_stb_i:       in std_logic;
+    wb_ack_o:       out std_logic;
+    wb_inta_o:      out std_logic;
     -- Connection to GPIO pin
     spp_data: out std_logic;
     spp_en:   out std_logic;
 
-    comp:     out std_logic; -- Compare output
-
-    busy:     out std_logic;
-    interrupt:out std_logic
+    comp:     out std_logic -- Compare output
   );
 end entity timer;
 
@@ -96,24 +96,24 @@ signal TSC_q: unsigned(wordSize-1 downto 0);
 
 begin
 
-  interrupt <= tmr0_intr;
+  wb_inta_o <= tmr0_intr;
   comp <= tmr0_cout;
 
-  busy <= '0';
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
 
   tmr0prescale_inst: prescaler
     port map (
-      clk     => clk,
+      clk     => wb_clk_i,
       rst     => tmr0_prescale_rst,
       prescale=> tmr0_prescale,
       event   => tmr0_prescale_event
     );
 
   tsc_process: if TSCENABLED generate
-  TSCgen: process(clk)
+  TSCgen: process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         TSC_q <= (others => '0');
       else
         TSC_q <= TSC_q + 1;
@@ -123,36 +123,36 @@ begin
   end generate;
 
   -- Read
-  process(address,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr,TSC_q,tmr0_oce_q)
+  process(wb_adr_i,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr,TSC_q,tmr0_oce_q)
   begin
-    read <= (others => '0');
-    case address is
+    wb_dat_o <= (others => '0');
+    case wb_adr_i is
       when "00" =>
-        read(0) <= tmr0_en_q;
-        read(1) <= tmr0_ccm_q;
-        read(2) <= tmr0_dir_q;
-        read(3) <= tmr0_ien_q;
-        read(6 downto 4) <= tmr0_prescale;
-        read(7) <= tmr0_intr;
-        read(8) <= tmr0_oce_q;
+        wb_dat_o(0) <= tmr0_en_q;
+        wb_dat_o(1) <= tmr0_ccm_q;
+        wb_dat_o(2) <= tmr0_dir_q;
+        wb_dat_o(3) <= tmr0_ien_q;
+        wb_dat_o(6 downto 4) <= tmr0_prescale;
+        wb_dat_o(7) <= tmr0_intr;
+        wb_dat_o(8) <= tmr0_oce_q;
       when "01" =>
-        read(15 downto 0) <= std_logic_vector(tmr0_cnt_q);
+        wb_dat_o(15 downto 0) <= std_logic_vector(tmr0_cnt_q);
       when "10" =>
-        read(15 downto 0) <= std_logic_vector(tmr0_cmp_q);
+        wb_dat_o(15 downto 0) <= std_logic_vector(tmr0_cmp_q);
       when others =>
         if TSCENABLED then
-          read <= std_logic_vector(TSC_q);
+          wb_dat_o <= std_logic_vector(TSC_q);
         else
-          read <= (others => DontCareValue );
+          wb_dat_o <= (others => DontCareValue );
         end if;
     end case;
   end process;
 
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         tmr0_en_q <= '0';
         tmr0_ccm_q <= '0';
         tmr0_dir_q <= '1';
@@ -163,20 +163,20 @@ begin
         tmr0_prescale_rst <= '1';
       else
         tmr0_prescale_rst <= not tmr0_en_q;
-        if we='1' then
-          case address is
+        if wb_we_i='1' then
+          case wb_adr_i is
             when "00" =>
-              tmr0_en_q <= write(0);
-              tmr0_ccm_q <= write(1);
-              tmr0_dir_q <= write(2);
-              tmr0_ien_q <= write(3);
-              tmr0_prescale <= write(6 downto 4);
-              tmr0_oce_q <= write(8);
+              tmr0_en_q <= wb_dat_i(0);
+              tmr0_ccm_q <= wb_dat_i(1);
+              tmr0_dir_q <= wb_dat_i(2);
+              tmr0_ien_q <= wb_dat_i(3);
+              tmr0_prescale <= wb_dat_i(6 downto 4);
+              tmr0_oce_q <= wb_dat_i(8);
               --tmr0_prescale_rst <= '1';
             when "10" =>
-              tmr0_cmp_q <= unsigned(write(15 downto 0));
+              tmr0_cmp_q <= unsigned(wb_dat_i(15 downto 0));
             when "11" =>
-              tmr0_oc_q <= unsigned(write(15 downto 0));
+              tmr0_oc_q <= unsigned(wb_dat_i(15 downto 0));
 
             when others =>
           end case;
@@ -186,19 +186,19 @@ begin
   end process;
 
   -- Timer 0 count
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         tmr0_cnt_q <= (others => '0');
         tmr0_intr <= '0';
         tmr0_cout <= '0';
       else
-        if we='1' and address="01" then
-          tmr0_cnt_q <= unsigned(write(15 downto 0));
+        if wb_we_i='1' and wb_adr_i="01" then
+          tmr0_cnt_q <= unsigned(wb_dat_i(15 downto 0));
         else
-          if we='1' and address="00" then
-            if write(7)='0' then
+          if wb_we_i='1' and wb_adr_i="00" then
+            if wb_dat_i(7)='0' then
               tmr0_intr <= '0';
             end if;
           end if;
@@ -233,9 +233,9 @@ begin
 
   -- Output compare ( synchronous )
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
+    if rising_edge(wb_clk_i) then
       if tmr0_oc_q >= tmr0_cnt_q then
         spp_data <= '1';
       else

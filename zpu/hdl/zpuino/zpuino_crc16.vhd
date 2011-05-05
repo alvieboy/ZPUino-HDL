@@ -9,15 +9,16 @@ use work.zpuinopkg.all;
 
 entity zpuino_crc16 is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(10 downto 2);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
   );
 end entity zpuino_crc16;
 
@@ -33,48 +34,48 @@ signal ready_q: std_logic;
 
 begin
 
-busy<='1' when ready_q='0' and ( re='1' or we='1') else '0';
-interrupt <= '0';
+wb_ack_o<='1' when ready_q='1' and ( wb_cyc_i='1' and wb_stb_i='1') else '0';
+wb_inta_o <= '0';
 
-process(address,crc_q,poly_q)
+process(wb_adr_i,crc_q,poly_q)
 begin
-  case address is
+  case wb_adr_i is
     when "000000000" =>
-      read(31 downto 16) <= (others => '0');
-      read(15 downto 0) <= crc_q;
+      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(15 downto 0) <= crc_q;
     when "000000001" =>
-      read(31 downto 16) <= (others => '0');
-      read(15 downto 0) <= poly_q;
+      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(15 downto 0) <= poly_q;
     when "000000100" =>
-      read(31 downto 16) <= (others => '0');
-      read(15 downto 0) <= crcA_q;
+      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(15 downto 0) <= crcA_q;
     when "000000101" =>
-      read(31 downto 16) <= (others => '0');
-      read(15 downto 0) <= crcB_q;
+      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(15 downto 0) <= crcB_q;
     when others =>
-      read <= (others => DontCareValue);
+      wb_dat_o <= (others => DontCareValue);
   end case;
 end process;
 
-process(clk)
+process(wb_clk_i)
 begin
-  if rising_edge(clk) then
-    if areset='1' then
+  if rising_edge(wb_clk_i) then
+    if wb_rst_i='1' then
       poly_q <= x"A001";
       crc_q <= x"FFFF";
       ready_q <= '1';
 
     else
-      if we='1' and ready_q='1' then
-        case address(4 downto 2) is
+      if wb_we_i='1' and ready_q='1' then
+        case wb_adr_i(4 downto 2) is
           when "000" =>
-            crc_q <= write(15 downto 0);
+            crc_q <= wb_dat_i(15 downto 0);
           when "001" =>
-            poly_q <= write(15 downto 0);
+            poly_q <= wb_dat_i(15 downto 0);
           when "010" =>
             ready_q <= '0';
             count_q <= 0;
-            data_q <= write(7 downto 0);
+            data_q <= wb_dat_i(7 downto 0);
             crcA_q <= crc_q;
             crcB_q <= crcA_q;
           when others =>

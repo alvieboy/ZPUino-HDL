@@ -44,15 +44,16 @@ use work.zpuinopkg.all;
 
 entity zpuino_spi is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(10 downto 2);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     mosi:     out std_logic;
     miso:     in std_logic;
@@ -117,9 +118,9 @@ begin
 
   zspi: spi
     port map (
-      clk   => clk,
-      rst   => areset,
-      din   => write,
+      clk   => wb_clk_i,
+      rst   => wb_rst_i,
+      din   => wb_dat_i,
       dout  => spi_read,
       en    => spi_en,
       ready => spi_ready,
@@ -137,8 +138,8 @@ begin
 
   zspiclk: spiclkgen
     port map (
-      clk     => clk,
-      rst     => areset,
+      clk     => wb_clk_i,
+      rst     => wb_rst_i,
       en      => spi_clk_en,
       pres    => spi_clk_pres,
       clkrise => spi_clkrise,
@@ -152,61 +153,63 @@ begin
 
   -- Direct access (write) to SPI
 
-  spi_en <= '1' when we='1' and address(2)='1' and spi_ready='1' else '0';
+  spi_en <= '1' when wb_we_i='1' and wb_adr_i(2)='1' and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
-    busy <= '1' when address(2)='1' and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
+    --busy <= '1' when address(2)='1' and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
+    wb_ack_o <= '0' when wb_adr_i(2)='1' and (wb_cyc_i='1' and wb_stb_i='1') and spi_ready='0' and spi_txblock_q='1' else '1';
   end generate;
 
   nobusygen: if zpuino_spiblocking=false generate
-    busy <= '0';
+    --busy <= '0';
+    wb_ack_o <= wb_cyc_i and wb_stb_i;
   end generate;
 
   
 
-  interrupt <= '0';
+  wb_inta_o <= '0';
   enabled <= spi_enable_q;
 
   -- Prescaler write
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         spi_enable_q<='0';
         spi_txblock_q<='1';
         spi_transfersize_q<=(others => '0');
       else
-      if we='1' then
-        if address(2)='0' then
-          spi_clk_pres <= write(3 downto 1);
-          cpol <= write(4);
-          spi_samprise <= write(5);
-          spi_enable_q <= write(6);
-          spi_txblock_q <= write(7);
-          spi_transfersize_q <= write(9 downto 8);
+      if wb_we_i='1' then
+        if wb_adr_i(2)='0' then
+          spi_clk_pres <= wb_dat_i(3 downto 1);
+          cpol <= wb_dat_i(4);
+          spi_samprise <= wb_dat_i(5);
+          spi_enable_q <= wb_dat_i(6);
+          spi_txblock_q <= wb_dat_i(7);
+          spi_transfersize_q <= wb_dat_i(9 downto 8);
         end if;
       end if;
       end if;
     end if;
   end process;
 
-  process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
+  process(wb_adr_i, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
   begin
-    read <= (others =>'0');
-    case address is
+    wb_dat_o <= (others =>'0');
+    case wb_adr_i is
       when "000000000" =>
-        read(0) <= spi_ready;
-        read(3 downto 1) <= spi_clk_pres;
-        read(4) <= cpol;
-        read(5) <= spi_samprise;
-        read(6) <= spi_enable_q;
-        read(7) <= spi_txblock_q;
-        read(9 downto 8) <= spi_transfersize_q;
+        wb_dat_o(0) <= spi_ready;
+        wb_dat_o(3 downto 1) <= spi_clk_pres;
+        wb_dat_o(4) <= cpol;
+        wb_dat_o(5) <= spi_samprise;
+        wb_dat_o(6) <= spi_enable_q;
+        wb_dat_o(7) <= spi_txblock_q;
+        wb_dat_o(9 downto 8) <= spi_transfersize_q;
       when "000000001" =>
-        read <= spi_read;
+        wb_dat_o <= spi_read;
       when others =>
-        read <= (others => DontCareValue);
+        wb_dat_o <= (others => DontCareValue);
     end case;
   end process;
 

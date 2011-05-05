@@ -48,16 +48,18 @@ entity zpuino_io is
     spp_cap_out:  in std_logic_vector(zpuino_gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxAddrBitIncIO downto 0);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
-    intready: in std_logic;
+    wb_clk_i:   in std_logic;
+	 	wb_rst_i:   in std_logic;
+    wb_dat_o:   out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i:   in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i:   in std_logic_vector(maxAddrBitIncIO downto 0);
+    wb_we_i:    in std_logic;
+    wb_cyc_i:   in std_logic;
+    wb_stb_i:   in std_logic;
+    wb_ack_o:   out std_logic;
+    wb_inta_o:  out std_logic;
+
+    intready:   in std_logic;
 
     -- GPIO
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -102,9 +104,11 @@ architecture behave of zpuino_io is
 
   signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
   signal io_write: std_logic_vector(wordSize-1 downto 0);
+  signal io_cyc: std_logic;
+  signal io_stb: std_logic;
   signal io_we: std_logic;
-  signal io_re: std_logic;
-  signal io_device_busy: std_logic;
+
+  signal io_device_ack: std_logic;
 
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
@@ -125,39 +129,40 @@ architecture behave of zpuino_io is
   subtype address_type     is std_logic_vector(10 downto 2);
   type slot_address_type   is array(0 to 15) of address_type;
 
-  signal slot_re:       slot_std_logic_type;
-  signal slot_we:       slot_std_logic_type;
+  signal slot_cyc:       slot_std_logic_type;
+  signal slot_we:        slot_std_logic_type;
+  signal slot_stb:       slot_std_logic_type;
 
   signal slot_read:     slot_cpuword_type;
   signal slot_write:    slot_cpuword_type;
   signal slot_address:  slot_address_type;
 
-  signal slot_busy:     slot_std_logic_type;
+  signal slot_ack:     slot_std_logic_type;
   signal slot_interrupt:slot_std_logic_type;
   
 begin
 
-  -- Busy generator
+  -- Ack generator
 
-  process(slot_busy,io_device_busy)
+  process(slot_ack,io_device_ack)
   begin
-    io_device_busy <= '0';
+    io_device_ack <= '0';
     for i in 0 to 15 loop
-      if slot_busy(i) = '1' then
-        io_device_busy<='1';
+      if slot_ack(i) = '1' then
+        io_device_ack<='1';
       end if;
     end loop;
   end process;
 
   iobusy: if zpuino_iobusyinput=true generate
-    process(clk)
+    process(wb_clk_i)
     begin
-      if rising_edge(clk) then
-        if we='1' or re='1' then
-          addr_save_q <= address;
+      if rising_edge(wb_clk_i) then
+        if wb_stb_i='1' then
+          addr_save_q <= wb_adr_i;
         end if;
-        if we='1' then
-          write_save_q <= write;
+        if wb_we_i='1' then
+          write_save_q <= wb_dat_i;
         end if;
       end if;
     end process;
@@ -167,29 +172,29 @@ begin
 
     -- Generate busy signal, and rd/wr flags
 
-    process(io_device_busy, re, we)
+    -- NOTE: this assumes no device will ever ack if not selected.
+
+    process(io_device_ack)
     begin
-      if (re='1' or we='1') then
-        busy <= '1';
-      elsif io_device_busy='1' then
-        busy <= '1';
-      else
-        busy <= '0';
-      end if;
+      wb_ack_o <= io_device_ack;
     end process;
 
-    process(clk)
+    process(wb_clk_i)
     begin
-      if rising_edge(clk) then
-        if areset='1' then
-          io_re <= '0';
+      if rising_edge(wb_clk_i) then
+        if wb_rst_i='1' then
+          io_cyc <= '0';
+          io_stb <= '0';
           io_we <= '0';
         else
           -- If no device is busy, propagate request
-          if io_device_busy='0' then
-            io_re <= re;
-            io_we <= we;
-          end if;
+          --if io_device_ack='1' then
+          --  io_re <= re;
+          --  io_we <= we;
+          --end if;
+          io_cyc <= wb_cyc_i;
+          io_stb <= wb_stb_i;
+          io_we <= wb_we_i;
         end if;
       end if;
     end process;
@@ -197,13 +202,15 @@ begin
   end generate;
 
   noiobusy: if zpuino_iobusyinput=false generate
+    -- TODO: remove this
 
-    io_address <= address;
-    io_write <= write;
-    io_re <= re;
-    io_we <= we;
+    io_address <= wb_adr_i;
+    io_write <= wb_dat_i;
+    io_cyc <= wb_cyc_i;
+    io_stb <= wb_stb_i;
+    io_we <= wb_we_i;
 
-    busy <= io_device_busy;
+    wb_ack_o <= io_device_ack;
   end generate;
 
   -- Interrupt vectors
@@ -216,11 +223,11 @@ begin
   end process;
 
   -- Write and address signals, shared by all slots
-  process(io_write,io_address)
+  process(wb_dat_i,wb_adr_i)
   begin
     for i in 0 to 15 loop
-      slot_write(i) <= io_write;
-      slot_address(i) <= io_address(10 downto 2);
+      slot_write(i) <= wb_dat_i;
+      slot_address(i) <= wb_adr_i(10 downto 2);
     end loop;
   end process;
 
@@ -229,13 +236,13 @@ begin
   begin
 
     slotNumber := to_integer(unsigned(io_address(14 downto 11)));
-    read <= slot_read(slotNumber);
+    wb_dat_o <= slot_read(slotNumber);
 
   end process;
 
   -- Enable signals
 
-  process(io_address,io_re,io_we)
+  process(io_address,wb_stb_i,wb_cyc_i,wb_we_i)
     variable slotNumber: integer range 0 to 15;
   begin
 
@@ -243,10 +250,12 @@ begin
 
     for i in 0 to 15 loop
       if i = slotNumber then
-        slot_re(i) <= io_re;
+        slot_stb(i) <= io_stb;
+        slot_cyc(i) <= io_cyc;
         slot_we(i) <= io_we;
       else
-        slot_re(i) <= '0';
+        slot_stb(i) <= '0';
+        slot_cyc(i) <= '0';
         slot_we(i) <= '0';
       end if;
     end loop;
@@ -259,15 +268,16 @@ begin
 
   slot0: zpuino_spi
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(0),
-    write     => slot_write(0),
-    address   => slot_address(0),
-    we        => slot_we(0),
-    re        => slot_re(0),
-    busy      => slot_busy(0),
-    interrupt => slot_interrupt(0),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(0),
+    wb_dat_i     => slot_write(0),
+    wb_adr_i   => slot_address(0),
+    wb_we_i        => slot_we(0),
+    wb_cyc_i      => slot_cyc(0),
+    wb_stb_i      => slot_stb(0),
+    wb_ack_o      => slot_ack(0),
+    wb_inta_o => slot_interrupt(0),
 
     mosi      => spi_pf_mosi,
     miso      => spi_pf_miso,
@@ -281,15 +291,17 @@ begin
 
   uart_inst: zpuino_uart
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(1),
-    write     => slot_write(1),
-    address   => slot_address(1),
-    we        => slot_we(1),
-    re        => slot_re(1),
-    busy      => slot_busy(1),
-    interrupt => slot_interrupt(1),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(1),
+    wb_dat_i     => slot_write(1),
+    wb_adr_i   => slot_address(1),
+    wb_we_i      => slot_we(1),
+    wb_cyc_i       => slot_cyc(1),
+    wb_stb_i       => slot_stb(1),
+    wb_ack_o      => slot_ack(1),
+
+    wb_inta_o => slot_interrupt(1),
 
     enabled   => uart_enabled,
     tx        => uart_tx,
@@ -305,15 +317,16 @@ begin
     gpio_count => zpuino_gpio_count
   )
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(2),
-    write     => slot_write(2),
-    address   => slot_address(2),
-    we        => slot_we(2),
-    re        => slot_re(2),
-    busy      => slot_busy(2),
-    interrupt => slot_interrupt(2),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(2),
+    wb_dat_i     => slot_write(2),
+    wb_adr_i   => slot_address(2),
+    wb_we_i        => slot_we(2),
+    wb_cyc_i       => slot_cyc(2),
+    wb_stb_i       => slot_stb(2),
+    wb_ack_o      => slot_ack(2),
+    wb_inta_o => slot_interrupt(2),
 
     spp_data  => gpio_spp_data,
     spp_read  => gpio_spp_read,
@@ -331,16 +344,19 @@ begin
 
   timers_inst: zpuino_timers
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(3),
-    write     => slot_write(3),
-    address   => slot_address(3),
-    we        => slot_we(3),
-    re        => slot_re(3),
-    busy      => slot_busy(3),
-    interrupt0 => slot_interrupt(3), -- We use two interrupt lines
-    interrupt1 => slot_interrupt(4), -- so we borrow intr line from slot 4
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(3),
+    wb_dat_i     => slot_write(3),
+    wb_adr_i   => slot_address(3),
+    wb_we_i        => slot_we(3),
+    wb_cyc_i        => slot_cyc(3),
+    wb_stb_i        => slot_stb(3),
+    wb_ack_o      => slot_ack(3),
+
+    wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
+    wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+
     spp_data  => timers_spp_data,
     spp_en    => timers_spp_en,
     comp      => timers_comp
@@ -355,15 +371,16 @@ begin
     INTERRUPT_LINES =>  18
   )
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(4),
-    write     => slot_write(4),
-    address   => slot_address(4),
-    we        => slot_we(4),
-    re        => slot_re(4),
-    busy      => slot_busy(4),
-    interrupt => interrupt, -- Interrupt signal to core
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o     => slot_read(4),
+    wb_dat_i    => slot_write(4),
+    wb_adr_i   => slot_address(4),
+    wb_we_i        => slot_we(4),
+    wb_cyc_i        => slot_cyc(4),
+    wb_stb_i        => slot_stb(4),
+    wb_ack_o      => slot_ack(4),
+    wb_inta_o => wb_inta_o, -- Interrupt signal to core
 
     poppc_inst=> intready,
     intr_in     => ivecs,
@@ -376,15 +393,16 @@ begin
 
   sigmadelta_inst: zpuino_sigmadelta
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(5),
-    write     => slot_write(5),
-    address   => slot_address(5),
-    we        => slot_we(5),
-    re        => slot_re(5),
-    busy      => slot_busy(5),
-    interrupt => slot_interrupt(5),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(5),
+    wb_dat_i     => slot_write(5),
+    wb_adr_i   => slot_address(5),
+    wb_we_i        => slot_we(5),
+    wb_cyc_i        => slot_cyc(5),
+    wb_stb_i        => slot_stb(5),
+    wb_ack_o      => slot_ack(5),
+    wb_inta_o => slot_interrupt(5),
 
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
@@ -397,15 +415,16 @@ begin
 
   slot1: zpuino_spi
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(6),
-    write     => slot_write(6),
-    address   => slot_address(6),
-    we        => slot_we(6),
-    re        => slot_re(6),
-    busy      => slot_busy(6),
-    interrupt => slot_interrupt(6),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(6),
+    wb_dat_i     => slot_write(6),
+    wb_adr_i   => slot_address(6),
+    wb_we_i        => slot_we(6),
+    wb_cyc_i        => slot_cyc(6),
+    wb_stb_i        => slot_stb(6),
+    wb_ack_o      => slot_ack(6),
+    wb_inta_o => slot_interrupt(6),
 
     mosi      => spi2_mosi,
     miso      => spi2_miso,
@@ -421,15 +440,16 @@ begin
 
   crc16_inst: zpuino_crc16
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(7),
-    write     => slot_write(7),
-    address   => slot_address(7),
-    we        => slot_we(7),
-    re        => slot_re(7),
-    busy      => slot_busy(7),
-    interrupt => slot_interrupt(7)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o     => slot_read(7),
+    wb_dat_i     => slot_write(7),
+    wb_adr_i   => slot_address(7),
+    wb_we_i     => slot_we(7),
+    wb_cyc_i        => slot_cyc(7),
+    wb_stb_i        => slot_stb(7),
+    wb_ack_o      => slot_ack(7),
+    wb_inta_o => slot_interrupt(7)
   );
 
   --
@@ -440,15 +460,16 @@ begin
 
   adc_inst:zpuino_adc
   port map (
-    clk       => clk,
-	 	areset    => areset,
-    read      => slot_read(8),
-    write     => slot_write(8),
-    address   => slot_address(8),
-    we        => slot_we(8),
-    re        => slot_re(8),
-    busy      => slot_busy(8),
-    interrupt => slot_interrupt(8),
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(8),
+    wb_dat_i     => slot_write(8),
+    wb_adr_i   => slot_address(8),
+    wb_we_i    => slot_we(8),
+    wb_cyc_i      => slot_cyc(8),
+    wb_stb_i      => slot_stb(8),
+    wb_ack_o      => slot_ack(8),
+    wb_inta_o => slot_interrupt(8),
 
     sample    => timers_comp,
     mosi      => adc_mosi,
@@ -465,15 +486,16 @@ begin
 
   slot9: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(9),
-    write     => slot_write(9),
-    address   => slot_address(9),
-    we        => slot_we(9),
-    re        => slot_re(9),
-    busy      => slot_busy(9),
-    interrupt => slot_interrupt(9)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(9),
+    wb_dat_i     => slot_write(9),
+    wb_adr_i   => slot_address(9),
+    wb_we_i        => slot_we(9),
+    wb_cyc_i        => slot_cyc(9),
+    wb_stb_i        => slot_stb(9),
+    wb_ack_o      => slot_ack(9),
+    wb_inta_o => slot_interrupt(9)
   );
 
   --
@@ -482,15 +504,16 @@ begin
 
   slot10: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(10),
-    write     => slot_write(10),
-    address   => slot_address(10),
-    we        => slot_we(10),
-    re        => slot_re(10),
-    busy      => slot_busy(10),
-    interrupt => slot_interrupt(10)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(10),
+    wb_dat_i     => slot_write(10),
+    wb_adr_i   => slot_address(10),
+    wb_we_i        => slot_we(10),
+    wb_cyc_i        => slot_cyc(10),
+    wb_stb_i        => slot_stb(10),
+    wb_ack_o      => slot_ack(10),
+    wb_inta_o => slot_interrupt(10)
   );
 
   --
@@ -499,15 +522,16 @@ begin
 
   slot11: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(11),
-    write     => slot_write(11),
-    address   => slot_address(11),
-    we        => slot_we(11),
-    re        => slot_re(11),
-    busy      => slot_busy(11),
-    interrupt => slot_interrupt(11)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(11),
+    wb_dat_i     => slot_write(11),
+    wb_adr_i   => slot_address(11),
+    wb_we_i        => slot_we(11),
+    wb_cyc_i        => slot_cyc(11),
+    wb_stb_i        => slot_stb(11),
+    wb_ack_o      => slot_ack(11),
+    wb_inta_o => slot_interrupt(11)
   );
 
   --
@@ -516,15 +540,16 @@ begin
 
   slot12: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(12),
-    write     => slot_write(12),
-    address   => slot_address(12),
-    we        => slot_we(12),
-    re        => slot_re(12),
-    busy      => slot_busy(12),
-    interrupt => slot_interrupt(12)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(12),
+    wb_dat_i     => slot_write(12),
+    wb_adr_i   => slot_address(12),
+    wb_we_i        => slot_we(12),
+    wb_cyc_i        => slot_cyc(12),
+    wb_stb_i        => slot_stb(12),
+    wb_ack_o      => slot_ack(12),
+    wb_inta_o => slot_interrupt(12)
   );
 
   --
@@ -533,15 +558,16 @@ begin
 
   slot13: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(13),
-    write     => slot_write(13),
-    address   => slot_address(13),
-    we        => slot_we(13),
-    re        => slot_re(13),
-    busy      => slot_busy(13),
-    interrupt => slot_interrupt(13)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(13),
+    wb_dat_i     => slot_write(13),
+    wb_adr_i   => slot_address(13),
+    wb_we_i        => slot_we(13),
+    wb_cyc_i        => slot_cyc(13),
+    wb_stb_i        => slot_stb(13),
+    wb_ack_o      => slot_ack(13),
+    wb_inta_o => slot_interrupt(13)
   );
 
   --
@@ -550,15 +576,16 @@ begin
 
   slot14: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(14),
-    write     => slot_write(14),
-    address   => slot_address(14),
-    we        => slot_we(14),
-    re        => slot_re(14),
-    busy      => slot_busy(14),
-    interrupt => slot_interrupt(14)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(14),
+    wb_dat_i     => slot_write(14),
+    wb_adr_i   => slot_address(14),
+    wb_we_i        => slot_we(14),
+    wb_cyc_i        => slot_cyc(14),
+    wb_stb_i        => slot_stb(14),
+    wb_ack_o      => slot_ack(14),
+    wb_inta_o => slot_interrupt(14)
   );
 
   --
@@ -567,15 +594,16 @@ begin
 
   slot15: zpuino_empty_device
   port map (
-    clk       => clk,
-	 	rst       => areset,
-    read      => slot_read(15),
-    write     => slot_write(15),
-    address   => slot_address(15),
-    we        => slot_we(15),
-    re        => slot_re(15),
-    busy      => slot_busy(15),
-    interrupt => slot_interrupt(15)
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(15),
+    wb_dat_i     => slot_write(15),
+    wb_adr_i   => slot_address(15),
+    wb_we_i        => slot_we(15),
+    wb_cyc_i        => slot_cyc(15),
+    wb_stb_i        => slot_stb(15),
+    wb_ack_o      => slot_ack(15),
+    wb_inta_o => slot_interrupt(15)
   );
 
 

@@ -48,21 +48,22 @@ use work.zpuinopkg.all;
 
 entity zpuino_sigmadelta is
 	port (
-    clk:      in std_logic;
-    areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(10 downto 2);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
     sync_in:  in std_logic;
 
     -- Connection to GPIO pin
     spp_data: out std_logic_vector(1 downto 0);
-    spp_en:   out std_logic_vector(1 downto 0);
-
-    busy:     out std_logic;
-    interrupt:out std_logic
+    spp_en:   out std_logic_vector(1 downto 0)
   );
 end entity zpuino_sigmadelta;
 
@@ -95,40 +96,40 @@ signal extsync_q: std_logic;
 
 begin
 
-  read <= (others => DontCareValue);
-  interrupt <= '0';
-  busy <= '0';
+  wb_dat_o <= (others => DontCareValue);
+  wb_inta_o <= '0';
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
 
-process(clk)
+process(wb_clk_i)
   variable in_le1,in_le2: std_logic_vector(15 downto 0);
 begin
-  if rising_edge(clk) then
-    if areset='1' then
+  if rising_edge(wb_clk_i) then
+    if wb_rst_i='1' then
       dat_q1 <= (others =>'0');
       dat_q1(15) <= '1';
       dat_q2 <= (others =>'0');
       dat_q2(15) <= '1';
       sd_en_q <= (others =>'0');
     else 
-	    if we='1' then
-        case address(2) is
+	    if wb_we_i='1' then
+        case wb_adr_i(2) is
           when '0' =>
-            sd_en_q(0) <= write(0);
-            sd_en_q(1) <= write(1);
-            le_q <= write(2);
-            extsync_q <= write(3);
+            sd_en_q(0) <= wb_dat_i(0);
+            sd_en_q(1) <= wb_dat_i(1);
+            le_q <= wb_dat_i(2);
+            extsync_q <= wb_dat_i(3);
           when '1' =>
-            --report "SigmaDelta set: " & hstr(write(15 downto 0)) severity note;
+            --report "SigmaDelta set: " & hstr(wb_dat_i(15 downto 0)) severity note;
             case le_q is
               when '0' =>
-    		        dat_q1(15 downto 0) <= unsigned(write(15 downto 0));
-                dat_q2(15 downto 0) <= unsigned(write(31 downto 16));
+    		        dat_q1(15 downto 0) <= unsigned(wb_dat_i(15 downto 0));
+                dat_q2(15 downto 0) <= unsigned(wb_dat_i(31 downto 16));
               when '1' =>
-                in_le1(15 downto 8) := write(7 downto 0);
-                in_le1(7 downto 0) := write(15 downto 8);
+                in_le1(15 downto 8) := wb_dat_i(7 downto 0);
+                in_le1(7 downto 0) := wb_dat_i(15 downto 8);
 
-                in_le2(15 downto 8) := write(23 downto 16);
-                in_le2(7 downto 0) := write(31 downto 24);
+                in_le2(15 downto 8) := wb_dat_i(23 downto 16);
+                in_le2(7 downto 0) := wb_dat_i(31 downto 24);
 
                 dat_q1(15 downto 0) <= unsigned(in_le1);
                 dat_q2(15 downto 0) <= unsigned(in_le2);
@@ -150,9 +151,9 @@ begin
   end if;
 end process;
 
-process(clk)
+process(wb_clk_i)
 begin
-  if rising_edge(clk) then
+  if rising_edge(wb_clk_i) then
     if do_sync='1' then
       sync_dat_q1 <= dat_q1;
       sync_dat_q2 <= dat_q2;
@@ -196,10 +197,10 @@ end process;
 
 -- Divider
 
-process(clk)
+process(wb_clk_i)
 begin
-  if rising_edge(clk) then
-    if areset='1' then
+  if rising_edge(wb_clk_i) then
+    if wb_rst_i='1' then
       sdtick<='0';
       sdcnt<=3;
     else
@@ -214,10 +215,10 @@ begin
   end if;
 end process;
 
-process(clk)
+process(wb_clk_i)
 begin
-  if rising_edge(clk) then
-   if areset='1' then
+  if rising_edge(wb_clk_i) then
+   if wb_rst_i='1' then
       sigma_latch1 <= (others => '0');
 		  sigma_latch1(17) <= '1';
 		  sdout <= (others=>'0');
