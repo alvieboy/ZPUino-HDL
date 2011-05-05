@@ -75,7 +75,7 @@ signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
 signal memBWrite:           unsigned(wordSize-1 downto 0);
 signal memBRead:            unsigned(wordSize-1 downto 0);
 
-signal busy:                std_logic;
+--signal busy:                std_logic;
 signal begin_inst:          std_logic;
 
 signal trace_opcode:        std_logic_vector(7 downto 0);
@@ -85,6 +85,8 @@ signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 
 signal doInterrupt:         std_logic;
+
+signal io_we: std_logic;
 
 -- state machine.
 type State_Type is
@@ -170,6 +172,7 @@ type zpuregs is record
   inInterrupt:std_logic;
   shiftAmount:unsigned(4 downto 0);
   shiftValue: unsigned(wordSize-1 downto 0);
+  isStore:    std_logic;
 end record;
 
 signal r: zpuregs;
@@ -230,7 +233,7 @@ begin
           sp          => trace_sp,
           memA        => trace_topOfStack,
           memB        => trace_topOfStackB,
-          busy        => busy,
+          busy        => '0',--busy,
           intsp       => (others => 'U')
         );
   end generate;
@@ -259,6 +262,7 @@ begin
 
   memARead <= unsigned(memARead_stdlogic);
   memBRead <= unsigned(memBRead_stdlogic);
+  wb_we_o <= io_we;
 
   tOpcode_sel <= to_integer(r.pc(minAddrBit-1 downto 0));
 
@@ -389,6 +393,7 @@ begin
 
     wb_cyc_o <= '0';
     wb_stb_o <= '0';
+    io_we <= '0';
 
     wb_adr_o <= (others => DontCareValue);
     wb_dat_o <= (others => DontCareValue);
@@ -667,9 +672,9 @@ begin
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
-            if wb_ack_i='1' then
-              w.sp <= r.sp + 2;
-            end if;
+            --if wb_ack_i='1' then
+            --  w.sp <= r.sp + 2;
+            -- end if;
 
             wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
             wb_dat_o <= std_logic_vector(memARead);
@@ -678,28 +683,33 @@ begin
             memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             memAAddr <= r.sp + 1;
 
-            wb_cyc_o <= '1';
-            wb_stb_o <= '1';
+            w.isStore <= '1';
 
             if r.topOfStack(maxAddrBitIncIO)='1' then
-              wb_we_o <= '1';
+              io_we <= '1';
+              wb_cyc_o <= '1';
+              wb_stb_o <= '1';
+              w.state <= State_WaitIO;
             else
               memBWriteEnable <= '1';
+              w.state <= State_Resync1;
             end if;
             -- We need to maintain address for memA.
 
             -- TODO: fix this
             --memAAddr <= r.sp + 2;
-            if wb_ack_i='1' then
-              w.state <= State_Resync1;
-            else
-              w.state <= State_WaitIO;
-            end if;
+            --if wb_ack_i='1' then
+            --  w.state <= State_Resync1;
+            --else
+              
+            --end if;
 
           when Decoded_Load =>
 
             wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
             memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+
+            w.isStore <= '0';
 
             if r.topOfStack(maxAddrBitIncIO)='1' then
               --io_rd <= '1';
@@ -834,6 +844,7 @@ begin
 
         wb_cyc_o <= '1';
         wb_stb_o <= '1';
+        io_we <= r.isStore; -- Maintain
 
         wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
         wb_dat_o <= std_logic_vector(memARead);
@@ -860,11 +871,12 @@ begin
         w.state <= State_Decode;
         
       when State_Load =>
+
         memBAddr <= pc_to_memaddr(r.pc);
 
         -- TODO: add wait here
-        if r.topOfStack(maxAddrBitIncIO)='1' then
-          if wb_ack_i='0' then
+        --if r.topOfStack(maxAddrBitIncIO)='1' then
+          if wb_ack_i='1' then
             w.topOfStack <= unsigned(wb_dat_i);
             w.state <= State_Decode;
           else
@@ -872,10 +884,10 @@ begin
             wb_stb_o <= '1';
             wb_cyc_o <= '1';
           end if;
-        else
-          w.topOfStack <= memARead;
-          w.state <= State_Decode;
-        end if;
+        --else
+        --  w.topOfStack <= memARead;
+        --  w.state <= State_Decode;
+        --end if;
 
       when others =>
          null;

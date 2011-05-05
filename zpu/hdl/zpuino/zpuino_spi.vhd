@@ -156,8 +156,26 @@ begin
   spi_en <= '1' when wb_we_i='1' and wb_adr_i(2)='1' and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
+  
+    process(wb_adr_i,wb_cyc_i,wb_stb_i,spi_ready,spi_txblock_q)
+    begin
+      wb_ack_o <= '0';
+      if (wb_cyc_i='1' and wb_stb_i='1') then
+        if wb_adr_i(2)='1' then
+          if spi_txblock_q='1' then
+            if spi_ready='1' then
+              wb_ack_o <= '1';
+            end if;
+          else
+            wb_ack_o <= '1';
+          end if;
+        else
+          wb_ack_o <= '1';
+        end if;
+      end if;
+    end process;
     --busy <= '1' when address(2)='1' and (we='1' or re='1') and spi_ready='0' and spi_txblock_q='1' else '0';
-    wb_ack_o <= '0' when wb_adr_i(2)='1' and (wb_cyc_i='1' and wb_stb_i='1') and spi_ready='0' and spi_txblock_q='1' else '1';
+
   end generate;
 
   nobusygen: if zpuino_spiblocking=false generate

@@ -134,6 +134,7 @@ begin
 
   enabled <= enabled_q;
   wb_inta_o <= '0';
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
 
   rx_inst: zpuino_uart_rx
     port map(

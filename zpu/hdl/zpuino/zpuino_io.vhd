@@ -139,12 +139,14 @@ architecture behave of zpuino_io is
 
   signal slot_ack:     slot_std_logic_type;
   signal slot_interrupt:slot_std_logic_type;
-  
+
+
+  signal wb_in_transaction: std_logic;
 begin
 
   -- Ack generator
 
-  process(slot_ack,io_device_ack)
+  process(slot_ack)
   begin
     io_device_ack <= '0';
     for i in 0 to 15 loop
@@ -158,11 +160,33 @@ begin
     process(wb_clk_i)
     begin
       if rising_edge(wb_clk_i) then
-        if wb_stb_i='1' then
-          addr_save_q <= wb_adr_i;
-        end if;
-        if wb_we_i='1' then
-          write_save_q <= wb_dat_i;
+        if wb_rst_i='1' then
+          wb_in_transaction <= '0';
+        else
+
+          if wb_in_transaction='0' then
+            io_cyc <= wb_cyc_i;
+            io_stb <= wb_stb_i;
+            io_we <= wb_we_i;
+          elsif io_device_ack='1' then
+            io_stb<='0';
+            io_we<='0'; -- safe side
+            -- How to keep cyc ????
+          end if;
+
+          if wb_cyc_i='1' then
+            wb_in_transaction<='1';
+          else
+            io_cyc <= '0';
+            wb_in_transaction<='0';
+          end if;
+
+          if wb_stb_i='1' and wb_cyc_i='1' then
+            addr_save_q <= wb_adr_i;
+          end if;
+          if wb_we_i='1' then
+            write_save_q <= wb_dat_i;
+          end if;
         end if;
       end if;
     end process;
@@ -177,26 +201,6 @@ begin
     process(io_device_ack)
     begin
       wb_ack_o <= io_device_ack;
-    end process;
-
-    process(wb_clk_i)
-    begin
-      if rising_edge(wb_clk_i) then
-        if wb_rst_i='1' then
-          io_cyc <= '0';
-          io_stb <= '0';
-          io_we <= '0';
-        else
-          -- If no device is busy, propagate request
-          --if io_device_ack='1' then
-          --  io_re <= re;
-          --  io_we <= we;
-          --end if;
-          io_cyc <= wb_cyc_i;
-          io_stb <= wb_stb_i;
-          io_we <= wb_we_i;
-        end if;
-      end if;
     end process;
 
   end generate;
@@ -223,11 +227,11 @@ begin
   end process;
 
   -- Write and address signals, shared by all slots
-  process(wb_dat_i,wb_adr_i)
+  process(wb_dat_i,wb_adr_i,io_write,io_address)
   begin
     for i in 0 to 15 loop
-      slot_write(i) <= wb_dat_i;
-      slot_address(i) <= wb_adr_i(10 downto 2);
+      slot_write(i) <= io_write;--wb_dat_i;
+      slot_address(i) <= io_address(10 downto 2);--wb_adr_i(10 downto 2);
     end loop;
   end process;
 
@@ -242,7 +246,7 @@ begin
 
   -- Enable signals
 
-  process(io_address,wb_stb_i,wb_cyc_i,wb_we_i)
+  process(io_address,wb_stb_i,wb_cyc_i,wb_we_i,io_stb,io_cyc,io_we)
     variable slotNumber: integer range 0 to 15;
   begin
 
@@ -250,9 +254,9 @@ begin
 
     for i in 0 to 15 loop
       if i = slotNumber then
-        slot_stb(i) <= io_stb;
-        slot_cyc(i) <= io_cyc;
-        slot_we(i) <= io_we;
+        slot_stb(i) <= io_stb;-- and wb_stb_i;
+        slot_cyc(i) <= io_cyc;-- and wb_cyc_i;
+        slot_we(i) <= io_we;-- and wb_we_i;
       else
         slot_stb(i) <= '0';
         slot_cyc(i) <= '0';

@@ -114,6 +114,7 @@ begin
       wb_adr_i      => io_address,
       wb_cyc_i      => io_cyc,
       wb_stb_i      => io_stb,
+      wb_ack_o      => io_ack,
       wb_we_i       => io_we,
       wb_inta_o     => interrupt,
 
