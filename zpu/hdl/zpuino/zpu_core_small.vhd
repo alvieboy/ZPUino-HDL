@@ -692,6 +692,7 @@ begin
               w.state <= State_WaitIO;
             else
               memBWriteEnable <= '1';
+              w.sp <= r.sp + 2;
               w.state <= State_Resync1;
             end if;
             -- We need to maintain address for memA.
