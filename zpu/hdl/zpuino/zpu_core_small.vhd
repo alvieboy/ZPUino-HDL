@@ -873,21 +873,22 @@ begin
       when State_Load =>
 
         memBAddr <= pc_to_memaddr(r.pc);
+        wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
 
         -- TODO: add wait here
-        --if r.topOfStack(maxAddrBitIncIO)='1' then
+        if r.topOfStack(maxAddrBitIncIO)='1' then
           if wb_ack_i='1' then
             w.topOfStack <= unsigned(wb_dat_i);
             w.state <= State_Decode;
-          else
+          end if;--else
             -- Keep lines up ?
             wb_stb_o <= '1';
             wb_cyc_o <= '1';
-          end if;
-        --else
-        --  w.topOfStack <= memARead;
-        --  w.state <= State_Decode;
-        --end if;
+          --end if;
+        else
+          w.topOfStack <= memARead;
+          w.state <= State_Decode;
+        end if;
 
       when others =>
          null;
