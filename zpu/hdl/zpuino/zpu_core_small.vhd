@@ -845,7 +845,7 @@ begin
 
         wb_cyc_o <= '1';
         wb_stb_o <= '1';
-        io_we <= r.isStore; -- Maintain
+        io_we <= '1'; -- Always comes from Store
 
         wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
         wb_dat_o <= std_logic_vector(memARead);
