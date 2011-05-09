@@ -50,7 +50,7 @@ entity zpuino_intr is
     areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
 
@@ -192,12 +192,12 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
 process(address,mask_q,ien_q,intr_served_q)
 begin
   read <= (others => '0');
-  case address is
-    when "000000000" =>
+  case address(3 downto 2) is
+    when "00" =>
       read(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
-    when "000000001" =>
+    when "01" =>
       read(INTERRUPT_LINES-1 downto 0) <= mask_q;
-    when "000000010" =>
+    when "10" =>
       for i in 0 to INTERRUPT_LINES-1 loop
         if intr_cfglvl(i)='1' then
           read(i) <= intr_level_q(i);

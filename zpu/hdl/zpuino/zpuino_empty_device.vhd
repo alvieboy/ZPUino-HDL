@@ -14,7 +14,7 @@ entity zpuino_empty_device is
 	 	rst:      in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;

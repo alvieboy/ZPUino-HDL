@@ -49,6 +49,10 @@ package zpu_config is
 	-- This is the msb address bit. bytes=2^(maxAddrBitIncIO+1)
 	constant 	maxAddrBitIncIO		: integer := 15;
 	constant 	maxAddrBitBRAM		: integer := 13;
+
+  constant maxIOBit: integer := maxAddrBitIncIO - 1;
+  constant minIOBit: integer := 2;
+
 	
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words

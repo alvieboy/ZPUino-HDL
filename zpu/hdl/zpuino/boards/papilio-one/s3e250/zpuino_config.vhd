@@ -69,4 +69,8 @@ package zpuino_config is
   -- Internal SPI ADC
   constant zpuino_adc_enabled: boolean := true;
 
+  -- Number of IO select bits. Maps to maximum number of IO devices
+
+  constant zpuino_number_io_select_bits: integer := 4;
+
 end package zpuino_config;

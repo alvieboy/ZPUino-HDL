@@ -52,7 +52,7 @@ entity zpuino_gpio is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(8 downto 0);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -142,10 +142,10 @@ end generate;
 
 process(address,gpio_r_i,gpio_tris_r_i,ppspin_q)
 begin
-  case address(3 downto 2) is
+  case address(5 downto 4) is
     when "00" =>
 
-      case address(1 downto 0) is
+      case address(3 downto 2) is
         when "00" =>
           read <= gpio_r_i(31 downto 0);  
         when "01" =>
@@ -158,7 +158,7 @@ begin
       end case;
 
     when "01" =>
-      case address(1 downto 0) is
+      case address(3 downto 2) is
         when "00" =>
           read <= gpio_tris_r_i(31 downto 0);
         when "01" =>
@@ -171,7 +171,7 @@ begin
       end case;
 
     when "10" =>
-      case address(1 downto 0) is
+      case address(3 downto 2) is
         when "00" =>
           read <= ppspin_q(31 downto 0);
         when "01" =>
@@ -200,11 +200,11 @@ begin
       --  output_mapper_q(i) <= 0;
       --end loop;
     elsif we='1' then
-      case address(8 downto 7) is
+      case address(10 downto 9) is
         when "00" =>
-          case address(3 downto 2) is
+          case address(5 downto 4) is
             when "00" =>
-              case address(1 downto 0) is
+              case address(3 downto 2) is
                 when "00" =>
                   gpio_q(31 downto 0) <= write;
                 when "01" =>
@@ -216,7 +216,7 @@ begin
                 when others =>
               end case;
             when "01" =>
-              case address(1 downto 0) is
+              case address(3 downto 2) is
                 when "00" =>
                   gpio_tris_q(31 downto 0) <= write;
                 when "01" =>
@@ -229,7 +229,7 @@ begin
               end case;
             when "10" =>
               if zpuino_pps_enabled then
-                case address(1 downto 0) is
+                case address(3 downto 2) is
                   when "00" =>
                     ppspin_q(31 downto 0) <= write;
                   when "01" =>
@@ -246,11 +246,11 @@ begin
           end case;
         when "01" =>
           if zpuino_pps_enabled then
-            input_mapper_q( conv_integer(address(6 downto 0)) ) <= conv_integer(write(6 downto 0));
+            input_mapper_q( conv_integer(address(8 downto 2)) ) <= conv_integer(write(6 downto 0));
           end if;
         when "10" =>
           if zpuino_pps_enabled then
-            output_mapper_q( conv_integer(address(6 downto 0)) ) <= conv_integer(write(6 downto 0));
+            output_mapper_q( conv_integer(address(8 downto 2)) ) <= conv_integer(write(6 downto 0));
           end if;
         when others =>
       end case;

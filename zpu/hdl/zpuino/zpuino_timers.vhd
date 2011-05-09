@@ -49,7 +49,7 @@ entity zpuino_timers is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     spp_data: out std_logic_vector(1 downto 0);
@@ -150,10 +150,10 @@ begin
   process(address,timer0_read,timer1_read)
   begin
     read <= (others => '0');
-    case address(10 downto 4) is
-      when "0000000" =>
+    case address(4) is
+      when '0' =>
         read <= timer0_read;
-      when "0000001" =>
+      when '1' =>
         read <= timer1_read;
       when others =>
         read <= (others => DontCareValue);

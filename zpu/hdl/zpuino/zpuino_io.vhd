@@ -118,12 +118,13 @@ architecture behave of zpuino_io is
   signal adc_seln:  std_logic;
   signal adc_enabled: std_logic;
 
+  constant num_devices: integer := (2**zpuino_number_io_select_bits);
 
-  type slot_std_logic_type is array(0 to 15) of std_logic;
+  type slot_std_logic_type is array(0 to num_devices-1) of std_logic;
   subtype cpuword_type     is std_logic_vector(31 downto 0);
-  type slot_cpuword_type   is array(0 to 15) of cpuword_type;
-  subtype address_type     is std_logic_vector(10 downto 2);
-  type slot_address_type   is array(0 to 15) of address_type;
+  type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
+  subtype address_type     is std_logic_vector(maxIObit downto minIObit);
+  type slot_address_type   is array(0 to num_devices-1) of address_type;
 
   signal slot_re:       slot_std_logic_type;
   signal slot_we:       slot_std_logic_type;
@@ -134,7 +135,7 @@ architecture behave of zpuino_io is
 
   signal slot_busy:     slot_std_logic_type;
   signal slot_interrupt:slot_std_logic_type;
-  
+
 begin
 
   -- Busy generator
@@ -142,7 +143,7 @@ begin
   process(slot_busy,io_device_busy)
   begin
     io_device_busy <= '0';
-    for i in 0 to 15 loop
+    for i in 0 to num_devices-1 loop
       if slot_busy(i) = '1' then
         io_device_busy<='1';
       end if;
@@ -210,7 +211,7 @@ begin
 
   process(slot_interrupt)
   begin
-    for i in 0 to 15 loop
+    for i in 0 to num_devices-1 loop
       ivecs(i) <= slot_interrupt(i);
     end loop;
   end process;
@@ -218,17 +219,17 @@ begin
   -- Write and address signals, shared by all slots
   process(io_write,io_address)
   begin
-    for i in 0 to 15 loop
+    for i in 0 to num_devices-1 loop
       slot_write(i) <= io_write;
-      slot_address(i) <= io_address(10 downto 2);
+      slot_address(i) <= io_address(maxAddrBitIncIO-1 downto 2);
     end loop;
   end process;
 
   process(io_address,slot_read)
-    variable slotNumber: integer range 0 to 15;
+    variable slotNumber: integer range 0 to num_devices-1;
   begin
 
-    slotNumber := to_integer(unsigned(io_address(14 downto 11)));
+    slotNumber := to_integer(unsigned(io_address(maxAddrBitIncIO-1 downto maxAddrBitIncIO-zpuino_number_io_select_bits)));
     read <= slot_read(slotNumber);
 
   end process;
@@ -236,12 +237,12 @@ begin
   -- Enable signals
 
   process(io_address,io_re,io_we)
-    variable slotNumber: integer range 0 to 15;
+    variable slotNumber: integer range 0 to num_devices-1;
   begin
 
-    slotNumber := to_integer(unsigned(io_address(14 downto 11)));
+    slotNumber := to_integer(unsigned(io_address(maxAddrBitIncIO-1 downto maxAddrBitIncIO-zpuino_number_io_select_bits)));
 
-    for i in 0 to 15 loop
+    for i in 0 to num_devices-1 loop
       if i = slotNumber then
         slot_re(i) <= io_re;
         slot_we(i) <= io_we;

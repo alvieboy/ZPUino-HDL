@@ -48,7 +48,7 @@ entity zpuino_spi is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -194,8 +194,8 @@ begin
   process(address, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
   begin
     read <= (others =>'0');
-    case address is
-      when "000000000" =>
+    case address(2) is
+      when '0' =>
         read(0) <= spi_ready;
         read(3 downto 1) <= spi_clk_pres;
         read(4) <= cpol;
@@ -203,7 +203,7 @@ begin
         read(6) <= spi_enable_q;
         read(7) <= spi_txblock_q;
         read(9 downto 8) <= spi_transfersize_q;
-      when "000000001" =>
+      when '1' =>
         read <= spi_read;
       when others =>
         read <= (others => DontCareValue);

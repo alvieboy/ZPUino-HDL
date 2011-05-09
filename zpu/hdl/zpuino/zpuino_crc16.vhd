@@ -13,7 +13,7 @@ entity zpuino_crc16 is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -38,17 +38,17 @@ interrupt <= '0';
 
 process(address,crc_q,poly_q)
 begin
-  case address is
-    when "000000000" =>
+  case address(4 downto 2) is
+    when "000" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= crc_q;
-    when "000000001" =>
+    when "001" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= poly_q;
-    when "000000100" =>
+    when "100" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= crcA_q;
-    when "000000101" =>
+    when "101" =>
       read(31 downto 16) <= (others => '0');
       read(15 downto 0) <= crcB_q;
     when others =>

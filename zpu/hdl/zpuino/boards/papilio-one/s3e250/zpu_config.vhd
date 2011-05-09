@@ -50,6 +50,9 @@ package zpu_config is
 	constant 	maxAddrBitIncIO		: integer := 15;
 	constant 	maxAddrBitBRAM		: integer := 13;
 	
+  constant maxIOBit: integer := maxAddrBitIncIO - 1;
+  constant minIOBit: integer := 2;
+
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words
 	constant 	spStart				: std_logic_vector(maxAddrBitIncIO downto 0) :=

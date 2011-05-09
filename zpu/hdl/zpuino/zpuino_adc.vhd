@@ -56,7 +56,7 @@ entity zpuino_adc is
 	 	areset:   in std_logic;
     read:     out std_logic_vector(wordSize-1 downto 0);
     write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(10 downto 2);
+    address:  in std_logic_vector(maxIObit downto minIObit);
     we:       in std_logic;
     re:       in std_logic;
     busy:     out std_logic;
@@ -218,14 +218,14 @@ begin
   process(address,fifo_read,request_samples_q,current_sample_q)
   begin
     read <= (others => DontCareValue);
-    case address is
-      when "000000000" =>
+    case address(4 downto 2) is
+      when "000" =>
         if (request_samples_q /= current_sample_q) then
           read(0) <= '0';
         else
           read(0) <= '1';
         end if;
-      when "000000101" =>
+      when "101" =>
         read <= fifo_read;
       when others =>
     end case;
