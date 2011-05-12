@@ -43,15 +43,16 @@ use work.zpuinopkg.all;
 
 entity zpuino_uart is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     enabled:  out std_logic;
     tx:       out std_logic;
@@ -132,12 +133,13 @@ architecture behave of zpuino_uart is
 begin
 
   enabled <= enabled_q;
-  interrupt <= '0';
+  wb_inta_o <= '0';
+  wb_ack_o <= wb_cyc_i and wb_stb_i;
 
   rx_inst: zpuino_uart_rx
     port map(
-      clk     => clk,
-      rst     => areset,
+      clk     => wb_clk_i,
+      rst     => wb_rst_i,
       rxclk   => rx_br,
       read    => uart_read,
       rx      => rx,
@@ -149,22 +151,23 @@ begin
 
   tx_core: TxUnit
     port map(
-      clk_i     => clk,
-      reset_i   => areset,
+      clk_i     => wb_clk_i,
+      reset_i   => wb_rst_i,
       enable_i  => tx_br,
       load_i    => uart_write,
       txd_o     => tx,
       busy_o    => uart_busy,
-      datai_i   => write(7 downto 0)
+      datai_i   => wb_dat_i(7 downto 0)
     );
 
-  uart_write <= '1' when we='1' and address(2)='0' else '0';
+  -- TODO: check multiple writes
+  uart_write <= '1' when wb_we_i='1' and wb_adr_i(2)='0' else '0';
 
    -- Rx timing
   rx_timer: uart_brgen
     port map(
-      clk => clk,
-      rst => areset,
+      clk => wb_clk_i,
+      rst => wb_rst_i,
       en => '1',
       clkout => rx_br,
       count => divider_rx_q
@@ -173,17 +176,17 @@ begin
    -- Tx timing
   tx_timer: uart_brgen
     port map(
-      clk => clk,
-      rst => areset,
+      clk => wb_clk_i,
+      rst => wb_rst_i,
       en => rx_br,
       clkout => tx_br,
       count => divider_tx
     );
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         dready_q<='0';
         data_ready_dly_q<='0';
       else
@@ -202,8 +205,8 @@ begin
 
   fifo_instance: fifo
     port map (
-      clk   => clk,
-      rst   => areset,
+      clk   => wb_clk_i,
+      rst   => wb_rst_i,
       wr    => dready_q,
       rd    => fifo_rd,
       write => received_data,
@@ -213,32 +216,32 @@ begin
     );
   
 
-  fifo_rd<='1' when address(2)='0' and re='1' else '0';
+  fifo_rd<='1' when wb_adr_i(2)='0' and (wb_cyc_i='1' and wb_stb_i='1') else '0';
 
-  process(address, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
+  process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
   begin
-    read <= (others => '0');
-    case address(2) is
+    wb_dat_o <= (others => '0');
+    case wb_adr_i(2) is
       when '1' =>
-        read(0) <= not fifo_empty;
-        read(1) <= uart_busy;
+        wb_dat_o(0) <= not fifo_empty;
+        wb_dat_o(1) <= uart_busy;
       when '0' =>
-        read(7 downto 0) <= fifo_data;
+        wb_dat_o(7 downto 0) <= fifo_data;
       when others =>
-        read <= (others => DontCareValue);
+        wb_dat_o <= (others => DontCareValue);
     end case;
   end process;
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         enabled_q<='0';
       else
-        if we='1' then
-          if address(2)='1' then
-            divider_rx_q <= write(15 downto 0);
-            enabled_q  <= write(16);
+        if wb_we_i='1' then
+          if wb_adr_i(2)='1' then
+            divider_rx_q <= wb_dat_i(15 downto 0);
+            enabled_q  <= wb_dat_i(16);
           end if;
         end if;
       end if;

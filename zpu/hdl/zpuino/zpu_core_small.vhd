@@ -43,15 +43,20 @@ use work.zpupkg.all;
 
 entity zpu_core_small is
   port (
-    clk:            in std_logic;
-    rst:            in std_logic; -- Synchronous reset
-    io_busy:        in std_logic;
-    io_read:        in std_logic_vector(wordSize-1 downto 0);
-    io_write:       out std_logic_vector(wordSize-1 downto 0);
-    io_addr:        out std_logic_vector(maxAddrBitIncIO downto 0);
-    io_wr:          out std_logic;
-    io_rd:          out std_logic;
-    interrupt:      in std_logic;
+    wb_clk_i:       in std_logic;
+    wb_rst_i:       in std_logic;
+
+    -- Master wishbone interface
+
+    wb_ack_i:       in std_logic;
+    wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    wb_cyc_o:       out std_logic;
+    wb_stb_o:       out std_logic;
+    wb_we_o:        out std_logic;
+
+    wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
     break:          out std_logic
   );
@@ -70,7 +75,7 @@ signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
 signal memBWrite:           unsigned(wordSize-1 downto 0);
 signal memBRead:            unsigned(wordSize-1 downto 0);
 
-signal busy:                std_logic;
+--signal busy:                std_logic;
 signal begin_inst:          std_logic;
 
 signal trace_opcode:        std_logic_vector(7 downto 0);
@@ -80,6 +85,8 @@ signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 
 signal doInterrupt:         std_logic;
+
+signal io_we: std_logic;
 
 -- state machine.
 type State_Type is
@@ -165,6 +172,7 @@ type zpuregs is record
   inInterrupt:std_logic;
   shiftAmount:unsigned(4 downto 0);
   shiftValue: unsigned(wordSize-1 downto 0);
+  isStore:    std_logic;
 end record;
 
 signal r: zpuregs;
@@ -218,14 +226,14 @@ begin
    if Generate_Trace generate
       trace_file: trace
         port map (
-          clk         => clk,
+          clk         => wb_clk_i,
           begin_inst  => begin_inst,
           pc          => trace_pc,
           opcode      => trace_opcode,
           sp          => trace_sp,
           memA        => trace_topOfStack,
           memB        => trace_topOfStackB,
-          busy        => busy,
+          busy        => '0',--busy,
           intsp       => (others => 'U')
         );
   end generate;
@@ -238,7 +246,7 @@ begin
   
   memory: dualport_ram
     port map (
-      clk => clk,
+      clk => wb_clk_i,
       memAWriteEnable => memAWriteEnable,
       memAWriteMask => memAWriteMask,
       memAAddr => memAAddr_stdlogic,
@@ -254,6 +262,7 @@ begin
 
   memARead <= unsigned(memARead_stdlogic);
   memBRead <= unsigned(memBRead_stdlogic);
+  wb_we_o <= io_we;
 
   tOpcode_sel <= to_integer(r.pc(minAddrBit-1 downto 0));
 
@@ -369,7 +378,7 @@ begin
   end process;
 
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,io_read,io_busy)
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,wb_dat_i,wb_ack_i)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -382,10 +391,13 @@ begin
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
 
-    io_wr <= '0';
-    io_rd <= '0';
-    io_addr <= (others => DontCareValue);
-    io_write <= (others => DontCareValue);
+    wb_cyc_o <= '0';
+    wb_stb_o <= '0';
+    io_we <= '0';
+
+    wb_adr_o <= (others => DontCareValue);
+    wb_dat_o <= (others => DontCareValue);
+
     poppc_inst <= '0';
     begin_inst<='0';
 
@@ -397,7 +409,7 @@ begin
 
     w.pcdly <= r.pc; -- Save PC for Neqbranch operations
 
-    if interrupt='0' then
+    if wb_inta_i='0' then
           w.inInterrupt<='0';
     end if;
 
@@ -418,13 +430,13 @@ begin
 
         memAAddr <= r.sp + 1;
         
-        if interrupt='0' then
+        if wb_inta_i='0' then
           --if sampledDecodedOpcode/=Decoded_Neqbranch then
             w.pc <= r.pc + 1;
           --end if;
         else
           if r.state=State_Decode and r.idim='0' and r.inInterrupt='0' then
-            if interrupt='1' then
+            if wb_inta_i='1' then
               doInterrupt<='1';
               w.inInterrupt<='1';
             else
@@ -660,38 +672,51 @@ begin
 
           when Decoded_Store =>
             -- TODO: Ensure we can wait here for busy.
-            if io_busy='0' then
-              w.sp <= r.sp + 2;
-            end if;
+            --if wb_ack_i='1' then
+            --  w.sp <= r.sp + 2;
+            -- end if;
 
-            io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
-            io_write <= std_logic_vector(memARead);
+            wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+            wb_dat_o <= std_logic_vector(memARead);
+
             memBWrite <= memARead;
             memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
             memAAddr <= r.sp + 1;
 
+            w.isStore <= '1';
+
             if r.topOfStack(maxAddrBitIncIO)='1' then
-              io_wr <='1';
+              io_we <= '1';
+              wb_cyc_o <= '1';
+              wb_stb_o <= '1';
+              w.state <= State_WaitIO;
             else
               memBWriteEnable <= '1';
+              w.sp <= r.sp + 2;
+              w.state <= State_Resync1;
             end if;
             -- We need to maintain address for memA.
 
             -- TODO: fix this
             --memAAddr <= r.sp + 2;
-            if io_busy='0' then
-              w.state <= State_Resync1;
-            else
-              w.state <= State_WaitIO;
-            end if;
+            --if wb_ack_i='1' then
+            --  w.state <= State_Resync1;
+            --else
+              
+            --end if;
 
           when Decoded_Load =>
 
-            io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+            wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
             memAAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
 
+            w.isStore <= '0';
+
             if r.topOfStack(maxAddrBitIncIO)='1' then
-              io_rd <= '1';
+              --io_rd <= '1';
+              wb_cyc_o <= '1';
+              wb_stb_o <= '1';
+
             end if;
 
             w.state <= State_Load;
@@ -713,8 +738,6 @@ begin
             w.sp <= r.sp + 2;
             if memARead/=0 then
               w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
---            else
---              w.pc <= r.pc + 1;
             end if;
             w.state <= State_Resync1;
 
@@ -819,19 +842,18 @@ begin
         end if;
 
       when State_WaitIO =>
-        if io_busy='0' then
-          w.sp <= r.sp + 2;
-        end if;
 
-        io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
-        io_write <= std_logic_vector(memARead);
+        wb_cyc_o <= '1';
+        wb_stb_o <= '1';
+        io_we <= '1'; -- Always comes from Store
 
-        --memBAddr <= r.topOfStack(maxAddrBit downto minAddrBit);
+        wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
+        wb_dat_o <= std_logic_vector(memARead);
+
         memAAddr <= r.sp + 1;
 
-        --io_wr <='1';
-
-        if io_busy='0' then
+        if wb_ack_i='1' then
+          w.sp <= r.sp + 2; -- This sucks...
           w.state <= State_Resync1;
         end if;
 
@@ -850,14 +872,20 @@ begin
         w.state <= State_Decode;
         
       when State_Load =>
+
         memBAddr <= pc_to_memaddr(r.pc);
+        wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(r.topOfStack(maxAddrBitIncIO downto 0));
 
         -- TODO: add wait here
         if r.topOfStack(maxAddrBitIncIO)='1' then
-          if io_busy='0' then
-            w.topOfStack <= unsigned(io_read);
+          if wb_ack_i='1' then
+            w.topOfStack <= unsigned(wb_dat_i);
             w.state <= State_Decode;
-          end if;
+          end if;--else
+            -- Keep lines up ?
+            wb_stb_o <= '1';
+            wb_cyc_o <= '1';
+          --end if;
         else
           w.topOfStack <= memARead;
           w.state <= State_Decode;
@@ -869,10 +897,10 @@ begin
 
   end process;
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if rst='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         r.sp <= unsigned(spStart(maxAddrBit downto minAddrBit));
         r.pc <= (others => '0');
         r.state <= State_Resync1;

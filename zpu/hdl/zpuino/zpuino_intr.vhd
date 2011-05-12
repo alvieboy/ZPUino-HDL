@@ -46,16 +46,17 @@ entity zpuino_intr is
     INTERRUPT_LINES: integer := 16 -- MAX 32 lines
   );
   port (
-    clk:      in std_logic;
-    areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
-    busy:     out std_logic;
-    interrupt:out std_logic;
     poppc_inst:in std_logic;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0); -- edge interrupts
@@ -83,12 +84,12 @@ begin
 
 
   -- Edge detector
-  process(clk)
+  process(wb_clk_i)
     variable level: std_logic;
     variable not_level: std_logic;
   begin
-    if rising_edge(clk) then
-      if areset='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         
       else
         for i in 0 to INTERRUPT_LINES-1 loop
@@ -151,7 +152,7 @@ intr_line <= "00000000000000000000000000000001" when masked_ivecs(0)='1' else
              "10000000000000000000000000000000" when masked_ivecs(31)='1' else
              "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
-busy <= '0';
+wb_ack_o <= wb_stb_i and wb_cyc_i;
 
 -- Select
 
@@ -189,49 +190,49 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
                            masked_ivecs(31)='1'
                            else '0';
 
-process(address,mask_q,ien_q,intr_served_q)
+process(wb_adr_i,mask_q,ien_q,intr_served_q)
 begin
-  read <= (others => '0');
-  case address(3 downto 2) is
+  wb_dat_o <= (others => '0');
+  case wb_adr_i(3 downto 2) is
     when "00" =>
-      read(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
+      wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
     when "01" =>
-      read(INTERRUPT_LINES-1 downto 0) <= mask_q;
+      wb_dat_o(INTERRUPT_LINES-1 downto 0) <= mask_q;
     when "10" =>
       for i in 0 to INTERRUPT_LINES-1 loop
         if intr_cfglvl(i)='1' then
-          read(i) <= intr_level_q(i);
+          wb_dat_o(i) <= intr_level_q(i);
         end if;
       end loop;
     when others =>
-      read <= (others => DontCareValue);
+      wb_dat_o <= (others => DontCareValue);
   end case;
 end process;
 
     
-process(clk,areset)
+process(wb_clk_i,wb_rst_i)
   variable do_interrupt: std_logic;
 begin
-  if rising_edge(clk) then
-    if areset='1' then
+  if rising_edge(wb_clk_i) then
+    if wb_rst_i='1' then
       mask_q <= (others => '0');  -- Start with all interrupts masked out
       ien_q <= '0';
       iready_q <= '1';
-      interrupt <= '0';
+      wb_inta_o <= '0';
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
     else
-      if we='1' then
-        case address(3 downto 2) is
+      if wb_we_i='1' then
+        case wb_adr_i(3 downto 2) is
           when "00" =>
-            ien_q <= write(0); -- Interrupt enable
-            interrupt <= '0';
+            ien_q <= wb_dat_i(0); -- Interrupt enable
+            wb_inta_o <= '0';
           when "01" =>
-            mask_q <= write(INTERRUPT_LINES-1 downto 0);
+            mask_q <= wb_dat_i(INTERRUPT_LINES-1 downto 0);
           when "11" =>
             for i in 0 to INTERRUPT_LINES-1 loop
               if intr_cfglvl(i)='1' then
-                intr_level_q(i) <= write(i);
+                intr_level_q(i) <= wb_dat_i(i);
               end if;
             end loop;
           when others =>
@@ -248,7 +249,7 @@ begin
       if do_interrupt='1' then
         intr_served_q <= intr_line(INTERRUPT_LINES-1 downto 0);
         ien_q <= '0';
-        interrupt<='1';
+        wb_inta_o<='1';
         iready_q <= '0';
       else
 

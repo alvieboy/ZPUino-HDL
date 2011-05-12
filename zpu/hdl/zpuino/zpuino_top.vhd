@@ -49,7 +49,7 @@ entity zpuino_top is
   );
   port (
     clk:      in std_logic;
-	 	areset:   in std_logic;
+	 	rst:      in std_logic;
 
     gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -75,25 +75,28 @@ architecture behave of zpuino_top is
   signal io_read:    std_logic_vector(wordSize-1 downto 0);
   signal io_write:   std_logic_vector(wordSize-1 downto 0);
   signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal io_we:      std_logic;
-  signal io_re:      std_logic;
-  signal io_busy:    std_logic;
-  signal interrupt:   std_logic;
-  signal poppc_inst:  std_logic;
+  signal io_stb:     std_logic;
+  signal io_cyc:     std_logic;
+  signal io_we:       std_logic;
+  signal io_ack:     std_logic;
+  signal interrupt:  std_logic;
+  signal poppc_inst: std_logic;
 
 begin
 
   core: zpu_core_small
     port map (
-      clk           => clk,
-	 		rst           => areset,
-	 		io_busy       => io_busy,
-	 		io_read       => io_read,
-	 		io_write      => io_write,
-      io_addr       => io_address,
-			io_wr         => io_we,
-			io_rd         => io_re,
-	 		interrupt     => interrupt,
+      wb_clk_i      => clk,
+	 		wb_rst_i      => rst,
+	 		wb_ack_i      => io_ack,
+	 		wb_dat_i      => io_read,
+	 		wb_dat_o      => io_write,
+      wb_adr_o      => io_address,
+			wb_cyc_o      => io_cyc,
+			wb_stb_o      => io_stb,
+      wb_we_o       => io_we,
+	 		wb_inta_i     => interrupt,
+
       poppc_inst    => poppc_inst,
 	 		break         => open
     );
@@ -104,15 +107,17 @@ begin
       spp_cap_out => spp_cap_out
     )
     port map (
-      clk           => clk,
-	 	  areset        => areset,
-      read          => io_read,
-      write         => io_write,
-      address       => io_address,
-      we            => io_we,
-      re            => io_re,
-      busy          => io_busy,
-      interrupt     => interrupt,
+      wb_clk_i      => clk,
+	 	  wb_rst_i      => rst,
+      wb_dat_o      => io_read,
+      wb_dat_i      => io_write,
+      wb_adr_i      => io_address,
+      wb_cyc_i      => io_cyc,
+      wb_stb_i      => io_stb,
+      wb_ack_o      => io_ack,
+      wb_we_i       => io_we,
+      wb_inta_o     => interrupt,
+
       intready      => poppc_inst,
       gpio_i        => gpio_i,
       gpio_o        => gpio_o,

@@ -45,19 +45,21 @@ use work.zpuinopkg.all;
 
 entity zpuino_timers is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
-    busy:     out std_logic;
-    comp:     out std_logic;
-    interrupt0:out std_logic;
-    interrupt1:out std_logic
+    comp:     out std_logic
   );
 end entity zpuino_timers;
 
@@ -69,46 +71,49 @@ architecture behave of zpuino_timers is
     TSCENABLED: boolean := false
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(1 downto 0);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i:      in std_logic;
+	 	wb_rst_i:   in std_logic;
+    wb_dat_o:     out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i:    in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i:  in std_logic_vector(1 downto 0);
+    wb_we_i:       in std_logic;
+    wb_cyc_i:       in std_logic;
+    wb_stb_i:       in std_logic;
+    wb_ack_o:     out std_logic;
+    wb_inta_o: out std_logic;
 
     -- Connection to GPIO pin
     spp_data: out std_logic;
     spp_en:   out std_logic;
 
-    comp:     out std_logic;
+    comp:     out std_logic
 
-    busy:     out std_logic;
-    interrupt:out std_logic
   );
   end component timer;
 
   signal timer0_read:       std_logic_vector(wordSize-1 downto 0);
-  signal timer0_re:         std_logic;
+  signal timer0_stb:         std_logic;
+  signal timer0_cyc:         std_logic;
   signal timer0_we:         std_logic;
   signal timer0_interrupt:  std_logic;
-  signal timer0_busy:       std_logic;
+  signal timer0_ack:       std_logic;
   signal timer0_comp:       std_logic;
   signal timer0_spp_data:   std_logic;
   signal timer0_spp_en  :   std_logic;
 
   signal timer1_read:       std_logic_vector(wordSize-1 downto 0);
-  signal timer1_re:         std_logic;
+  signal timer1_stb:         std_logic;
+  signal timer1_cyc:         std_logic;
   signal timer1_we:         std_logic;
   signal timer1_interrupt:  std_logic;
-  signal timer1_busy:       std_logic;
+  signal timer1_ack:       std_logic;
   signal timer1_spp_data:   std_logic;
   signal timer1_spp_en  :   std_logic;
 
 begin
 
-  interrupt0 <= timer0_interrupt;
-  interrupt1 <= timer1_interrupt;
+  wb_inta_o <= timer0_interrupt;
+  wb_intb_o <= timer1_interrupt;
 
   comp <= timer0_comp;
 
@@ -117,56 +122,62 @@ begin
       TSCENABLED => true
     )
     port map (
-      clk     => clk,
-      areset  => areset,
-      read    => timer0_read,
-      write   => write,
-      address => address(3 downto 2),
-      re      => timer0_re,
-      we      => timer0_we,
+      wb_clk_i     => wb_clk_i,
+      wb_rst_i  => wb_rst_i,
+      wb_dat_o    => timer0_read,
+      wb_dat_i   => wb_dat_i,
+      wb_adr_i => wb_adr_i(3 downto 2),
+      wb_cyc_i      => timer0_cyc,
+      wb_stb_i      => timer0_stb,
+      wb_we_i      => timer0_we,
+      wb_ack_o     => timer0_ack,
+      wb_inta_o   => timer0_interrupt,
+
       spp_data=> timer0_spp_data,
       spp_en  => timer0_spp_en,
-      busy    => timer0_busy,
-      comp    => timer0_comp,
-      interrupt=>timer0_interrupt
+      comp    => timer0_comp
     );
 
   timer1_inst: timer
     port map (
-      clk     => clk,
-      areset  => areset,
-      read    => timer1_read,
-      write   => write,
-      address => address(3 downto 2),
-      re      => timer1_re,
-      we      => timer1_we,
+      wb_clk_i     => wb_clk_i,
+      wb_rst_i  => wb_rst_i,
+      wb_dat_o    => timer1_read,
+      wb_dat_i   => wb_dat_i,
+      wb_adr_i => wb_adr_i(3 downto 2),
+      wb_cyc_i      => timer1_cyc,
+      wb_stb_i      => timer1_stb,
+      wb_we_i      => timer1_we,
+      wb_ack_o     => timer1_ack,
+      wb_inta_o   => timer1_interrupt,
+
       spp_data=> timer1_spp_data,
-      spp_en  => timer1_spp_en,
-      busy    => timer1_busy,
-      interrupt=>timer1_interrupt
+      spp_en  => timer1_spp_en
     );
 
 
-  process(address,timer0_read,timer1_read)
+  process(wb_adr_i,timer0_read,timer1_read)
   begin
-    read <= (others => '0');
-    case address(4) is
+    wb_dat_o <= (others => '0');
+    case wb_adr_i(4) is
       when '0' =>
-        read <= timer0_read;
+        wb_dat_o <= timer0_read;
       when '1' =>
-        read <= timer1_read;
+        wb_dat_o <= timer1_read;
       when others =>
-        read <= (others => DontCareValue);
+        wb_dat_o <= (others => DontCareValue);
     end case;
   end process;
 
-  timer0_re <= '1' when address(4)='0' and re='1' else '0';
-  timer1_re <= '1' when address(4)='1' and re='1' else '0';
+  timer0_cyc <= wb_cyc_i when wb_adr_i(4)='0' else '0';
+  timer1_cyc <= wb_cyc_i when wb_adr_i(4)='1' else '0';
+  timer0_stb <= wb_stb_i when wb_adr_i(4)='0' else '0';
+  timer1_stb <= wb_stb_i when wb_adr_i(4)='1' else '0';
+  timer0_we <= wb_we_i when wb_adr_i(4)='0' else '0';
+  timer1_we <= wb_we_i when wb_adr_i(4)='1' else '0';
 
-  timer0_we <= '1' when address(4)='0' and we='1' else '0';
-  timer1_we <= '1' when address(4)='1' and we='1' else '0';
 
-  busy <= timer0_busy or timer1_busy;
+  wb_ack_o <= timer0_ack or timer1_ack;
   
   spp_data(0) <= timer0_spp_data;
   spp_data(1) <= timer1_spp_data;

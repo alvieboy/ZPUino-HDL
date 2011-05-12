@@ -81,7 +81,7 @@ architecture behave of papilio_one_top is
   );
   port (
     clk:      in std_logic;
-	 	areset:   in std_logic;
+	 	rst:      in std_logic;
 
     gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -169,7 +169,7 @@ begin
   )
   port map (
     clk           => sysclk,
-	 	areset        => sysrst,
+	 	rst           => sysrst,
 
     gpio_i        => gpio_i,
     gpio_t        => gpio_t,

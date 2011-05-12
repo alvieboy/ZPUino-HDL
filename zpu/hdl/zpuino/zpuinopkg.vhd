@@ -49,53 +49,56 @@ package zpuinopkg is
       spp_cap_out:  in std_logic_vector(zpuino_gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
     );
     port (
-      clk:      in std_logic;
-  	 	areset:   in std_logic;
-      read:     out std_logic_vector(wordSize-1 downto 0);
-      write:    in std_logic_vector(wordSize-1 downto 0);
-      address:  in std_logic_vector(maxAddrBitIncIO downto 0);
-      we:       in std_logic;
-      re:       in std_logic;
-      busy:     out std_logic;
-      interrupt:out std_logic;
+      wb_clk_i: in std_logic;
+  	 	wb_rst_i: in std_logic;
+      wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+      wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+      wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+      wb_we_i:  in std_logic;
+      wb_cyc_i: in std_logic;
+      wb_stb_i: in std_logic;
+      wb_ack_o: out std_logic;
+      wb_inta_o:out std_logic;
+
       intready: in std_logic;
 
       -- GPIO
-      gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-      gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-      gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
-      tx: out std_logic;
-      rx: in std_logic
+      gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+      gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
+      gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
+      tx:       out std_logic;
+      rx:       in std_logic
 
     );
   end component zpuino_io;
 
   component zpuino_empty_device is
   port (
-    clk:      in std_logic;
-	 	rst:      in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
   );
   end component zpuino_empty_device;
 
-
   component zpuino_spi is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     mosi:     out std_logic;
     miso:     in std_logic;
@@ -107,15 +110,16 @@ package zpuinopkg is
 
   component zpuino_uart is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     enabled:  out std_logic;
     tx:       out std_logic;
@@ -128,15 +132,17 @@ package zpuinopkg is
     gpio_count: integer := 32
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
     spp_data: in std_logic_vector(gpio_count-1 downto 0);
     spp_read: out std_logic_vector(gpio_count-1 downto 0);
 
@@ -151,19 +157,21 @@ package zpuinopkg is
 
   component zpuino_timers is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
-    comp:     out std_logic;
-    busy:     out std_logic;
-    interrupt0: out std_logic;
-    interrupt1: out std_logic
+    comp:     out std_logic
   );
   end component zpuino_timers;
 
@@ -172,16 +180,17 @@ package zpuinopkg is
     INTERRUPT_LINES: integer := 16
   );
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
-    busy:     out std_logic;
-    interrupt:out std_logic;
     poppc_inst:in std_logic;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
@@ -191,49 +200,53 @@ package zpuinopkg is
 
   component zpuino_sigmadelta is
 	port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
     sync_in:  in std_logic;
 
     -- Connection to GPIO pin
     spp_data: out std_logic_vector(1 downto 0);
-    spp_en:   out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0)
 
-    busy:     out std_logic;
-    interrupt:out std_logic
   );
   end component zpuino_sigmadelta;
 
   component zpuino_crc16 is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
   );
   end component zpuino_crc16;
 
   component zpuino_adc is
   port (
-    clk:      in std_logic;
-	 	areset:   in std_logic;
-    read:     out std_logic_vector(wordSize-1 downto 0);
-    write:    in std_logic_vector(wordSize-1 downto 0);
-    address:  in std_logic_vector(maxIObit downto minIObit);
-    we:       in std_logic;
-    re:       in std_logic;
-    busy:     out std_logic;
-    interrupt:out std_logic;
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
 
     sample:   in std_logic;
     -- GPIO SPI pins
