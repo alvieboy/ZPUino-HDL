@@ -73,6 +73,8 @@ end entity zpuino_io;
 
 architecture behave of zpuino_io is
 
+  constant io_registered_read: boolean := true;
+
   signal spi_enabled:  std_logic;
 
   signal spi2_enabled:  std_logic;
@@ -128,6 +130,8 @@ architecture behave of zpuino_io is
   type slot_cpuword_type   is array(0 to 15) of cpuword_type;
   subtype address_type     is std_logic_vector(10 downto 2);
   type slot_address_type   is array(0 to 15) of address_type;
+
+  signal io_read_selected: cpuword_type;
 
   signal slot_cyc:       slot_std_logic_type;
   signal slot_we:        slot_std_logic_type;
@@ -194,14 +198,36 @@ begin
     io_address <= addr_save_q;
     io_write <= write_save_q;
 
-    -- Generate busy signal, and rd/wr flags
-
-    -- NOTE: this assumes no device will ever ack if not selected.
-
-    process(io_device_ack)
+    rread: if io_registered_read=true generate
+    -- Read/ack
+    process(wb_clk_i)
     begin
-      wb_ack_o <= io_device_ack;
+      if rising_edge(wb_clk_i) then
+        if wb_rst_i='1' then
+          wb_ack_o<='0';
+          wb_dat_o<=(others => DontCareValue);
+        else
+          wb_ack_o <= io_device_ack;
+          wb_dat_o <= io_read_selected;
+        end if;
+      end if;
     end process;
+
+    end generate;
+
+    nrread: if io_registered_read=false generate
+
+      process(io_device_ack)
+      begin
+        wb_ack_o <= io_device_ack;
+      end process;
+
+      process(io_read_selected)
+      begin
+        wb_dat_o <= io_read_selected;
+      end process;
+
+    end generate;
 
   end generate;
 
@@ -240,7 +266,7 @@ begin
   begin
 
     slotNumber := to_integer(unsigned(io_address(14 downto 11)));
-    wb_dat_o <= slot_read(slotNumber);
+    io_read_selected <= slot_read(slotNumber);
 
   end process;
 
