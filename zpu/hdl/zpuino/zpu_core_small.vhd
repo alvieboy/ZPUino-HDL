@@ -117,7 +117,8 @@ State_Storeb,
 State_Storeh,
 State_LoadSP,
 State_Loadb,
-State_Ashiftleft
+State_Ashiftleft,
+State_Ashiftright
 );
 
 type DecodedOpcodeType is
@@ -150,6 +151,7 @@ Decoded_Storeb,
 Decoded_Storeh,
 Decoded_Ulessthan,
 Decoded_Ashiftleft,
+Decoded_Ashiftright,
 Decoded_Loadb
 );
 
@@ -333,6 +335,9 @@ begin
 
       elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
         sampledDecodedOpcode<=Decoded_Ashiftleft;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Ashiftright) then
+        sampledDecodedOpcode<=Decoded_Ashiftright;
 
       elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
         sampledDecodedOpcode<=Decoded_Loadb;
@@ -803,6 +808,13 @@ begin
             w.sp <= r.sp + 1;
             w.state <= State_Ashiftleft;
 
+          when Decoded_Ashiftright =>
+
+            w.shiftAmount <= r.topOfStack(4 downto 0);
+            w.shiftValue <= memARead;
+            w.sp <= r.sp + 1;
+            w.state <= State_Ashiftright;
+
           when others =>
             w.break <= '1';
 
@@ -838,6 +850,19 @@ begin
         else
           w.shiftValue(wordSize-1 downto 1) <= r.shiftValue(wordSize-2 downto 0);
           w.shiftValue(0) <= '0';
+          w.shiftAmount <= r.shiftAmount - 1;
+        end if;
+
+      when State_Ashiftright =>
+        -- Can we interrupt ????
+        if r.shiftAmount=0 then
+          w.state <= State_Decode;
+          w.topOfStack <= r.shiftValue;
+          memAAddr <= r.sp + 1;
+          memBAddr <= pc_to_memaddr(r.pc);
+        else
+          w.shiftValue(wordSize-2 downto 0) <= r.shiftValue(wordSize-1 downto 1);
+          w.shiftValue(wordSize-1) <= '0';
           w.shiftAmount <= r.shiftAmount - 1;
         end if;
 
