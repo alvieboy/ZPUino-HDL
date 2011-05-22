@@ -555,16 +555,12 @@ begin
     variable spOffset: unsigned(4 downto 0);
   begin
 
-    --memAAddr <= (others => DontCareValue);
-    --memBAddr <= (others => DontCareValue);
-    --memAWrite <= (others => DontCareValue);
     memBWrite <= (others => DontCareValue);
     memBWriteEnable <= '0';
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
 
     stack_b_addr_is_offset<='0';
-
     stack_b_writeenable <= '0';
 
     decode_freeze <= '0';
@@ -572,8 +568,9 @@ begin
 
     jump_address <= (others => DontCareValue);
 
-    io_wr <= '0';
-    io_rd <= '0';
+    wb_cyc_o_i <= '0';
+    wb_stb_o <= '0';
+
     poppc_inst <= '0';
     begin_inst<='0';
 
@@ -586,17 +583,14 @@ begin
     spOffset(4):=not opcode(4);
     spOffset(3 downto 0) := unsigned(opcode(3 downto 0));
 
-    --w.pcdly <= r.pc; -- Save PC for Neqbranch operations
-
-    if interrupt='0' then
+    if wb_inta_i='0' then
       w.inInterrupt<='0';
     end if;
 
-    --stack_b_write <= std_logic_vector(topOfStack_read);
     stack_b_write<=(others => DontCareValue);
 
     memBAddr <= pc_to_memaddr(pcnext);
-          --memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
+
     case state is
 
       when State_Start2 =>
@@ -607,15 +601,12 @@ begin
         spnext_b <= sp + 1;
 
       when State_Pop =>
-        --decode_freeze <= '1';
         spnext <= sp + 1;
         spnext_b <= sp + 2;
 
       when State_Execute =>
 
         w.idim <= '0';
-        --spnext <= sp;
-        --spnext_b <= sp + 1;
 
         -- Trace
         if decodedOpcode/=Decoded_Idle then
@@ -635,117 +626,68 @@ begin
           when Decoded_Im =>
 
             w.idim <= '1';
-
-            --memAAddr <= r.sp + 1;
-
             if r.idim='0' then
-
                 spnext <= sp - 1;
                 spnext_b <= sp;
-
             end if;
 
-
           when Decoded_Nop =>
-
-            --memAAddr <= r.sp;
-            --memAWriteMask <= (others => '1');
-            --memAWrite <= r.topOfStack;
-
 
           when Decoded_PopPC =>
             decode_jump <= '1';
             jump_address <= topOfStack_read(maxAddrBit downto 0);
-            --w.pc <= r.topOfStack(maxAddrBit downto 0);
-            --w.topOfStack <= memARead;
             spnext <= sp + 1;
             spnext_b <= sp + 2;
-
             poppc_inst <= '1';
-
-            --memAAddr <= r.sp;
-            --memAWrite <= r.topOfStack;
 
           when Decoded_Interrupt =>
 
-            --w.pc <= to_unsigned(32, maxAddrBit+1);
             jump_address <= to_unsigned(32, maxAddrBit+1);
             decode_jump <= '1';
-
-
             spnext <= sp - 1;
             spnext_b <= sp;
 
             report "FIXME" severity failure;
-
-            --memBAddr <= (others => '0');
-            --memBAddr(minAddrBit+3 downto minAddrBit) <= "1000";
-
-            --memAAddr <= r.sp;
-            --memAWrite <= r.topOfStack;
-
 
           when Decoded_Emulate =>
 
             spnext <= sp - 1;
             spnext_b <= sp;
 
-            --memAAddr <= r.sp;
-            --memAWrite <= r.topOfStack;
-
-            --w.pc <= (others => '0');
-            --w.pc(9 downto 5) <= unsigned(opcode(4 downto 0));
-
             decode_jump <= '1';
             jump_address <= (others => '0');
             jump_address(9 downto 5) <= unsigned(opcode(4 downto 0));
-
-            --memBAddr <= (others => '0');
-            --memBAddr(9 downto 5) <= unsigned(opcode(4 downto 0));
-
 
           when Decoded_PushSP =>
 
             spnext <= sp - 1;
             spnext_b <= sp;
 
-
           when Decoded_Add =>
 
             spnext <= sp + 1;
             spnext_b <= sp + 2;
 
-            --decode_freeze<='1';
-
           when Decoded_And =>
 
             spnext <= sp + 1;
             spnext_b <= sp + 2;
-            --decode_freeze<='1';
 
           when Decoded_Eq =>
             spnext <= sp + 1;
             spnext_b <= sp + 2;
 
-            --decode_freeze<='1';
-
           when Decoded_Ulessthan =>
             spnext <= sp + 1;
             spnext_b <= sp + 2;
 
-
           when Decoded_Or =>
-
             spnext <= sp + 1;
             spnext_b <= sp + 2;
 
-            --decode_freeze<='1';
-
           when Decoded_Not =>
 
-
           when Decoded_Flip =>
-
 
           when Decoded_LoadSP =>
 
@@ -790,15 +732,9 @@ begin
             decode_freeze <= '1';
 
           when Decoded_Store =>
-            -- TODO: Ensure we can wait here for busy.
-            --if io_busy='0' then
-            --  spnext <= sp + 1;      -- REMOVE THIS PLEASE
-            --  spnext_b <= sp + 2;
-            --end if;
 
             decode_freeze<='1';
 
-            -- If stack access, change SP immediatly
             if topOfStack_read(31)='1' then
               spnext_b <= topOfStack_read(spMaxBit downto 2);
               stack_b_writeenable <= '1';
@@ -816,13 +752,9 @@ begin
               io_rd <= '1';
             end if;
 
-            -- If stack access, change SP immediatly
-            --if topOfStack_read(31)='1' then
-              spnext_b <= topOfStack_read(spMaxBit downto 2);
-            --end if;
+            spnext_b <= topOfStack_read(spMaxBit downto 2);
 
             decode_freeze<='1';
-
 
           when Decoded_PopSP =>
             spnext <= topOfStack_read(10 downto 2);
@@ -841,15 +773,12 @@ begin
 
             decode_freeze <= '1';
             if unsigned(stack_b_read)/=0 then
-              --w.pc <= r.pcdly + r.topOfStack(maxAddrBit downto 0);
               decode_jump <= '1';
               jump_address <= pce + topOfStack_read(maxAddrBit downto 0);
---            else
---              w.pc <= r.pc + 1;
             end if;
 
           when Decoded_Idle =>
-            -- Restore idim!!!
+            -- TODO: Restore idim!!!
 
           when others =>
             w.break <= '1';
@@ -994,9 +923,6 @@ begin
 
           when Decoded_LoadSP =>
 
-            --stack_a_writeenable<='0';
-            --topOfStack_write<=(others => DontCareValue);
-
           when Decoded_Dup =>
 
           when Decoded_AddSP =>
@@ -1097,7 +1023,6 @@ begin
       else
       case state is
         when State_Start =>
-          --state <= State_Start2;
           state <= State_Resync1;
 
         when State_Start2 =>
@@ -1166,21 +1091,10 @@ begin
           state <= State_Execute;
         
         when State_Load =>
-          -- IO busy is always 0 when not accessing IO.
-          -- So we rely on busy here to be accurate.
-
-          --if topOfStack_read(31)='1' then
-          --  state <= State_Execute;
-          --else
-
-          --if topOfStack_read(maxAddrBitIncIO)='1' then
-            if io_busy='0' then
+            if wb_cyc_o_i='0' or wb_ack_i='1' then
               state <= State_Execute;
             end if;
-          --else
-          --  state <= State_Execute;
-          --end if;
-          --end if;
+
         when others =>
       end case;
     end if;
@@ -1189,10 +1103,7 @@ begin
 
 
 
-
-
-
-  process(clk)
+  process(wb_clk_i)
   begin
     if rising_edge(clk) then
       if rst='1' then

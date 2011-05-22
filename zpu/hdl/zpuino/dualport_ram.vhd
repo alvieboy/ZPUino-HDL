@@ -58,12 +58,12 @@ end entity dualport_ram;
 architecture behave of dualport_ram is
 
 component dp_rom_8_32 is
-port (ADDRA: in std_logic_vector(13 downto 0);
+port (ADDRA: in std_logic_vector(maxAddrBit downto 0);
       CLK : in std_logic;
       ENA:   in std_logic;
       WEA: in std_logic; -- to avoid a bug in Xilinx ISE
       DOA: out STD_LOGIC_VECTOR (7 downto 0);
-      ADDRB: in std_logic_vector(13 downto 2);
+      ADDRB: in std_logic_vector(maxAddrBit downto 2);
       DIA: in STD_LOGIC_VECTOR (7 downto 0); -- to avoid a bug in Xilinx ISE
       WEB: in std_logic;
       ENB:   in std_logic;
