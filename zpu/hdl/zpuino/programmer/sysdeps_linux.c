@@ -85,14 +85,14 @@ void conn_reset(connection_t conn)
 	cfsetispeed(&termset,B150);
 	tcsetattr(conn,TCSANOW,&termset);
 
-	tcsendbreak(conn,0);
+	tcsendbreak(conn,2);
 	// Send reset sequence
 
 	write(conn, reset,sizeof(reset));
 	tcflush(conn, TCOFLUSH);
 
 	// delay a bit. 
-	usleep(400000);
+	//usleep(400000);
 
 	cfsetospeed(&termset,txs);
 	cfsetispeed(&termset,rxs);
