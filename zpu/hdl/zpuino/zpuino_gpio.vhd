@@ -200,7 +200,7 @@ begin
       --  input_mapper_q(i) <= 0;
       --  output_mapper_q(i) <= 0;
       --end loop;
-    elsif wb_we_i='1' then
+    elsif wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1' then
       case wb_adr_i(10 downto 9) is
         when "00" =>
           case wb_adr_i(5 downto 4) is

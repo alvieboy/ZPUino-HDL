@@ -66,7 +66,7 @@ begin
       ready_q <= '1';
 
     else
-      if wb_we_i='1' and ready_q='1' then
+      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' and ready_q='1' then
         case wb_adr_i(4 downto 2) is
           when "000" =>
             crc_q <= wb_dat_i(15 downto 0);

@@ -163,7 +163,7 @@ begin
         tmr0_prescale_rst <= '1';
       else
         tmr0_prescale_rst <= not tmr0_en_q;
-        if wb_we_i='1' then
+        if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
           case wb_adr_i is
             when "00" =>
               tmr0_en_q <= wb_dat_i(0);
@@ -194,10 +194,10 @@ begin
         tmr0_intr <= '0';
         tmr0_cout <= '0';
       else
-        if wb_we_i='1' and wb_adr_i="01" then
+        if wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1' and wb_adr_i="01" then
           tmr0_cnt_q <= unsigned(wb_dat_i(15 downto 0));
         else
-          if wb_we_i='1' and wb_adr_i="00" then
+          if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' and wb_adr_i="00" then
             if wb_dat_i(7)='0' then
               tmr0_intr <= '0';
             end if;

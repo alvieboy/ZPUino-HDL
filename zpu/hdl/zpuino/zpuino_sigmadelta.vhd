@@ -111,7 +111,7 @@ begin
       dat_q2(15) <= '1';
       sd_en_q <= (others =>'0');
     else 
-	    if wb_we_i='1' then
+	    if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         case wb_adr_i(2) is
           when '0' =>
             sd_en_q(0) <= wb_dat_i(0);

@@ -222,7 +222,7 @@ begin
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
     else
-      if wb_we_i='1' then
+      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         case wb_adr_i(3 downto 2) is
           when "00" =>
             ien_q <= wb_dat_i(0); -- Interrupt enable

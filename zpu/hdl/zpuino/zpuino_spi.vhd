@@ -153,7 +153,7 @@ begin
 
   -- Direct access (write) to SPI
 
-  spi_en <= '1' when wb_we_i='1' and wb_adr_i(2)='1' and spi_ready='1' else '0';
+  spi_en <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='1' and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
   
@@ -198,7 +198,7 @@ begin
         spi_txblock_q<='1';
         spi_transfersize_q<=(others => '0');
       else
-      if wb_we_i='1' then
+      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         if wb_adr_i(2)='0' then
           spi_clk_pres <= wb_dat_i(3 downto 1);
           cpol <= wb_dat_i(4);

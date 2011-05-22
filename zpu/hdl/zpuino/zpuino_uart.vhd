@@ -161,7 +161,7 @@ begin
     );
 
   -- TODO: check multiple writes
-  uart_write <= '1' when wb_we_i='1' and wb_adr_i(2)='0' else '0';
+  uart_write <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='0' else '0';
 
    -- Rx timing
   rx_timer: uart_brgen
@@ -238,7 +238,7 @@ begin
       if wb_rst_i='1' then
         enabled_q<='0';
       else
-        if wb_we_i='1' then
+        if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
           if wb_adr_i(2)='1' then
             divider_rx_q <= wb_dat_i(15 downto 0);
             enabled_q  <= wb_dat_i(16);
