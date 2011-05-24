@@ -117,6 +117,32 @@ void configure_pins()
 
 }
 
+void outbyte(int c)
+{
+	/* Wait for space in FIFO */
+	while ((UARTCTL&0x2)==2);
+	UARTDATA=c;
+}
+
+extern "C" void printstring(const char *str)
+{
+	while (*str) {
+		outbyte(*str);
+		str++;
+	}
+}
+
+unsigned int inbyte()
+{
+	for (;;)
+	{
+		if (UARTCTL&0x1 != 0) {
+			return UARTDATA;
+		}
+	}
+}
+
+
 extern "C" int main(int argc,char**argv)
 {
 	ivector = &_zpu_interrupt;
@@ -136,8 +162,18 @@ extern "C" int main(int argc,char**argv)
 	CRC16POLY = 0x8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
 
-	spi_copy();
+	outbyte('A');
 
+	printstring("\r\nZPUINO bootloader\r\n");
+
+	int i;
+	while (1) {
+		i=inbyte();
+		outbyte(i);
+	}
+	/*
+	 spi_copy();
+	 */
 	while (1) {
 	}
 }

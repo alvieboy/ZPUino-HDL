@@ -310,12 +310,28 @@ begin
   uart_tx <= gpio_o(1);
   gpio_i(48) <= uart_rx;
 
-  --rxs: uart_pty_tx
-  -- -port map(
-  --    clk => w_clk,
-  --   rst => w_rst,
---    tx  => rxsim
-   --);
+  top: zpuino_top
+    generic map (
+    spp_cap_in => (others => '1'),
+    spp_cap_out=> (others => '1')
+   )
+
+    port map (
+      clk    => w_clk,
+	 	  rst    => w_rst,
+      gpio_i => gpio_i,
+      gpio_o => gpio_o,
+      gpio_t => gpio_t,
+      rx => uart_rx,
+      tx => open
+  );
+
+  rxs: uart_pty_tx
+   port map(
+      clk => w_clk,
+      rst => w_rst,
+      tx  => rxsim
+   );
 
   -- These values were taken from post-P&R timing analysis
 

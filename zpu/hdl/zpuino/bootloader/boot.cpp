@@ -818,27 +818,38 @@ extern "C" int main(int argc,char**argv)
 	inprogrammode = 0;
 	milisseconds = 0;
 	bufferpos = 0;
+	volatile unsigned int p=0x60616263;
 
 	ivector = &_zpu_interrupt;
 
-	configure_pins();
-
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
-	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 
-	INTRCTL=1;
+	outbyte('A');
+	outbyte( ((unsigned char*)&p)[0] );
 
-#ifdef VERBOSE_LOADER
+	configure_pins();
+//	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
+
+//	INTRCTL=1;
+
+//#ifdef VERBOSE_LOADER
+//#endif
+	outbyte('B');
+	//outbyte(p[0]);
+	outbyte('C');
+
 	printstring("\r\nZPUINO bootloader\r\n");
-#endif
+
+	outbyte('D');
+
 #ifndef SIMULATION
 	enableTimer();
 #endif
 
 	CRC16POLY = 0x8408; // CRC16-CCITT
-
+    outbyte('C');
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
-
+    outbyte('D');
 	// Reset flash
 	spi_reset();
 #ifdef __ZPUINO_PAPILIO_ONE__
@@ -846,6 +857,7 @@ extern "C" int main(int argc,char**argv)
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable();
 #endif
+	outbyte('E');
 
 #ifdef SIMULATION
 	spi_copy();
@@ -853,13 +865,13 @@ extern "C" int main(int argc,char**argv)
 
 	syncSeen = 0;
 	unescaping = 0;
-
+    outbyte('F');
 	while (1) {
 		int i;
 		i = inbyte();
 		// DEBUG ONLY
 		//TMR1CNT=i;
-		//outbyte(i);
+		outbyte(i);
 		if (syncSeen) {
 			if (i==HDLC_frameFlag) {
 				if (bufferpos>0) {
