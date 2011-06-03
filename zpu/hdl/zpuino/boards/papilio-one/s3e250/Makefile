@@ -4,7 +4,7 @@ PART=xc3s250e-vq100-4
 # For bootloader
 BOARD=PAPILIO_ONE
 SIZE=16384
-DEFINES=-D__S3E_250__
+DEFINES="-D__S3E_250__ -DBOARD_ID=0xA4010E00"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 

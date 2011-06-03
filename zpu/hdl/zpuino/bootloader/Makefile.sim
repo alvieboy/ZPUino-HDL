@@ -18,7 +18,7 @@ SKETCHBIN?=InvalidSketch.bin
 
 OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o
 
-CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_PAPILIO_ONE__ -D__S3E_250__
+CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -DBOARD_ID=0xA4010E00 -D__ZPUINO_PAPILIO_ONE__ -D__S3E_250__
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 

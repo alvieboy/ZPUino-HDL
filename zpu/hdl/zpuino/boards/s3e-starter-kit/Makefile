@@ -4,7 +4,7 @@ PART=xc3s500e-fg320-4
 # For bootloader
 BOARD=S3E_EVAL
 SIZE=32768
-DEFINES=
+DEFINES="-DBOARD_ID=0x83010F00"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 

@@ -249,7 +249,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
 	unsigned int count = SPICODESIZE >> 2; // 0x7000
-
+	unsigned int board;
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
 	unsigned int sketchsize;
 	unsigned int sketchcrc;
@@ -276,10 +276,23 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spiwrite(0);
 	sketchcrc= spiread() & 0xffff;
 
+	spiwrite(0);
+	spiwrite(0);
+	spiwrite(0);
+    spiwrite(0);
+	board = spiread();
+
 	if (sketchsize>SPICODESIZE) {
 		//printstring("Sketch too long");
 		while(1) {}
 	}
+
+
+	if (board!=BOARD_ID) {
+		//printstring("Sketch is for another board");
+		while(1) {}
+	}
+
 
 	CRC16ACC=0xFFFF;
 
@@ -552,6 +565,10 @@ const unsigned char vstring[] = {
 	CLK_FREQ >> 16,
 	CLK_FREQ >> 8,
 	CLK_FREQ,
+	BOARD_ID >> 24,
+	BOARD_ID >> 16,
+	BOARD_ID >> 8,
+	BOARD_ID
 };
 
 static void cmd_version()
