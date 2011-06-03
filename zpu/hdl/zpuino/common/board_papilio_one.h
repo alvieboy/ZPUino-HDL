@@ -5,13 +5,14 @@
 
 #if defined(__S3E_250__)
 #define BOARD_MEMORYSIZE 0x4000
+#define SPIOFFSET 0x00042000 /* To be atmel-compatible */
 #elif defined (__S3E_500__)
 #define BOARD_MEMORYSIZE 0x8000
+#define SPIOFFSET 0x00046000
 #else
 #error Undefined board size. Please define __S3E_250__ or __S3E_500__.
 #endif
 
-#define SPIOFFSET 0x00042000
 
 #define BOARD_SPI_DIVIDER BIT(SPICP0)
 
