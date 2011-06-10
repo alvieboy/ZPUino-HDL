@@ -4,11 +4,24 @@
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
+/*
 # define FPGA_SS_B 40
 # undef SPI_FLASH_SEL_PIN
 # define SPI_FLASH_SEL_PIN FPGA_SS_B
+*/
 
 //unsigned int _memreg[4];
+
+extern "C" void *bootloaderdata;
+
+struct bootloader_data_t {
+    unsigned int spiend;
+};
+
+/* NOTE: this is not actually read-only, but we need to place
+ it in bootloader area. I could create a new section, but I'm definitely lazy. */
+
+struct bootloader_data_t bdata __attribute__((section(".rodata")));
 
 
 
@@ -52,6 +65,9 @@ void __attribute__((noreturn)) spi_copy()
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	ivector = (void (*)(void))0x100c;
+
+	bootloaderdata = &bdata;
+
 	__asm__("im %0\n"
 			"popsp\n"
 			"im __sketch_start\n"
@@ -84,7 +100,7 @@ void configure_pins()
 	pinMode(IOPIN_SPI_SCK,OUTPUT);
 	pinMode(IOPIN_SPI_MISO,INPUT);
 
-	pinMode(FPGA_SS_B,OUTPUT);
+	pinMode(SPI_FLASH_SEL_PIN,OUTPUT);
 
 	spi_disable();
 	spi_enable();
@@ -104,6 +120,7 @@ void configure_pins()
 extern "C" int main(int argc,char**argv)
 {
 	ivector = &_zpu_interrupt;
+
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	configure_pins();
@@ -118,9 +135,9 @@ extern "C" int main(int argc,char**argv)
 	INTRCTL=1;
 	CRC16POLY = 0x8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
-	/*
-	 spi_copy();
-	 */
+
+	spi_copy();
+
 	while (1) {
 	}
 }
