@@ -50,6 +50,7 @@
 unsigned int ZPU_ID;
 
 extern "C" void (*ivector)(void);
+extern "C" void *bootloaderdata;
 
 static int inprogrammode;
 static volatile unsigned int milisseconds;
@@ -59,6 +60,14 @@ static int unescaping;
 static unsigned int bufferpos;
 static unsigned int flash_id;
 
+struct bootloader_data_t {
+    unsigned int spiend;
+};
+
+/* NOTE: this is not actually read-only, but we need to place
+ it in bootloader area. I could create a new section, but I'm definitely lazy. */
+
+struct bootloader_data_t bdata __attribute__((section(".rodata")));
 
 void outbyte(int);
 
@@ -235,7 +244,7 @@ void __attribute__((noreturn)) spi_copy()
 extern "C" void __attribute__((noreturn)) start()
 {
 	ivector = (void (*)(void))0x100C;
-
+	bootloaderdata = &bdata;
 	__asm__("im %0\n"
 			"popsp\n"
 			"im __sketch_start\n"
@@ -283,6 +292,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	CRC16ACC=0xFFFF;
 
+	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
+
 	while (sketchsize--) {
 		for (int i=4;i!=0;i--) {
 			spiwrite(0);
@@ -327,6 +338,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(2) = 0xffffffff;
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
+	
 	start();
 }
 
