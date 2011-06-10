@@ -43,6 +43,7 @@
 unsigned int verbose = 0;
 
 static char *binfile=NULL;
+static char *extradata=NULL;
 static char *serialport=NULL;
 static int is_simulator=0;
 static int only_read=0;
@@ -68,7 +69,7 @@ int parse_arguments(int argc,char **const argv)
 {
 	int p;
 	while (1) {
-		switch ((p=getopt(argc,argv,"RDvb:d:ro:ls:U"))) {
+		switch ((p=getopt(argc,argv,"RDvb:d:re:o:ls:U"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -102,6 +103,9 @@ int parse_arguments(int argc,char **const argv)
 			if (strncmp(serialport,"socket:",7)==0)
 				is_simulator=1;
 			break;
+		case 'e':
+			extradata = optarg;
+			break;
 		case 'U':
 			upload_only=1;
 			break;
@@ -119,6 +123,7 @@ int help(char *name)
 	printf("  -D\t\tDry-run. Don't actually do anything\n");
 	printf("  -o offset\tUse specified offset within flash\n");
 	printf("  -b binfile\tBinary file to program\n");
+    printf("  -e datafile\tData file to program after binary\n");
 	printf("  -l\t\tIgnore programming limit sent by bootloader\n");
 	printf("  -R\t\tPerform serial reset before programming\n");
     printf("  -U\t\tUpload only, do not program flash\n");
@@ -389,6 +394,8 @@ int main(int argc, char **argv)
 	uint32_t spioffset_page;
 	uint32_t spioffset_sector;
 	uint32_t codesize;
+	uint32_t extrasize = 0;
+
 	uint32_t freq;
 	struct timeval start,end,delta;
 	connection_t conn;
@@ -401,7 +408,7 @@ int main(int argc, char **argv)
 	unsigned char *buf=NULL;
 	unsigned int board;
 
-	struct stat st;
+	struct stat st, est;
 	buffer_t *b;
 
 #ifdef WIN32
@@ -584,11 +591,29 @@ int main(int argc, char **argv)
 				return -1;
 			}
 
+			int ein=-1;
+			if (extradata) {
+				ein = open(extradata,O_RDONLY);
+				if (ein<0) {
+					perror("Cannot open extra input file");
+					return -1;
+				}
+				fprintf(stderr,"Loaded extra data file\n");
+			}
+
 			// STAT
 
 			fstat(fin,&st);
+			if (ein>0) {
+				fstat(ein,&est);
+			}
 
 			unsigned binsize = st.st_size;
+			unsigned realbinsize = st.st_size;
+
+			if (ein>0) {
+                binsize += est.st_size;
+			}
 
 			if (version>0x0104 && user_offset==-1) {
 				// Add placeholders for size and CRC
@@ -636,6 +661,13 @@ int main(int argc, char **argv)
 
 			read(fin,bufp,st.st_size);
 			close(fin);
+			if (ein>0) {
+				fprintf(stderr,"Loading extra %d bytes at 0x%08x\n",
+						est.st_size,
+						bufp+st.st_size);
+
+				read(ein,bufp+st.st_size, est.st_size);
+			}
 
 			/* Validate sketch */
             if (version > 0x0106 && user_offset == -1)
@@ -708,6 +740,16 @@ int main(int argc, char **argv)
 
 	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
 	unsigned int saddr = spioffset_sector;
+
+	/* Ensure all data will fit on flash */
+	if (saddr + sectors > flash->totalsectors) {
+		fprintf(stderr,"Sorry, data will not fit on flash.\n");
+		fprintf(stderr,"Total sectors are %d, and we need %d\n", flash->totalsectors,
+				saddr+sectors);
+		conn_close(conn);
+		return -1;
+	}
+
 	if(verbose>2) {
 		fprintf(stderr,"Entering program mode\n");
 	}

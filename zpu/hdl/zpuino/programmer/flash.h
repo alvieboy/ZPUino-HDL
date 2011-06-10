@@ -30,6 +30,7 @@ typedef struct {
 	unsigned int density;
 	unsigned int pagesize;
 	unsigned int sectorsize;
+	unsigned int totalsectors;
 	const char *name;
 	struct flash_driver_t *driver;
 } flash_info_t;
