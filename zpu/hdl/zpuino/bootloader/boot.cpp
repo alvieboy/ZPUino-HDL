@@ -17,7 +17,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x06
+#define VERSION_LOW  0x07
 
 /* Commands for programmer */
 
@@ -249,7 +249,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
 	unsigned int count = SPICODESIZE >> 2; // 0x7000
-	unsigned int board;
+	volatile unsigned int *board = (volatile unsigned int*)0x1004;
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
 	unsigned int sketchsize;
 	unsigned int sketchcrc;
@@ -276,23 +276,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spiwrite(0);
 	sketchcrc= spiread() & 0xffff;
 
-	spiwrite(0);
-	spiwrite(0);
-	spiwrite(0);
-    spiwrite(0);
-	board = spiread();
-
 	if (sketchsize>SPICODESIZE) {
 		//printstring("Sketch too long");
 		while(1) {}
 	}
-
-
-	if (board!=BOARD_ID) {
-		//printstring("Sketch is for another board");
-		while(1) {}
-	}
-
 
 	CRC16ACC=0xFFFF;
 
@@ -321,6 +308,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		printhex(CRC16ACC);
 		printstring("\r\n");
 		*/
+		while(1) {};
+	}
+
+	if (*board != BOARD_ID) {
 		while(1) {};
 	}
 

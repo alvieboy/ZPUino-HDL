@@ -37,6 +37,8 @@
 #include <sys/select.h>
 #endif
 
+#define SKETCHSIGNATURE 0x310AFADE
+
 unsigned int verbose = 0;
 
 static char *binfile=NULL;
@@ -395,6 +397,7 @@ int main(int argc, char **argv)
 	unsigned int size_bytes=0;
 	unsigned int pages=0;
 	unsigned char *buf=NULL;
+	unsigned int board;
 
 	struct stat st;
 	buffer_t *b;
@@ -455,6 +458,7 @@ int main(int argc, char **argv)
 	}
 
 	if (b) {
+
 		if (verbose>0)
 			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
 
@@ -484,10 +488,21 @@ int main(int argc, char **argv)
 			freq += b->buf[12];
 			printf("CPU frequency: %u Hz\n",freq);
 		}
-
-		if (verbose>0)
+		if (verbose>0) {
 			printf("CODE size: %u\n",codesize);
+		}
 
+		if (version>=0x0107) {
+			board = b->buf[13];
+			board<<=8;
+			board += b->buf[14];
+			board<<=8;
+			board += b->buf[15];
+			board<<=8;
+			board += b->buf[16];
+			
+			printf("Board is: \"%s\"\n", getBoardById() || "UNKNOWN" );
+		}
 	} else {
 		fprintf(stderr,"Cannot get programmer version, aborting\n");
 		conn_close(conn);
@@ -613,6 +628,27 @@ int main(int argc, char **argv)
 
 			read(fin,bufp,st.st_size);
 			close(fin);
+
+			/* Validate sketch */
+            if (version > 0x0106)
+			{
+				unsigned int *p = (unsigned int*)bufp;
+				if (be32toh(*p) != SKETCHSIGNATURE) {
+					fprintf(stderr,"File '%s' does not appear to be a sketch", binfile);
+					conn_close(conn);
+					close(fin);
+					return -1;
+				}
+
+				/* Validate board */
+				p++;
+				if (be32toh(*p) != board) {
+					fprintf(stderr,"Board mismatch.");
+					conn_close(conn);
+					close(fin);
+					return -1;
+				}
+			}
 
 			// Compute checksum if needed
 
