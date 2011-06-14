@@ -23,7 +23,7 @@ CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all: prom-generic-dp-32.vhd Makefile $(TARGET).S
 
-.PHONY: boot.cpp
+.PHONY: boot.cpp boot-c.c boot-s.S
 
 $(TARGET).elf: $(OBJ)
 	$(CXX) $+ -o $@ $(LDFLAGS)

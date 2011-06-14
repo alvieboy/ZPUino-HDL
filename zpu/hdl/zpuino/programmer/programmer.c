@@ -27,6 +27,7 @@
 #include "transport.h"
 #include "programmer.h"
 #include <unistd.h>
+#include "boards.h"
 
 #ifdef __linux__
 #include <sys/un.h>
@@ -377,7 +378,6 @@ int do_upload(connection_t conn)
 		}
 	}
 	return 0;
-
 }
 
 int main(int argc, char **argv)
@@ -493,6 +493,7 @@ int main(int argc, char **argv)
 		}
 
 		if (version>=0x0107) {
+			const char *boardname;
 			board = b->buf[13];
 			board<<=8;
 			board += b->buf[14];
@@ -500,8 +501,11 @@ int main(int argc, char **argv)
 			board += b->buf[15];
 			board<<=8;
 			board += b->buf[16];
-			
-			printf("Board is: \"%s\"\n", getBoardById() || "UNKNOWN" );
+			printf("Board ID: 0x%08x\n", board);
+			boardname = getBoardById(board);
+			if (NULL==boardname)
+				boardname = "UNKNOWN";
+			printf("Board name: %s\n", boardname);
 		}
 	} else {
 		fprintf(stderr,"Cannot get programmer version, aborting\n");
@@ -630,7 +634,7 @@ int main(int argc, char **argv)
 			close(fin);
 
 			/* Validate sketch */
-            if (version > 0x0106)
+            if (version > 0x0106 && user_offset == -1)
 			{
 				unsigned int *p = (unsigned int*)bufp;
 				if (be32toh(*p) != SKETCHSIGNATURE) {

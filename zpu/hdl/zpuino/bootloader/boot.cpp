@@ -248,7 +248,7 @@ extern "C" void __attribute__((noreturn)) start()
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
-	unsigned int count = SPICODESIZE >> 2; // 0x7000
+	//unsigned int count = SPICODESIZE >> 2; // 0x7000
 	volatile unsigned int *board = (volatile unsigned int*)0x1004;
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
 	unsigned int sketchsize;
@@ -383,7 +383,8 @@ static void cmd_progmem()
 	 buffer[1-2] is address.
 	 buffer[3-4] is size
 	 */
-	unsigned int address, size,i=5;
+    /*
+	unsigned int address, size=5;
 	volatile unsigned char *mem;
 
 	address=buffer[1]<<8;
@@ -398,8 +399,9 @@ static void cmd_progmem()
 		*mem++=v;
 		outbyte(v);
 	}
-	/* Now that we're done, jump along */
+	
 	start();
+    */
 }
 
 
