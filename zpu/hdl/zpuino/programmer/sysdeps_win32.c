@@ -40,12 +40,12 @@ extern int verbose;
 
 int conn_set_speed(connection_t conn, speed_t speed)
 {
-	struct win32_port *port = (struct win32_port*)conn;
+	struct win32_port *port = conn;
 
 	port->dcb.DCBlength = sizeof( DCB );
 	if ( !GetCommState( port->hcomm, &port->dcb ) )
 	{
-		fprintf(stderr,"GetCommState: %lu\n",GetLastError());
+		fprintf(stderr,"GetCommState: %p %lu\n",port->hcomm,GetLastError());
 		return -1;
 	}
 
@@ -71,7 +71,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 
 	if ( !SetCommState( port->hcomm, &port->dcb ) )
 	{
-		fprintf(stderr,"SetCommState: %lu\n",GetLastError());
+		fprintf(stderr,"SetCommState: %p %lu\n",port->hcomm, GetLastError());
 		return -1;
 	}
 	return 0;
@@ -83,6 +83,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	char rportname[128];
 
 	struct win32_port *port =  (struct win32_port*)calloc(1,sizeof(struct win32_port));
+
 
 	debug("Opening port %s\n",device);
 	sprintf(rportname,"\\\\.\\%s",device);
@@ -100,12 +101,14 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 		fprintf(stderr,"Cannot open device %s: %ld\n",device,GetLastError());
         return -1;
 	}
-    debug("Port %s opened\n",device);
+	debug("Port %s opened, handle %p\n",device, port->hcomm);
 
-	if(conn_set_speed((connection_t)conn, CBR_115200)<0) {
+	if(conn_set_speed(port, CBR_115200)<0) {
 		fprintf(stderr,"Cannot set port flags: %ld\n",GetLastError());
 		return -1;
 	}
+
+	*conn = port;
 
 	memset( &port->rol, 0, sizeof( OVERLAPPED ) );
 	memset( &port->wol, 0, sizeof( OVERLAPPED ) );
@@ -128,8 +131,6 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	if ( !port->wol.hEvent )
 	{
 	}
-
-	*conn = port;
 
 	debug("Port %s ready\n",device);
 
@@ -215,7 +216,7 @@ unsigned int get_bytes_in_rxqueue(connection_t conn)
 
 buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size, int timeout)
 {
-	//int retries = 3;
+	int retries = 3;
 	unsigned int bytes;
 	SYSTEMTIME systemTime;
 	unsigned long adj_timeout = timeout;
@@ -287,6 +288,12 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 					/* Overlapped read going on */
 					switch (WaitForSingleObject(conn->rol.hEvent, adj_timeout)) {
 					case WAIT_TIMEOUT:
+						debug("Timeout occurred\n");
+						if (retries--==0) {
+							ResetEvent( conn->rol.hEvent );
+							return NULL;
+						}
+                        
                         break;
 					case WAIT_OBJECT_0:
 						/* Read data */
@@ -320,10 +327,9 @@ void conn_close(connection_t conn)
 {
 }
 
-int conn_parse_speed(const char *value,speed_t *speed)
+int conn_parse_speed(unsigned baudrate,speed_t *speed)
 {
-	int v = atoi(value);
-	switch (v) {
+	switch (baudrate) {
 	case 1000000:
 		*speed = CBR_1000000;
 		break;
@@ -331,7 +337,7 @@ int conn_parse_speed(const char *value,speed_t *speed)
 		*speed = CBR_115200;
 		break;
 	default:
-		printf("Baud rate '%s' not supported\n",value);
+		printf("Baud rate '%d' not supported\n",baudrate);
 		return -1;
 	}
 	return 0;

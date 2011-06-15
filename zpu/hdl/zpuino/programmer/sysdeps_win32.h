@@ -38,8 +38,11 @@ typedef struct win32_port *connection_t;
 #define speed_t int
 
 #define DEFAULT_SPEED CBR_1000000
+#define DEFAULT_SPEED_INT 1000000
 
 #define cpu_to_le16(x) ((((x)&0x00ff)<<8)|((x)&0x00ff))
+
+#define be32toh(x) ((((x)&0x000000ff)<<24)|(((x)&0x000000ff)<<16)|(((x)&0x000000ff)<<8)|((x)&0x000000ff))
 
 /* ARGV helpers */
 

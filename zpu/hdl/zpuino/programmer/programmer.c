@@ -314,6 +314,7 @@ int read_flash(connection_t conn, flash_info_t *flash, size_t page)
 
 int do_upload(connection_t conn)
 {
+    /*
 	struct stat st;
 	const unsigned int blocksize=512;
 	unsigned char dbuf[4];
@@ -366,7 +367,7 @@ int do_upload(connection_t conn)
 			fprintf(stderr,"Cannot write!\n");
 			return -1;
 		}
-		/* Load and check */
+		
 		if (conn_read(conn,dbuf,1,100)!=1) {
 			fprintf(stderr,"Cannot read!\n");
 			return -1;
@@ -376,7 +377,8 @@ int do_upload(connection_t conn)
 					prog[pos],dbuf[0]);
 			return -1;
 		}
-	}
+		}
+		*/
 	return 0;
 }
 
@@ -406,7 +408,7 @@ int main(int argc, char **argv)
 	char **winargv;
 	char *win_command_line = GetCommandLine();
 	argc = makeargv(win_command_line,&winargv);
-    /*
+
 	printf("ARGC: %d\n",argc);
 	{
 		int i;
@@ -414,7 +416,7 @@ int main(int argc, char **argv)
 			printf("ARGV %d: '%s'\n",i, winargv[i]);
 		}
 	}
-    */
+
 	if (parse_arguments(argc,winargv)<0) {
 		return help(winargv[0]);
 	}
