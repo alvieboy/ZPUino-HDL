@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 	char **winargv;
 	char *win_command_line = GetCommandLine();
 	argc = makeargv(win_command_line,&winargv);
-
+/*
 	printf("ARGC: %d\n",argc);
 	{
 		int i;
@@ -416,7 +416,7 @@ int main(int argc, char **argv)
 			printf("ARGV %d: '%s'\n",i, winargv[i]);
 		}
 	}
-
+    */
 	if (parse_arguments(argc,winargv)<0) {
 		return help(winargv[0]);
 	}
@@ -488,7 +488,7 @@ int main(int argc, char **argv)
 			freq += b->buf[11];
 			freq<<=8;
 			freq += b->buf[12];
-			printf("CPU frequency: %u Hz\n",freq);
+			//printf("CPU frequency: %u Hz\n",freq);
 		}
 		if (verbose>0) {
 			printf("CODE size: %u\n",codesize);
@@ -503,11 +503,13 @@ int main(int argc, char **argv)
 			board += b->buf[15];
 			board<<=8;
 			board += b->buf[16];
-			printf("Board ID: 0x%08x\n", board);
+
 			boardname = getBoardById(board);
-			if (NULL==boardname)
-				boardname = "UNKNOWN";
-			printf("Board name: %s\n", boardname);
+			if (NULL==boardname) {
+				printf("Board is an unknown board (0x%08x)\n", board);
+			} else {
+				printf("Board: %s @ %u Hz\n", boardname, freq);
+			}
 		}
 	} else {
 		fprintf(stderr,"Cannot get programmer version, aborting\n");
@@ -638,17 +640,26 @@ int main(int argc, char **argv)
 			/* Validate sketch */
             if (version > 0x0106 && user_offset == -1)
 			{
-				unsigned int *p = (unsigned int*)bufp;
-				if (be32toh(*p) != SKETCHSIGNATURE) {
-					fprintf(stderr,"File '%s' does not appear to be a sketch", binfile);
+				uint32_t p = bufp[0]<<24 |
+					bufp[1]<<16 |
+					bufp[2]<<8 |
+					bufp[3];
+
+				if (p != SKETCHSIGNATURE) {
+					fprintf(stderr,"File '%s' does not appear to be a sketch: 0x%08x != 0x%08x", binfile,
+							p, SKETCHSIGNATURE);
 					conn_close(conn);
 					close(fin);
 					return -1;
 				}
 
 				/* Validate board */
-				p++;
-				if (be32toh(*p) != board) {
+				p = bufp[4]<<24 |
+					bufp[5]<<16 |
+					bufp[6]<<8 |
+					bufp[7];
+
+				if (p != board) {
 					fprintf(stderr,"Board mismatch.");
 					conn_close(conn);
 					close(fin);
