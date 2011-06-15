@@ -28,13 +28,7 @@
 #include <stdio.h>
 #include "hdlc.h"
 
-
-
-/* #define debug(x...) \
-	fprintf(stderr,x); \
-    fflush(stderr);
-  */
-#define debug(x...) do { printf(x); fflush(stdout); } while (0)
+#define debug(x...) /* do { printf(x); fflush(stdout); } while (0) */
 
 extern int verbose;
 
@@ -136,7 +130,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	return 0;
 }
-
+/*
 static void clear_errors(connection_t conn)
 {
 	unsigned long ErrCode;
@@ -144,7 +138,7 @@ static void clear_errors(connection_t conn)
 
 	ClearCommError( conn->hcomm, &ErrCode, &Stat );
 }
-
+*/
 void conn_reset(connection_t conn)
 {
 	DCB tempdcb;
@@ -238,7 +232,7 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 	do {
 		bytes = get_bytes_in_rxqueue(conn);
 
-		debug("Bytes in RX queue: %lu\n",bytes);
+		debug("Bytes in RX queue: %d\n",bytes);
 
 		/* If RX queue already contains bytes, read them at once */
 		if (bytes) {
