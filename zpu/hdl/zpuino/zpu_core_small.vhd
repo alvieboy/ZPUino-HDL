@@ -118,7 +118,11 @@ State_Storeh,
 State_LoadSP,
 State_Loadb,
 State_Ashiftleft,
-State_Ashiftright
+State_Ashiftright,
+State_Mult1,
+State_Mult2,
+State_Mult3,
+State_Mult4
 );
 
 type DecodedOpcodeType is
@@ -152,7 +156,8 @@ Decoded_Storeh,
 Decoded_Ulessthan,
 Decoded_Ashiftleft,
 Decoded_Ashiftright,
-Decoded_Loadb
+Decoded_Loadb,
+Decoded_Mult
 );
 
 
@@ -175,6 +180,8 @@ type zpuregs is record
   shiftAmount:unsigned(4 downto 0);
   shiftValue: unsigned(wordSize-1 downto 0);
   isStore:    std_logic;
+  multInA:    unsigned(31 downto 0);
+  multInB:    unsigned(31 downto 0);
 end record;
 
 signal r: zpuregs;
@@ -212,6 +219,12 @@ begin
   r(maxAddrBit downto minAddrBit) := pc(maxAddrBit downto minAddrBit);
   return r;
 end pc_to_memaddr;
+
+-- Multiplication stuff.
+
+signal mult0: unsigned(wordSize-1 downto 0);
+signal mult1: unsigned(wordSize-1 downto 0);
+signal mult2: unsigned(wordSize-1 downto 0);
 
 begin
 
@@ -342,6 +355,9 @@ begin
       elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
         sampledDecodedOpcode<=Decoded_Loadb;
 
+      elsif (tOpcode(5 downto 0)=OpCode_Mult) then
+        sampledDecodedOpcode<=Decoded_Mult;
+
       else
         sampledDecodedOpcode<=Decoded_Emulate;
       end if;
@@ -382,8 +398,20 @@ begin
     end if;
   end process;
 
+  -- Multiplier
+  process(wb_clk_i)
+    variable multR: unsigned(wordSize*2-1 downto 0);
+  begin
+    if rising_edge(wb_clk_i) then
+      multR := r.multInA * r.multInB;
+      mult2 <= multR(wordSize-1 downto 0);
+      mult1 <= mult2;
+      mult0 <= mult1;
+    end if;
+  end process;
 
-  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,wb_dat_i,wb_ack_i)
+
+  process(decodedOpcode,r,memARead,memBRead,opcode,sampledDecodedOpcode,wb_dat_i,wb_ack_i,mult0)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -815,10 +843,32 @@ begin
             w.sp <= r.sp + 1;
             w.state <= State_Ashiftright;
 
+          when Decoded_Mult =>
+            w.sp <= r.sp + 1;
+            w.multInA <= r.topOfStack;
+            w.multInB <= memAread;
+            w.state <= State_Mult1;
+
           when others =>
             w.break <= '1';
 
         end case;
+
+      when State_Mult1 =>
+        w.state <= State_Mult2;
+
+      when State_Mult2 =>
+        w.state <= State_Mult3;
+
+      when State_Mult3 =>
+        w.state <= State_Mult4;
+
+      when State_Mult4 =>
+        w.topOfStack <= mult0;
+        w.state <= State_Decode;
+        memBAddr <= pc_to_memaddr(r.pc);
+
+
 
       when State_Loadb =>
 
