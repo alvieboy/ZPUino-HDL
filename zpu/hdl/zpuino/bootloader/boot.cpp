@@ -312,6 +312,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spi_disable();
 
 	if (sketchcrc != CRC16ACC) {
+        printstring("CRC");
 //		printstring("CRC error, please reset\r\n");
 		/*
 		printhex(sketchcrc);
@@ -323,6 +324,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	}
 
 	if (*board != BOARD_ID) {
+		printstring("BOARD ");
+		printhex(*board);
+		printstring(" != ");
+		printhex(BOARD_ID);
 		while(1) {};
 	}
 

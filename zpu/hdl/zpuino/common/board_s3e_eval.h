@@ -7,8 +7,8 @@
 
 #define BOARD_SPI_DIVIDER BIT(SPICP1)
 
-#define IOBASE 0x8000
-#define IO_SLOT_OFFSET_BIT 11
+#define IOBASE 0x8000000
+#define IO_SLOT_OFFSET_BIT 23
 
 #define FPGA_PIN_G14 0
 #define FPGA_PIN_G13 1
