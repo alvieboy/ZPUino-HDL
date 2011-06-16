@@ -702,17 +702,18 @@ int main(int argc, char **argv)
 			// Compute checksum if needed
 
 			if (version>0x0104 && user_offset==-1) {
-				uint16_t *sketchsize = (uint16_t*)buf;
-				uint16_t *crc = (uint16_t*)(buf+sizeof(uint16_t));
+				uint8_t *sketchsize = &buf[0];
+				uint8_t *crc = &buf[2];
 				uint16_t tcrc = 0xffff;
 
 				unsigned i;
 
-				if(verbose>2) {
+				if(verbose>1) {
 					fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
 				}
-
-				*sketchsize = cpu_to_le16(size_words);
+				sketchsize[0] = (size_words>>8) & 0xff;
+				sketchsize[1] = size_words & 0xff;
+				
 				// Go, compute cksum
 				for (i=0;i<aligned_toword_size;i++) {
 					crc16_update(&tcrc,bufp[i]);
@@ -720,10 +721,11 @@ int main(int argc, char **argv)
 						fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
 					}
 				}
-				if(verbose>2) {
+				if(verbose>1) {
 					fprintf(stderr,"Final CRC: %04x\n",tcrc);
 				}
-				*crc = cpu_to_le16(tcrc);
+				crc[0] = (tcrc>>8) & 0xff;
+				crc[1] = tcrc & 0xff;
 			}
 		}
 	}
