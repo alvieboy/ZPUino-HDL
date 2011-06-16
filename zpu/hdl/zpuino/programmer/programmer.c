@@ -512,11 +512,7 @@ int main(int argc, char **argv)
 			board += b->buf[16];
 
 			boardname = getBoardById(board);
-			if (NULL==boardname) {
-				printf("Board is an unknown board (0x%08x)\n", board);
-			} else {
-				printf("Board: %s @ %u Hz\n", boardname, freq);
-			}
+			printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
 		}
 	} else {
 		fprintf(stderr,"Cannot get programmer version, aborting\n");
@@ -693,6 +689,10 @@ int main(int argc, char **argv)
 
 				if (p != board) {
 					fprintf(stderr,"Board mismatch.");
+					const char *b1 = getBoardById(board);
+					fprintf(stderr,"Board is:      0x%08x '%s'\n", board,b1);
+					b1 = getBoardById(p);
+					fprintf(stderr,"Sketch is for: 0x%08x '%s'\n", p,b1);
 					conn_close(conn);
 					close(fin);
 					return -1;

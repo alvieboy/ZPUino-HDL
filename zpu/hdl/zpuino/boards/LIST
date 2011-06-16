@@ -4,7 +4,7 @@ Current board listing
 +------------+---------------+----------+-------------------------------------+
 | 0xA4010F00 | GF PapilioOne | S3E500   | 32Kb                                |
 | 0xA4020E00 | CF PapilioOne | S3E250   | 16Kb                                |
-| 0xA4020E00 | CF PapilioOne | S3E500   | 16Kb + 8 bit HQVGA                  |
+| 0xA4010E01 | CF PapilioOne | S3E500   | 16Kb + 8 bit HQVGA                  |
 | 0x83010F00 | S3ESK         | S3E500   | 32Kb                                |
 | 0x83010E01 | S3ESK         | S3E500   | 16Kb + 8 bit HQVGA                  |
 

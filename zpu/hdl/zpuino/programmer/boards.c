@@ -23,6 +23,6 @@ const char*getBoardById(uint32_t id)
 			return b->name;
 		b++;
 	}
-	return NULL;
+	return "Unknown board";
 }
 
