@@ -36,6 +36,8 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+
+#define O_BINARY 0
 #endif
 
 #define SKETCHSIGNATURE 0x310AFADE
@@ -581,7 +583,7 @@ int main(int argc, char **argv)
 
 		// Get file
 		if (binfile) {
-			int fin = open(binfile,O_RDONLY);
+			int fin = open(binfile,O_RDONLY|O_BINARY);
 			if (fin<0) {
 				perror("Cannot open input file");
 				return -1;
@@ -589,12 +591,12 @@ int main(int argc, char **argv)
 
 			int ein=-1;
 			if (extradata) {
-				ein = open(extradata,O_RDONLY);
+				ein = open(extradata,O_RDONLY|O_BINARY);
 				if (ein<0) {
 					perror("Cannot open extra input file");
 					return -1;
 				}
-				fprintf(stderr,"Loaded extra data file\n");
+				//fprintf(stderr,"Loaded extra data file\n");
 			}
 
 			// STAT
@@ -658,10 +660,10 @@ int main(int argc, char **argv)
 			read(fin,bufp,st.st_size);
 			close(fin);
 			if (ein>0) {
-				fprintf(stderr,"Loading extra %d bytes at 0x%08x\n",
+				/*fprintf(stderr,"Loading extra %d bytes at 0x%08x\n",
 						est.st_size,
 						bufp+st.st_size);
-
+                  */
 				read(ein,bufp+st.st_size, est.st_size);
 			}
 
