@@ -64,7 +64,7 @@ void __attribute__((noreturn)) spi_copy()
 
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
-	ivector = (void (*)(void))0x100c;
+	ivector = (void (*)(void))0x1010;
 
 	bootloaderdata = &bdata;
 

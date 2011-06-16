@@ -243,7 +243,7 @@ void __attribute__((noreturn)) spi_copy()
 
 extern "C" void __attribute__((noreturn)) start()
 {
-	ivector = (void (*)(void))0x100C;
+	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
 	__asm__("im %0\n"
 			"popsp\n"
