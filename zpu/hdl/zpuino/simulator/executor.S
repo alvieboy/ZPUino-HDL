@@ -6,6 +6,8 @@
 	
         .globl execute
 
+#define MAXADDRBITINCIO $27
+        
 execute:
 	pusha /* Save everything */
         std
@@ -184,7 +186,7 @@ zpu_store:
         addl $4, %esi
         movl _memory(%esi), %ecx //value
         addl $4, %esi
-        bt $15, %ebx
+        bt MAXADDRBITINCIO, %ebx
         
         jc store_external
         movl %ecx, _memory(%ebx)
@@ -195,7 +197,15 @@ zpu_store:
 
 store_external:
         bswap %ecx
-        mov io_write_table-32768(%ebx), %eax
+        //mov io_write_table-32768(%ebx), %eax
+
+	movl %ebx, %eax
+        // Shift/And to get proper IO 
+        shrl $21, %eax
+        andl $0x3c, %eax
+	mov io_write_table(%eax), %eax
+
+        movl %edi, _upc
         push %edx
         push %ecx
 	push %ebx
@@ -208,7 +218,7 @@ store_external:
         jmp .opcode_return
 	
 zpu_load:
-        bt $15, %ebx
+        bt MAXADDRBITINCIO, %ebx
         jc load_external
 	movl _memory(%ebx), %ebx
         bswap %ebx
@@ -216,7 +226,11 @@ zpu_load:
         jmp .opcode_return
 
 load_external:
-	mov io_read_table-32768(%ebx), %eax
+	movl %ebx, %eax
+        // Shift/And to get proper IO 
+        shrl $21, %eax
+        andl $0x3c, %eax
+	mov io_read_table(%eax), %eax
         push %edx
         push %ebx
         call *%eax
@@ -281,69 +295,69 @@ zpu_addsp15:
         jmp .opcode_return
 .endm
 
-zpu_emulate0:
+zpu_emulate0:            // 32 Reset
 	emulateX 0
-zpu_emulate1:
+zpu_emulate1:            // 33 Interrupt
 	emulateX 1
-zpu_emulate2:
+zpu_emulate2:            // 34 LoadH
 	emulateX 2
-zpu_emulate3:
+zpu_emulate3:            // 35 StoreH
 	emulateX 3
-zpu_emulate4:
-	emulateX 4
-zpu_emulate5:
+zpu_emulate4:            // 36 Lessthan
+	emulateX 4             
+zpu_emulate5:            // 37 Lessthanorequal
 	emulateX 5
-zpu_emulate6:
+zpu_emulate6:            // 38 Ulessthan
 	emulateX 6
-zpu_emulate7:
+zpu_emulate7:            // 39 Ulessthanorequal
 	emulateX 7
-zpu_emulate8:
+zpu_emulate8:            // 40 Swap (unused)
 	emulateX 8
-zpu_emulate9:
+zpu_emulate9:            // 41 Mult
 	emulateX 9
-zpu_emulate10:
+zpu_emulate10:           // 42 Lshiftright
 	emulateX 10
-zpu_emulate11:
+zpu_emulate11:           // 43 Ashiftleft
 	emulateX 11
-zpu_emulate12:
+zpu_emulate12:           // 44 Ashiftright
 	emulateX 12
-zpu_emulate13:
+zpu_emulate13:           // 45 Call
 	emulateX 13
-zpu_emulate14:
+zpu_emulate14:           // 46 Eq
 	emulateX 14
-zpu_emulate15:
+zpu_emulate15:           // 47 Neq
 	emulateX 15
-zpu_emulate16:
+zpu_emulate16:           // 48 Neg
 	emulateX 16
-zpu_emulate17:
+zpu_emulate17:           // 49 Sub
 	emulateX 17
-zpu_emulate18:
+zpu_emulate18:           // 50 Xor
 	emulateX 18
-zpu_emulate19:
+zpu_emulate19:           // 51 Loadb
 	emulateX 19
-zpu_emulate20:
+zpu_emulate20:           // 52 Storeb
 	emulateX 20
-zpu_emulate21:
+zpu_emulate21:           // 53 Div
 	emulateX 21
-zpu_emulate22:
+zpu_emulate22:           // 54 Mod
 	emulateX 22
-zpu_emulate23:
+zpu_emulate23:           // 55 Eqbranch
 	emulateX 23
-zpu_emulate24:
+zpu_emulate24:           // 56 Neqbranch
 	emulateX 24
-zpu_emulate25:
+zpu_emulate25:           // 57 Poppcrel
 	emulateX 25
-zpu_emulate26:
+zpu_emulate26:           // 58 Config
 	emulateX 26
-zpu_emulate27:
+zpu_emulate27:           // 59 Pushpc
 	emulateX 27
-zpu_emulate28:
+zpu_emulate28:           // 60 Syscall
 	emulateX 28
-zpu_emulate29:
+zpu_emulate29:           // 61 Pushspadd
 	emulateX 29
-zpu_emulate30:
+zpu_emulate30:           // 62 Halfmult
 	emulateX 30
-zpu_emulate31:
+zpu_emulate31:           // 63 Callpcrel
 	emulateX 31
         
 zpu_popsp:

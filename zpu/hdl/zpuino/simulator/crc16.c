@@ -18,6 +18,10 @@ void crc16_update(uint8_t data)
 	}
 }
 
+void crc16_reset(unsigned int value)
+{
+	crc = value;
+}
 unsigned int crc16_read_data(unsigned int address)
 {
 //	printf("CRC: read %04x\n",crc);

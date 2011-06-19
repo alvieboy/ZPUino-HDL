@@ -20,6 +20,10 @@ extern int do_interrupt;
 
 #define BIT(x) (1<<x)
 
+extern void zpudebug(const char *fmt,...);
+
+extern void request_interrupt(int line);
+
 static unsigned int ctrl;
 
 void timer_init()
@@ -40,9 +44,10 @@ void timer_tick()
 				//printf("Timer match %04x\n",timer_cnt);
 
 				if (ctrl & BIT(TCTLIEN) ) {
-					//printf("# Interrupting\n");
+				  //  printf("# Interrupting\n");
 					ctrl |= BIT(TCTLIF);
-					do_interrupt=1;
+					//do_interrupt=1;
+					request_interrupt(0);
 				}
 
 				if (ctrl & BIT(TCTLCCM)) {
@@ -81,18 +86,18 @@ unsigned int timer_read_cmp( unsigned int address )
 
 void timer_write( unsigned int address, unsigned int value)
 {
-	//printf("Timer write, 0x%08x = 0x%08x\n",address,value);
+	//zpudebug("Timer write, 0x%08x = 0x%08x\n",address,value);
 
-	switch(address& 0xF) {
+	switch(address & 0xF) {
 	case 0:
 		ctrl = value;
-		/*
+       /*
 		 printf("Timer bits: EN %d CCM %d DIR %d IEN %d\n",
 			   !!(ctrl & BIT(TCTLENA)),
 			   !!(ctrl & BIT(TCTLCCM)),
 			   !!(ctrl & BIT(TCTLDIR)),
 			   !!(ctrl & BIT(TCTLIEN)));
-               */
+        */
 		switch (bit_range(ctrl,6,4)) {
 		case 0:
 			timer_prescaler=0;
@@ -125,12 +130,12 @@ void timer_write( unsigned int address, unsigned int value)
 		break;
 	case 4:
 		// Counter
-		printf("# Timer: set counter to %04x\n",value);
+		//printf("# Timer: set counter to %04x\n",value);
 		timer_cnt = value & 0xffff;
 		break;
 	case 8:
 		// Compare
-		printf("Timer: set compare to %04x\n",value);
+		//printf("Timer: set compare to %04x\n",value);
 		timer_match = value & 0xffff;
 		break;
 	case 12:
