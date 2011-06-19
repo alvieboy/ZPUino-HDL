@@ -165,12 +165,12 @@ begin
       tx => open
   );
 
-  rxs: uart_pty_tx
-   port map(
-      clk => w_clk,
-      rst => w_rst,
-      tx  => rxsim
-   );
+  --rxs: uart_pty_tx
+  -- -port map(
+  --    clk => w_clk,
+  --   rst => w_rst,
+--    tx  => rxsim
+   --);
 
   -- These values were taken from post-P&R timing analysis
 
