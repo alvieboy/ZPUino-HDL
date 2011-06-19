@@ -216,7 +216,7 @@ begin
     );
   
 
-  fifo_rd<='1' when wb_adr_i(2)='0' and (wb_cyc_i='1' and wb_stb_i='1') else '0';
+  fifo_rd<='1' when wb_adr_i(2)='0' and (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='0') else '0';
 
   process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
   begin
