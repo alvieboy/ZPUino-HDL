@@ -67,7 +67,7 @@ package zpuino_config is
   constant zpuino_pps_enabled: boolean := true;
 
   -- Internal SPI ADC
-  constant zpuino_adc_enabled: boolean := true;
+  constant zpuino_adc_enabled: boolean := false;
 
   constant zpuino_number_io_select_bits: integer := 4;
 
