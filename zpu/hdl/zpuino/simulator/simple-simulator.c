@@ -169,7 +169,7 @@ unsigned int io_read_dummy(unsigned int address)
 {
 	printf("Invalid IO read, address 0x%08x\n",address);
 	printf("Slot: %d\n", (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
-	byebye();
+	//byebye();
 	return 0;
 }
 
@@ -177,7 +177,7 @@ void io_write_dummy(unsigned int address,unsigned int val)
 {
 	printf("Invalid IO write, address 0x%08x = 0x%08x\n",address,val);
 	printf("Slot: %d\n", (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
-	byebye();
+	//byebye();
 }
 
 extern void timer_tick();
