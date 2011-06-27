@@ -186,7 +186,8 @@ int socket_initialize()
 		abort();
 	}
 	printf("Serial listening on %d\n",tcpport);
-	printf("Waiting for connection.\n");
+	printf("Waiting for TCP connection. Simulation is halted until you connect.\n");
+	printf("Try 'telnet localhost %d' for a connection.\n",tcpport);
 
 	listen(mastersockfd,1);
 	if ((fd=accept(mastersockfd,(struct sockaddr*)&clientsock,&clientsocksize))<0){
@@ -201,11 +202,13 @@ int socket_initialize()
 
 int uart_init(int argc, char **argv)
 {
-    return socket_initialize();
+	lowmark=highmark=0;
+	return socket_initialize();
+
 	/*
 	int r;
 	cfmakeraw(&t);
-	lowmark=highmark=0;
+	
 
 	r =  openpty(&master,&slave,name,&t,NULL);
 	if (r<0) {

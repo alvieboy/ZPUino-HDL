@@ -369,7 +369,7 @@ int spi_post_init()
 
 	gpioclass = gpiodev->class;
 
-    gpioclass->add_pin_notify( spi_select_pin, &spi_select_pin_changed, NULL );
+	gpioclass->add_pin_notify( spi_select_pin, &spi_select_pin_changed, NULL );
 
 	return 0;
 }
@@ -383,5 +383,5 @@ static zpuino_device_t dev = {
 };
 
 zpuino_device_t *get_device() {
-    return &dev;
+	return &dev;
 }
