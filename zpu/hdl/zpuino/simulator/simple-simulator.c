@@ -353,7 +353,7 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 	free(rp);
 
 	if (NULL==dl) {
-		fprintf(stderr,"Cannot dlopen: %s\n",dlerror());
+		//fprintf(stderr,"Cannot dlopen: %s\n",dlerror());
 		return -1;
 	}
 
@@ -393,6 +393,8 @@ int load_device(int slot, const char *name, int argc, char **argv)
 
 	if (try_load(slot,name,ZPUINO_LIBDIR,argc,argv)==0)
 		return 0;
+
+	fprintf(stderr,"SIMULATOR: cannot load device for '%s'\n", name);
 
 	return -1;
 }
