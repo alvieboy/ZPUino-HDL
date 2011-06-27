@@ -1,5 +1,6 @@
 #include "zputypes.h"
 #include <stdio.h>
+#include "zpuinointerface.h"
 
 static unsigned short timer_cnt;
 static unsigned short timer_match;
@@ -22,8 +23,6 @@ extern int do_interrupt;
 
 extern void zpudebug(const char *fmt,...);
 
-extern void request_interrupt(int line);
-
 static unsigned int ctrl;
 
 void timer_init()
@@ -35,37 +34,38 @@ void timer_init()
 	timer_prescaler=1;
 }
 
-void timer_tick()
+void timer_tick(unsigned delta)
 {
 	if (likely(ctrl & BIT(TCTLENA) )) {
-		if (unlikely(timer_prescaleCount==0)) {
+		while (delta--) {
+			if (unlikely(timer_prescaleCount==0)) {
 
-			if (unlikely(timer_cnt==timer_match)) {
-				//printf("Timer match %04x\n",timer_cnt);
+				if (unlikely(timer_cnt>=timer_match)) {
+					//printf("Timer match %04x\n",timer_cnt);
 
-				if (ctrl & BIT(TCTLIEN) ) {
-				  //  printf("# Interrupting\n");
-					ctrl |= BIT(TCTLIF);
-					//do_interrupt=1;
-					request_interrupt(0);
+					if (ctrl & BIT(TCTLIEN) ) {
+						//  printf("# Interrupting\n");
+						ctrl |= BIT(TCTLIF);
+						//do_interrupt=1;
+						zpuino_request_interrupt(0);
+					}
+
+					if (ctrl & BIT(TCTLCCM)) {
+						//printf("Timer clear\n");
+						timer_cnt=0;
+						return;
+					}
 				}
 
-				if (ctrl & BIT(TCTLCCM)) {
-					//printf("Timer clear\n");
-					timer_cnt=0;
-					return;
-				}
+				if (likely(ctrl & BIT(TCTLDIR)))
+					timer_cnt++;
+				else
+					timer_cnt--;
+				timer_prescaleCount = timer_prescaler;
 			}
-
-			if (likely(ctrl & BIT(TCTLDIR)))
-				timer_cnt++;
-			else
-				timer_cnt--;
-
-			timer_prescaleCount = timer_prescaler;
-		}
-		if (likely(timer_prescaleCount>0)) {
-			timer_prescaleCount--;
+			if (likely(timer_prescaleCount>0)) {
+				timer_prescaleCount--;
+			}
 		}
 	}
 }
@@ -142,4 +142,51 @@ void timer_write( unsigned int address, unsigned int value)
 		// Compare
 		break;
 	}
+}
+
+unsigned timer_read_tsc(unsigned address)
+{
+    return zpuino_get_tick_count();
+}
+
+unsigned timers_io_read_handler(unsigned address)
+{
+	MAPREGR(0,timer_read_ctrl);
+	MAPREGR(1,timer_read_cnt);
+	MAPREGR(2,timer_read_cmp);
+    MAPREGR(3,timer_read_tsc);
+	ERRORREG();
+
+	return 0;
+}
+
+void timers_io_write_handler(unsigned address, unsigned value)
+{
+	MAPREGW(0,timer_write);
+	MAPREGW(1,timer_write);
+	MAPREGW(2,timer_write);
+	MAPREGW(3,timer_write);
+	ERRORREG();
+}
+
+int initialize_device(int argc, char **argv)
+{
+	zpuino_request_tick( &timer_tick );
+	/*
+	zpuino_io_set_read_func( slot, &timers_io_read_handler );
+	zpuino_io_set_write_func( slot, &timers_io_write_handler );
+	*/
+	return 0;
+}
+
+static zpuino_device_t dev = {
+    .name = "timer",
+	.init = initialize_device,
+	.read = timers_io_read_handler,
+	.write = timers_io_write_handler,
+	.post_init = NULL
+};
+
+zpuino_device_t *get_device() {
+    return &dev;
 }

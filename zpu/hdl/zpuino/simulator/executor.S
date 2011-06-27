@@ -27,18 +27,10 @@ execute:
 
 .cannot_halt:
 	push %edx
-	/* Fetch stage delay*/
-	call tick
-	incl count
-       
-	/* Fetch next stage delay*/
-	call tick
-	incl count
-       
-	/* Decode stage */
-	call tick
-	incl count
-        	
+	/* stage delay*/
+	pushl $3
+        call tick
+	add $4, %esp
 	pop %edx
        
        /* Check interrupt */
