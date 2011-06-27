@@ -57,29 +57,26 @@ void zpuino_io_post_init()
 
 void zpuino_io_set_read_func(unsigned int index, io_read_func_t f)
 {
-	printf("# READ Register idx %d address %08x\n", index, (index<<2) + IOBASE);
+	//printf("# READ Register idx %d address %08x\n", index, (index<<2) + IOBASE);
 	io_read_table[index] = f;
 }
 void zpuino_io_set_write_func(unsigned int index, io_write_func_t f)
 {
-	printf("# WRITE Register idx %d address %08x\n", index, (index<<2) + IOBASE);
+	//printf("# WRITE Register idx %d address %08x\n", index, (index<<2) + IOBASE);
 	io_write_table[index] = f;
 }
 
 
 unsigned int zpuino_io_read_dummy(unsigned int address)
 {
-	printf("Invalid IO read, address 0x%08x\n",address);
-	printf("Slot: %d\n", (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
+	fprintf(stderr,"ERROR: Invalid IO read, address 0x%08x (slot %d)\n",address,(address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
 	//byebye();
 	return 0;
 }
 
 void zpuino_io_write_dummy(unsigned int address,unsigned int val)
 {
-	printf("Invalid IO write, address 0x%08x = 0x%08x\n",address,val);
-	printf("Slot: %d\n", (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
-	//byebye();
+	printf("ERROR: Invalid IO write, address 0x%08x = 0x%08x (slot %d)\n",address,val, (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
 }
 
 void sign(int s)

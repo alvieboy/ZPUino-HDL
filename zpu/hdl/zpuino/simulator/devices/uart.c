@@ -125,7 +125,7 @@ void uart_write_ctrl(unsigned int address,unsigned int val)
 void uart_write_data(unsigned int address,unsigned int val)
 {
 	unsigned char c = val & 0xff;
-	printf("UART TX: %02x\n",c);
+//	printf("UART TX: %02x\n",c);
 	if (programmer_fd>0)
 		write(programmer_fd, &c, 1);
 	else
@@ -150,7 +150,7 @@ int uart_incoming_data(short revents)
 		pthread_mutex_lock(&fifo_lock);
 		while (r--) {
 			fifodata[highmark]=buf[i];
-			fprintf(stderr,"UART RX: %02x\n", buf[i]);
+			//fprintf(stderr,"UART RX: %02x\n", buf[i]);
 			i++;
 			highmark++;
 			if (highmark>=FIFO_SIZE)
