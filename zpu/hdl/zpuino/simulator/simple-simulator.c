@@ -345,7 +345,7 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 	zpuino_device_t* (*getdevice)();
     zpuino_device_t*dev;
 
-	asprintf(&rp,"%s/.libs/libzpuinodevice_%s.so", path, name);
+	asprintf(&rp,"%s/libzpuinodevice_%s.so", path, name);
 
 	dl = dlopen(rp,RTLD_NOW);
 	free(rp);
@@ -386,8 +386,12 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 
 int load_device(int slot, const char *name, int argc, char **argv)
 {
-	if (try_load(slot,name,"devices",argc,argv)==0)
+	if (try_load(slot,name,"devices/.libs/",argc,argv)==0)
 		return 0;
+
+	if (try_load(slot,name,ZPUINO_LIBDIR,argc,argv)==0)
+		return 0;
+
 	return -1;
 }
 

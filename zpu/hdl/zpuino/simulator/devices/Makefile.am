@@ -1,3 +1,5 @@
+libdir=@zpuino_libdir@
+
 lib_LTLIBRARIES=libzpuinodevice_timer.la \
 libzpuinodevice_spi.la \
 libzpuinodevice_gpio.la \

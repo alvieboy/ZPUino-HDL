@@ -12,7 +12,10 @@ PKG_CHECK_MODULES(glib, glib-2.0);
 PKG_CHECK_MODULES(gobject, gobject-2.0);
 PKG_CHECK_MODULES(vte, vte);
 
-CFLAGS="$CFLAGS -O6 -g -funroll-loops -fomit-frame-pointer -mtune=core2"
+zpuino_libdir=$libdir/zpuino-simulator
+AC_SUBST(zpuino_libdir)
+
+CFLAGS="$CFLAGS -O6 -g -funroll-loops -fomit-frame-pointer -mtune=core2 -DZPUINO_LIBDIR=\\\"$zpuino_libdir\\\""
 LDFLAGS="$LDFLAGS"
 
 AC_OUTPUT([Makefile devices/Makefile])

@@ -7,7 +7,6 @@ static unsigned short timer_match;
 static unsigned int timer_prescaleCount;
 
 static unsigned int timer_prescaler;
-extern int do_interrupt;
 
 #define TCTLENA 0 /* Timer Enable */
 #define TCTLCCM 1 /* Clear on Compare Match */
@@ -172,10 +171,6 @@ void timers_io_write_handler(unsigned address, unsigned value)
 int initialize_device(int argc, char **argv)
 {
 	zpuino_request_tick( &timer_tick );
-	/*
-	zpuino_io_set_read_func( slot, &timers_io_read_handler );
-	zpuino_io_set_write_func( slot, &timers_io_write_handler );
-	*/
 	return 0;
 }
 
@@ -188,5 +183,5 @@ static zpuino_device_t dev = {
 };
 
 zpuino_device_t *get_device() {
-    return &dev;
+	return &dev;
 }
