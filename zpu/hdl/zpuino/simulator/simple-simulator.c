@@ -6,7 +6,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "uart.h"
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "io.h"
