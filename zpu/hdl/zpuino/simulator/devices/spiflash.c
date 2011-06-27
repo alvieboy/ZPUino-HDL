@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include "zpuinointerface.h"
 #include "gpio.h"
+#include <errno.h>
 
 typedef enum {
 	COMMAND,
@@ -50,7 +51,8 @@ int spiflash_mapbin(const char *name)
 
 	mapfd = open(name,O_RDWR);
 	if (mapfd<0) {
-		perror("open");
+		fprintf(stderr,"SPI: cannot open '%s': %s\n",
+				name, strerror(errno));
 		return -1;
 	}
 	if (fstat(mapfd,&st)<0) {
