@@ -1,0 +1,19 @@
+AC_INIT(simple-simulator.c)
+
+AM_INIT_AUTOMAKE(zpuinosimulator,0.1)
+AC_PROG_CXX
+
+AC_PROG_LIBTOOL
+
+AC_PROG_CC
+AM_PROG_AS
+
+PKG_CHECK_MODULES(glib, glib-2.0);
+PKG_CHECK_MODULES(gobject, gobject-2.0);
+PKG_CHECK_MODULES(vte, vte);
+
+CFLAGS="$CFLAGS -O6 -g -funroll-loops -fomit-frame-pointer -mtune=core2"
+LDFLAGS="$LDFLAGS"
+
+AC_OUTPUT([Makefile devices/Makefile])
+
