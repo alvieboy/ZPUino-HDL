@@ -1,0 +1,12 @@
+# Device map for ZPUino
+
+# Format is:
+# slot,devicename[,param1][,param2]...[,paramN]
+# parameter is key=value
+
+0,spi,binfile=spi.bin
+1,uart
+2,gpio
+3,timer
+4,intr
+7,crc16
