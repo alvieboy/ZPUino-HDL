@@ -284,7 +284,6 @@ int main(int argc,char **argv)
 	}
 
 	poll_init();
-	setup_io();
 
 	zpuino_interface_init();
 
