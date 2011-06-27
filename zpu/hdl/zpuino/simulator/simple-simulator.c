@@ -272,7 +272,9 @@ void perform_io()
 
 int help()
 {
-	printf("Invalid usage\n");
+	printf("Invalid usage.\n");
+	printf("Please use: zpuinosimulator bootloader.bit\n"
+		   "See also specific device information.\n");
 	return -1;
 }
 
@@ -456,7 +458,7 @@ int main(int argc,char **argv)
 	pthread_attr_t zputhreadattr;
 	void *ret;
 
-	if (argc<3) {
+	if (argc<2) {
 		return help();
 	}
 
