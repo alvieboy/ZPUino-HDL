@@ -24,7 +24,7 @@ unsigned char _memory[MEMSIZE];
 
 unsigned int _upc=0;
 unsigned int do_interrupt=0;
-unsigned int cnt=0;
+//unsigned int cnt=0;
 
 static struct timeval end;
 static struct timeval diff;
@@ -74,10 +74,12 @@ void tick(unsigned int delta)
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
 //	if (pc < 0x40 || pc >=0x400) {
-		printf("0x%04X 0x%02X 0x%08X 0x%08X 0x%08X %d\n", pc,
+		printf("0x%04X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
 			   _memory[pc], sp,
 			   top,
-			   bswap_32(*(unsigned int*)&_memory[sp+4]),cnt);
+			   bswap_32(*(unsigned int*)&_memory[sp+4]),
+			   zpuino_get_tick_count()
+			  );
 		fflush(stdout);
 //	}
 }
@@ -154,7 +156,7 @@ void zpu_reset()
 	_usp=get_initial_stack_location();
 	_upc=0;
 	do_interrupt=0;
-	cnt=0;
+	//cnt=0;
 }
 
 
@@ -166,19 +168,19 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
     zpuino_device_t*dev;
 
 	asprintf(&rp,"%s/libzpuinodevice_%s.so", path, name);
-	fprintf(stderr,"Try loading %s\n", rp);
+	fprintf(stderr,"SIMULATOR: Try loading %s\n", rp);
 
 	dl = dlopen(rp,RTLD_NOW);
 	free(rp);
 
 	if (NULL==dl) {
-		fprintf(stderr,"Cannot dlopen: %s\n",dlerror());
+		fprintf(stderr,"SIMULATOR: Cannot dlopen: %s\n",dlerror());
 		return -1;
 	}
 
 	getdevice = dlsym(dl,"get_device");
 	if (NULL==getdevice) {
-		fprintf(stderr,"Cannot dlsym: %s\n",dlerror());
+		fprintf(stderr,"SIMULATOR: Cannot dlsym: %s\n",dlerror());
 		return -1;
 	}
 
@@ -261,11 +263,10 @@ int load_device_map(const char *file)
 		while ( (tokens[tindex++]=strtok(NULL,",") ) );
 
 		if (tindex<3) {
-			fprintf(stderr,"Invalid line\n");
+			fprintf(stderr,"SIMULATOR: Invalid line in device.map\n");
 			return -1;
 		}
 		// Load
-		fprintf(stderr,"We have %d tokens\n", tindex-1);
 		if (load_device(atoi(tokens[0]), tokens[1], tindex-3, &tokens[2])<0) {
 			return -1;
 		}
@@ -290,7 +291,7 @@ int main(int argc,char **argv)
 	zpuino_interface_init();
 
 	if (load_device_map("device.map")<0) {
-		fprintf(stderr,"Error loading device map\n");
+		fprintf(stderr,"SIMULATOR: Error loading device map\n");
 		return -1;
 	}
 
