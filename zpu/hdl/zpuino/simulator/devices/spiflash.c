@@ -33,6 +33,7 @@ unsigned char *mapped;
 int mapfd;
 size_t mapped_size;
 const char *binfile=NULL;
+const char *extrafile=NULL;
 unsigned spi_select_pin = 40;
 
 #define FLASH_SIZE_BYTES ((1*1024*1024)/8)
@@ -44,7 +45,7 @@ unsigned spi_select_pin = 40;
 #define SECTOR_ERASE 0xD8
 #define PAGE_PROGRAM 0x02
 
-int spiflash_mapbin(const char *name)
+int spiflash_mapbin(const char *name, const char *extra)
 {
 	struct stat st;
 	unsigned char sig[8];
@@ -71,6 +72,7 @@ int spiflash_mapbin(const char *name)
 
 	if (memcmp(sig,"ZPUFLASH",8)!=0) {
 		unsigned char c;
+		unsigned char *end;
 
 		lseek(mapfd,0,SEEK_SET);
 		fprintf(stderr,"File %s is not a flash file, emulating in memory\n", name);
@@ -104,15 +106,31 @@ int spiflash_mapbin(const char *name)
 			*d++=c;
 		}
 
+		end = d;
+
 		d = (unsigned char*)mapped;
 		d+=2;
 
 		*((unsigned short*)d) = htons(crc16_read_data(0x0));
 		printf("Wrote sketch file (0x%04x words, %04x CRC)\n",
-				ntohs( *((unsigned short*)(&mapped[0])) ),
-				ntohs( *((unsigned short*)(&mapped[2])))
+			   ntohs( *((unsigned short*)(&mapped[0])) ),
+			   ntohs( *((unsigned short*)(&mapped[2])))
+			  );
 
-			   );
+		if (extrafile) {
+			/* Append extra file */
+			int efd = open(extrafile,O_RDONLY);
+			if (efd<0) {
+				perror("open");
+				return -1;
+			}
+			fprintf(stderr,"SPI: Reading extra data to address %08x\n", (end-mapped));
+			int r = read(efd, end, FLASH_SIZE_BYTES - (end-mapped));
+			fprintf(stderr,"SPI: read %d bytes\n",r);
+			close(efd);
+		}
+
+
 	} else {
 
 
@@ -156,7 +174,7 @@ void spi_execute(unsigned int v)
 
 	switch(cmd) {
 	case READ_FAST:
-	//	fprintf(stderr,"Reading address 0x%08x\n",savereg);
+		//fprintf(stderr,"Reading address 0x%08x\n",savereg);
 		if (savereg>mapped_size) {
 			fprintf(stderr,"SPI: out of bounds %08x (mapped %08x)\n", savereg, mapped_size);
 			shiftout(0);
@@ -187,7 +205,7 @@ void spiflash_reset()
 void spiflash_select()
 {
 	if (!selected) {
-		printf("SPI select\n");
+		//printf("SPI select\n");
 		state=COMMAND;
 	}
 	selected=1;
@@ -195,8 +213,8 @@ void spiflash_select()
 
 void spiflash_deselect()
 {
-	if (selected)
-		printf("SPI deselected\n");
+/*	if (selected)
+		printf("SPI deselected\n");*/
 	state = COMMAND;
 	selected=0;
 }
@@ -292,7 +310,7 @@ unsigned int spi_read_ctrl(unsigned int address)
 unsigned int spi_read_data(unsigned int address)
 {
 	unsigned int r = spiflash_read();
-	//fprintf(stderr,"SPI read, returning 0x%08x\n", r);
+  //  fprintf(stderr,"SPI read, returning 0x%08x\n", r);
 	return r;
 }
 
@@ -328,32 +346,39 @@ void spi_io_write_handler(unsigned address, unsigned value)
 	ERRORREG();
 }
 
+static zpuino_device_args_t args[] =
+{
+	{ "binfile", ARG_STRING, &binfile },
+    { "extrafile", ARG_STRING, &extrafile },
+    ENDARGS
+};
+
 int initialize_device(int argc, char **argv)
 {
-	fprintf(stderr,"SPI Init, %d\n",argc);
-	int i;
-	for (i=0;i<argc;i++) {
-		char *k = argv[i];
-		char *v = makekeyvalue(k);
-		if (strcmp(k,"binfile")==0) {
-			binfile=v;
-		}
-	}
+	zpuino_device_parse_args(args,argc,argv);
 
 	if (binfile) {
-		if (spiflash_mapbin(binfile)<0) {
+		if (spiflash_mapbin(binfile, extrafile)<0) {
 			return -1;
 		}
 	} else {
 		fprintf(stderr,"SPI: No binfile specified.!");
 		return -1;
 	}
+
+
+
 	return 0;
 }
 
 void spi_select_pin_changed(unsigned pin, int value, void *data)
 {
-	fprintf(stderr,"SPI select %d\n",value);
+//	fprintf(stderr,"SPI select %d\n",value);
+	if (value==0) {
+		spiflash_deselect();
+	} else {
+		spiflash_select();
+	}
 }
 
 int spi_post_init()
