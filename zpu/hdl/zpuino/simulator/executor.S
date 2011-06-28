@@ -3,6 +3,8 @@
 	Registers EAX, ECX, and EDX are available for use in the function.
         C calling standard
 */
+
+//#define TRACE
 	
         .globl execute
 
@@ -54,6 +56,7 @@ execute:
 	movl dispatchtable(,%eax,4), %ecx /* ecx: routine to call */
 	movl %eax, %edx  /* Save opcode */
 	jmp *%ecx
+.opcode_return_and_load:
 
 .opcode_return:
 	andl $128, %edx
@@ -300,7 +303,17 @@ zpu_emulate4:            // 36 Lessthan
 zpu_emulate5:            // 37 Lessthanorequal
 	emulateX 5
 zpu_emulate6:            // 38 Ulessthan
-	emulateX 6
+	// emulateX 6
+        movl _memory+4(%esi), %eax
+	addl $4, %esi
+        bswap %eax
+        incl %edi
+        cmpl %eax, %ebx
+        movl $0, %ebx
+	jae .opcode_return
+        incl %ebx
+	jmp .opcode_return
+
 zpu_emulate7:            // 39 Ulessthanorequal
 	emulateX 7
 zpu_emulate8:            // 40 Swap (unused)
@@ -316,7 +329,17 @@ zpu_emulate12:           // 44 Ashiftright
 zpu_emulate13:           // 45 Call
 	emulateX 13
 zpu_emulate14:           // 46 Eq
-	emulateX 14
+	//emulateX 14
+        movl _memory+4(%esi), %eax
+	addl $4, %esi
+        bswap %eax
+        incl %edi
+        cmpl %eax, %ebx
+        movl $0, %ebx
+	jne .opcode_return
+        incl %ebx
+	jmp .opcode_return
+
 zpu_emulate15:           // 47 Neq
 	emulateX 15
 zpu_emulate16:           // 48 Neg
@@ -336,7 +359,24 @@ zpu_emulate22:           // 54 Mod
 zpu_emulate23:           // 55 Eqbranch
 	emulateX 23
 zpu_emulate24:           // 56 Neqbranch
-	emulateX 24
+	// emulateX 24
+        // PC is in %ebx
+        
+	movl _memory+4(%esi), %eax
+        addl $8, %esi
+        test %eax, %eax
+        jz .no_jump
+	add %ebx, %edi
+        movl _memory(%esi), %ebx
+        bswap %ebx
+        jmp .opcode_return
+.no_jump:
+	incl %edi
+        movl _memory(%esi), %ebx
+        bswap %ebx
+
+        jmp .opcode_return
+
 zpu_emulate25:           // 57 Poppcrel
 	emulateX 25
 zpu_emulate26:           // 58 Config
