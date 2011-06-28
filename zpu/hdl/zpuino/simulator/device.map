@@ -4,9 +4,11 @@
 # slot,devicename[,param1][,param2]...[,paramN]
 # parameter is key=value
 
-0,spi,binfile=spi.bin
+0,spi,binfile=vga_color.bin,extrafile=smallfs.dat
 1,uart
 2,gpio
 3,timer
 4,intr
 7,crc16
+9,vga
+10,vgacharram
