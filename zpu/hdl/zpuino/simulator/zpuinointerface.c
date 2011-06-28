@@ -144,3 +144,27 @@ char * makekeyvalue(char *arg)
 	*p++=0;
 	return p;
 }
+
+int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc, char **argv)
+{
+	int i;
+	const zpuino_device_args_t *aptr;
+
+	for (i=0;i<argc;i++) {
+		char *k = argv[i];
+		char *v = makekeyvalue(k);
+		for (aptr=args;aptr->name;aptr++) {
+			if (strcmp(k,aptr->name)==0) {
+				switch (aptr->type) {
+				case ARG_STRING:
+					*((char**)aptr->target) = v;
+					break;
+				default:
+					break;
+				}
+				break;
+			}
+		}
+	}
+
+}

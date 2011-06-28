@@ -14,6 +14,20 @@ typedef struct {
 	void *class; // Class-specific definitions
 } zpuino_device_t;
 
+enum zpuino_arg_type {
+	ARG_STRING,
+	ARG_INTEGER
+};
+
+#define ENDARGS { NULL, ARG_STRING, NULL }
+
+typedef struct {
+	const char *name;
+	enum zpuino_arg_type type;
+	void *target;
+} zpuino_device_args_t;
+
+
 void zpuino_request_interrupt(int line);
 void zpuino_request_tick( tick_func_t func );
 void zpuino_io_set_read_func(unsigned int index, io_read_func_t f);
@@ -23,8 +37,9 @@ zpuino_device_t *zpuino_get_device_by_name(const char *name);
 void zpuino_io_post_init();
 void byebye();
 unsigned zpuino_get_tick_count();
-
 char * makekeyvalue(char *arg);
+
+int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc,char **argv);
 
 #define IOBASE 0x8000000
 #define MAXBITINCIO 27
