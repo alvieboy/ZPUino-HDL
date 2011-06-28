@@ -3,6 +3,9 @@
 #include <poll.h>
 #include <string.h>
 #include <stdio.h>
+
+#if 0
+
 static pthread_mutex_t pollfd_lock = PTHREAD_MUTEX_INITIALIZER;
 
 struct mypolldata {
@@ -74,3 +77,48 @@ void poll_loop()
 	} while (1);
 
 }
+
+#else
+
+#include <glib.h>
+
+static GMainLoop *mainloop;
+ /*
+struct {
+	GIOChannel *channel;
+	int fd;
+}; */
+
+void poll_stop()
+{
+	g_main_loop_quit(mainloop);
+}
+
+gboolean poll_changed(GIOChannel *source,GIOCondition condition,gpointer data)
+{
+	poll_callback_t c = (poll_callback_t)data;
+	c(condition);
+	return TRUE;
+}
+
+int poll_add(int fd, short events, poll_callback_t c)
+{
+	GError *err=NULL;
+	GIOChannel *ch = g_io_channel_unix_new(fd);
+	g_io_channel_set_encoding(ch, NULL, &err);
+	g_io_channel_set_buffered(ch, FALSE);
+	fprintf(stderr,"Add poll %d %d\n",fd, events);
+	guint w = g_io_add_watch( ch, events, &poll_changed, c);
+}
+
+int poll_init()
+{
+	mainloop = g_main_loop_new(g_main_context_default(), TRUE);
+}
+
+void poll_loop()
+{
+	g_main_loop_run(mainloop);
+}
+
+#endif
