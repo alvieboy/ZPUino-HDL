@@ -2,15 +2,21 @@ AC_INIT(simple-simulator.c)
 
 AM_INIT_AUTOMAKE(zpuinosimulator,0.1)
 AC_PROG_CXX
-
+AC_CONFIG_HEADERS(config.h)
 AC_PROG_LIBTOOL
 
 AC_PROG_CC
 AM_PROG_AS
 
-PKG_CHECK_MODULES(glib, glib-2.0);
-PKG_CHECK_MODULES(gobject, gobject-2.0);
-PKG_CHECK_MODULES(vte, vte);
+PKG_CHECK_MODULES(glib, glib-2.0)
+#PKG_CHECK_MODULES(gobject, gobject-2.0)
+#PKG_CHECK_MODULES(gtk, gtk+-2.0)
+#PKG_CHECK_MODULES(cairo, cairo-xlib-xrender,)
+PKG_CHECK_MODULES(sdl, sdl, 
+	AC_DEFINE(HAVE_SDL,,[Define this if you have the SDL library])
+)
+
+PKG_CHECK_MODULES(vte, vte, AC_DEFINE(HAVE_VTE,,[Define this if you have the GTK VTE library]) )
 
 zpuino_libdir=$libdir/zpuino-simulator
 AC_SUBST(zpuino_libdir)
