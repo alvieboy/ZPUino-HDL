@@ -203,8 +203,6 @@ int socket_initialize()
 int uart_init(int argc, char **argv)
 {
 	lowmark=highmark=0;
-	return socket_initialize();
-
 	/*
 	int r;
 	cfmakeraw(&t);
@@ -223,6 +221,11 @@ int uart_init(int argc, char **argv)
 
 
 	return 0;
+}
+
+int uart_post_init()
+{
+	return socket_initialize();
 }
 
 char *uart_get_slave_name()
@@ -251,7 +254,7 @@ static zpuino_device_t dev = {
 	.init = uart_init,
 	.read = uart_io_read_handler,
 	.write = uart_io_write_handler,
-	.post_init = NULL,
+	.post_init = uart_post_init,
 	.class = NULL
 };
 
