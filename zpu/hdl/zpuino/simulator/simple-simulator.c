@@ -166,12 +166,13 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
     zpuino_device_t*dev;
 
 	asprintf(&rp,"%s/libzpuinodevice_%s.so", path, name);
+	fprintf(stderr,"Try loading %s\n", rp);
 
 	dl = dlopen(rp,RTLD_NOW);
 	free(rp);
 
 	if (NULL==dl) {
-		//fprintf(stderr,"Cannot dlopen: %s\n",dlerror());
+		fprintf(stderr,"Cannot dlopen: %s\n",dlerror());
 		return -1;
 	}
 
@@ -249,6 +250,8 @@ int load_device_map(const char *file)
 		// Chomp
 		chomp(line);
 		lptr=line;
+		tindex=0;
+
 		while (*lptr && isspace(*lptr))
 			lptr++;
 		if (!*lptr || *lptr=='#')
@@ -262,7 +265,7 @@ int load_device_map(const char *file)
 			return -1;
 		}
 		// Load
-
+		fprintf(stderr,"We have %d tokens\n", tindex-1);
 		if (load_device(atoi(tokens[0]), tokens[1], tindex-3, &tokens[2])<0) {
 			return -1;
 		}
