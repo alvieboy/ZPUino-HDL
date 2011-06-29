@@ -15,8 +15,8 @@ execute:
         std
 	movl _usp, %esi
 	movl _upc, %edi     /* edi: PC */
-
-	xorl %edx, %edx /* IDIM flag offset */
+        xorl %edx,%edx
+        
         // Preload stack top
 	movl _memory(%esi), %ebx
         bswap %ebx
@@ -66,10 +66,14 @@ execute:
 .do_halt:
 	/* Only go back to "C" if we're not processing IDIM */
         test %edx, %edx
-        je .cannot_halt
+        jnz .cannot_halt
 	/* Go back to "C" */
         bswap %ebx
         movl %ebx, _memory(%esi)
+        
+        movl %esi, _usp
+        movl %edi, _upc
+        
         popa
         movl $0, %eax
         ret
