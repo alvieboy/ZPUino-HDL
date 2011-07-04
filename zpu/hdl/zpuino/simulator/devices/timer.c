@@ -5,7 +5,6 @@
 static unsigned short timer_cnt;
 static unsigned short timer_match;
 static unsigned int timer_prescaleCount;
-
 static unsigned int timer_prescaler;
 
 #define TCTLENA 0 /* Timer Enable */
@@ -21,6 +20,11 @@ static unsigned int timer_prescaler;
 #define BIT(x) (1<<x)
 
 extern void zpudebug(const char *fmt,...);
+
+
+
+
+
 
 static unsigned int ctrl;
 
@@ -62,6 +66,7 @@ void timer_tick(unsigned delta)
 					timer_cnt--;
 				timer_prescaleCount = timer_prescaler;
 			}
+
 			if (likely(timer_prescaleCount>0)) {
 				timer_prescaleCount--;
 			}

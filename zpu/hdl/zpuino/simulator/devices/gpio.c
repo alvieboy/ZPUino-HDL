@@ -33,6 +33,7 @@ int gpio_add_pin_notify(unsigned pin, gpio_notifier_callback_t callback, void*da
 
 	watcher[slot] = g_slist_append( watcher[slot], w);
 	//fprintf(stderr,"GPIO: add watcher to slot %d, pin %d\n", slot,pin);
+	return 0;
 }
 
 void gpio_check_watch(unsigned old_v, unsigned new_v, unsigned slot)
@@ -57,6 +58,20 @@ void gpio_check_watch(unsigned old_v, unsigned new_v, unsigned slot)
 			w->callback(w->pin, !!(w->pinmask & new_v),w->data);
 		}
 	}
+}
+
+void gpio_set_pin(unsigned pin, unsigned value)
+{
+	unsigned index=pin/32;
+	unsigned mask=1<<(pin%32);
+
+	gpio_val[index] &= ~mask;
+
+//	fprintf(stderr,"PIN changed, %d to %d\n", pin, value);
+
+	if (!value)
+		return;
+	gpio_val[index] |= mask;
 }
 
 unsigned int gpio_read(unsigned int address)
@@ -254,7 +269,8 @@ int initialize_device(int argc,char**argv)
 }
 
 static gpio_class_t gpio_class = {
-    .add_pin_notify = &gpio_add_pin_notify
+	.add_pin_notify = &gpio_add_pin_notify,
+	.set_pin = &gpio_set_pin
 };
 
 static zpuino_device_t dev = {

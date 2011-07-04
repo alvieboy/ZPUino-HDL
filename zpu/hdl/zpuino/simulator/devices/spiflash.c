@@ -88,7 +88,7 @@ int spiflash_mapbin(const char *name, const char *extra)
 
 
 		unsigned char *d = (unsigned char*)mapped;
-		fprintf(stderr,"Sketch size: %u\n", st.st_size);
+		fprintf(stderr,"Sketch size: %lu\n", st.st_size);
 		d[0] = st.st_size>>10;
 		d[1] = st.st_size>>2;
 

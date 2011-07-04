@@ -89,6 +89,8 @@ struct {
 	int fd;
 }; */
 
+static GHashTable *polllist;
+
 void poll_stop()
 {
 	g_main_loop_quit(mainloop);
@@ -108,12 +110,42 @@ int poll_add(int fd, short events, poll_callback_t c)
 	g_io_channel_set_encoding(ch, NULL, &err);
 	g_io_channel_set_buffered(ch, FALSE);
 	fprintf(stderr,"Add poll %d %d\n",fd, events);
-	guint w = g_io_add_watch( ch, events, &poll_changed, c);
+	g_io_add_watch( ch, events, &poll_changed, c);
+	g_hash_table_insert(polllist,(gpointer)fd, ch);
+	return 0;
+}
+
+int poll_remove(int fd)
+{
+	GError *err=NULL;
+
+	GIOChannel *ch = g_hash_table_lookup( polllist, (gpointer)fd );
+	if (NULL==ch) {
+		fprintf(stderr,"IO: removing poll FD %d, but I cannot find it\n",fd);
+		return -1;
+	}
+	g_io_channel_shutdown(ch,TRUE,&err);
+	/*g_io_channel_close(ch);
+	g_io_channel_unref(ch);*/
+	g_hash_table_remove( polllist, (gpointer)fd );
+	return 0;
+}
+
+gboolean poll_compare(gconstpointer a, gconstpointer b)
+{
+	return ((int)a) ==((int)b);
+}
+
+guint g_int_hash_direct(gconstpointer a)
+{
+	return g_int_hash(&a);
 }
 
 int poll_init()
 {
 	mainloop = g_main_loop_new(g_main_context_default(), TRUE);
+	polllist = g_hash_table_new(&g_int_hash_direct,&poll_compare);
+	return 0;
 }
 
 void poll_loop()

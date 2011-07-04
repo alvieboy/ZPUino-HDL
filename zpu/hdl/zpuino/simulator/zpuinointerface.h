@@ -1,9 +1,13 @@
 #ifndef __ZPUINOINTERFACE_H__
 #define __ZPUINOINTERFACE_H__
 
+#include "gui.h"
+
 typedef unsigned int (*io_read_func_t)(unsigned int addr);
 typedef void (*io_write_func_t)(unsigned int addr,unsigned int val);
 typedef void (*tick_func_t)(unsigned delta);
+
+extern unsigned zpuinoclock;
 
 typedef struct {
 	const char *name;
@@ -27,7 +31,6 @@ typedef struct {
 	void *target;
 } zpuino_device_args_t;
 
-
 void zpuino_request_interrupt(int line);
 void zpuino_request_tick( tick_func_t func );
 void zpuino_io_set_read_func(unsigned int index, io_read_func_t f);
@@ -37,9 +40,15 @@ zpuino_device_t *zpuino_get_device_by_name(const char *name);
 void zpuino_io_post_init();
 void byebye();
 unsigned zpuino_get_tick_count();
+unsigned zpuino_get_wall_tick_count();
 char * makekeyvalue(char *arg);
 
 int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc,char **argv);
+
+void zpuino_tick(unsigned v);
+void zpuino_clock_start_from_halted(const struct timeval*);
+void zpuino_clock_start();
+void zpuino_io_set_device(int slot, zpuino_device_t*dev);
 
 #define IOBASE 0x8000000
 #define MAXBITINCIO 27

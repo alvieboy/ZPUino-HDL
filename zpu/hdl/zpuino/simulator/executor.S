@@ -9,6 +9,17 @@
         .globl execute
 
 #define MAXADDRBITINCIO $27
+
+.do_tick:
+	push %edx
+	// stage delay
+	pushl _tickgranularity
+        call tick
+	add $4, %esp
+	pop %edx
+        movl _tickgranularity, %eax
+        movl %eax, _currenttickgranularity
+        jmp .do_tick_return
         
 execute:
 	pusha /* Save everything */
@@ -16,6 +27,9 @@ execute:
 	movl _usp, %esi
 	movl _upc, %edi     /* edi: PC */
         xorl %edx,%edx
+
+        movl _tickgranularity, %eax
+        movl %eax, _currenttickgranularity
         
         // Preload stack top
 	movl _memory(%esi), %ebx
@@ -28,13 +42,12 @@ execute:
         jne .do_halt
 
 .cannot_halt:
-	push %edx
-	/* stage delay*/
-	pushl $3
-        call tick
-	add $4, %esp
-	pop %edx
-       
+	// Check granularity
+        movl _currenttickgranularity, %eax
+        decl _currenttickgranularity
+        test %eax, %eax
+        jz .do_tick
+.do_tick_return:
        /* Check interrupt */
 	mov do_interrupt, %eax 
 	test %eax, %eax

@@ -14,11 +14,15 @@
 #include <netinet/in.h>
 #include <string.h>
 
+#include "vte/vte.h"
+GtkWidget *vte=NULL;
+
+
 #define FIFO_SIZE 8192
 
 static char name[PATH_MAX];
 //static int master, slave;
-static struct termios t;
+//static struct termios t;
 
 static unsigned char fifodata[FIFO_SIZE];
 static unsigned int lowmark,highmark;
@@ -29,6 +33,9 @@ static int programmer_fd=-1;
 static int tcpport = 7263;
 struct sockaddr_in sock;
 int mastersockfd;
+int clientsockfd;
+struct sockaddr_in clientsock;
+
 int fd = -1;
 
 /*
@@ -129,28 +136,23 @@ void uart_write_data(unsigned int address,unsigned int val)
 	if (programmer_fd>0)
 		write(programmer_fd, &c, 1);
 	else
-		write(fd,&c,1);
+		//write(fd,&c,1);
+		//write(ptymaster,&c,1);
+		vte_terminal_feed(VTE_TERMINAL(vte),(char*)&c,1);
 }
 
 int uart_incoming_data(short revents)
 {
 	int i;
-	int ifd;
 
-	if (programmer_fd>0)
-		ifd=programmer_fd;
-	else
-		ifd=fd;
 	unsigned char buf[FIFO_SIZE];
-	int r = read(ifd,buf,sizeof(buf));
-
-
+	int r = read(clientsockfd,buf,sizeof(buf));
+	fprintf(stderr,"UART read %d\n",r);
 	if (r>0) {
 		i=0;
 		pthread_mutex_lock(&fifo_lock);
 		while (r--) {
 			fifodata[highmark]=buf[i];
-			//fprintf(stderr,"UART RX: %02x\n", buf[i]);
 			i++;
 			highmark++;
 			if (highmark>=FIFO_SIZE)
@@ -162,17 +164,32 @@ int uart_incoming_data(short revents)
 			}
 		}
 	} else {
-		uart_leave_programmer_mode();
-		return -1;
+		poll_remove(clientsockfd);
+		clientsockfd=-1;
 	}
 	pthread_mutex_unlock(&fifo_lock);
 	return 0;
 }
+
+int uart_incoming_connection(short event)
+{
+	socklen_t clientsocksize=sizeof(struct sockaddr_in);
+	if ((clientsockfd=accept(mastersockfd,(struct sockaddr*)&clientsock,&clientsocksize))<0){
+		perror("accept");
+		abort();
+	}
+
+	fprintf(stderr,"UART incoming connection\n");
+
+	poll_add(clientsockfd, POLL_IN, &uart_incoming_data);
+	return 0;
+}
+
 int socket_initialize()
 {
 	mastersockfd=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	socklen_t clientsocksize=sizeof(struct sockaddr_in);
-	struct sockaddr_in clientsock;
+	clientsockfd=-1;
+
 	int yes=1;
 
 	memset(&sock,0,sizeof(sock));
@@ -186,46 +203,73 @@ int socket_initialize()
 		abort();
 	}
 	printf("Serial listening on %d\n",tcpport);
-	printf("Waiting for TCP connection. Simulation is halted until you connect.\n");
+	/*printf("Waiting for TCP connection. Simulation is halted until you connect.\n");
 	printf("Try 'telnet localhost %d' for a connection.\n",tcpport);
-
+          */
 	listen(mastersockfd,1);
+
+	poll_add(mastersockfd, POLL_IN, &uart_incoming_connection);
+    /*
 	if ((fd=accept(mastersockfd,(struct sockaddr*)&clientsock,&clientsocksize))<0){
 		perror("accept");
 		abort();
 	}
 
 	poll_add(fd, POLL_IN, &uart_incoming_data);
-
+    */
 	return 0;
+}
+
+void vte_uart_data(VteTerminal *vteterminal,
+				   gchar       *text,
+				   guint        size,
+				   gpointer     user_data)
+{
+	int i;
+	if (size>0) {
+		i=0;
+		pthread_mutex_lock(&fifo_lock);
+		while (size--) {
+			fifodata[highmark]=text[i];
+			//fprintf(stderr,"UART RX: %02x\n", text[i]);
+			i++;
+			highmark++;
+			if (highmark>=FIFO_SIZE)
+				highmark=0;
+			if (highmark==lowmark) {
+				printf("UART FIFO overrun\n");
+				pthread_mutex_unlock(&fifo_lock);
+				abort();
+			}
+		}
+	} 
+	pthread_mutex_unlock(&fifo_lock);
 }
 
 int uart_init(int argc, char **argv)
 {
 	lowmark=highmark=0;
-	/*
-	int r;
-	cfmakeraw(&t);
-	
 
-	r =  openpty(&master,&slave,name,&t,NULL);
-	if (r<0) {
-		perror("openpty");
-		return r;
-	}
+	vte = vte_terminal_new();
 
-	poll_add(master, POLL_IN, &uart_incoming_data);
+	gui_append_new_tab("UART",vte);
 
-	printf("UART device is %s\n",name);
-	*/
+	//vte_terminal_set_pty(VTE_TERMINAL(vte), ptyslave);
 
+	g_signal_connect(vte,"commit",(GCallback)&vte_uart_data,NULL);
+
+	//poll_add(ptymaster, POLL_IN, &uart_incoming_data);
+	socket_initialize();
 
 	return 0;
 }
 
 int uart_post_init()
 {
-	return socket_initialize();
+	/*
+	 return socket_initialize();
+	 */
+	return 0;
 }
 
 char *uart_get_slave_name()

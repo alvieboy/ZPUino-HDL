@@ -10,10 +10,26 @@ io_write_func_t io_write_table[1<<(IOSLOT_BITS)];
 zpuino_device_t *io_devices[1<<(IOSLOT_BITS)];
 
 GSList *tick_table = NULL;
-
+unsigned zpuinoclock = 96000000;
 unsigned int count=0; // ZPU ticks
 
 struct timeval start;
+
+unsigned zpuino_get_wall_tick_count()
+{
+
+	struct timeval diff,end;
+	unsigned long long usecs;
+
+	gettimeofday(&end,NULL);
+	timersub(&end,&start,&diff);
+
+	usecs = (unsigned long long)diff.tv_sec * 1000000ULL;
+	usecs += diff.tv_usec;
+
+	return usecs * (zpuinoclock/1000000);
+
+}
 
 unsigned zpuino_get_tick_count()
 {
@@ -23,6 +39,13 @@ unsigned zpuino_get_tick_count()
 void zpuino_clock_start()
 {
 	gettimeofday(&start,NULL);
+}
+
+void zpuino_clock_start_from_halted(const struct timeval*t)
+{
+	/* We need to move back clock: TODO */
+	gettimeofday(&start,NULL);
+
 }
 
 
@@ -82,7 +105,7 @@ void zpuino_io_write_dummy(unsigned int address,unsigned int val)
 void sign(int s)
 {
 	double secs;
-	struct timeval start,diff,end;
+	struct timeval diff,end;
 
 	gettimeofday(&end,NULL);
 	timersub(&end,&start,&diff);
@@ -166,5 +189,5 @@ int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc, char **
 			}
 		}
 	}
-
+	return 0;
 }

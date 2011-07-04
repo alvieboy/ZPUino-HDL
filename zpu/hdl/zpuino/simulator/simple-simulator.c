@@ -21,22 +21,21 @@
 
 unsigned int _usp=MEMSIZE - 8;
 unsigned char _memory[MEMSIZE];
+unsigned _tickgranularity=32;
+unsigned _currenttickgranularity;
 
 unsigned int _upc=0;
 unsigned int do_interrupt=0;
 //unsigned int cnt=0;
 
-static struct timeval end;
-static struct timeval diff;
+static struct timeval halted;
 
-static unsigned int spireg;
-static unsigned int spidataready=0;
-unsigned int request_halt=0; // Set to '1' to halt ZPU
+unsigned int request_halt=1; // Set to '1' to halt ZPU
 static unsigned int do_exit=0;
 
 pthread_cond_t zpu_halted_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t zpu_halted_lock = PTHREAD_MUTEX_INITIALIZER;
-static unsigned int zpu_halted_flag=0;
+static unsigned int zpu_halted_flag;
 
 pthread_cond_t zpu_resume_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t zpu_resume_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -44,8 +43,7 @@ static unsigned int zpu_resume_flag=0;
 
 extern unsigned int execute();
 
-static struct sockaddr_un programmer_sock;
-static struct sockaddr_un programmer_clientsock;
+
 int programmer_sockfd;
 int programmer_client_sockfd;
 int programmer_connected=0;
@@ -93,7 +91,7 @@ void perform_io()
 int help()
 {
 	printf("Invalid usage.\n");
-	printf("Please use: zpuinosimulator bootloader.bit\n"
+	printf("Please use: zpuinosimulator bootloader.bin\n"
 		   "See also specific device information.\n");
 	return -1;
 }
@@ -119,7 +117,7 @@ void *zpu_thread(void*data)
 				return NULL;
 		} else {
 			// We caught a BREAK instruction
-			printf("BREAK instruction\n");
+			printf("BREAK instruction, PC %08x SP %08x\n",_upc,_usp);
 			abort();
 		}
 	} while(1);
@@ -132,9 +130,17 @@ void zpu_halt()
 	pthread_mutex_lock(&zpu_halted_lock);
 	while (!zpu_halted_flag)
 		pthread_cond_wait(&zpu_halted_cond, &zpu_halted_lock);
-	zpu_halted_flag=0;
+
+	// TODO - improve this.
+
+	//zpu_halted_flag=0;
 	request_halt=0;
+
+	gettimeofday(&halted,NULL);
+
 	pthread_mutex_unlock(&zpu_halted_lock);
+
+	gui_notify_zpu_halted();
 }
 
 void zpu_resume()
@@ -143,6 +149,8 @@ void zpu_resume()
 	zpu_resume_flag=1;
 	pthread_mutex_unlock(&zpu_resume_lock);
 	pthread_cond_broadcast(&zpu_resume_cond);
+	zpuino_clock_start_from_halted(&halted);
+	gui_notify_zpu_resumed();
 }
 
 unsigned get_initial_stack_location()
@@ -225,7 +233,7 @@ void chomp(char *l)
 	char *p=l + strlen(l);
 	if (p==l)
 		return;
-	*p--;
+	p--;
 
 	while (p!=l) {
 		if (!isspace(*p))
@@ -277,7 +285,6 @@ int load_device_map(const char *file)
 
 int main(int argc,char **argv)
 {
-	char line[16];
 	pthread_t zputhread;
 	pthread_attr_t zputhreadattr;
 	void *ret;
@@ -287,6 +294,8 @@ int main(int argc,char **argv)
 	}
 
 	poll_init();
+
+	gui_init();
 
 	zpuino_interface_init();
 
@@ -300,7 +309,7 @@ int main(int argc,char **argv)
 	close(infile);
 
 	zpuino_io_post_init();
-
+	gui_post_init();
 	// Spawn terminal
  /*
 	int pid;
@@ -321,6 +330,8 @@ int main(int argc,char **argv)
 	// start processing thread
 	pthread_attr_init(&zputhreadattr);
 	pthread_create(&zputhread,&zputhreadattr, zpu_thread, NULL);
+
+	zpu_halt();
 
 	poll_loop();
 
