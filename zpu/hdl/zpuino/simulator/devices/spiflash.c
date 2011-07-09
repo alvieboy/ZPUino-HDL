@@ -13,6 +13,16 @@
 #include "gpio.h"
 #include <errno.h>
 
+flash_info_t flash_list[] =
+{
+	{ 0x20, 0x20, 0x15, 256, 65536, 32, "M25P16"},
+	{ 0xBF, 0x25, 0x8D, 256, 4096, 128, "SST25VF040B"},
+	{ 0x1F, 0x25, 0x00, 264, 2112, 512, "AT45DB081D"},
+	{ 0, 0, 0, 0, 0, 0, NULL }
+};
+
+flash_info_t *currentflash = &flash_list[1];
+
 typedef enum {
 	COMMAND,
 	SHIFT1,
@@ -36,14 +46,21 @@ const char *binfile=NULL;
 const char *extrafile=NULL;
 unsigned spi_select_pin = 40;
 
-#define FLASH_SIZE_BYTES ((1*1024*1024)/8)
+static int in_aai_mode=0;
+
+#define FLASH_SIZE_BYTES ((4*1024*1024)/8)
 
 #define READ_FAST 0x0B
+#define SST_DISABLE_WREN 0x04
 #define IDENTIFY 0x9F
 #define READ_STATUS 0x05
 #define WRITE_ENABLE 0x06
 #define SECTOR_ERASE 0xD8
+#define SST_SECTOR_ERASE 0x20
 #define PAGE_PROGRAM 0x02
+#define SST_AAI_PROGRAM 0xAD
+
+//#define FLASHID 0xBF258D
 
 int spiflash_mapbin(const char *name, const char *extra)
 {
@@ -186,11 +203,14 @@ void spi_execute(unsigned int v)
 		savereg++;
 		break;
 	case SECTOR_ERASE:
+    case SST_SECTOR_ERASE:
 		printf("SPI: erasing sector at %06x\n",savereg&0xffffff);
 		state = COMMAND;
 		break;
 	case PAGE_PROGRAM:
-		//printf("SPI write: %06x\n",savereg);
+	case SST_AAI_PROGRAM:
+		//printf("SPI write data: %06x <= 0x%02x\n",savereg,v);
+        in_aai_mode=1;
 		mapped[savereg]=v;
 		savereg++;
 	}
@@ -205,7 +225,7 @@ void spiflash_reset()
 void spiflash_select()
 {
 	if (!selected) {
-		printf("SPI select\n");
+		//printf("SPI select\n");
 		state=COMMAND;
 	}
 	selected=1;
@@ -222,7 +242,7 @@ void spiflash_deselect()
 void spiflash_write(unsigned int v)
 {
 	v&=0xff;
-	fprintf(stderr,"SPI write: 0x%02x, state %d\n",v,state);
+	//fprintf(stderr,"SPI write: 0x%02x, state %d\n",v,state);
 	switch (state) {
 	case COMMAND:
 		cmd = v;
@@ -240,21 +260,33 @@ void spiflash_write(unsigned int v)
 			state = SHIFT1;
 			break;
 		case SECTOR_ERASE:
+		case SST_SECTOR_ERASE:
 			state = SHIFT1;
 			break;
 		case PAGE_PROGRAM:
 			state = SHIFT1;
 			break;
+		case SST_AAI_PROGRAM:
+			if (in_aai_mode) {
+				state = PROCESS;
+			} else {
+				state=SHIFT1;
+			}
+            break;
+		case SST_DISABLE_WREN:
+            in_aai_mode=0;
+			state = COMMAND;
+			break;
 		default:
 			fprintf(stderr,"Invalid SPI command 0x%02x\n",v);
-			//abort();
+			abort();
 		}
 		break;
 
 	case SHIFT1:
 		shiftin(v);
 		if (cmd==IDENTIFY)
-			shiftout(0x20);
+			shiftout( currentflash->manufacturer );
 		else if (cmd==READ_STATUS)
 			shiftout(0x2);
 		state = SHIFT2;
@@ -262,14 +294,14 @@ void spiflash_write(unsigned int v)
 	case SHIFT2:
 		shiftin(v);
 		if (cmd==IDENTIFY)
-			shiftout(0x20);
+			shiftout( currentflash->product );
 		state = SHIFT3;
 		break;
 
 	case SHIFT3:
 		shiftin(v);
 		if (cmd==IDENTIFY)
-			shiftout(0x15);
+			shiftout( currentflash->density );
 
 		state = SHIFT4;
 		break;
@@ -349,8 +381,9 @@ void spi_io_write_handler(unsigned address, unsigned value)
 static zpuino_device_args_t args[] =
 {
 	{ "binfile", ARG_STRING, &binfile },
-    { "extrafile", ARG_STRING, &extrafile },
-    ENDARGS
+	{ "extrafile", ARG_STRING, &extrafile },
+	{ "selectpin", ARG_INTEGER, &spi_select_pin },
+	ENDARGS
 };
 
 int initialize_device(int argc, char **argv)
@@ -374,7 +407,7 @@ int initialize_device(int argc, char **argv)
 void spi_select_pin_changed(unsigned pin, int value, void *data)
 {
 //	fprintf(stderr,"SPI select %d\n",value);
-	if (value==0) {
+	if (value!=0) {
 		spiflash_deselect();
 	} else {
 		spiflash_select();
@@ -393,7 +426,7 @@ int spi_post_init()
 	}
 
 	gpioclass = gpiodev->class;
-
+	fprintf(stderr,"SPI: using %d as SPI select pin\n", spi_select_pin);
 	gpioclass->add_pin_notify( spi_select_pin, &spi_select_pin_changed, NULL );
 
 	return 0;

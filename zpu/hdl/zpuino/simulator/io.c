@@ -83,11 +83,12 @@ void poll_loop()
 #include <glib.h>
 
 static GMainLoop *mainloop;
- /*
-struct {
+
+struct polldata {
 	GIOChannel *channel;
 	int fd;
-}; */
+	guint tag;
+};
 
 static GHashTable *polllist;
 
@@ -110,8 +111,15 @@ int poll_add(int fd, short events, poll_callback_t c)
 	g_io_channel_set_encoding(ch, NULL, &err);
 	g_io_channel_set_buffered(ch, FALSE);
 	fprintf(stderr,"Add poll %d %d\n",fd, events);
-	g_io_add_watch( ch, events, &poll_changed, c);
-	g_hash_table_insert(polllist,(gpointer)fd, ch);
+	guint tag = g_io_add_watch( ch, events, &poll_changed, c);
+	g_io_channel_set_close_on_unref(ch,TRUE);
+
+	struct polldata *p = g_new0(struct polldata,1);
+	p->channel=ch;
+	p->tag=tag;
+    p->fd= fd;
+
+	g_hash_table_insert(polllist,(gpointer)fd, p);
 	return 0;
 }
 
@@ -119,15 +127,19 @@ int poll_remove(int fd)
 {
 	GError *err=NULL;
 
-	GIOChannel *ch = g_hash_table_lookup( polllist, (gpointer)fd );
-	if (NULL==ch) {
+	struct polldata *p = g_hash_table_lookup( polllist, (gpointer)fd );
+	if (NULL==p) {
 		fprintf(stderr,"IO: removing poll FD %d, but I cannot find it\n",fd);
 		return -1;
 	}
-	g_io_channel_shutdown(ch,TRUE,&err);
-	/*g_io_channel_close(ch);
-	g_io_channel_unref(ch);*/
+	//
+	/*g_io_channel_close(ch);*/
+	g_source_remove(p->tag);
+	g_io_channel_shutdown(p->channel,TRUE,&err);
+	g_io_channel_unref(p->channel);
+
 	g_hash_table_remove( polllist, (gpointer)fd );
+	g_free(p);
 	return 0;
 }
 

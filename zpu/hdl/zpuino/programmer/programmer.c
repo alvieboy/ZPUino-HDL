@@ -31,6 +31,7 @@
 
 #ifdef __linux__
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <errno.h>
 #include <termios.h>
@@ -233,6 +234,7 @@ int open_simulator_device(const char *device,connection_t *conn)
 	char *dstart;
 	char *pstart;
 	int s;
+	int yes=1;
 
 	dstart=strchr(device,':');
 	if (NULL==dstart)
@@ -265,6 +267,7 @@ int open_simulator_device(const char *device,connection_t *conn)
 		return -1;
 	}
 	fcntl(s, F_SETFL, fcntl(s, F_GETFL) |O_NONBLOCK);
+	setsockopt(s, SOL_SOCKET, TCP_NODELAY, &yes,sizeof(yes));
 	*conn =  s;
 	conn_setsimulator(1);
 	return 0;
@@ -705,7 +708,7 @@ int main(int argc, char **argv)
 					bufp[7];
 
 				if (p != board) {
-					fprintf(stderr,"Board mismatch.");
+					fprintf(stderr,"Board mismatch!!!.\n");
 					const char *b1 = getBoardById(board);
 					fprintf(stderr,"Board is:      0x%08x '%s'\n", board,b1);
 					b1 = getBoardById(p);

@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <string.h>
 
 #include "vte/vte.h"
@@ -109,7 +110,7 @@ unsigned int uart_read_data(unsigned int address)
 		lowmark++;
 		if (lowmark>=FIFO_SIZE)
 			lowmark=0;
-		printf("ZPU UART read %02x\n",c);
+		//printf("ZPU UART read %02x\n",c);
 	}
 	pthread_mutex_unlock(&fifo_lock);
 	return c; // Should not return anything, but...
@@ -125,9 +126,10 @@ void uart_write_data(unsigned int address,unsigned int val)
 {
 	unsigned char c = val & 0xff;
 //	printf("UART TX: %02x\n",c);
-	if (clientsockfd>0)
-		write(clientsockfd, &c, 1);
-	else
+	if (clientsockfd>0) {
+		//write(clientsockfd, &c, 1);
+        send(clientsockfd, &c, 1, 0);
+	} else
 		//write(fd,&c,1);
 		//write(ptymaster,&c,1);
 		vte_terminal_feed(VTE_TERMINAL(vte),(char*)&c,1);
@@ -137,6 +139,7 @@ void handle_escape(unsigned char v)
 {
 	if (v==0xf3) {
 		// Reset
+		fprintf(stderr,"Soft resetting ZPU\n");
 		zpuino_softreset();
 	}
 }
@@ -148,7 +151,7 @@ int uart_incoming_data(short revents)
 
 	unsigned char buf[FIFO_SIZE];
 	int r = read(clientsockfd,buf,sizeof(buf));
-	fprintf(stderr,"UART read %d\n",r);
+	//fprintf(stderr,"UART read %d\n",r);
 	if (r>0) {
 		i=0;
 		pthread_mutex_lock(&fifo_lock);
@@ -190,6 +193,7 @@ int uart_incoming_data(short revents)
 
 int uart_incoming_connection(short event)
 {
+	int yes=1;
 	socklen_t clientsocksize=sizeof(struct sockaddr_in);
 	if ((clientsockfd=accept(mastersockfd,(struct sockaddr*)&clientsock,&clientsocksize))<0){
 		perror("accept");
@@ -199,6 +203,7 @@ int uart_incoming_connection(short event)
 	fprintf(stderr,"UART incoming connection\n");
 	uartescape=0;
 
+	setsockopt(clientsockfd,SOL_SOCKET, TCP_NODELAY, &yes,sizeof(yes));
 	poll_add(clientsockfd, POLL_IN, &uart_incoming_data);
 
 	return 0;

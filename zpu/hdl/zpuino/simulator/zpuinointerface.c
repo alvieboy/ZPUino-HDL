@@ -182,6 +182,10 @@ int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc, char **
 				case ARG_STRING:
 					*((char**)aptr->target) = v;
 					break;
+				case ARG_INTEGER:
+					*((int*)aptr->target) = atoi(v);
+					break;
+
 				default:
 					break;
 				}
@@ -198,6 +202,7 @@ extern void zpu_resume();
 
 void zpuino_softreset()
 {
+	zpu_halt();
 	zpu_halt();
 	zpu_reset();
 	zpu_resume();

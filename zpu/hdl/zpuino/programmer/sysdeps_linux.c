@@ -187,7 +187,11 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 			if (rd>0) {
 				if (verbose>2) {
 					int i;
-					printf("Rx:");
+					struct timeval tv;
+					gettimeofday(&tv,NULL);
+
+					printf("[%d.%06d] Rx:",
+						  tv.tv_sec,tv.tv_usec);
 					for (i=0; i<rd; i++) {
 						printf(" 0x%02x",tmpbuf[i]);
 					}

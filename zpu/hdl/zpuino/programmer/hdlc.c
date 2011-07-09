@@ -155,7 +155,10 @@ int hdlc_sendpacket(connection_t fd, const unsigned char *buffer, size_t size)
 	*txptr++= HDLC_frameFlag;
 
 	if(verbose>2) {
-		printf("Tx:");
+		struct timeval tv;
+		gettimeofday(&tv,NULL);
+		printf("[%d.%06d] Tx:",tv.tv_sec,tv.tv_usec
+			  );
 		for (i=0; i<txptr-(&txbuf[0]); i++) {
 			printf(" 0x%02x", txbuf[i]);
 		}

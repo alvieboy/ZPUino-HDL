@@ -4,7 +4,7 @@
 # slot,devicename[,param1][,param2]...[,paramN]
 # parameter is key=value
 
-0,spi,binfile=tetris.bin,extrafile=tetris-smallfs.dat
+0,spi,binfile=tetris.bin,extrafile=tetris-smallfs.dat,selectpin=52
 1,uart
 2,gpio
 3,timer

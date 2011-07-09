@@ -21,7 +21,7 @@ PKG_CHECK_MODULES(vte, vte, AC_DEFINE(HAVE_VTE,,[Define this if you have the GTK
 zpuino_libdir=$libdir/zpuino-simulator
 AC_SUBST(zpuino_libdir)
 
-CFLAGS="$CFLAGS -Wall -Werror -O6 -g -funit-at-a-time -funroll-loops -mtune=core2 -DZPUINO_LIBDIR=\\\"$zpuino_libdir\\\""
+CFLAGS="$CFLAGS -Wall -Werror -O6 -pg -g -funit-at-a-time -funroll-loops -mtune=core2 -DZPUINO_LIBDIR=\\\"$zpuino_libdir\\\""
 LDFLAGS="$LDFLAGS"
 
 AC_OUTPUT([Makefile devices/Makefile])
