@@ -30,6 +30,12 @@
 #include "transport.h"
 
 extern int verbose;
+static int simulator=0;
+
+void conn_setsimulator(int v)
+{
+	simulator=v;
+}
 
 int conn_open(const char *device,speed_t speed, connection_t *conn)
 {
@@ -77,6 +83,14 @@ void conn_reset(connection_t conn)
 	struct termios termset;
 	unsigned char reset[] = { 0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 };
 	speed_t txs,rxs;
+
+	if (simulator) {
+		reset[0] = 0xff;
+		reset[1] = 0xf3;
+		write(conn,&reset,2);
+		return;
+	}
+
 	tcgetattr(conn, &termset);
 	txs = cfgetospeed(&termset);
 	rxs = cfgetispeed(&termset);
@@ -102,7 +116,18 @@ void conn_reset(connection_t conn)
 
 int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 {
-	return write(conn,buf,size);
+	if (simulator) {
+		int i=0;
+		while (size--) {
+			if (*buf==0xff) {
+				write(conn,buf,1);
+			}
+			write(conn,buf,1);
+			buf++, i++;
+		}
+		return i;
+	} else
+		return write(conn,buf,size);
 }
 
 int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeout)

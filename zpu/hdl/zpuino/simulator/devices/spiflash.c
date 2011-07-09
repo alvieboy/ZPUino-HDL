@@ -205,7 +205,7 @@ void spiflash_reset()
 void spiflash_select()
 {
 	if (!selected) {
-		//printf("SPI select\n");
+		printf("SPI select\n");
 		state=COMMAND;
 	}
 	selected=1;
@@ -213,8 +213,8 @@ void spiflash_select()
 
 void spiflash_deselect()
 {
-/*	if (selected)
-		printf("SPI deselected\n");*/
+	if (selected)
+		printf("SPI deselected\n");
 	state = COMMAND;
 	selected=0;
 }
@@ -222,7 +222,7 @@ void spiflash_deselect()
 void spiflash_write(unsigned int v)
 {
 	v&=0xff;
-//	fprintf(stderr,"SPI write: 0x%02x, state %d\n",v,state);
+	fprintf(stderr,"SPI write: 0x%02x, state %d\n",v,state);
 	switch (state) {
 	case COMMAND:
 		cmd = v;

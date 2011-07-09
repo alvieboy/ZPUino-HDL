@@ -49,6 +49,7 @@ void zpuino_tick(unsigned v);
 void zpuino_clock_start_from_halted(const struct timeval*);
 void zpuino_clock_start();
 void zpuino_io_set_device(int slot, zpuino_device_t*dev);
+void zpuino_softreset();
 
 #define IOBASE 0x8000000
 #define MAXBITINCIO 27

@@ -30,7 +30,7 @@
 #include "boards.h"
 
 #ifdef __linux__
-#include <sys/un.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <errno.h>
 #include <termios.h>
@@ -229,8 +229,9 @@ int open_simulator_device(const char *device,connection_t *conn)
 #ifndef __linux__
 	return -1;
 #else
-	struct sockaddr_un sock;
+	struct sockaddr_in sock;
 	char *dstart;
+	char *pstart;
 	int s;
 
 	dstart=strchr(device,':');
@@ -238,11 +239,24 @@ int open_simulator_device(const char *device,connection_t *conn)
 		return -1;
 	dstart++;
 
-	memset(&sock,0,sizeof(sock));
-	sock.sun_family=AF_UNIX;
-	strcpy( &sock.sun_path[1], dstart );
+	pstart=strchr(dstart,'/');
+	if (NULL==pstart)
+		return -1;
+	*pstart=0;
+	pstart++;
 
-	s = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+	if (strcmp(dstart,"tcp")!=0) {
+		fprintf(stderr,"Invalid protocol '%s'. Only 'tcp' is supported\n", dstart);
+		return -1;
+	}
+
+	memset(&sock,0,sizeof(sock));
+	sock.sin_family=AF_INET;
+	sock.sin_port=htons(atoi(pstart));
+
+	//strcpy( &sock.sun_path[1], dstart );
+
+	s = socket(AF_INET, SOCK_STREAM,IPPROTO_TCP);
 	if (s<0)
 		return s;
 
@@ -252,6 +266,7 @@ int open_simulator_device(const char *device,connection_t *conn)
 	}
 	fcntl(s, F_SETFL, fcntl(s, F_GETFL) |O_NONBLOCK);
 	*conn =  s;
+	conn_setsimulator(1);
 	return 0;
 #endif
 }

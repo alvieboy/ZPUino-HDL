@@ -191,3 +191,14 @@ int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc, char **
 	}
 	return 0;
 }
+
+extern void zpu_halt();
+extern void zpu_reset();
+extern void zpu_resume();
+
+void zpuino_softreset()
+{
+	zpu_halt();
+	zpu_reset();
+	zpu_resume();
+}

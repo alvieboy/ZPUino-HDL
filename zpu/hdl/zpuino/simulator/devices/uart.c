@@ -28,15 +28,17 @@ static unsigned char fifodata[FIFO_SIZE];
 static unsigned int lowmark,highmark;
 static pthread_mutex_t fifo_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int programmer_fd=-1;
+//static int programmer_fd=-1;
 
 static int tcpport = 7263;
 struct sockaddr_in sock;
 int mastersockfd;
-int clientsockfd;
+int clientsockfd = -1;
 struct sockaddr_in clientsock;
 
-int fd = -1;
+static int uartescape=0;
+
+//int fd = -1;
 
 /*
 int pty_available()
@@ -79,16 +81,6 @@ int pty_transmit(int t)
 }
 */
 
-void uart_enter_programmer_mode(int fd)
-{
-	programmer_fd=fd;
-}
-void uart_leave_programmer_mode()
-{
-	programmer_fd=-1;
-}
-
-
 inline int is_fifo_empty()
 {
 	int empty;
@@ -117,7 +109,7 @@ unsigned int uart_read_data(unsigned int address)
 		lowmark++;
 		if (lowmark>=FIFO_SIZE)
 			lowmark=0;
-		//printf("UART read %02x\n",c);
+		printf("ZPU UART read %02x\n",c);
 	}
 	pthread_mutex_unlock(&fifo_lock);
 	return c; // Should not return anything, but...
@@ -133,13 +125,22 @@ void uart_write_data(unsigned int address,unsigned int val)
 {
 	unsigned char c = val & 0xff;
 //	printf("UART TX: %02x\n",c);
-	if (programmer_fd>0)
-		write(programmer_fd, &c, 1);
+	if (clientsockfd>0)
+		write(clientsockfd, &c, 1);
 	else
 		//write(fd,&c,1);
 		//write(ptymaster,&c,1);
 		vte_terminal_feed(VTE_TERMINAL(vte),(char*)&c,1);
 }
+
+void handle_escape(unsigned char v)
+{
+	if (v==0xf3) {
+		// Reset
+		zpuino_softreset();
+	}
+}
+
 
 int uart_incoming_data(short revents)
 {
@@ -152,6 +153,22 @@ int uart_incoming_data(short revents)
 		i=0;
 		pthread_mutex_lock(&fifo_lock);
 		while (r--) {
+			if (uartescape) {
+				uartescape=0;
+				if (buf[i]!=0xff) {
+					fprintf(stderr,"Escape sequence: 0x%02x\n",buf[i]);
+                    handle_escape(buf[i]);
+					i++;
+					continue;
+				}
+			} else {
+				if (buf[i]==0xff) {
+					uartescape=1;
+					i++;
+					continue;
+				}
+			}
+
 			fifodata[highmark]=buf[i];
 			i++;
 			highmark++;
@@ -180,8 +197,10 @@ int uart_incoming_connection(short event)
 	}
 
 	fprintf(stderr,"UART incoming connection\n");
+	uartescape=0;
 
 	poll_add(clientsockfd, POLL_IN, &uart_incoming_data);
+
 	return 0;
 }
 
