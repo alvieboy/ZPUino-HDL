@@ -118,13 +118,19 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 {
 	if (simulator) {
 		int i=0;
+		unsigned char *tbuf = malloc(size*2);
+		unsigned char *tbufptr=tbuf;
+
 		while (size--) {
 			if (*buf==0xff) {
-				write(conn,buf,1);
+				//write(conn,buf,1);
+				*tbufptr++=0xff;
 			}
-			write(conn,buf,1);
+			//write(conn,buf,1);
+			*tbufptr++=*buf;
 			buf++, i++;
 		}
+		send( conn, tbuf, tbufptr-tbuf, 0);
 		return i;
 	} else
 		return write(conn,buf,size);

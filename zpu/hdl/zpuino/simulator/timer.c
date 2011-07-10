@@ -187,6 +187,7 @@ static zpuino_device_t dev = {
 	.post_init = NULL
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT zpuinotimer_init()
+{
+	zpuino_register_device(&dev);
 }

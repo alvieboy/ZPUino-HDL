@@ -259,7 +259,7 @@ unsigned gpio_io_read_handler(unsigned address)
 	return 0;
 }
 
-int initialize_device(int argc,char**argv)
+static int initialize_device(int argc,char**argv)
 {
 	int i;
 	for (i=0;i<4;i++) {
@@ -282,6 +282,7 @@ static zpuino_device_t dev = {
 	.class = &gpio_class
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT gpio_init()
+{
+	zpuino_register_device(&dev);
 }

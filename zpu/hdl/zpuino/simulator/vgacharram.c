@@ -32,7 +32,7 @@ void vgacharram_io_write_handler(unsigned address, unsigned value)
 	cram[off] = value & 0xff;
 }
 
-int initialize_device(int argc,char **argv)
+static int initialize_device(int argc,char **argv)
 {
     return 0;
 }
@@ -47,8 +47,13 @@ static zpuino_device_t dev = {
 	.class = NULL
 };
 
-zpuino_device_t *get_device() {
+/*zpuino_device_t *get_device() {
 	return &dev;
+} */
+
+static void ZPUINOINIT vgacharram_init()
+{
+	zpuino_register_device(&dev);
 }
 
 

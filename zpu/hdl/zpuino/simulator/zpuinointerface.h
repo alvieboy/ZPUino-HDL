@@ -50,6 +50,10 @@ void zpuino_clock_start_from_halted(const struct timeval*);
 void zpuino_clock_start();
 void zpuino_io_set_device(int slot, zpuino_device_t*dev);
 void zpuino_softreset();
+void zpuino_register_device(const zpuino_device_t*);
+zpuino_device_t *zpuino_find_device_by_name(const char*name);
+
+#define ZPUINOINIT __attribute__((constructor))
 
 #define IOBASE 0x8000000
 #define MAXBITINCIO 27

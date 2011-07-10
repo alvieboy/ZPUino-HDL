@@ -19,7 +19,7 @@ void crc16_io_write_handler(unsigned address, unsigned value)
 	ERRORREG();
 }
 
-int initialize_device(int argc, char **argv)
+static int initialize_device(int argc, char **argv)
 {
 	return 0;
 }
@@ -32,7 +32,12 @@ static zpuino_device_t dev = {
 	.post_init = NULL,
 	.class = NULL
 };
-
-zpuino_device_t *get_device() {
+/*
+zpuino_device_t * ZPUINOINIT get_device() {
 	return &dev;
+	}
+	*/
+static void ZPUINOINIT crc16_init()
+{
+	zpuino_register_device(&dev);
 }

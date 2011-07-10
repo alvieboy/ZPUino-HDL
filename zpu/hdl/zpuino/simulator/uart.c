@@ -128,7 +128,7 @@ void uart_write_data(unsigned int address,unsigned int val)
 //	printf("UART TX: %02x\n",c);
 	if (clientsockfd>0) {
 		//write(clientsockfd, &c, 1);
-        send(clientsockfd, &c, 1, 0);
+		send(clientsockfd, &c, 1, 0);
 	} else
 		//write(fd,&c,1);
 		//write(ptymaster,&c,1);
@@ -326,6 +326,7 @@ static zpuino_device_t dev = {
 	.class = NULL
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT zpuuart_init()
+{
+	zpuino_register_device(&dev);
 }

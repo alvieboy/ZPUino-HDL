@@ -154,7 +154,7 @@ void updater_thread()
 /*static pthread_t vgathread;
 static pthread_attr_t vgathreadattr;
 */
-int initialize_device(int argc,char **argv)
+static int initialize_device(int argc,char **argv)
 {
     /*
 	screen = SDL_SetVideoMode( 800, 600, 32, SDL_SWSURFACE );
@@ -255,13 +255,9 @@ static zpuino_device_t dev = {
 	.class = NULL
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT vga_init()
+{
+	zpuino_register_device(&dev);
 }
-#else
-zpuino_device_t *get_device() {
-	return NULL;
-}
-
 #endif
 

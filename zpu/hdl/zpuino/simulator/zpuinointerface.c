@@ -207,3 +207,22 @@ void zpuino_softreset()
 	zpu_reset();
 	zpu_resume();
 }
+
+static GSList *devices=NULL;
+
+void zpuino_register_device(const zpuino_device_t *dev)
+{
+	fprintf(stderr,"Registering device '%s'\n",dev->name);
+	devices = g_slist_append(devices,(void*)dev);
+}
+
+zpuino_device_t *zpuino_find_device_by_name(const char*name)
+{
+	GSList*i;
+	for (i=devices; i; i=g_slist_next(i)) {
+		zpuino_device_t *d = i->data;
+		if (strcmp(d->name,name)==0)
+			return d;
+	}
+	return NULL;
+}

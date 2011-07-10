@@ -1,14 +1,13 @@
-SUBDIRS=devices
+AM_CFLAGS=$(CFLAGS) $(glib_CFLAGS) $(gtk_CFLAGS) $(vte_CFLAGS) $(sdl_CFLAGS)
+AM_CCASFLAGS=-O6
 
-AM_CFLAGS=$(CFLAGS) $(glib_CFLAGS) $(gtk_CFLAGS)
-
-lib_LTLIBRARIES=libzpuinointerface.la
 bin_PROGRAMS=zpuinosimulator
 
 zpuinosimulator_SOURCES=simple-simulator.c \
-	executor.S
+	executor.S zpuinointerface.c io.c gui.c \
+	timer.c spiflash.c \
+	crc16_core.c gpio.c uart.c intr.c crc16.c vga.c vgacharram.c
 	
-zpuinosimulator_LDADD=libzpuinointerface.la -lpthread -lutil -ldl
+zpuinosimulator_LDADD=-lpthread -lutil -ldl $(glib_LIBS) $(gtk_LIBS) $(vte_LIBS) $(sdl_LIBS) 
 
-libzpuinointerface_la_SOURCES=zpuinointerface.c io.c gui.c
-libzpuinointerface_la_LIBADD=$(glib_LIBS) $(gtk_LIBS)
+

@@ -12,7 +12,7 @@ void intr_io_write_handler(unsigned address, unsigned value)
 	//printf("INTR write 0x%08x @ 0x%08x\n",value,address);
 }
 
-int initialize_device(int argc,char **argv)
+static int initialize_device(int argc,char **argv)
 {
 	return 0;
 }
@@ -26,6 +26,7 @@ static zpuino_device_t dev = {
 	.class = NULL
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT intr_init()
+{
+	zpuino_register_device(&dev);
 }

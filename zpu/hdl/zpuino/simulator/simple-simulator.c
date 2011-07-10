@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -170,7 +170,7 @@ void zpu_reset()
 
 int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 {
-	char *rp;
+	/*char *rp;
 	void *dl;
 	zpuino_device_t* (*getdevice)();
     zpuino_device_t*dev;
@@ -196,6 +196,13 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 		dlclose(dl);
 		return -1;
 	}
+	*/
+	zpuino_device_t *dev = zpuino_find_device_by_name(name);
+	if (NULL==dev) {
+		fprintf(stderr,"SIMULATOR: cannot load device %s: no such device\n",name);
+		return-1;
+	}
+
 
 	// Initialize
 	if (dev->init) {
@@ -217,14 +224,15 @@ int try_load(int slot, const char *name, const char*path, int argc, char **argv)
 
 int load_device(int slot, const char *name, int argc, char **argv)
 {
-	if (try_load(slot,name,"devices/.libs/",argc,argv)==0)
+	/*if (try_load(slot,name,"devices/.libs/",argc,argv)==0)
 		return 0;
 
 	if (try_load(slot,name,ZPUINO_LIBDIR,argc,argv)==0)
 		return 0;
 
 	fprintf(stderr,"SIMULATOR: cannot load device for '%s'\n", name);
-
+	*/
+	return try_load(slot, name, "", argc, argv);
 	return -1;
 }
 

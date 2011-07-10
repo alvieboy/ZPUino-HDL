@@ -233,8 +233,10 @@ void spiflash_select()
 
 void spiflash_deselect()
 {
-	if (selected)
-		printf("SPI deselected\n");
+	/*
+	 if (selected)
+	 printf("SPI deselected\n");
+	 */
 	state = COMMAND;
 	selected=0;
 }
@@ -386,7 +388,7 @@ static zpuino_device_args_t args[] =
 	ENDARGS
 };
 
-int initialize_device(int argc, char **argv)
+static int initialize_device(int argc, char **argv)
 {
 	zpuino_device_parse_args(args,argc,argv);
 
@@ -440,6 +442,7 @@ static zpuino_device_t dev = {
 	.post_init = spi_post_init
 };
 
-zpuino_device_t *get_device() {
-	return &dev;
+static void ZPUINOINIT spiflash_init()
+{
+	zpuino_register_device(&dev);
 }
