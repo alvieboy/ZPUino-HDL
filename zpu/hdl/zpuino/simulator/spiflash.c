@@ -40,6 +40,7 @@ unsigned int inreg;
 unsigned int savereg;
 static uint8_t cmd;
 unsigned char *mapped;
+unsigned char *mapped_orig;
 int mapfd;
 size_t mapped_size;
 const char *binfile=NULL;
@@ -160,15 +161,22 @@ int spiflash_mapbin(const char *name, const char *extra)
 			}
 			st.st_size=FLASH_SIZE_BYTES;
 		}
-        */
-		mapped_size=st.st_size;
+		*/
+		mapped_size=st.st_size - 8;
+		if (mapped_size != FLASH_SIZE_BYTES) {
+			fprintf(stderr,"Invalid flash file size. Expecting %d, got %d\n",FLASH_SIZE_BYTES,mapped_size);
+			return -1;
+		}
 
-		mapped = (unsigned char *)mmap(NULL, mapped_size,PROT_READ|PROT_WRITE,MAP_SHARED,mapfd,0);
-		if (NULL==mapped) {
+		mapped_orig = (unsigned char *)mmap(NULL, mapped_size,PROT_READ|PROT_WRITE,MAP_SHARED,mapfd, 0);
+
+		if (MAP_FAILED==mapped) {
 			perror("mmap");
 			close(mapfd);
 			return -1;
 		}
+		mapped = mapped_orig + 8; // Skip signature
+
 	}
 	return 0;
 }

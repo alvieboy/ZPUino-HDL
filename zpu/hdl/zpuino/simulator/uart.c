@@ -118,7 +118,7 @@ unsigned int uart_read_data(unsigned int address)
 
 void uart_write_ctrl(unsigned int address,unsigned int val)
 {
-	printf("UART CTL: 0x%08x\n",val);
+	printf("UART: set CTL 0x%08x\n",val);
 
 }
 
@@ -139,7 +139,7 @@ void handle_escape(unsigned char v)
 {
 	if (v==0xf3) {
 		// Reset
-		fprintf(stderr,"Soft resetting ZPU\n");
+		fprintf(stderr,"UART: Soft resetting ZPU\n");
 		zpuino_softreset();
 	}
 }
@@ -178,7 +178,7 @@ int uart_incoming_data(short revents)
 			if (highmark>=FIFO_SIZE)
 				highmark=0;
 			if (highmark==lowmark) {
-				printf("UART FIFO overrun\n");
+				printf("UART: FIFO overrun\n");
 				pthread_mutex_unlock(&fifo_lock);
 				abort();
 			}
@@ -200,7 +200,7 @@ int uart_incoming_connection(short event)
 		abort();
 	}
 
-	fprintf(stderr,"UART incoming connection\n");
+	fprintf(stderr,"UART: incoming connection\n");
 	uartescape=0;
 
 	setsockopt(clientsockfd,SOL_SOCKET, TCP_NODELAY, &yes,sizeof(yes));
@@ -226,7 +226,7 @@ int socket_initialize()
 	if (bind(mastersockfd,(struct sockaddr*)&sock,sizeof(struct sockaddr_in))<0) {
 		abort();
 	}
-	printf("Serial listening on %d\n",tcpport);
+	printf("UART: Serial TCP listening on %d\n",tcpport);
 	/*printf("Waiting for TCP connection. Simulation is halted until you connect.\n");
 	printf("Try 'telnet localhost %d' for a connection.\n",tcpport);
           */
@@ -261,7 +261,7 @@ void vte_uart_data(VteTerminal *vteterminal,
 			if (highmark>=FIFO_SIZE)
 				highmark=0;
 			if (highmark==lowmark) {
-				printf("UART FIFO overrun\n");
+				printf("UART: FIFO overrun\n");
 				pthread_mutex_unlock(&fifo_lock);
 				abort();
 			}
