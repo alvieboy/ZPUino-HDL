@@ -4,15 +4,16 @@
 #define CLK_FREQ 96000000UL
 
 #if defined(__S3E_250__)
-#define BOARD_MEMORYSIZE 0x4000
 #define SPIOFFSET 0x00042000 /* To be atmel-compatible */
 #elif defined (__S3E_500__)
-#define BOARD_MEMORYSIZE 0x8000
 #define SPIOFFSET 0x00046000
 #else
 #error Undefined board size. Please define __S3E_250__ or __S3E_500__.
 #endif
 
+#ifndef BOARD_MEMORYSIZE
+#error Undefined board memory size
+#endif
 
 #define BOARD_SPI_DIVIDER BIT(SPICP0)
 
@@ -39,7 +40,7 @@
 #define FPGA_PIN_P86 15
 
 //Wing1 Column B
-#define FPGA_PIN_P89 16
+#define FPGA_PIN_P85 16
 #define FPGA_PIN_P83 17
 #define FPGA_PIN_P78 18
 #define FPGA_PIN_P71 19
@@ -110,6 +111,23 @@
 #define WING_A_14 FPGA_PIN_P84
 #define WING_A_15 FPGA_PIN_P86
 
+#define WING_B_0 FPGA_PIN_P85
+#define WING_B_1 FPGA_PIN_P83
+#define WING_B_2 FPGA_PIN_P78
+#define WING_B_3 FPGA_PIN_P71
+#define WING_B_4 FPGA_PIN_P68
+#define WING_B_5 FPGA_PIN_P66
+#define WING_B_6 FPGA_PIN_P63
+#define WING_B_7 FPGA_PIN_P61
+#define WING_B_8 FPGA_PIN_P58
+#define WING_B_9 FPGA_PIN_P54
+#define WING_B_10 FPGA_PIN_P41
+#define WING_B_11 FPGA_PIN_P36
+#define WING_B_12 FPGA_PIN_P34
+#define WING_B_13 FPGA_PIN_P32
+#define WING_B_14 FPGA_PIN_P25
+#define WING_B_15 FPGA_PIN_P22
+        
 #define WING_C_0 FPGA_PIN_P91
 #define WING_C_1 FPGA_PIN_P92
 #define WING_C_2 FPGA_PIN_P94

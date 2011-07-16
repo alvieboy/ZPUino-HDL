@@ -4,7 +4,7 @@ PART=xc3s500e-vq100-4
 # For bootloader
 BOARD=PAPILIO_ONE
 SIZE=32768
-DEFINES="-D__S3E_500__ -DBOARD_ID=0xA4010F00"
+DEFINES="-D__S3E_500__ -DBOARD_ID=0xA4010F00 -DBOARD_MEMORYSIZE=0x8000"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
@@ -36,3 +36,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
+	$(MAKE) -C ../../../bootloader clean

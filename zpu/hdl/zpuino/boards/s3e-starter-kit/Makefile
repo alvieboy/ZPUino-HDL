@@ -4,7 +4,7 @@ PART=xc3s500e-fg320-4
 # For bootloader
 BOARD=S3E_EVAL
 SIZE=32768
-DEFINES="-DBOARD_ID=0x83010F00"
+DEFINES="-DBOARD_ID=0x83010F00 -DBOARD_MEMORYSIZE=0x8000"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
@@ -36,3 +36,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
+	$(MAKE) -C ../../bootloader clean

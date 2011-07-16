@@ -510,6 +510,23 @@ begin
   );
   end generate;
 
+  adcgen2: if not zpuino_adc_enabled generate
+
+  slot8:zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(8),
+    wb_dat_i     => slot_write(8),
+    wb_adr_i   => slot_address(8),
+    wb_we_i    => slot_we(8),
+    wb_cyc_i      => slot_cyc(8),
+    wb_stb_i      => slot_stb(8),
+    wb_ack_o      => slot_ack(8),
+    wb_inta_o => slot_interrupt(8)
+  );
+  end generate;
+
   --
   -- IO SLOT 9
   --
