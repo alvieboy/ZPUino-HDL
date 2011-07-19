@@ -486,9 +486,7 @@ begin
   -- IO SLOT 8 (optional)
   --
 
-  adcgen: if zpuino_adc_enabled generate
-
-  adc_inst:zpuino_adc
+  adc_inst: zpuino_empty_device
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -499,16 +497,8 @@ begin
     wb_cyc_i      => slot_cyc(8),
     wb_stb_i      => slot_stb(8),
     wb_ack_o      => slot_ack(8),
-    wb_inta_o => slot_interrupt(8),
-
-    sample    => timers_comp,
-    mosi      => adc_mosi,
-    miso      => adc_miso,
-    sck       => adc_sck,
-    seln      => adc_seln,
-    enabled   => adc_enabled
+    wb_inta_o =>  slot_interrupt(8)
   );
-  end generate;
 
   adcgen2: if not zpuino_adc_enabled generate
 
@@ -675,12 +665,12 @@ begin
     spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
     gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
     gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
-    if zpuino_adc_enabled then
-      gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
-      adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
-      gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
-      gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
-    end if;
+    --if zpuino_adc_enabled then
+    --  gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
+    --  adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
+    --  gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
+    --  gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
+    --end if;
     gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
 
     -- External interrupt lines
