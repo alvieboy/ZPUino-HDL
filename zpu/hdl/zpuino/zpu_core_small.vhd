@@ -182,6 +182,8 @@ type zpuregs is record
   isStore:    std_logic;
   multInA:    unsigned(31 downto 0);
   multInB:    unsigned(31 downto 0);
+  aluop:      std_logic;
+  aluresult:  unsigned(wordSize-1 downto 0);
 end record;
 
 signal r: zpuregs;
@@ -435,6 +437,8 @@ begin
     begin_inst<='0';
 
     w <= r;
+    w.aluop <= '0';
+
     doInterrupt <= '0';
 
     spOffset(4):=not opcode(4);
@@ -482,6 +486,11 @@ begin
               w.pc <= r.pc + 1;
             --end if;
           end if;
+        end if;
+
+        -- ALU result
+        if r.aluop='1' then
+          w.topOfStack <= r.aluresult;
         end if;
 
         w.state <= State_Execute;
@@ -599,15 +608,17 @@ begin
           when Decoded_Add =>
 
             w.sp <= r.sp + 1;
-            w.topOfStack <= r.topOfStack + memARead;
-
+            w.aluresult <= r.topOfStack + memARead;
+            w.topOfStack <= (others => DontCareValue);
+            w.aluop<='1';
             w.state <= State_Decode;
 
           when Decoded_And =>
 
             w.sp <= r.sp + 1;
-            w.topOfStack <= r.topOfStack and memARead;
-
+            w.aluresult <= r.topOfStack and memARead;
+            w.topOfStack <= (others => DontCareValue);
+            w.aluop <= '1';
             w.state <= State_Decode;
 
           when Decoded_Eq =>
@@ -631,21 +642,26 @@ begin
           when Decoded_Or =>
 
             w.sp <= r.sp + 1;
-            w.topOfStack <= r.topOfStack or memARead;
-
+            w.aluresult <= r.topOfStack or memARead;
+            w.topOfStack <= (others => DontCareValue);
+            w.aluop <= '1';
             w.state <= State_Decode;
 
           when Decoded_Not =>
 
-            w.topOfStack <= not r.topOfStack;
+            w.aluop <= '1';
+            w.aluresult <= not r.topOfStack;
+            w.topOfStack <= (others => DontCareValue);
 
             w.state <= State_Decode;
 
           when Decoded_Flip =>
 
+            w.aluop <= '1';
             for i in 0 to wordSize-1 loop
-              w.topOfStack(i) <= r.topOfStack(wordSize-1-i);
+              w.aluresult(i) <= r.topOfStack(wordSize-1-i);
             end loop;
+            w.topOfStack <= (others => DontCareValue);
 
             w.state <= State_Decode;
 
@@ -674,7 +690,9 @@ begin
 
           when Decoded_Shift =>
 
-            w.topOfStack <= r.topOfStack + r.topOfStack;
+            w.aluop <= '1';
+            w.aluresult <= r.topOfStack + r.topOfStack;
+            w.topOfStack <= (others => DontCareValue);
 
             w.state <= State_Decode;
 
