@@ -44,8 +44,8 @@ use work.zpuino_config.all;
 
 entity zpuino_top is
   generic (
-    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
-    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
+    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) := (others => '0');
+    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) := (others => '0')
   );
   port (
     clk:      in std_logic;
