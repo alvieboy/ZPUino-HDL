@@ -190,7 +190,7 @@ void timer_write( unsigned int address, unsigned int value)
 		//fprintf(stderr,"TIMER: Using wall clock for timer interrupt\n");
 
 		// Compute delay
-		unsigned long long cl = zpuinoclock / (timer_prescaler<<1);
+		unsigned long long cl = zpuinoclock / (timer_prescaler? (timer_prescaler<<1) : 1);
 		unsigned long long count = (timer_match+1);
 		count *= 1000000000ULL;
 		count/=cl;
