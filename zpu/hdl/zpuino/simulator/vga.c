@@ -71,19 +71,19 @@ gboolean vga_key_up(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
 	{
 	case GDK_KEY_Down:
 	case GDK_KEY_KP_Down:
-		gpioclass->set_pin(8,0);
+		gpioclass->set_pin(26,0);
 		break;
 	case GDK_KEY_KP_Up:
 	case GDK_KEY_Up:
-		gpioclass->set_pin(9,0);
+		gpioclass->set_pin(25,0);
 		break;
 	case GDK_KEY_KP_Left:
 	case GDK_KEY_Left:
-		gpioclass->set_pin(10,0);
+		gpioclass->set_pin(24,0);
 		break;
 	case GDK_KEY_KP_Right:
 	case GDK_KEY_Right:
-		gpioclass->set_pin(11,0);
+		gpioclass->set_pin(27,0);
 		break;
 	default:
 		break;
@@ -100,19 +100,19 @@ gboolean vga_key_down(GtkWidget *widget, GdkEventKey *event, gpointer     user_d
 	{
 	case GDK_KEY_Down:
 	case GDK_KEY_KP_Down:
-		gpioclass->set_pin(8,1);
+		gpioclass->set_pin(26,1);
 		break;
 	case GDK_KEY_KP_Up:
 	case GDK_KEY_Up:
-		gpioclass->set_pin(9,1);
+		gpioclass->set_pin(25,1);
 		break;
 	case GDK_KEY_KP_Left:
 	case GDK_KEY_Left:
-		gpioclass->set_pin(10,1);
+		gpioclass->set_pin(24,1);
 		break;
 	case GDK_KEY_KP_Right:
 	case GDK_KEY_Right:
-		gpioclass->set_pin(11,1);
+		gpioclass->set_pin(27,1);
 		break;
 	default:
 		break;
@@ -218,21 +218,20 @@ void vga_io_write_handler(unsigned address, unsigned value)
 
 	r<<=5;
 	if(r&0x80) {
-		//abort();
-		//  r|=(1<<5)-1;
+		 r|=(1<<5)-1;
 	}
 	r<<=16;
 
 	g<<=5;
 	if(g&0x80) {
-		//  g|=(1<<5)-1;
+		 g|=(1<<5)-1;
 	}
 
 	g<<=8;
 
 	b<<=6;
 	if(b&0x80) {
-		// g|=(1<<6)-1;
+		 g|=(1<<6)-1;
 	}
 
 	unsigned pixel = r|g|b;
