@@ -16,10 +16,11 @@ DHRYSRC=.
 
 SKETCHBIN?=InvalidSketch.bin
 
-OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o
+OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o crt0.o
 
-CFLAGS=-Os -phi -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=0x4000 -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ 
-LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+CFLAGS=-Os -nostartfiles -nostdlib -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ 
+LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections -nostartfiles
+
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all: prom-generic-dp-32.vhd Makefile
