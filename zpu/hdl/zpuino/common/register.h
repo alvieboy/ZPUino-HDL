@@ -3,13 +3,15 @@
 
 #if defined( __ZPUINO_S3E_EVAL__ )
 #include "board_s3e_eval.h"
-#else
-# if defined( __ZPUINO_PAPILIO_ONE__ )
+#elif defined( __ZPUINO_PAPILIO_ONE__ )
 #  include "board_papilio_one.h"
+#elif defined( __ZPUINO_PAPILIO_ARCADE__ )
+#  include "board_papilio_arcade.h"
 # else
 #  error Unknown board.
 # endif
-#endif
+
+
 
 #define SPIISBLOCKING 1
 

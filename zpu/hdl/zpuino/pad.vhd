@@ -37,6 +37,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use ieee.numeric_std.all;
 
+library unisim;
+use unisim.vcomponents.all;
+
 package pad is
 
 
@@ -196,9 +199,15 @@ entity opad is
 end entity opad;
 
 architecture behave of opad is
+  component obuf is
+    port (
+      I: in std_logic;
+      O: out std_logic
+    );
+  end component;
 begin
 
-  obuf: OBUF
+  obufi: OBUF
     port map (
       I => I,
       O => PAD
