@@ -63,7 +63,15 @@ entity zpuino_top is
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
     sram_oe:    out std_logic;
-    sram_be:    out std_logic
+    sram_be:    out std_logic;
+
+    vgaclk:   in std_logic;
+    vga_hsync: out std_logic;
+    vga_vsync: out std_logic;
+    vga_r: out std_logic_vector(2 downto 0);
+    vga_g: out std_logic_vector(2 downto 0);
+    vga_b: out std_logic_vector(1 downto 0)
+
   );
 end entity zpuino_top;
 
@@ -136,7 +144,14 @@ begin
       sram_be       => sram_be,
       sram_oe       => sram_oe,
       sram_we       => sram_we,
-      sram_ce       => sram_ce
+      sram_ce       => sram_ce,
+      vgaclk        => vgaclk,
+      vga_hsync     => vga_hsync,
+      vga_vsync     => vga_vsync,
+      vga_r         => vga_r,
+      vga_g         => vga_g,
+      vga_b         => vga_b
+
     );
 
 end behave;

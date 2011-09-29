@@ -44,9 +44,11 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10.86956521739 ns;
+  constant period : time := 10 ns;
+  constant vgaperiod : time := 20 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
+  signal w_vgaclk : std_logic := '0';
   --signal gpio:  std_logic_vector(31 downto 0);
 
   signal spi_pf_miso:  std_logic;
@@ -79,8 +81,9 @@ architecture behave of tb_zpuino is
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
     sram_oe:    out std_logic;
-    sram_be:    out std_logic
+    sram_be:    out std_logic;
 
+    vgaclk:     in std_logic
   );
   end component zpuino_top;
 
@@ -319,7 +322,8 @@ begin
       sram_data => sram_data,
       sram_oe => sram_oe,
       sram_we => sram_we,
-      sram_ce => sram_ce
+      sram_ce => sram_ce,
+      vgaclk => w_vgaclk
   );
 
   --rxs: uart_pty_tx
@@ -348,6 +352,7 @@ begin
     );
 
   w_clk <= not w_clk after period/2;
+  w_vgaclk <= not w_vgaclk after vgaperiod/2;
 
   stimuli : process
    begin

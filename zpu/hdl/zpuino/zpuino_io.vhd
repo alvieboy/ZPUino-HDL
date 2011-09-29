@@ -74,7 +74,14 @@ entity zpuino_io is
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
     sram_oe:    out std_logic;
-    sram_be:    out std_logic
+    sram_be:    out std_logic;
+
+    vgaclk: in std_logic;
+    vga_hsync: out std_logic;
+    vga_vsync: out std_logic;
+    vga_r: out std_logic_vector(2 downto 0);
+    vga_g: out std_logic_vector(2 downto 0);
+    vga_b: out std_logic_vector(1 downto 0)
   );
 end entity zpuino_io;
 
@@ -153,6 +160,107 @@ architecture behave of zpuino_io is
   signal slot_interrupt:slot_std_logic_type;
 
   signal wb_in_transaction: std_logic;
+
+  component zpuino_vga2 is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+
+    -- Memory interface (wishbone master)  
+    mi_wb_dat_i: in std_logic_vector(31 downto 0);
+    mi_wb_dat_o: out std_logic_vector(31 downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxIObit downto minIObit);
+    mi_wb_sel_o: out std_logic_vector(3 downto 0);
+    mi_wb_cti_o: out std_logic_vector(2 downto 0);
+    mi_wb_we_o:  out std_logic;
+    mi_wb_cyc_o: out std_logic;
+    mi_wb_stb_o: out std_logic;
+    mi_wb_ack_i: in std_logic;
+
+    -- VGA interface
+    vgaclk:     in std_logic;
+
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_r:      out std_logic_vector(2 downto 0);
+    vga_g:      out std_logic_vector(2 downto 0);
+    vga_b:      out std_logic_vector(1 downto 0)
+  );
+  end component zpuino_vga2;
+
+  signal mi_wb_dat_i: std_logic_vector(31 downto 0);
+  signal mi_wb_dat_o: std_logic_vector(31 downto 0);
+  signal mi_wb_adr_o: std_logic_vector(maxIObit downto minIObit);
+  signal   mi_wb_sel_o: std_logic_vector(3 downto 0);
+  signal   mi_wb_cti_o: std_logic_vector(2 downto 0);
+  signal   mi_wb_we_o:  std_logic;
+  signal   mi_wb_cyc_o: std_logic;
+  signal   mi_wb_stb_o: std_logic;
+  signal   mi_wb_ack_i: std_logic;
+
+  component wbarb2_1 is
+    port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(maxIObit downto minIObit);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic
+  );
+
+  end component wbarb2_1;
+
+
+  signal sram_dat_i: std_logic_vector(31 downto 0);
+  signal sram_dat_o: std_logic_vector(31 downto 0);
+  signal sram_adr_o: std_logic_vector(maxIObit downto minIOBit);
+  signal sram_we_o:  std_logic;
+  signal sram_cyc_o: std_logic;
+  signal sram_stb_o: std_logic;
+  signal sram_ack_i: std_logic;
+
+
 begin
 
   -- Ack generator
@@ -490,21 +598,20 @@ begin
   );
 
   --
-  -- IO SLOT 8 (optional)
+  -- IO SLOT 8 (indirect mapped - see arbiter below)
   --
 
   sram_inst: sram_ctrl
     port map (
-      wb_clk_i       => wb_clk_i,
-  	 	wb_rst_i    => wb_rst_i,
-      wb_dat_o      => slot_read(8),
-      wb_dat_i     => slot_write(8),
-      wb_adr_i   => slot_address(8),
-      wb_we_i    => slot_we(8),
-      wb_cyc_i      => slot_cyc(8),
-      wb_stb_i      => slot_stb(8),
-      wb_ack_o      => slot_ack(8),
-      --wb_inta_o =>  slot_interrupt(8),
+      wb_clk_i      => wb_clk_i,
+  	 	wb_rst_i      => wb_rst_i,
+      wb_dat_o      => sram_dat_i,
+      wb_dat_i      => sram_dat_o,
+      wb_adr_i      => sram_adr_o,
+      wb_we_i       => sram_we_o,
+      wb_cyc_i      => sram_cyc_o,
+      wb_stb_i      => sram_stb_o,
+      wb_ack_o      => sram_ack_i,
 
       -- SRAM signals
       sram_addr   => sram_addr,
@@ -519,18 +626,37 @@ begin
   -- IO SLOT 9
   --
 
-  slot9: zpuino_empty_device
+  slot9: zpuino_vga2
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(9),
-    wb_dat_i     => slot_write(9),
-    wb_adr_i   => slot_address(9),
-    wb_we_i        => slot_we(9),
-    wb_cyc_i        => slot_cyc(9),
-    wb_stb_i        => slot_stb(9),
-    wb_ack_o      => slot_ack(9),
-    wb_inta_o => slot_interrupt(9)
+      wb_clk_i       => wb_clk_i,
+  	 	wb_rst_i    => wb_rst_i,
+      wb_dat_o      => slot_read(9),
+      wb_dat_i     => slot_write(9),
+      wb_adr_i   => slot_address(9),
+      wb_we_i    => slot_we(9),
+      wb_cyc_i      => slot_cyc(9),
+      wb_stb_i      => slot_stb(9),
+      wb_ack_o      => slot_ack(9),
+
+      -- Memory interface (wishbone master)  addresses (0-75300)
+      mi_wb_dat_i   => mi_wb_dat_i,
+      mi_wb_dat_o   => mi_wb_dat_o,
+      mi_wb_adr_o   => mi_wb_adr_o,
+      mi_wb_sel_o   => mi_wb_sel_o,
+      mi_wb_cti_o   => mi_wb_cti_o,
+      mi_wb_we_o    => mi_wb_we_o,
+      mi_wb_cyc_o   => mi_wb_cyc_o,
+      mi_wb_stb_o   => mi_wb_stb_o,
+      mi_wb_ack_i   => mi_wb_ack_i,
+
+    -- VGA interface
+
+      vgaclk        => vgaclk,
+      vga_hsync     => vga_hsync,
+      vga_vsync     => vga_vsync,
+      vga_r         => vga_r,
+      vga_g         => vga_g,
+      vga_b         => vga_b
   );
 
   --
@@ -640,6 +766,50 @@ begin
     wb_ack_o      => slot_ack(15),
     wb_inta_o => slot_interrupt(15)
   );
+
+  sramarb: wbarb2_1
+  port map (
+    wb_clk_i      => wb_clk_i,
+	 	wb_rst_i      => wb_rst_i,
+
+    -- Master 0 signals
+
+    m0_wb_dat_o   => slot_read(8),
+    m0_wb_dat_i   => slot_write(8),
+    m0_wb_adr_i   => slot_address(8),
+    m0_wb_sel_i   => "1111",
+    m0_wb_cti_i   => "000",
+    m0_wb_we_i    => slot_we(8),
+    m0_wb_cyc_i   => slot_cyc(8),
+    m0_wb_stb_i   => slot_stb(8),
+    m0_wb_ack_o   => slot_ack(8),
+
+    -- Master 1 signals
+
+    m1_wb_dat_o   => mi_wb_dat_i,
+    m1_wb_dat_i   => mi_wb_dat_o,
+    m1_wb_adr_i   => mi_wb_adr_o,
+    m1_wb_sel_i   => mi_wb_sel_o,
+    m1_wb_cti_i   => mi_wb_cti_o,
+    m1_wb_we_i    => mi_wb_we_o,
+    m1_wb_cyc_i   => mi_wb_cyc_o,
+    m1_wb_stb_i   => mi_wb_stb_o,
+    m1_wb_ack_o   => mi_wb_ack_i,
+
+    -- Slave signals
+
+    s0_wb_dat_i   => sram_dat_i,
+    s0_wb_dat_o   => sram_dat_o,
+    s0_wb_adr_o   => sram_adr_o,
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => sram_we_o,
+    s0_wb_cyc_o   => sram_cyc_o,
+    s0_wb_stb_o   => sram_stb_o,
+    s0_wb_ack_i   => sram_ack_i
+  );
+
+
 
 
   uart_rx <= rx;

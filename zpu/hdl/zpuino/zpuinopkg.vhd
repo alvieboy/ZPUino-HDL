@@ -68,13 +68,21 @@ package zpuinopkg is
       gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
       tx:       out std_logic;
       rx:       in std_logic;
-    -- SRAM signals
-    sram_addr:  out std_logic_vector(17 downto 0);
-    sram_data:  inout std_logic_vector(15 downto 0);
-    sram_ce:    out std_logic;
-    sram_we:    out std_logic;
-    sram_oe:    out std_logic;
-    sram_be:    out std_logic
+      -- SRAM signals
+      sram_addr:  out std_logic_vector(17 downto 0);
+      sram_data:  inout std_logic_vector(15 downto 0);
+      sram_ce:    out std_logic;
+      sram_we:    out std_logic;
+      sram_oe:    out std_logic;
+      sram_be:    out std_logic;
+
+      vgaclk: in std_logic;
+      vga_hsync: out std_logic;
+      vga_vsync: out std_logic;
+      vga_r: out std_logic_vector(2 downto 0);
+      vga_g: out std_logic_vector(2 downto 0);
+      vga_b: out std_logic_vector(1 downto 0)
+
     );
   end component zpuino_io;
 
