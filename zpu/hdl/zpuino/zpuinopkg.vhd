@@ -67,8 +67,14 @@ package zpuinopkg is
       gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
       gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
       tx:       out std_logic;
-      rx:       in std_logic
-
+      rx:       in std_logic;
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_data:  inout std_logic_vector(15 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic;
+    sram_be:    out std_logic
     );
   end component zpuino_io;
 
@@ -259,5 +265,29 @@ package zpuinopkg is
   );
   end component zpuino_adc;
 
+  component sram_ctrl is
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    wb_dat_o: out std_logic_vector(31 downto 0);
+    wb_dat_i: in std_logic_vector(31 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    --wb_sel_i: in std_logic_vector(3 downto 0);
+    --wb_cti_i: in std_logic_vector(2 downto 0);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_data:  inout std_logic_vector(15 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic;
+    sram_be:    out std_logic
+  );
+  end component sram_ctrl;
 
 end package zpuinopkg;

@@ -67,7 +67,14 @@ entity zpuino_io is
     gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
 
     tx: out std_logic;
-    rx: in std_logic
+    rx: in std_logic;
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_data:  inout std_logic_vector(15 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic;
+    sram_be:    out std_logic
   );
 end entity zpuino_io;
 
@@ -486,19 +493,27 @@ begin
   -- IO SLOT 8 (optional)
   --
 
-  adc_inst: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(8),
-    wb_dat_i     => slot_write(8),
-    wb_adr_i   => slot_address(8),
-    wb_we_i    => slot_we(8),
-    wb_cyc_i      => slot_cyc(8),
-    wb_stb_i      => slot_stb(8),
-    wb_ack_o      => slot_ack(8),
-    wb_inta_o =>  slot_interrupt(8)
-  );
+  sram_inst: sram_ctrl
+    port map (
+      wb_clk_i       => wb_clk_i,
+  	 	wb_rst_i    => wb_rst_i,
+      wb_dat_o      => slot_read(8),
+      wb_dat_i     => slot_write(8),
+      wb_adr_i   => slot_address(8),
+      wb_we_i    => slot_we(8),
+      wb_cyc_i      => slot_cyc(8),
+      wb_stb_i      => slot_stb(8),
+      wb_ack_o      => slot_ack(8),
+      --wb_inta_o =>  slot_interrupt(8),
+
+      -- SRAM signals
+      sram_addr   => sram_addr,
+      sram_data   => sram_data,
+      sram_ce     => sram_ce,
+      sram_we     => sram_we,
+      sram_oe     => sram_oe,
+      sram_be     => sram_be
+    );
 
   --
   -- IO SLOT 9

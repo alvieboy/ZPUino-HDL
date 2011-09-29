@@ -759,7 +759,7 @@ void configure_pins()
 
 }
 #endif
-#ifdef __ZPUINO_PAPILIO_ARCADE__
+#ifdef __ZPUINO_PAPILIO_PLUS__
 void configure_pins()
 {
 	outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);

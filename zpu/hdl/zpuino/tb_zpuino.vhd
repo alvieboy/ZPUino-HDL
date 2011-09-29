@@ -71,7 +71,16 @@ architecture behave of tb_zpuino is
     gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
     gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
     rx:       in std_logic;
-    tx:       out std_logic
+    tx:       out std_logic;
+
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_data:  inout std_logic_vector(15 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic;
+    sram_be:    out std_logic
+
   );
   end component zpuino_top;
 
@@ -134,6 +143,20 @@ architecture behave of tb_zpuino is
   signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal rxsim: std_logic;
 
+  signal sram_addr:  std_logic_vector(17 downto 0);
+  signal sram_data:  std_logic_vector(15 downto 0);
+  signal sram_ce:    std_logic;
+  signal sram_we:    std_logic;
+  signal sram_oe:    std_logic;
+  signal sram_be:    std_logic;
+
+  signal sram_addr_dly:  std_logic_vector(17 downto 0);
+  signal sram_data_dly:  std_logic_vector(15 downto 0);
+  signal sram_ce_dly:    std_logic;
+  signal sram_we_dly:    std_logic;
+  signal sram_oe_dly:    std_logic;
+  signal sram_be_dly:    std_logic;
+
   component uart_pty_tx is
    port(
       clk:    in  std_logic;
@@ -142,7 +165,136 @@ architecture behave of tb_zpuino is
    );
   end component uart_pty_tx;
 
+  component sram IS
+
+  GENERIC (
+
+    clear_on_power_up: boolean := FALSE;    -- if TRUE, RAM is initialized with zeroes at start of simulation
+                                            -- Clearing of RAM is carried out before download takes place
+
+    download_on_power_up: boolean := TRUE;  -- if TRUE, RAM is downloaded at start of simulation 
+      
+    trace_ram_load: boolean := TRUE;        -- Echoes the data downloaded to the RAM on the screen
+                                            -- (included for debugging purposes)
+
+
+    enable_nWE_only_control: boolean := TRUE;  -- Read-/write access controlled by nWE only
+                                               -- nOE may be kept active all the time
+
+
+
+    -- Configuring RAM size
+
+    size:      INTEGER :=  8;  -- number of memory words
+    adr_width: INTEGER :=  3;  -- number of address bits
+    width:     INTEGER :=  8;  -- number of bits per memory word
+
+
+    -- READ-cycle timing parameters
+
+    tAA_max:    TIME := 20 NS; -- Address Access Time
+    tOHA_min:   TIME :=  3 NS; -- Output Hold Time
+    tACE_max:   TIME := 20 NS; -- nCE/CE2 Access Time
+    tDOE_max:   TIME :=  8 NS; -- nOE Access Time
+    tLZOE_min:  TIME :=  0 NS; -- nOE to Low-Z Output
+    tHZOE_max:  TIME :=  8 NS; --  OE to High-Z Output
+    tLZCE_min:  TIME :=  3 NS; -- nCE/CE2 to Low-Z Output
+    tHZCE_max:  TIME := 10 NS; --  CE/nCE2 to High Z Output
+ 
+
+    -- WRITE-cycle timing parameters
+
+    tWC_min:    TIME := 20 NS; -- Write Cycle Time
+    tSCE_min:   TIME := 18 NS; -- nCE/CE2 to Write End
+    tAW_min:    TIME := 15 NS; -- tAW Address Set-up Time to Write End
+    tHA_min:    TIME :=  0 NS; -- tHA Address Hold from Write End
+    tSA_min:    TIME :=  0 NS; -- Address Set-up Time
+    tPWE_min:   TIME := 13 NS; -- nWE Pulse Width
+    tSD_min:    TIME := 10 NS; -- Data Set-up to Write End
+    tHD_min:    TIME :=  0 NS; -- Data Hold from Write End
+    tHZWE_max:  TIME := 10 NS; -- nWE Low to High-Z Output
+    tLZWE_min:  TIME :=  0 NS  -- nWE High to Low-Z Output
+
+  );
+
+  PORT (
+      
+    nCE: IN std_logic := '1';  -- low-active Chip-Enable of the SRAM device; defaults to '1' (inactive)
+    nOE: IN std_logic := '1';  -- low-active Output-Enable of the SRAM device; defaults to '1' (inactive)
+    nWE: IN std_logic := '1';  -- low-active Write-Enable of the SRAM device; defaults to '1' (inactive)
+
+    A:   IN std_logic_vector(adr_width-1 downto 0); -- address bus of the SRAM device
+    D:   INOUT std_logic_vector(width-1 downto 0);  -- bidirectional data bus to/from the SRAM device
+
+    CE2: IN std_logic := '1';  -- high-active Chip-Enable of the SRAM device; defaults to '1'  (active) 
+
+
+    download: IN boolean := FALSE;    -- A FALSE-to-TRUE transition on this signal downloads the data
+                                      -- in file specified by download_filename to the RAM
+
+    download_filename: IN string := "sram_load.dat";  -- name of the download source file
+                                                      --            Passing the filename via a port of type
+                                                      -- ********** string may cause a problem with some
+                                                      -- WATCH OUT! simulators. The string signal assigned
+                                                      -- ********** to the port at least should have the
+                                                      --            same length as the default value.
+ 
+    dump: IN boolean := FALSE;       -- A FALSE-to-TRUE transition on this signal dumps
+                                     -- the current content of the memory to the file
+                                     -- specified by dump_filename.
+    dump_start: IN natural := 0;     -- Written to the dump-file are the memory words from memory address 
+    dump_end: IN natural := size-1;  -- dump_start to address dump_end (default: all addresses)
+
+    dump_filename: IN string := "sram_dump.dat"  -- name of the dump destination file
+                                                 -- (See note at port  download_filename)
+
+  );
+  END component sram;
+
+
 begin
+
+  mysram: sram
+    GENERIC MAP (
+      size      => 8192,  -- number of memory words
+      adr_width => 18,  -- number of address bits
+      width     => 16,  -- number of bits per memory word
+
+
+    -- READ-cycle timing parameters
+
+    tAA_max     => 10 NS, -- Address Access Time
+    tOHA_min    => 2 NS, -- Output Hold Time
+    tACE_max    => 10 NS, -- nCE/CE2 Access Time
+    tDOE_max    => 4.5 NS, -- nOE Access Time
+    tLZOE_min   => 0.1 NS, -- nOE to Low-Z Output
+    tHZOE_max   => 4 NS, --  OE to High-Z Output
+    tLZCE_min   => 3 NS, -- nCE/CE2 to Low-Z Output
+    tHZCE_max   => 4 NS, --  CE/nCE2 to High Z Output
+ 
+
+    -- WRITE-cycle timing parameters
+
+    tWC_min     => 10 NS, -- Write Cycle Time
+    tSCE_min    =>  8 NS, -- nCE/CE2 to Write End
+    tAW_min     =>  8 NS, -- tAW Address Set-up Time to Write End
+    tHA_min     =>  0.1 NS, -- tHA Address Hold from Write End
+    tSA_min     =>  0.1 NS, -- Address Set-up Time
+    tPWE_min    =>  8 NS, -- nWE Pulse Width
+    tSD_min     =>  6 NS, -- Data Set-up to Write End
+    tHD_min     =>  0.1 NS, -- Data Hold from Write End
+    tHZWE_max   =>  5 NS, -- nWE Low to High-Z Output
+    tLZWE_min   =>  2 NS  -- nWE High to Low-Z Output
+  )
+
+  PORT MAP (
+    nCE     => sram_ce,
+    nOE     => sram_oe,
+    nWE     => sram_we,
+
+    A       => sram_addr,
+    D       => sram_data
+  );
 
   uart_rx <= rxsim;--uart_tx after 7 us;
 
@@ -162,7 +314,12 @@ begin
       gpio_o => gpio_o,
       gpio_t => gpio_t,
       rx => '1',
-      tx => open
+      tx => open,
+      sram_addr => sram_addr,
+      sram_data => sram_data,
+      sram_oe => sram_oe,
+      sram_we => sram_we,
+      sram_ce => sram_ce
   );
 
   --rxs: uart_pty_tx

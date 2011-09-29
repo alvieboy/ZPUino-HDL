@@ -5,8 +5,8 @@
 #include "board_s3e_eval.h"
 #elif defined( __ZPUINO_PAPILIO_ONE__ )
 #  include "board_papilio_one.h"
-#elif defined( __ZPUINO_PAPILIO_ARCADE__ )
-#  include "board_papilio_arcade.h"
+#elif defined( __ZPUINO_PAPILIO_PLUS__ )
+#  include "board_papilio_plus.h"
 # else
 #  error Unknown board.
 # endif

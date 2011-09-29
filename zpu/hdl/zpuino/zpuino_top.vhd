@@ -56,7 +56,14 @@ entity zpuino_top is
     gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
 
     rx:       in std_logic;
-    tx:       out std_logic
+    tx:       out std_logic;
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_data:  inout std_logic_vector(15 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic;
+    sram_be:    out std_logic
   );
 end entity zpuino_top;
 
@@ -123,7 +130,13 @@ begin
       gpio_o        => gpio_o,
       gpio_t        => gpio_t,
       rx            => rx,
-      tx            => tx
+      tx            => tx,
+      sram_addr     => sram_addr,
+      sram_data     => sram_data,
+      sram_be       => sram_be,
+      sram_oe       => sram_oe,
+      sram_we       => sram_we,
+      sram_ce       => sram_ce
     );
 
 end behave;
