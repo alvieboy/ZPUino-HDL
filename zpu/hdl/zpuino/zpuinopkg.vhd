@@ -79,9 +79,9 @@ package zpuinopkg is
       vgaclk: in std_logic;
       vga_hsync: out std_logic;
       vga_vsync: out std_logic;
-      vga_r: out std_logic_vector(2 downto 0);
-      vga_g: out std_logic_vector(2 downto 0);
-      vga_b: out std_logic_vector(1 downto 0)
+      vga_r: out std_logic_vector(3 downto 0);
+      vga_g: out std_logic_vector(3 downto 0);
+      vga_b: out std_logic_vector(3 downto 0)
 
     );
   end component zpuino_io;

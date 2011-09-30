@@ -122,7 +122,8 @@ State_Ashiftright,
 State_Mult1,
 State_Mult2,
 State_Mult3,
-State_Mult4
+State_Mult4,
+State_Mult5
 );
 
 type DecodedOpcodeType is
@@ -227,6 +228,7 @@ end pc_to_memaddr;
 signal mult0: unsigned(wordSize-1 downto 0);
 signal mult1: unsigned(wordSize-1 downto 0);
 signal mult2: unsigned(wordSize-1 downto 0);
+signal mult3: unsigned(wordSize-1 downto 0);
 
 begin
 
@@ -406,7 +408,8 @@ begin
   begin
     if rising_edge(wb_clk_i) then
       multR := r.multInA * r.multInB;
-      mult2 <= multR(wordSize-1 downto 0);
+      mult3 <= multR(wordSize-1 downto 0);
+      mult2 <= mult3;
       mult1 <= mult2;
       mult0 <= mult1;
     end if;
@@ -882,6 +885,9 @@ begin
         w.state <= State_Mult4;
 
       when State_Mult4 =>
+        w.state <= State_Mult5;
+
+      when State_Mult5 =>
         w.topOfStack <= mult0;
         w.state <= State_Decode;
         memBAddr <= pc_to_memaddr(r.pc);
