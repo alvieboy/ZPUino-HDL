@@ -55,7 +55,7 @@ architecture behave of cachefill is
   signal fifo_full: std_logic;
   signal fifo_almost_full: std_logic;
   signal reset_address: std_logic := '0';
-  signal address: unsigned(11 downto 0);
+  signal address: unsigned(18 downto 0);
   signal fifo_write_enable: std_logic;
   signal fifo_quad_full: std_logic;
   signal fifo_half_full: std_logic;
@@ -101,7 +101,7 @@ wb_dat_o <= (others => 'X');
 wb_sel_o <= "1111";
 
 wb_adr_o(31 downto address'high+1) <= (others => '0');
-wb_adr_o(11 downto 0) <= std_logic_vector(address);
+wb_adr_o(18 downto 0) <= std_logic_vector(address);
 
 fifo_write_enable<='1' when wb_ack_i='1' and state/=idle else '0';
 

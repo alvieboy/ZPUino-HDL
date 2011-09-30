@@ -115,16 +115,19 @@ architecture behave of zpuino_vga2 is
   -- 800x600, 72Hz    50.000    800  56  120  64    600  37  6   23
 
   constant VGA_H_SYNC: integer := 96;
-  constant VGA_H_FRONTPORCH: integer := 16 + 20;
-  constant VGA_H_DISPLAY: integer := 600;
-  constant VGA_H_BACKPORCH: integer := 48 + 20;
+  constant VGA_H_FRONTPORCH: integer := 16;
+--  constant VGA_H_FRONTPORCH: integer := 1;
+  constant VGA_H_DISPLAY: integer := 640;
+  constant VGA_H_BACKPORCH: integer := 48;
+--  constant VGA_H_BACKPORCH: integer := 1;
 
-  --constant VGA_V_FRONTPORCH: integer := 37;
-  constant VGA_V_FRONTPORCH: integer := 12 + 30;
+  constant VGA_V_FRONTPORCH: integer := 10;
+--  constant VGA_V_FRONTPORCH: integer := 1;
   constant VGA_V_SYNC: integer := 2;
-  constant VGA_V_DISPLAY: integer := 420;
-  --constant VGA_V_BACKPORCH: integer := 23;
-  constant VGA_V_BACKPORCH: integer := 35 + 30;
+  constant VGA_V_DISPLAY: integer := 480;
+  constant VGA_V_BACKPORCH: integer := 33;
+--  constant VGA_V_BACKPORCH: integer := 1;
+
 
   constant VGA_HCOUNT: integer :=
     VGA_H_SYNC + VGA_H_FRONTPORCH + VGA_H_DISPLAY + VGA_H_BACKPORCH;
@@ -133,7 +136,6 @@ architecture behave of zpuino_vga2 is
     VGA_V_SYNC + VGA_V_FRONTPORCH + VGA_V_DISPLAY + VGA_V_BACKPORCH;
 
   constant v_polarity: std_logic := '1';
-
   constant h_polarity: std_logic := '1';
 
   -- Pixel counters
@@ -146,7 +148,8 @@ architecture behave of zpuino_vga2 is
 
   signal vgarst: std_logic := '0';
 
-  signal rstq1,rstq2: std_logic;
+  signal rstq1: std_logic:='1';
+  signal rstq2: std_logic;
 
   signal vga_ram_address: unsigned(14 downto 0);
   signal vga_ram_data: std_logic_vector(15 downto 0);
@@ -177,19 +180,19 @@ begin
     end if;
   end process;
 
-  wb_ack_o <= wb_stb_i and wb_cyc_i and (read_ended or wb_we_i);
+  wb_ack_o <= wb_stb_i and wb_cyc_i;-- and (read_ended or wb_we_i);
 
   -- Read muxer
   process(wb_adr_i,ram_read)
   begin
     wb_dat_o <= (others => '0');
-    wb_dat_o(7 downto 0) <= ram_read;
+    --wb_dat_o(7 downto 0) <= ram_read;
   end process;
 
-  process(wb_we_i,wb_cyc_i,wb_stb_i,wb_adr_i)
-  begin
-    ram_we <= wb_we_i and wb_cyc_i and wb_stb_i;
-  end process;
+  --process(wb_we_i,wb_cyc_i,wb_stb_i,wb_adr_i)
+  --begin
+  --  ram_we <= wb_we_i and wb_cyc_i and wb_stb_i;
+  --end process;
     
   -- VGA reset generator.
   process(vgaclk, wb_rst_i)
@@ -206,8 +209,7 @@ begin
 
   -- Compute the VGA RAM offset we need to use to fetch the character.
 
-  vga_ram_address <= hdisp +
-    vga_v_offset;
+--  vga_ram_address <= hdisp + vga_v_offset;
 
   mi_wb_adr_o<=cache_address(maxIObit-minIObit downto 0);
 
@@ -235,25 +237,6 @@ begin
     empty   => open,
     clear   => cache_clear
   );
-
-
-
---  ram:zpuino_vga_ram
---  port map (
---    v_clk   => vgaclk,
---    v_en    => '1',
---    v_addr  => std_logic_vector(vga_ram_address),
---    v_data  => vga_ram_data,
-
-    -- Memory interface
---    mi_clk  => wb_clk_i,
---    mi_dat_i  => wb_dat_i(7 downto 0),
---    mi_we   => ram_we,
---    mi_en   => '1',
---    mi_dat_o  => ram_read,
---    mi_addr => wb_adr_i(16 downto 2)
-
---  );
 
   -- Horizontal counter
 

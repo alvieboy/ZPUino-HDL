@@ -161,6 +161,21 @@ architecture behave of zpuino_io is
 
   signal wb_in_transaction: std_logic;
 
+  component wb_char_ram_8x8 is
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
+  );
+  end component wb_char_ram_8x8;
+
   component zpuino_vga2 is
   port (
     wb_clk_i: in std_logic;
@@ -638,7 +653,7 @@ begin
       wb_stb_i      => slot_stb(9),
       wb_ack_o      => slot_ack(9),
 
-      -- Memory interface (wishbone master)  addresses (0-75300)
+      -- Memory interface (wishbone master) 
       mi_wb_dat_i   => mi_wb_dat_i,
       mi_wb_dat_o   => mi_wb_dat_o,
       mi_wb_adr_o   => mi_wb_adr_o,
@@ -663,7 +678,7 @@ begin
   -- IO SLOT 10
   --
 
-  slot10: zpuino_empty_device
+  slot10: wb_char_ram_8x8
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
