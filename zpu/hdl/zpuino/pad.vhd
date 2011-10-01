@@ -199,12 +199,6 @@ entity opad is
 end entity opad;
 
 architecture behave of opad is
-  component obuf is
-    port (
-      I: in std_logic;
-      O: out std_logic
-    );
-  end component;
 begin
 
   obufi: OBUF

@@ -140,13 +140,16 @@ begin
           wb_cti_o <= "111";
           if wb_ack_i='1' then
             address <= address+1;
-            state <= waitend;
+            state <= idle;--waitend;
+            wb_cyc_o <= '0';
+            wb_stb_o <= '0';
           end if;
         when waitend =>
-          --if wb_ack_i='1' then
+          if wb_ack_i='1' then
             state <= idle;
+            wb_cyc_o <= '0';
             address <= address+1;
-          --end if;
+          end if;
         when others =>
 
       end case;
