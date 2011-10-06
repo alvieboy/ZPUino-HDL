@@ -150,12 +150,27 @@ int uart_incoming_data(short revents)
 	int i;
 
 	unsigned char buf[FIFO_SIZE];
-	int r = read(clientsockfd,buf,sizeof(buf));
-	//fprintf(stderr,"UART read %d\n",r);
+	/* Check OOB first */
+
+	int r;
+	r = recv(clientsockfd,buf,sizeof(buf),MSG_OOB);
+	if (r>0) {
+		fprintf(stderr,"OOB data %d\n",r);
+		handle_escape(buf[0]);
+		return 0;
+	}
+
+	r = recv(clientsockfd,buf,sizeof(buf),0);
+
+
+
+	fprintf(stderr,"UART read %d\n",r);
+
 	if (r>0) {
 		i=0;
 		pthread_mutex_lock(&fifo_lock);
 		while (r--) {
+            /*
 			if (uartescape) {
 				uartescape=0;
 				if (buf[i]!=0xff) {
@@ -171,7 +186,7 @@ int uart_incoming_data(short revents)
 					continue;
 				}
 			}
-
+            */
 			fifodata[highmark]=buf[i];
 			i++;
 			highmark++;
