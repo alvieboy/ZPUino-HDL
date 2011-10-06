@@ -44,7 +44,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10 ns;
+  constant period : time := 10.4166666667 ns;
   constant vgaperiod : time := 40 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
@@ -76,7 +76,7 @@ architecture behave of tb_zpuino is
     tx:       out std_logic;
 
     -- SRAM signals
-    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_addr:  out std_logic_vector(18 downto 0);
     sram_data:  inout std_logic_vector(15 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
@@ -146,14 +146,14 @@ architecture behave of tb_zpuino is
   signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal rxsim: std_logic;
 
-  signal sram_addr:  std_logic_vector(17 downto 0);
+  signal sram_addr:  std_logic_vector(18 downto 0);
   signal sram_data:  std_logic_vector(15 downto 0);
   signal sram_ce:    std_logic;
   signal sram_we:    std_logic;
   signal sram_oe:    std_logic;
   signal sram_be:    std_logic;
 
-  signal sram_addr_dly:  std_logic_vector(17 downto 0);
+  signal sram_addr_dly:  std_logic_vector(18 downto 0);
   signal sram_data_dly:  std_logic_vector(15 downto 0);
   signal sram_ce_dly:    std_logic;
   signal sram_we_dly:    std_logic;
@@ -260,7 +260,7 @@ begin
   mysram: sram
     GENERIC MAP (
       size      => 8192,  -- number of memory words
-      adr_width => 18,  -- number of address bits
+      adr_width => 19,  -- number of address bits
       width     => 16,  -- number of bits per memory word
 
 

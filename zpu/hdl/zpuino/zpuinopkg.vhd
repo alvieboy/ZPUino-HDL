@@ -69,7 +69,7 @@ package zpuinopkg is
       tx:       out std_logic;
       rx:       in std_logic;
       -- SRAM signals
-      sram_addr:  out std_logic_vector(17 downto 0);
+      sram_addr:  out std_logic_vector(18 downto 0);
       sram_data:  inout std_logic_vector(15 downto 0);
       sram_ce:    out std_logic;
       sram_we:    out std_logic;
@@ -282,14 +282,14 @@ package zpuinopkg is
     wb_dat_i: in std_logic_vector(31 downto 0);
     wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
     --wb_sel_i: in std_logic_vector(3 downto 0);
-    --wb_cti_i: in std_logic_vector(2 downto 0);
+    wb_cti_i: in std_logic_vector(2 downto 0);
     wb_we_i:  in std_logic;
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
 
     -- SRAM signals
-    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_addr:  out std_logic_vector(18 downto 0);
     sram_data:  inout std_logic_vector(15 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;

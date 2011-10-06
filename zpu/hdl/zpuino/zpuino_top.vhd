@@ -58,7 +58,7 @@ entity zpuino_top is
     rx:       in std_logic;
     tx:       out std_logic;
     -- SRAM signals
-    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_addr:  out std_logic_vector(18 downto 0);
     sram_data:  inout std_logic_vector(15 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;

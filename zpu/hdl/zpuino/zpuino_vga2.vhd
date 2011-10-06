@@ -110,23 +110,27 @@ architecture behave of zpuino_vga2 is
   end component cachefill;
 
 
-  -- Clock is 50 MHz            Hor                 Vert
+  --                  Clock     Hor                 Vert
   --                            Disp FP  Sync BP    Disp FP Sync BP
   -- 800x600, 72Hz    50.000    800  56  120  64    600  37  6   23
 
-  constant VGA_H_SYNC: integer := 96;
-  constant VGA_H_FRONTPORCH: integer := 16;
---  constant VGA_H_FRONTPORCH: integer := 1;
-  constant VGA_H_DISPLAY: integer := 640;
-  constant VGA_H_BACKPORCH: integer := 48;
---  constant VGA_H_BACKPORCH: integer := 1;
+  constant VGA_H_BORDER: integer := 0;
 
-  constant VGA_V_FRONTPORCH: integer := 10;
---  constant VGA_V_FRONTPORCH: integer := 1;
+  constant VGA_H_SYNC: integer := 96;
+  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER;
+  --constant VGA_H_FRONTPORCH: integer := 1;
+  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
+  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER;
+  --constant VGA_H_BACKPORCH: integer := 1;
+
+
+  constant VGA_V_BORDER: integer := 40;
+  constant VGA_V_FRONTPORCH: integer := 10+VGA_V_BORDER;
+  --constant VGA_V_FRONTPORCH: integer := 1;
   constant VGA_V_SYNC: integer := 2;
-  constant VGA_V_DISPLAY: integer := 480;
-  constant VGA_V_BACKPORCH: integer := 33;
---  constant VGA_V_BACKPORCH: integer := 1;
+  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
+  constant VGA_V_BACKPORCH: integer := 33+VGA_V_BORDER;
+  --constant VGA_V_BACKPORCH: integer := 1;
 
 
   constant VGA_HCOUNT: integer :=
@@ -154,7 +158,10 @@ architecture behave of zpuino_vga2 is
   signal vga_ram_address: unsigned(14 downto 0);
   signal vga_ram_data: std_logic_vector(15 downto 0);
   signal v_display: std_logic;
-  signal v_display_div: std_logic;
+  signal v_display_q: std_logic;
+
+  signal v_border: std_logic;
+
   signal ram_read: std_logic_vector(7 downto 0);
   signal ram_we: std_logic;
   signal vga_v_offset: unsigned(14 downto 0);
@@ -263,18 +270,40 @@ begin
     end if;
   end process;
 
+  process(hcount_q, vcount_q)
+  begin
+    if hcount_q < VGA_H_DISPLAY  and vcount_q < VGA_V_DISPLAY then
+      v_display<='1';
+    else
+      v_display<='0';
+    end if;
+  end process;
+
   process(vgaclk)
   begin
     if rising_edge(vgaclk) then
-      if hcount_q < VGA_H_DISPLAY  and vcount_q < VGA_V_DISPLAY then
-        v_display<='1';
-        v_display_div <= not v_display_div;
-      else
-        v_display<='0';
-        v_display_div <= '0';
-      end if;
+      v_display_q <= v_display;
     end if;
   end process;
+
+
+--  process(vgaclk)
+--  begin
+--    if rising_edge(vgaclk) then
+--      if ( ( hcount_q >= VGA_H_DISPLAY and hcount_q< VGA_H_DISPLAY + VGA_H_BORDER ) or
+--           ( hcount_q >= VGA_H_DISPLAY+VGA_H_BACKPORCH+VGA_H_SYNC+VGA_H_FRONTPORCH
+--             and hcount_q < VGA_H_DISPLAY+VGA_H_BACKPORCH+VGA_H_SYNC+VGA_H_FRONTPORCH-VGA_H_BORDER ) )
+--
+ --     and ( ( vcount_q >= VGA_V_DISPLAY and vcount_q< VGA_V_DISPLAY + VGA_V_BORDER ) or
+  --         ( vcount_q >= VGA_V_DISPLAY+VGA_V_BACKPORCH+VGA_V_SYNC+VGA_V_FRONTPORCH
+--           and vcount_q < VGA_V_DISPLAY+VGA_V_BACKPORCH+VGA_V_SYNC+VGA_V_FRONTPORCH-VGA_V_BORDER ) )
+--      then
+--        v_border<='1';
+--      else
+--        v_border<='0';
+ --     end if;
+--    end if;
+--  end process;
 
   hsyncgen: process(vgaclk)
   begin
@@ -325,16 +354,6 @@ begin
 
   -- Cache clear.
 
---  process(wb_clk_i)
---  begin
---    if rising_edge(wb_clk_i) then
---      cache_clear <= '0';
---      if vcount_q = (VGA_VCOUNT - VGA_V_FRONTPORCH) then
---        cache_clear <= '1';
---      end if;
---    end if;
---  end process;
-
   vsyncgen: process(vgaclk)
   begin
     if rising_edge(vgaclk) then
@@ -357,7 +376,7 @@ begin
   process(vgaclk)
   begin
     if rising_edge(vgaclk) then
-      if v_display='0' then
+      if v_display_q='0' then
           vga_b <= (others =>'0');
           vga_r <= (others =>'0');
           vga_g <= (others =>'0');

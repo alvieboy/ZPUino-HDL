@@ -69,7 +69,7 @@ entity zpuino_io is
     tx: out std_logic;
     rx: in std_logic;
     -- SRAM signals
-    sram_addr:  out std_logic_vector(17 downto 0);
+    sram_addr:  out std_logic_vector(18 downto 0);
     sram_data:  inout std_logic_vector(15 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
@@ -272,6 +272,7 @@ architecture behave of zpuino_io is
   signal sram_adr_o: std_logic_vector(maxIObit downto minIOBit);
   signal sram_we_o:  std_logic;
   signal sram_cyc_o: std_logic;
+  signal sram_cti_o: std_logic_vector(2 downto 0);
   signal sram_stb_o: std_logic;
   signal sram_ack_i: std_logic;
 
@@ -626,6 +627,7 @@ begin
       wb_we_i       => sram_we_o,
       wb_cyc_i      => sram_cyc_o,
       wb_stb_i      => sram_stb_o,
+      wb_cti_i      => sram_cti_o,
       wb_ack_o      => sram_ack_i,
 
       -- SRAM signals
@@ -817,7 +819,7 @@ begin
     s0_wb_dat_o   => sram_dat_o,
     s0_wb_adr_o   => sram_adr_o,
     s0_wb_sel_o   => open,
-    s0_wb_cti_o   => open,
+    s0_wb_cti_o   => sram_cti_o,
     s0_wb_we_o    => sram_we_o,
     s0_wb_cyc_o   => sram_cyc_o,
     s0_wb_stb_o   => sram_stb_o,

@@ -3,6 +3,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
+library work;
+use work.wishbonepkg.all;
+
 entity cachefill is
 
   port (
@@ -60,6 +63,9 @@ architecture behave of cachefill is
   signal fifo_quad_full: std_logic;
   signal fifo_half_full: std_logic;
   signal trigger_read_n: std_logic;
+
+  constant max_burst_size: integer := 30;
+  signal burst: integer;
 
 type state_type is (
   idle,
@@ -123,24 +129,27 @@ begin
         when idle =>
           if trigger_read_n='0' then
             state <= request;
+            burst <= max_burst_size;
           end if;
         when request =>
           wb_cyc_o <= '1';
           wb_stb_o <= '1';
-          wb_cti_o <= "010";
-          if wb_ack_i='1' and fifo_almost_full='1' then
+          wb_cti_o <= CTI_CYCLE_INCRADDR;
+          if wb_ack_i='1' and ( fifo_almost_full='1' or burst=0) then
             state <= stop;
+            wb_cti_o <= CTI_CYCLE_ENDOFBURST;
           end if;
           if wb_ack_i='1' then
+            burst <= burst - 1;
             address <= address+1;
           end if;
         when stop =>
           wb_cyc_o <= '1';
           wb_stb_o <= '1';
-          wb_cti_o <= "111";
+          wb_cti_o <= CTI_CYCLE_ENDOFBURST;
           if wb_ack_i='1' then
             address <= address+1;
-            state <= idle;--waitend;
+            state <= idle;
             wb_cyc_o <= '0';
             wb_stb_o <= '0';
           end if;
