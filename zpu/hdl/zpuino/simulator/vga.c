@@ -18,6 +18,26 @@ GtkWidget *darea;
 
 gpio_class_t *gpioclass = NULL;
 
+const int display_width = 640;
+const int display_height = 480;
+
+const int divide_width = 1;
+const int divide_height = 1;
+
+const int effective_width_pixels = 640;
+const int effective_height_pixels = 480;
+
+/* Color configuration */
+
+#define BYTES_PER_PIXEL 2
+#define COLOR_WEIGHT_R 4
+#define COLOR_WEIGHT_G 4
+#define COLOR_WEIGHT_B 4
+#define COLOR_SHIFT_R (COLOR_WEIGHT_B+COLOR_WEIGHT_G)
+#define COLOR_SHIFT_G (COLOR_WEIGHT_B)
+#define COLOR_SHIFT_B 0
+
+
 void vga_sdl_flip(void*data)
 {
 	/* ~Flip/UpdateRect */
@@ -56,8 +76,8 @@ void vga_realize(GtkWidget*w,void*d)
 
 
 	GdkVisual* visual = gdk_drawable_get_visual(drawable);
-	image = gdk_image_new(GDK_IMAGE_FASTEST, visual, 800, 600);
-	screen = SDL_CreateRGBSurfaceFrom(image->mem, 800, 600, image->bits_per_pixel, image->bpl,
+	image = gdk_image_new(GDK_IMAGE_FASTEST, visual, display_width, display_height);
+	screen = SDL_CreateRGBSurfaceFrom(image->mem, display_width, display_height, image->bits_per_pixel, image->bpl,
 									  visual->red_mask, visual->green_mask, visual->blue_mask, 0);
 }
 
@@ -126,7 +146,7 @@ void vga_sdl_init_gtk()
 
 	gui_append_new_tab("VGA", darea);
 
-	gtk_widget_set_size_request(darea,800,600);
+	gtk_widget_set_size_request(darea,display_width,display_height);
 
 	g_signal_connect( darea,"realize",(GCallback)&vga_realize,NULL);
 
@@ -174,8 +194,8 @@ static int initialize_device(int argc,char **argv)
 unsigned vga_io_read_handler(unsigned address)
 {
 	unsigned pix = IOREG(address);
-	int x = pix % 160;
-	int y = pix / 160;
+	int x = pix % effective_width_pixels;
+	int y = pix / effective_width_pixels;
 
 	int i,j;
 
@@ -183,62 +203,75 @@ unsigned vga_io_read_handler(unsigned address)
 		return 0;
 
 	Uint32 *pixels = (Uint32 *)screen->pixels;
-	i=x*5;
-	j=y*5;
+
+	i=x*divide_width;
+	j=y*divide_height;
 
 	int p = pixels[( j * screen->w ) + i];
 
 	// Convert
 	int r,g,b;
-	r = p>>21;
-	g = (p>>13) &0x7;
-	b = (p>>6) &0x3;
+	r = p>>(24-COLOR_WEIGHT_R) & ((1<<COLOR_WEIGHT_R)-1);
+	g = p>>(16-COLOR_WEIGHT_G) & ((1<<COLOR_WEIGHT_G)-1);
+	b = p>>(8-COLOR_WEIGHT_B) & ((1<<COLOR_WEIGHT_B)-1);
 
-	return ( (r<<5) | (g<<2) |b);
+	return ( (r<<COLOR_SHIFT_R) | (g<<COLOR_SHIFT_G) | (b<<COLOR_SHIFT_B));
 }
 
 void vga_io_write_handler(unsigned address, unsigned value)
 {
 	unsigned pix = IOREG(address);
 
+	if (pix > (display_height*display_width))
+		return;
+
 	if (NULL==screen)
 		return;
 
-	int x = pix % 160;
-	int y = pix / 160;
+	int x = pix % effective_width_pixels;
+	int y = pix / effective_width_pixels;
 
-	value &=0xff;
+	if (y>effective_height_pixels)
+		return;
+
+   // printf("VGA: x %d y %d in 0x%08x, ",x,y,value);
+
+	value &= ((1<<(COLOR_WEIGHT_B+COLOR_WEIGHT_R+COLOR_WEIGHT_G))-1);
+ //   printf("Masked 0x%08x ",value);
+
 	unsigned int r,g,b;
 	int i,j;
 	Uint32 *pixels = (Uint32 *)screen->pixels;
 
-	r = value>>5;
-	g = (value>>2) &0x7;
-	b = (value) &0x3;
+	r = ( value>>8 ) & ((1<<COLOR_WEIGHT_R)-1);
+	g = ( value>>4 ) & ((1<<COLOR_WEIGHT_G)-1);
+	b = ( value>>0 ) & ((1<<COLOR_WEIGHT_B)-1);
+//	printf("R=%x,G=%x,B=%x, remap ",r,g,b);
 
-	r<<=5;
+	r<<=(8-COLOR_WEIGHT_R);
 	if(r&0x80) {
-		 r|=(1<<5)-1;
+		 r|=(1<<(8-COLOR_WEIGHT_R))-1;
 	}
 	r<<=16;
 
-	g<<=5;
+	g<<=(8-COLOR_WEIGHT_G);
 	if(g&0x80) {
-		 g|=(1<<5)-1;
+		 g|=(1<<(8-COLOR_WEIGHT_G))-1;
 	}
 
 	g<<=8;
 
-	b<<=6;
+	b<<=(8-COLOR_WEIGHT_B);
 	if(b&0x80) {
-		 g|=(1<<6)-1;
+		 b|=(1<<(8-COLOR_WEIGHT_B))-1;
 	}
 
+   // printf("R=%x,G=%x,B=%x\n",r,g,b);
 	unsigned pixel = r|g|b;
 
-	for (i=x*5; i<(x+1)*5; i++) {
-		for (j=y*5; j<(y+1)*5; j++) {
-
+	for (i=x*divide_width; i<(x+1)*divide_width; i++) {
+		for (j=y*divide_height; j<(y+1)*divide_height; j++) {
+			//printf("Off %d\n",( j * screen->w ) + i);
 			pixels[( j * screen->w ) + i] = pixel;
 		}
 	}
