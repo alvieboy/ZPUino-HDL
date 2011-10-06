@@ -85,9 +85,8 @@ void conn_reset(connection_t conn)
 	speed_t txs,rxs;
 
 	if (simulator) {
-		reset[0] = 0xff;
-		reset[1] = 0xf3;
-		write(conn,&reset,2);
+		reset[0] = 0xf3;
+		send(conn,&reset,1,MSG_OOB);
 		return;
 	}
 
@@ -122,11 +121,6 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 		unsigned char *tbufptr=tbuf;
 
 		while (size--) {
-			if (*buf==0xff) {
-				//write(conn,buf,1);
-				*tbufptr++=0xff;
-			}
-			//write(conn,buf,1);
 			*tbufptr++=*buf;
 			buf++, i++;
 		}
