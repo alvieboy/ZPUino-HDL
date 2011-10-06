@@ -7,6 +7,8 @@ unsigned crc16_io_read_handler(unsigned address)
 {
 	MAPREGR(0,crc16_read_data);
 	MAPREGR(1,crc16_read_poly);
+	MAPREGR(4,crc16_read_data_dly1);
+	MAPREGR(5,crc16_read_data_dly2);
 	ERRORREG();
 	return 0;
 }
