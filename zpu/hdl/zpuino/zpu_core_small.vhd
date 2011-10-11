@@ -743,7 +743,12 @@ begin
               io_we <= '1';
               wb_cyc_o <= '1';
               wb_stb_o <= '1';
-              w.state <= State_WaitIO;
+              if wb_ack_i='1' then
+                w.sp <= r.sp + 2; -- This sucks...
+                w.state <= State_Resync1;
+              else
+                w.state <= State_WaitIO;
+              end if;
             else
               memBWriteEnable <= '1';
               w.sp <= r.sp + 2;
