@@ -60,6 +60,15 @@ static int serial_reset = 0;
 
 unsigned short version;
 
+static unsigned int size_bytes=0;
+static unsigned int pages=0;
+static uint32_t spioffset;
+static uint32_t spioffset_page;
+static uint32_t spioffset_sector;
+static uint32_t codesize;
+static unsigned int board;
+
+
 extern void crc16_update(uint16_t *crc, uint8_t data);
 
 unsigned short get_programmer_version()
@@ -337,84 +346,211 @@ int read_flash(connection_t conn, flash_info_t *flash, size_t page)
 	return 0;
 }
 
-int do_upload(connection_t conn)
+int do_upload(connection_t conn, const
+			  unsigned char *buf)
 {
-    /*
-	struct stat st;
+	/*struct stat st;
 	const unsigned int blocksize=512;
 	unsigned char dbuf[4];
 	unsigned int address = 0x1000;
 	int fin;
 	unsigned int size,pos;
 	unsigned char *prog;
+    
+	*/
 
-	if (binfile) {
-		fin = open(binfile,O_RDONLY);
-		if (fin<0) {
-			perror("Cannot open input file");
-			return -1;
-		}
+	unsigned int address = 0x1000;
+	unsigned char dbuf[ 256 + 5 ];
+	unsigned int to_go = size_bytes;
+	const unsigned char *source;
 
-		// STAT
-
-		fstat(fin,&st);
-		size = st.st_size;
-	} else {
-		fprintf(stderr,"Cannot upload without a binary file\n");
+	if (NULL==buf) {
+		fprintf(stderr,"Nothing to upload!\n");
 		return -1;
 	}
 
-	if (verbose>0) {
-		printf("Uploading sketch, %d bytes\n",size);
-	}
+	source = &buf[0];
 
-	dbuf[0] = address>>8;
-	dbuf[1] = address&0xff;
-	dbuf[2] = size>>8;
-	dbuf[3] = size & 0xff;
+	while (to_go) {
+		unsigned bsize = to_go > 256 ? 256 : to_go;
+		dbuf[0] = (address>>24)&0xff;
+		dbuf[1] = (address>>16)&0xff;
+		dbuf[2] = (address>>8)&0xff;
+		dbuf[3] = (address)&0xff;
 
-	buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 4, 500 );
-	if (b==NULL) {
-		fprintf(stderr,"Error programming memory\n");
-		close(fin);
-		return -1;
-	}
+		dbuf[4] = bsize & 0xff;
 
-	if (read(fin,prog,size)!=size) {
-		fprintf(stderr,"Cannot load file\n");
-		close(fin);
-		return -1;
-	}
-	close(fin);
+		memcpy( &dbuf[5], source, bsize);
 
-	for (pos=0;pos<size;pos++) {
-		if (conn_write(conn, &prog[pos],1)<0) {
-			fprintf(stderr,"Cannot write!\n");
+		buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 5 + bsize, 1000 );
+		if (NULL==b) {
+			fprintf(stderr,"Error programming memory\n");
 			return -1;
 		}
-		
-		if (conn_read(conn,dbuf,1,100)!=1) {
-			fprintf(stderr,"Cannot read!\n");
-			return -1;
-		}
-		if (dbuf[0]!=prog[pos]) {
-			fprintf(stderr,"Error programming (sent 0x%02x, got 0x%02x)\n",
-					prog[pos],dbuf[0]);
-			return -1;
-		}
-		}
-		*/
+		source+=bsize;
+		to_go -= bsize;
+	}
+
 	return 0;
 }
+
+static unsigned char *load_binfile(flash_info_t *flash)
+{
+	unsigned char *buf=NULL;
+	struct stat st,est;
+
+	int fin = open(binfile,O_RDONLY|O_BINARY);
+	if (fin<0) {
+		perror("Cannot open input file");
+		return NULL;
+	}
+
+	int ein=-1;
+	if (extradata) {
+		ein = open(extradata,O_RDONLY|O_BINARY);
+		if (ein<0) {
+			perror("Cannot open extra input file");
+			return NULL;
+		}
+		//fprintf(stderr,"Loaded extra data file\n");
+	}
+
+	// STAT
+
+	fstat(fin,&st);
+	if (ein>0) {
+		fstat(ein,&est);
+	}
+
+	unsigned binsize = st.st_size;
+	unsigned realbinsize = st.st_size;
+
+	if (ein>0) {
+		binsize += est.st_size;
+	}
+
+	if (version>0x0104 && user_offset==-1) {
+		// Add placeholders for size and CRC
+		binsize += sizeof(uint32_t);
+	}
+
+	size_bytes = ALIGN(binsize,flash->pagesize);
+	pages = size_bytes/flash->pagesize;
+
+	unsigned int aligned_toword_size = ALIGN(st.st_size,sizeof(uint32_t));
+	unsigned int size_words = aligned_toword_size/sizeof(uint32_t);
+
+	if (verbose>0)
+		printf("Need to program %u %u bytes (%d pages)\n",
+			   (unsigned) binsize,
+			   size_bytes,
+			   pages);
+
+	/* Ensure there's enough space */
+	if (ignore_limit) {
+		printf("Ignoring space limit for programming\n");
+
+	} else {
+		if (aligned_toword_size > codesize) {
+			fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
+					(unsigned)aligned_toword_size,codesize);
+			close(fin);
+			return NULL;
+		}
+	}
+
+	buf = calloc(1,size_bytes);
+
+	unsigned char *bufp = buf;
+
+	if (version>0x0104 && user_offset==-1) {
+		// Move pointer up, so we can write sketchsize and CRC
+		bufp += sizeof(uint32_t);
+	}
+
+	if(verbose>2) {
+		fprintf(stderr,"Reading data, %lu bytes\n",st.st_size);
+	}
+
+	read(fin,bufp,st.st_size);
+	close(fin);
+	if (ein>0) {
+		/*fprintf(stderr,"Loading extra %d bytes at 0x%08x\n",
+		 est.st_size,
+		 bufp+st.st_size);
+		 */
+		read(ein,bufp+st.st_size, est.st_size);
+	}
+
+	/* Validate sketch */
+	if (version > 0x0106 && user_offset == -1)
+	{
+		uint32_t p = bufp[0]<<24 |
+			bufp[1]<<16 |
+			bufp[2]<<8 |
+			bufp[3];
+
+		if (p != SKETCHSIGNATURE) {
+			fprintf(stderr,"File '%s' does not appear to be a sketch: 0x%08x != 0x%08x", binfile,
+					p, SKETCHSIGNATURE);
+			close(fin);
+			return NULL;
+		}
+
+		/* Validate board */
+		p = bufp[4]<<24 |
+			bufp[5]<<16 |
+			bufp[6]<<8 |
+			bufp[7];
+
+		if (p != board) {
+			fprintf(stderr,"Board mismatch!!!.\n");
+			const char *b1 = getBoardById(board);
+			fprintf(stderr,"Board is:      0x%08x '%s'\n", board,b1);
+			b1 = getBoardById(p);
+			fprintf(stderr,"Sketch is for: 0x%08x '%s'\n", p,b1);
+			close(fin);
+			return NULL;
+		}
+	}
+
+	// Compute checksum if needed
+
+	if (version>0x0104 && user_offset==-1) {
+		uint8_t *sketchsize = &buf[0];
+		uint8_t *crc = &buf[2];
+		uint16_t tcrc = 0xffff;
+
+		unsigned i;
+
+		if(verbose>1) {
+			fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
+		}
+		sketchsize[0] = (size_words>>8) & 0xff;
+		sketchsize[1] = size_words & 0xff;
+
+		// Go, compute cksum
+		for (i=0;i<aligned_toword_size;i++) {
+			crc16_update(&tcrc,bufp[i]);
+			if(verbose>3 && (i%32)==0) {
+				fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
+			}
+		}
+		if(verbose>1) {
+			fprintf(stderr,"Final CRC: %04x\n",tcrc);
+		}
+		crc[0] = (tcrc>>8) & 0xff;
+		crc[1] = tcrc & 0xff;
+	}
+	return buf;
+}
+
 
 int main(int argc, char **argv)
 {
 	unsigned char buffer[8192];
-	uint32_t spioffset;
-	uint32_t spioffset_page;
-	uint32_t spioffset_sector;
-	uint32_t codesize;
 	uint32_t extrasize = 0;
+	unsigned char *buf=NULL;
 
 	uint32_t freq;
 	struct timeval start,end,delta;
@@ -423,10 +559,6 @@ int main(int argc, char **argv)
 	flash_info_t *flash;
 	int retries;
 
-	unsigned int size_bytes=0;
-	unsigned int pages=0;
-	unsigned char *buf=NULL;
-	unsigned int board;
 
 	struct stat st, est;
 	buffer_t *b;
@@ -598,162 +730,26 @@ int main(int argc, char **argv)
 		}
 
 		buffer_free(b);
+	} else {
+		/* We still need a "dummy" flash driver for direct upload */
+		flash = find_flash(0xAA,0xAA,0xAA);
+	}
 
-		// Get file
-		if (binfile) {
-			int fin = open(binfile,O_RDONLY|O_BINARY);
-			if (fin<0) {
-				perror("Cannot open input file");
-				return -1;
-			}
-
-			int ein=-1;
-			if (extradata) {
-				ein = open(extradata,O_RDONLY|O_BINARY);
-				if (ein<0) {
-					perror("Cannot open extra input file");
-					return -1;
-				}
-				//fprintf(stderr,"Loaded extra data file\n");
-			}
-
-			// STAT
-
-			fstat(fin,&st);
-			if (ein>0) {
-				fstat(ein,&est);
-			}
-
-			unsigned binsize = st.st_size;
-			unsigned realbinsize = st.st_size;
-
-			if (ein>0) {
-                binsize += est.st_size;
-			}
-
-			if (version>0x0104 && user_offset==-1) {
-				// Add placeholders for size and CRC
-				binsize += sizeof(uint32_t);
-			}
-
-			size_bytes = ALIGN(binsize,flash->pagesize);
-			pages = size_bytes/flash->pagesize;
-
-			unsigned int aligned_toword_size = ALIGN(st.st_size,sizeof(uint32_t));
-			unsigned int size_words = aligned_toword_size/sizeof(uint32_t);
-
-			if (verbose>0)
-				printf("Need to program %u %u bytes (%d pages)\n",
-					   (unsigned) binsize,
-					   size_bytes,
-					   pages);
-
-			/* Ensure there's enough space */
-			if (ignore_limit) {
-				printf("Ignoring space limit for programming\n");
-
-			} else {
-				if (aligned_toword_size > codesize) {
-					fprintf(stderr,"Cannot program file: it's %u bytes, limit is %u\n",
-							(unsigned)aligned_toword_size,codesize);
-					conn_close(conn);
-					close(fin);
-					return -1;
-				}
-			}
-
-			buf = calloc(1,size_bytes);
-
-			unsigned char *bufp = buf;
-
-			if (version>0x0104 && user_offset==-1) {
-				// Move pointer up, so we can write sketchsize and CRC
-				bufp += sizeof(uint32_t);
-			}
-
-			if(verbose>2) {
-				fprintf(stderr,"Reading data, %lu bytes\n",st.st_size);
-			}
-
-			read(fin,bufp,st.st_size);
-			close(fin);
-			if (ein>0) {
-				/*fprintf(stderr,"Loading extra %d bytes at 0x%08x\n",
-						est.st_size,
-						bufp+st.st_size);
-                  */
-				read(ein,bufp+st.st_size, est.st_size);
-			}
-
-			/* Validate sketch */
-            if (version > 0x0106 && user_offset == -1)
-			{
-				uint32_t p = bufp[0]<<24 |
-					bufp[1]<<16 |
-					bufp[2]<<8 |
-					bufp[3];
-
-				if (p != SKETCHSIGNATURE) {
-					fprintf(stderr,"File '%s' does not appear to be a sketch: 0x%08x != 0x%08x", binfile,
-							p, SKETCHSIGNATURE);
-					conn_close(conn);
-					close(fin);
-					return -1;
-				}
-
-				/* Validate board */
-				p = bufp[4]<<24 |
-					bufp[5]<<16 |
-					bufp[6]<<8 |
-					bufp[7];
-
-				if (p != board) {
-					fprintf(stderr,"Board mismatch!!!.\n");
-					const char *b1 = getBoardById(board);
-					fprintf(stderr,"Board is:      0x%08x '%s'\n", board,b1);
-					b1 = getBoardById(p);
-					fprintf(stderr,"Sketch is for: 0x%08x '%s'\n", p,b1);
-					conn_close(conn);
-					close(fin);
-					return -1;
-				}
-			}
-
-			// Compute checksum if needed
-
-			if (version>0x0104 && user_offset==-1) {
-				uint8_t *sketchsize = &buf[0];
-				uint8_t *crc = &buf[2];
-				uint16_t tcrc = 0xffff;
-
-				unsigned i;
-
-				if(verbose>1) {
-					fprintf(stderr,"Computing sketch CRC (%i)\n", aligned_toword_size);
-				}
-				sketchsize[0] = (size_words>>8) & 0xff;
-				sketchsize[1] = size_words & 0xff;
-				
-				// Go, compute cksum
-				for (i=0;i<aligned_toword_size;i++) {
-					crc16_update(&tcrc,bufp[i]);
-					if(verbose>3 && (i%32)==0) {
-						fprintf(stderr,"CRC: %d %04x\n", i, tcrc);
-					}
-				}
-				if(verbose>1) {
-					fprintf(stderr,"Final CRC: %04x\n",tcrc);
-				}
-				crc[0] = (tcrc>>8) & 0xff;
-				crc[1] = tcrc & 0xff;
-			}
+	// Get file
+	if (binfile) {
+		buf = load_binfile(flash);
+		if (NULL==buf) {
+			conn_close(conn);
+			return -1;
 		}
 	}
+
+
 	// Switch to correct baud rate
 	set_baudrate(conn,serial_speed_int,freq);
 
 	if (upload_only) {
-		int r = do_upload(conn);
+		int r = do_upload(conn, buf);
 		conn_close(conn);
 		return r;
 	}

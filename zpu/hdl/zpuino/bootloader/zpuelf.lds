@@ -112,6 +112,10 @@ SECTIONS
   PROVIDE (__fini_array_end = .);
   
   __ram_start = .;
+  .bdata : {
+      KEEP(.bdata.*)
+  } > ROM
+  
   .boots : {
       KEEP(.boots.*)
   } > RAM

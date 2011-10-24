@@ -18,7 +18,7 @@ DHRYSRC=.
 OBJ=boot.o boot-c.o boot-s.o crt0.o
 
 CFLAGS=-Os -nostartfiles -nostdlib -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -D__ZPUINO_$(BOARD)__ $(EXTRACFLAGS) $(DEFINES)
-LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
+LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections -nostartfiles
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all: prom-generic-dp-32.vhd Makefile $(TARGET).S

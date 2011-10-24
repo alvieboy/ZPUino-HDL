@@ -45,20 +45,20 @@
 #define HDLC_escapeFlag 0x7D
 #define HDLC_escapeXOR 0x20
 
+#define BDATA __attribute__((section(".bdata")))
 
-//unsigned int _memreg[4];
-unsigned int ZPU_ID;
+//unsigned int ZPU_ID;
 
 extern "C" void (*ivector)(void);
 extern "C" void *bootloaderdata;
 
-static int inprogrammode;
-static volatile unsigned int milisseconds;
-static unsigned char buffer[256 + 32];
-static int syncSeen;
-static int unescaping;
-static unsigned int bufferpos;
-static unsigned int flash_id;
+static BDATA int inprogrammode;
+static BDATA volatile unsigned int milisseconds;
+static BDATA unsigned char buffer[256 + 32];
+static BDATA int syncSeen;
+static BDATA int unescaping;
+static BDATA unsigned int bufferpos;
+static BDATA unsigned int flash_id;
 
 struct bootloader_data_t {
     unsigned int spiend;
@@ -392,33 +392,31 @@ static unsigned int spi_read_id()
 
 static void cmd_progmem()
 {
-	/* Directly program memory. This must be streamed
-	 because we are using the >0x1000 addresses for .data section.
-	 */
+	/* Directly program memory. */
 
 	/*
-	 buffer[1-2] is address.
-	 buffer[3-4] is size
+	 buffer[1-4] is address.
+	 buffer[5] is size,
+	 next bytes are data
 	 */
-    /*
+
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
+	unsigned char *source;
 
-	address=buffer[1]<<8;
-	address+=buffer[2];
-	size=buffer[3]<<8;
-	size+=buffer[4];
-	mem = (volatile unsigned char*)address;
+	address=(buffer[1]<<24);
+	address+=(buffer[2]<<16);
+	address+=(buffer[3]<<8);
+	address+=buffer[4];
+	mem = (volatile unsigned char *)address + 0x1000;
+
+	size=buffer[5];
+	source = &buffer[6];
+
 	while (size--) {
-		unsigned int v;
-		while (UARTCTL&0x1 != 0);
-		v=UARTDATA;
-		*mem++=v;
-		outbyte(v);
+		*mem++=*source++;
 	}
-	
-	start();
-    */
+	//memcpy( mem, &buffer[6], size );
 }
 
 
