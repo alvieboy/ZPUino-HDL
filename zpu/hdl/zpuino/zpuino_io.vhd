@@ -276,8 +276,6 @@ architecture behave of zpuino_io is
   signal sram_stb_o: std_logic;
   signal sram_ack_i: std_logic;
 
-  signal we_q: std_logic;
-  signal wb_ack_o_i: std_logic;
 
 begin
 
@@ -302,29 +300,21 @@ begin
         else
 
           if wb_in_transaction='0' then
-            if wb_ack_o_i='0' then
-              io_cyc <= wb_cyc_i;
-              io_stb <= wb_stb_i;
-              io_we <= wb_we_i;
-              we_q <= wb_we_i;
-            end if;
-            if wb_cyc_i='1' and wb_ack_o_i='0' then
-              wb_in_transaction<='1';
-            end if;
+            io_cyc <= wb_cyc_i;
+            io_stb <= wb_stb_i;
+            io_we <= wb_we_i;
           elsif io_device_ack='1' then
             io_stb<='0';
             io_we<='0'; -- safe side
             -- How to keep cyc ????
-            io_cyc<='0';
-            wb_in_transaction<='0';
           end if;
 
-          --if wb_cyc_i='1' then
-          --  wb_in_transaction<='1';
-          --else
-          --  io_cyc <= '0';
-          --  wb_in_transaction<='0';
-          --end if;
+          if wb_cyc_i='1' then
+            wb_in_transaction<='1';
+          else
+            io_cyc <= '0';
+            wb_in_transaction<='0';
+          end if;
 
           if wb_stb_i='1' and wb_cyc_i='1' then
             addr_save_q <= wb_adr_i;
@@ -345,20 +335,14 @@ begin
     begin
       if rising_edge(wb_clk_i) then
         if wb_rst_i='1' then
-          wb_ack_o_i<='0';
+          wb_ack_o<='0';
           wb_dat_o<=(others => DontCareValue);
         else
-          if we_q='0' then
-            wb_ack_o_i <= io_device_ack;
-          else
-            wb_ack_o_i <= '0';
-          end if;
+          wb_ack_o <= io_device_ack;
           wb_dat_o <= io_read_selected;
         end if;
       end if;
     end process;
-
-    wb_ack_o <= '1' when (wb_we_i='1' and wb_cyc_i='1' and wb_stb_i='1' and wb_in_transaction='0') else wb_ack_o_i;
 
     end generate;
 
