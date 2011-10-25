@@ -3,7 +3,7 @@
 
 //#undef DEBUG_SERIAL
 //#undef SIMULATION
-//#undef VERBOSE_LOADER
+//#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -17,7 +17,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x07
+#define VERSION_LOW  0x08
 
 /* Commands for programmer */
 
@@ -286,14 +286,21 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	sketchcrc= spiread() & 0xffff;
 
 	if (sketchsize>SPICODESIZE) {
-		//printstring("Sketch too long");
+#ifdef VERBOSE_LOADER
+		printstring("Sketch too long");
+		printhexbyte((sketchsize>>8)&0xff);
+		printhexbyte((sketchsize)&0xff);
+		printstring("\r\n");
+#endif
 		while(1) {}
 	}
 
 	CRC16ACC=0xFFFF;
 
 	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
-
+#ifdef VERBOSE_LOADER
+	printstring("Filling\n");
+#endif
 	while (sketchsize--) {
 		for (int i=4;i!=0;i--) {
 			spiwrite(0);
@@ -308,6 +315,9 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		CRC16APP=spiread();*/
 		*target++ = spiread();
 	}
+#ifdef VERBOSE_LOADER
+	printstring("Filled\n");
+#endif
 
 	spi_disable();
 
@@ -360,6 +370,12 @@ static int is_atmel_flash()
 	return ((flash_id & 0xff0000)==0x1f0000);
 }
 
+static void simpleReply(unsigned int r)
+{
+	prepareSend();
+	sendByte(REPLY(r));
+	finishSend();
+}
 
 static int spi_read_status()
 {
@@ -403,6 +419,8 @@ static void cmd_progmem()
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
 	unsigned char *source;
+
+	simpleReply(BOOTLOADER_CMD_PROGMEM);
 
 	address=(buffer[1]<<24);
 	address+=(buffer[2]<<16);
@@ -511,13 +529,6 @@ static void cmd_sst_aai_program()
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
 #endif
-}
-
-static void simpleReply(unsigned int r)
-{
-	prepareSend();
-	sendByte(REPLY(r));
-	finishSend();
 }
 
 static void cmd_set_baudrate()

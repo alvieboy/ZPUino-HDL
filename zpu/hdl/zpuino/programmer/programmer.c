@@ -150,7 +150,7 @@ buffer_t *process(unsigned char *buffer, size_t size);
 int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 {
 	/* Request new baudrate */
-    buffer_t *b;
+	buffer_t *b;
 	unsigned int divider;
 	unsigned char txbuf[4];
 	int retries = 30;
@@ -346,6 +346,8 @@ int read_flash(connection_t conn, flash_info_t *flash, size_t page)
 	return 0;
 }
 
+#define UPLOAD_BLOCK_SIZE 255
+
 int do_upload(connection_t conn, const
 			  unsigned char *buf)
 {
@@ -359,20 +361,30 @@ int do_upload(connection_t conn, const
     
 	*/
 
-	unsigned int address = 0x1000;
-	unsigned char dbuf[ 256 + 5 ];
+	unsigned int address = 0x0000;
+	unsigned char dbuf[ UPLOAD_BLOCK_SIZE + 5 ];
 	unsigned int to_go = size_bytes;
 	const unsigned char *source;
+	buffer_t *b = NULL;
 
 	if (NULL==buf) {
 		fprintf(stderr,"Nothing to upload!\n");
 		return -1;
 	}
 
-	source = &buf[0];
+	source = &buf[4]; // Skip board ID + CRC
+
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
+
+	if (NULL==b) {
+		fprintf(stderr,"Cannot enter programming mode\n");
+		return -1;
+	}
+
+	buffer_free(b);
 
 	while (to_go) {
-		unsigned bsize = to_go > 256 ? 256 : to_go;
+		unsigned bsize = to_go > UPLOAD_BLOCK_SIZE ? UPLOAD_BLOCK_SIZE : to_go;
 		dbuf[0] = (address>>24)&0xff;
 		dbuf[1] = (address>>16)&0xff;
 		dbuf[2] = (address>>8)&0xff;
@@ -381,15 +393,25 @@ int do_upload(connection_t conn, const
 		dbuf[4] = bsize & 0xff;
 
 		memcpy( &dbuf[5], source, bsize);
-
-		buffer_t *b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 5 + bsize, 1000 );
+		if (verbose>1)
+			printf("Sending %d bytes, address 0x%08x\n",bsize,address);
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 5 + bsize, 1000 );
 		if (NULL==b) {
 			fprintf(stderr,"Error programming memory\n");
 			return -1;
 		}
+		buffer_free(b);
 		source+=bsize;
 		to_go -= bsize;
+		address+=bsize;
 	}
+	if (verbose>1) {
+		printf("Starting sketch\n");
+	}
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_START,dbuf,0,1000);
+	if (NULL==b)
+		return -1;
+	buffer_free(b);
 
 	return 0;
 }
