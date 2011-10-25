@@ -1,7 +1,7 @@
 --
---  ZPUINO implementation on Gadget Factory 'Papilio One' Board
+--  ZPUINO implementation on Gadget Factory 'Papilio Plus' Board
 -- 
---  Copyright 2010 Alvaro Lopes <alvieboy@alvie.com>
+--  Copyright 2011 Alvaro Lopes <alvieboy@alvie.com>
 -- 
 --  Version: 1.0
 -- 
@@ -40,6 +40,7 @@ library work;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
 use work.zpuino_config.all;
+use work.zpu_config.all;
 use work.pad.all;
 
 library unisim;
@@ -98,37 +99,6 @@ architecture behave of papilio_plus_top is
   );
   end component clkgen;
 
-  component zpuino_top is
-  generic (
-    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
-    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
-  );
-  port (
-    clk:      in std_logic;
-	 	rst:      in std_logic;
-    vgaclk:   in std_logic;
-    gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
-
-    tx:       out std_logic;
-    rx:       in std_logic;
-    -- SRAM signals
-    sram_addr:  out std_logic_vector(18 downto 0);
-    sram_data:  inout std_logic_vector(15 downto 0);
-    sram_ce:    out std_logic;
-    sram_we:    out std_logic;
-    sram_oe:    out std_logic;
-    sram_be:    out std_logic;
-
-    vga_hsync: out std_logic;
-    vga_vsync: out std_logic;
-    vga_r: out std_logic_vector(3 downto 0);
-    vga_g: out std_logic_vector(3 downto 0);
-    vga_b: out std_logic_vector(3 downto 0)
-  );
-  end component zpuino_top;
-
   component zpuino_serialreset is
   generic (
     SYSTEM_CLOCK_MHZ: integer := 96
@@ -157,7 +127,188 @@ architecture behave of papilio_plus_top is
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "0111111111111111111111111111111111111111111111111101111";
 
+  -- I/O Signals
+  signal slot_cyc:   slot_std_logic_type;
+  signal slot_we:    slot_std_logic_type;
+  signal slot_stb:   slot_std_logic_type;
+  signal slot_read:  slot_cpuword_type;
+  signal slot_write: slot_cpuword_type;
+  signal slot_address:  slot_address_type;
+  signal slot_ack:   slot_std_logic_type;
+  signal slot_interrupt: slot_std_logic_type;
+
+  signal spi_enabled:  std_logic;
+
+  signal spi2_enabled:  std_logic;
+  signal spi2_mosi:  std_logic;
+  signal spi2_miso:  std_logic;
+  signal spi2_sck:  std_logic;
+
+  signal uart_enabled:  std_logic;
+
+  -- SPP signal is one more than GPIO count
+  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
+
+  --signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 1);
+
+  signal timers_interrupt:  std_logic_vector(1 downto 0);
+  signal timers_spp_data: std_logic_vector(1 downto 0);
+  signal timers_spp_en: std_logic_vector(1 downto 0);
+  signal timers_comp: std_logic;
+
+  signal ivecs: std_logic_vector(17 downto 0);
+
+  signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
+  signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
+
+  -- For busy-implementation
+  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
+  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
+
+  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
+  signal io_write: std_logic_vector(wordSize-1 downto 0);
+  signal io_cyc: std_logic;
+  signal io_stb: std_logic;
+  signal io_we: std_logic;
+
+  signal io_device_ack: std_logic;
+
+  signal spi_pf_miso: std_logic;
+  signal spi_pf_mosi: std_logic;
+  signal spi_pf_sck: std_logic;
+  signal uart_tx: std_logic;
+  signal uart_rx: std_logic;
+
+  signal adc_mosi:  std_logic;
+  signal adc_miso:  std_logic;
+  signal adc_sck:   std_logic;
+  signal adc_seln:  std_logic;
+  signal adc_enabled: std_logic;
+
+  signal wb_clk_i: std_logic;
+  signal wb_rst_i: std_logic;
+
+  component wb_char_ram_8x8 is
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
+  );
+  end component wb_char_ram_8x8;
+
+  component zpuino_vga2 is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+
+    -- Memory interface (wishbone master)  
+    mi_wb_dat_i: in std_logic_vector(31 downto 0);
+    mi_wb_dat_o: out std_logic_vector(31 downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxIObit downto minIObit);
+    mi_wb_sel_o: out std_logic_vector(3 downto 0);
+    mi_wb_cti_o: out std_logic_vector(2 downto 0);
+    mi_wb_we_o:  out std_logic;
+    mi_wb_cyc_o: out std_logic;
+    mi_wb_stb_o: out std_logic;
+    mi_wb_ack_i: in std_logic;
+
+    -- VGA interface
+    vgaclk:     in std_logic;
+
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_r:      out std_logic_vector(3 downto 0);
+    vga_g:      out std_logic_vector(3 downto 0);
+    vga_b:      out std_logic_vector(3 downto 0)
+  );
+  end component zpuino_vga2;
+
+  signal mi_wb_dat_i: std_logic_vector(31 downto 0);
+  signal mi_wb_dat_o: std_logic_vector(31 downto 0);
+  signal mi_wb_adr_o: std_logic_vector(maxIObit downto minIObit);
+  signal   mi_wb_sel_o: std_logic_vector(3 downto 0);
+  signal   mi_wb_cti_o: std_logic_vector(2 downto 0);
+  signal   mi_wb_we_o:  std_logic;
+  signal   mi_wb_cyc_o: std_logic;
+  signal   mi_wb_stb_o: std_logic;
+  signal   mi_wb_ack_i: std_logic;
+
+  component wbarb2_1 is
+    port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(maxIObit downto minIObit);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic
+  );
+
+  end component wbarb2_1;
+
+
+  signal sram_dat_i: std_logic_vector(31 downto 0);
+  signal sram_dat_o: std_logic_vector(31 downto 0);
+  signal sram_adr_o: std_logic_vector(maxIObit downto minIOBit);
+  signal sram_we_o:  std_logic;
+  signal sram_cyc_o: std_logic;
+  signal sram_cti_o: std_logic_vector(2 downto 0);
+  signal sram_stb_o: std_logic;
+  signal sram_ack_i: std_logic;
+
+
 begin
+
+  wb_clk_i <= sysclk;
+  wb_rst_i <= sysrst;
 
   rstgen: zpuino_serialreset
     generic map (
@@ -280,34 +431,439 @@ begin
 
 
   zpuino:zpuino_top
+    port map (
+      clk           => sysclk,
+	 	  rst           => sysrst,
+
+      slot_cyc      => slot_cyc,
+      slot_we       => slot_we,
+      slot_stb      => slot_stb,
+      slot_read     => slot_read,
+      slot_write    => slot_write,
+      slot_address  => slot_address,
+      slot_ack      => slot_ack,
+      slot_interrupt=> slot_interrupt
+    );
+
+  --
+  -- IO SLOT 0
+  --
+
+  slot0: zpuino_spi
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(0),
+    wb_dat_i     => slot_write(0),
+    wb_adr_i   => slot_address(0),
+    wb_we_i        => slot_we(0),
+    wb_cyc_i      => slot_cyc(0),
+    wb_stb_i      => slot_stb(0),
+    wb_ack_o      => slot_ack(0),
+    wb_inta_o => slot_interrupt(0),
+
+    mosi      => spi_pf_mosi,
+    miso      => spi_pf_miso,
+    sck       => spi_pf_sck,
+    enabled   => spi_enabled
+  );
+
+  --
+  -- IO SLOT 1
+  --
+
+  uart_inst: zpuino_uart
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(1),
+    wb_dat_i     => slot_write(1),
+    wb_adr_i   => slot_address(1),
+    wb_we_i      => slot_we(1),
+    wb_cyc_i       => slot_cyc(1),
+    wb_stb_i       => slot_stb(1),
+    wb_ack_o      => slot_ack(1),
+
+    wb_inta_o => slot_interrupt(1),
+
+    enabled   => uart_enabled,
+    tx        => uart_tx,
+    rx        => uart_rx
+  );
+
+  --
+  -- IO SLOT 2
+  --
+
+  gpio_inst: zpuino_gpio
   generic map (
-    spp_cap_in => spp_cap_in,
-    spp_cap_out => spp_cap_out
+    gpio_count => zpuino_gpio_count
   )
   port map (
-    clk           => sysclk,
-	 	rst           => sysrst,
-    vgaclk        => vgaclk,
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(2),
+    wb_dat_i     => slot_write(2),
+    wb_adr_i   => slot_address(2),
+    wb_we_i        => slot_we(2),
+    wb_cyc_i       => slot_cyc(2),
+    wb_stb_i       => slot_stb(2),
+    wb_ack_o      => slot_ack(2),
+    wb_inta_o => slot_interrupt(2),
 
-    gpio_i        => gpio_i,
-    gpio_t        => gpio_t,
-    gpio_o        => gpio_o,
+    spp_data  => gpio_spp_data,
+    spp_read  => gpio_spp_read,
 
-    rx => rx,
-    tx => tx,
-
-    sram_addr   => sram_addr,
-    sram_data   => sram_data,
-    sram_ce     => sram_ce,
-    sram_be     => sram_be,
-    sram_we     => sram_we,
-    sram_oe     => sram_oe,
-
-    vga_hsync     => VGA_HSYNC,
-    vga_vsync     => VGA_VSYNC,
-    vga_r         => vga_r_i,
-    vga_g         => vga_g_i,
-    vga_b         => vga_b_i
+    gpio_i      => gpio_i,
+    gpio_t      => gpio_t,
+    gpio_o      => gpio_o,
+    spp_cap_in   => spp_cap_in,
+    spp_cap_out  => spp_cap_out
   );
+
+  --
+  -- IO SLOT 3
+  --
+
+  timers_inst: zpuino_timers
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(3),
+    wb_dat_i     => slot_write(3),
+    wb_adr_i   => slot_address(3),
+    wb_we_i        => slot_we(3),
+    wb_cyc_i        => slot_cyc(3),
+    wb_stb_i        => slot_stb(3),
+    wb_ack_o      => slot_ack(3),
+
+    wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
+    wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+
+    spp_data  => timers_spp_data,
+    spp_en    => timers_spp_en,
+    comp      => timers_comp
+  );
+
+  --
+  -- IO SLOT 4  - DO NOT USE (it's already mapped to Interrupt Controller)
+  --
+
+  --
+  -- IO SLOT 5
+  --
+
+  sigmadelta_inst: zpuino_sigmadelta
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(5),
+    wb_dat_i     => slot_write(5),
+    wb_adr_i   => slot_address(5),
+    wb_we_i        => slot_we(5),
+    wb_cyc_i        => slot_cyc(5),
+    wb_stb_i        => slot_stb(5),
+    wb_ack_o      => slot_ack(5),
+    wb_inta_o => slot_interrupt(5),
+
+    spp_data  => sigmadelta_spp_data,
+    spp_en    => sigmadelta_spp_en,
+    sync_in   => timers_comp
+  );
+
+  --
+  -- IO SLOT 6
+  --
+
+  slot1: zpuino_spi
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(6),
+    wb_dat_i     => slot_write(6),
+    wb_adr_i   => slot_address(6),
+    wb_we_i        => slot_we(6),
+    wb_cyc_i        => slot_cyc(6),
+    wb_stb_i        => slot_stb(6),
+    wb_ack_o      => slot_ack(6),
+    wb_inta_o => slot_interrupt(6),
+
+    mosi      => spi2_mosi,
+    miso      => spi2_miso,
+    sck       => spi2_sck,
+    enabled   => spi2_enabled
+  );
+
+
+
+  --
+  -- IO SLOT 7
+  --
+
+  crc16_inst: zpuino_crc16
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o     => slot_read(7),
+    wb_dat_i     => slot_write(7),
+    wb_adr_i   => slot_address(7),
+    wb_we_i     => slot_we(7),
+    wb_cyc_i        => slot_cyc(7),
+    wb_stb_i        => slot_stb(7),
+    wb_ack_o      => slot_ack(7),
+    wb_inta_o => slot_interrupt(7)
+  );
+
+  --
+  -- IO SLOT 8 (indirect mapped - see arbiter below)
+  --
+
+  sram_inst: sram_ctrl
+    port map (
+      wb_clk_i      => wb_clk_i,
+  	 	wb_rst_i      => wb_rst_i,
+      wb_dat_o      => sram_dat_i,
+      wb_dat_i      => sram_dat_o,
+      wb_adr_i      => sram_adr_o,
+      wb_we_i       => sram_we_o,
+      wb_cyc_i      => sram_cyc_o,
+      wb_stb_i      => sram_stb_o,
+      wb_cti_i      => sram_cti_o,
+      wb_ack_o      => sram_ack_i,
+
+      -- SRAM signals
+      sram_addr   => sram_addr,
+      sram_data   => sram_data,
+      sram_ce     => sram_ce,
+      sram_we     => sram_we,
+      sram_oe     => sram_oe,
+      sram_be     => sram_be
+    );
+
+  --
+  -- IO SLOT 9
+  --
+
+  slot9: zpuino_vga2
+  port map (
+      wb_clk_i       => wb_clk_i,
+  	 	wb_rst_i    => wb_rst_i,
+      wb_dat_o      => slot_read(9),
+      wb_dat_i     => slot_write(9),
+      wb_adr_i   => slot_address(9),
+      wb_we_i    => slot_we(9),
+      wb_cyc_i      => slot_cyc(9),
+      wb_stb_i      => slot_stb(9),
+      wb_ack_o      => slot_ack(9),
+
+      -- Memory interface (wishbone master) 
+      mi_wb_dat_i   => mi_wb_dat_i,
+      mi_wb_dat_o   => mi_wb_dat_o,
+      mi_wb_adr_o   => mi_wb_adr_o,
+      mi_wb_sel_o   => mi_wb_sel_o,
+      mi_wb_cti_o   => mi_wb_cti_o,
+      mi_wb_we_o    => mi_wb_we_o,
+      mi_wb_cyc_o   => mi_wb_cyc_o,
+      mi_wb_stb_o   => mi_wb_stb_o,
+      mi_wb_ack_i   => mi_wb_ack_i,
+
+    -- VGA interface
+
+      vgaclk        => vgaclk,
+      vga_hsync     => vga_hsync,
+      vga_vsync     => vga_vsync,
+      vga_r         => vga_r_i,
+      vga_g         => vga_g_i,
+      vga_b         => vga_b_i
+  );
+
+  --
+  -- IO SLOT 10
+  --
+
+  slot10: wb_char_ram_8x8
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(10),
+    wb_dat_i     => slot_write(10),
+    wb_adr_i   => slot_address(10),
+    wb_we_i        => slot_we(10),
+    wb_cyc_i        => slot_cyc(10),
+    wb_stb_i        => slot_stb(10),
+    wb_ack_o      => slot_ack(10),
+    wb_inta_o => slot_interrupt(10)
+  );
+
+  --
+  -- IO SLOT 11
+  --
+
+  slot11: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(11),
+    wb_dat_i     => slot_write(11),
+    wb_adr_i   => slot_address(11),
+    wb_we_i        => slot_we(11),
+    wb_cyc_i        => slot_cyc(11),
+    wb_stb_i        => slot_stb(11),
+    wb_ack_o      => slot_ack(11),
+    wb_inta_o => slot_interrupt(11)
+  );
+
+  --
+  -- IO SLOT 12
+  --
+
+  slot12: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(12),
+    wb_dat_i     => slot_write(12),
+    wb_adr_i   => slot_address(12),
+    wb_we_i        => slot_we(12),
+    wb_cyc_i        => slot_cyc(12),
+    wb_stb_i        => slot_stb(12),
+    wb_ack_o      => slot_ack(12),
+    wb_inta_o => slot_interrupt(12)
+  );
+
+  --
+  -- IO SLOT 13
+  --
+
+  slot13: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(13),
+    wb_dat_i     => slot_write(13),
+    wb_adr_i   => slot_address(13),
+    wb_we_i        => slot_we(13),
+    wb_cyc_i        => slot_cyc(13),
+    wb_stb_i        => slot_stb(13),
+    wb_ack_o      => slot_ack(13),
+    wb_inta_o => slot_interrupt(13)
+  );
+
+  --
+  -- IO SLOT 14
+  --
+
+  slot14: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(14),
+    wb_dat_i     => slot_write(14),
+    wb_adr_i   => slot_address(14),
+    wb_we_i        => slot_we(14),
+    wb_cyc_i        => slot_cyc(14),
+    wb_stb_i        => slot_stb(14),
+    wb_ack_o      => slot_ack(14),
+    wb_inta_o => slot_interrupt(14)
+  );
+
+  --
+  -- IO SLOT 15
+  --
+
+  slot15: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(15),
+    wb_dat_i     => slot_write(15),
+    wb_adr_i   => slot_address(15),
+    wb_we_i        => slot_we(15),
+    wb_cyc_i        => slot_cyc(15),
+    wb_stb_i        => slot_stb(15),
+    wb_ack_o      => slot_ack(15),
+    wb_inta_o => slot_interrupt(15)
+  );
+
+  sramarb: wbarb2_1
+  port map (
+    wb_clk_i      => wb_clk_i,
+	 	wb_rst_i      => wb_rst_i,
+
+    -- Master 0 signals
+
+    m0_wb_dat_o   => slot_read(8),
+    m0_wb_dat_i   => slot_write(8),
+    m0_wb_adr_i   => slot_address(8),
+    m0_wb_sel_i   => "1111",
+    m0_wb_cti_i   => "000",
+    m0_wb_we_i    => slot_we(8),
+    m0_wb_cyc_i   => slot_cyc(8),
+    m0_wb_stb_i   => slot_stb(8),
+    m0_wb_ack_o   => slot_ack(8),
+
+    -- Master 1 signals
+
+    m1_wb_dat_o   => mi_wb_dat_i,
+    m1_wb_dat_i   => mi_wb_dat_o,
+    m1_wb_adr_i   => mi_wb_adr_o,
+    m1_wb_sel_i   => mi_wb_sel_o,
+    m1_wb_cti_i   => mi_wb_cti_o,
+    m1_wb_we_i    => mi_wb_we_o,
+    m1_wb_cyc_i   => mi_wb_cyc_o,
+    m1_wb_stb_i   => mi_wb_stb_o,
+    m1_wb_ack_o   => mi_wb_ack_i,
+
+    -- Slave signals
+
+    s0_wb_dat_i   => sram_dat_i,
+    s0_wb_dat_o   => sram_dat_o,
+    s0_wb_adr_o   => sram_adr_o,
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => sram_cti_o,
+    s0_wb_we_o    => sram_we_o,
+    s0_wb_cyc_o   => sram_cyc_o,
+    s0_wb_stb_o   => sram_stb_o,
+    s0_wb_ack_i   => sram_ack_i
+  );
+
+
+
+
+  uart_rx <= rx;
+  tx <= uart_tx;
+
+  process(spi_enabled,spi2_enabled,spi_enabled,
+          uart_enabled,sigmadelta_spp_en, uart_tx,
+          gpio_spp_read, spi_pf_mosi, spi_pf_sck,
+          sigmadelta_spp_data,timers_spp_data,
+          spi2_mosi,spi2_sck,timers_spp_en)
+  begin
+
+    gpio_spp_data <= (others => DontCareValue);
+
+    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
+    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
+    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
+    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
+    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
+    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
+    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
+    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
+    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
+    --if zpuino_adc_enabled then
+    --  gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
+    --  adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
+    --  gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
+    --  gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
+    --end if;
+    gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
+
+    -- External interrupt lines
+    ivecs(16) <= gpio_spp_read(1);
+    ivecs(17) <= gpio_spp_read(2);
+
+  end process;
+
 
 end behave;

@@ -43,34 +43,20 @@ use work.zpuinopkg.all;
 use work.zpuino_config.all;
 
 entity zpuino_top is
-  generic (
-    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) := (others => '0');
-    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) := (others => '0')
-  );
   port (
     clk:      in std_logic;
 	 	rst:      in std_logic;
 
-    gpio_o:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_t:         out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:         in std_logic_vector(zpuino_gpio_count-1 downto 0);
+    -- Connection to board IO module
 
-    rx:       in std_logic;
-    tx:       out std_logic;
-    -- SRAM signals
-    sram_addr:  out std_logic_vector(18 downto 0);
-    sram_data:  inout std_logic_vector(15 downto 0);
-    sram_ce:    out std_logic;
-    sram_we:    out std_logic;
-    sram_oe:    out std_logic;
-    sram_be:    out std_logic;
-
-    vgaclk:   in std_logic;
-    vga_hsync: out std_logic;
-    vga_vsync: out std_logic;
-    vga_r: out std_logic_vector(3 downto 0);
-    vga_g: out std_logic_vector(3 downto 0);
-    vga_b: out std_logic_vector(3 downto 0)
+    slot_cyc:   out slot_std_logic_type;
+    slot_we:    out slot_std_logic_type;
+    slot_stb:   out slot_std_logic_type;
+    slot_read:  in slot_cpuword_type;
+    slot_write: out slot_cpuword_type;
+    slot_address:  out slot_address_type;
+    slot_ack:   in slot_std_logic_type;
+    slot_interrupt: in slot_std_logic_type
 
   );
 end entity zpuino_top;
@@ -117,10 +103,6 @@ begin
     );
 
   io: zpuino_io
-    generic map (
-      spp_cap_in => spp_cap_in,
-      spp_cap_out => spp_cap_out
-    )
     port map (
       wb_clk_i      => clk,
 	 	  wb_rst_i      => rst,
@@ -134,23 +116,15 @@ begin
       wb_inta_o     => interrupt,
 
       intready      => poppc_inst,
-      gpio_i        => gpio_i,
-      gpio_o        => gpio_o,
-      gpio_t        => gpio_t,
-      rx            => rx,
-      tx            => tx,
-      sram_addr     => sram_addr,
-      sram_data     => sram_data,
-      sram_be       => sram_be,
-      sram_oe       => sram_oe,
-      sram_we       => sram_we,
-      sram_ce       => sram_ce,
-      vgaclk        => vgaclk,
-      vga_hsync     => vga_hsync,
-      vga_vsync     => vga_vsync,
-      vga_r         => vga_r,
-      vga_g         => vga_g,
-      vga_b         => vga_b
+
+      slot_cyc      => slot_cyc,
+      slot_we       => slot_we,
+      slot_stb      => slot_stb,
+      slot_read     => slot_read,
+      slot_write    => slot_write,
+      slot_address  => slot_address,
+      slot_ack      => slot_ack,
+      slot_interrupt=> slot_interrupt
 
     );
 

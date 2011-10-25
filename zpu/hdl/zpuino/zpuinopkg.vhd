@@ -43,11 +43,36 @@ use work.zpuino_config.all;
 
 package zpuinopkg is
 
+
+  constant num_devices: integer := (2**zpuino_number_io_select_bits);
+
+  type slot_std_logic_type is array(0 to num_devices-1) of std_logic;
+  subtype cpuword_type     is std_logic_vector(31 downto 0);
+  type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
+  subtype address_type     is std_logic_vector(maxIObit downto minIObit);
+  type slot_address_type   is array(0 to num_devices-1) of address_type;
+
+  component zpuino_top is
+  port (
+    clk:      in std_logic;
+	 	rst:      in std_logic;
+
+    -- Connection to board IO module
+
+    slot_cyc:   out slot_std_logic_type;
+    slot_we:    out slot_std_logic_type;
+    slot_stb:   out slot_std_logic_type;
+    slot_read:  in slot_cpuword_type;
+    slot_write: out slot_cpuword_type;
+    slot_address:  out slot_address_type;
+    slot_ack:   in slot_std_logic_type;
+    slot_interrupt: in slot_std_logic_type
+
+  );
+  end component zpuino_top;
+
+
   component zpuino_io is
-    generic (
-      spp_cap_in:  in std_logic_vector(zpuino_gpio_count-1 downto 0); -- SPP capable pin for INPUT
-      spp_cap_out:  in std_logic_vector(zpuino_gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
-    );
     port (
       wb_clk_i: in std_logic;
   	 	wb_rst_i: in std_logic;
@@ -62,26 +87,14 @@ package zpuinopkg is
 
       intready: in std_logic;
 
-      -- GPIO
-      gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-      gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-      gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
-      tx:       out std_logic;
-      rx:       in std_logic;
-      -- SRAM signals
-      sram_addr:  out std_logic_vector(18 downto 0);
-      sram_data:  inout std_logic_vector(15 downto 0);
-      sram_ce:    out std_logic;
-      sram_we:    out std_logic;
-      sram_oe:    out std_logic;
-      sram_be:    out std_logic;
-
-      vgaclk: in std_logic;
-      vga_hsync: out std_logic;
-      vga_vsync: out std_logic;
-      vga_r: out std_logic_vector(3 downto 0);
-      vga_g: out std_logic_vector(3 downto 0);
-      vga_b: out std_logic_vector(3 downto 0)
+      slot_cyc:   out slot_std_logic_type;
+      slot_we:    out slot_std_logic_type;
+      slot_stb:   out slot_std_logic_type;  
+      slot_read:  in slot_cpuword_type;
+      slot_write: out slot_cpuword_type;
+      slot_address:  out slot_address_type;
+      slot_ack:   in slot_std_logic_type;
+      slot_interrupt: in slot_std_logic_type
 
     );
   end component zpuino_io;
