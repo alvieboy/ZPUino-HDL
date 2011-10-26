@@ -72,7 +72,6 @@ architecture behave of zpuino_intr is
   signal ien_q: std_logic;
   signal iready_q: std_logic;
   signal interrupt_active: std_logic;
-  signal ivecs: std_logic_vector(INTERRUPT_LINES-1 downto 0);
   signal masked_ivecs: std_logic_vector(31 downto 0); -- Max interrupt lines here, for priority encoder
 
   signal intr_detected_q: std_logic_vector(INTERRUPT_LINES-1 downto 0);
@@ -190,7 +189,7 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
                            masked_ivecs(31)='1'
                            else '0';
 
-process(wb_adr_i,mask_q,ien_q,intr_served_q)
+process(wb_adr_i,mask_q,ien_q,intr_served_q,intr_cfglvl,intr_level_q)
 begin
   wb_dat_o <= (others => '0');
   case wb_adr_i(3 downto 2) is

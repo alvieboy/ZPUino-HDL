@@ -37,7 +37,7 @@ begin
 wb_ack_o<='1' when ready_q='1' and ( wb_cyc_i='1' and wb_stb_i='1') else '0';
 wb_inta_o <= '0';
 
-process(wb_adr_i,crc_q,poly_q)
+process(wb_adr_i,crc_q,poly_q, crcA_q, crcB_q)
 begin
   case wb_adr_i(4 downto 2) is
     when "000" =>

@@ -212,7 +212,7 @@ begin
     end if;
   end process;
 
-  process(wb_adr_i, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q)
+  process(wb_adr_i, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q,spi_txblock_q,spi_transfersize_q)
   begin
     wb_dat_o <= (others =>'0');
     case wb_adr_i(2) is

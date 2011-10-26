@@ -60,11 +60,11 @@ entity zpuino_io is
     slot_cyc:   out slot_std_logic_type;
     slot_we:    out slot_std_logic_type;
     slot_stb:   out slot_std_logic_type;
-    slot_read:  in slot_cpuword_type;
+    slot_read:  in slot_cpuword_type := (others => (others => DontCareValue) );
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
-    slot_ack:   in slot_std_logic_type;
-    slot_interrupt: in slot_std_logic_type
+    slot_ack:   in slot_std_logic_type := (others => '1');
+    slot_interrupt: in slot_std_logic_type := (others => '0' )
 
   );
 end entity zpuino_io;
@@ -120,7 +120,7 @@ begin
 
   -- Ack generator  (We have an hack for slot4 here)
 
-  process(slot_ack_i)
+  process(slot_ack_i, timer_ack)
   begin
     io_device_ack <= '0';
     for i in 0 to num_devices-1 loop
@@ -236,7 +236,7 @@ begin
     end loop;
   end process;
 
-  process(io_address,slot_read_i)
+  process(io_address,slot_read_i,timer_read)
     variable slotNumber: integer range 0 to num_devices-1;
   begin
 
