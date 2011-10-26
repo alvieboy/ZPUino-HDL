@@ -64,10 +64,7 @@ struct bootloader_data_t {
     unsigned int spiend;
 };
 
-/* NOTE: this is not actually read-only, but we need to place
- it in bootloader area. I could create a new section, but I'm definitely lazy. */
-
-struct bootloader_data_t bdata __attribute__((section(".rodata")));
+struct bootloader_data_t bdata BDATA;
 
 void outbyte(int);
 
