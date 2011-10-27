@@ -206,8 +206,6 @@ signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
 signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 signal memErr: std_logic;
 
-constant minimal_implementation: boolean := true;
-
 subtype index is integer range 0 to 3;
 
 signal tOpcode_sel : index;
@@ -274,8 +272,8 @@ begin
 
     ADDRA => stack_a_addr,
     ADDRB => stack_b_addr,
-    CLKA  => clk,
-    CLKB  => clk,
+    CLKA  => wb_clk_i,
+    CLKB  => wb_clk_i,
     DIA   => stack_a_write,
     DIB   => stack_b_write,
     DIPA  => dipa,
@@ -289,7 +287,7 @@ begin
     );
 
 
-  stack_mem_enable <= not io_busy;
+  stack_mem_enable <= '1';--not io_busy;
 
   -- generate a trace file.
   -- 
