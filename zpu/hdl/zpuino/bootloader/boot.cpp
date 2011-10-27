@@ -172,6 +172,7 @@ static void spi_reset()
 {
 	spi_disable();
 	spi_enable();
+	spi_disable();
 }
 
 static inline void waitspiready()
@@ -786,6 +787,27 @@ void configure_pins()
 
 }
 #endif
+#ifdef __ZPUINO_NEXYS2__
+void configure_pins()
+{
+	outputPinForFunction( FPGA_PMOD_JA_1, IOPIN_SPI_MOSI);
+	outputPinForFunction( FPGA_PMOD_JA_4, IOPIN_SPI_SCK);
+	inputPinForFunction( FPGA_PMOD_JA_3, IOPIN_SPI_MISO);
+
+	pinModePPS(FPGA_PMOD_JA_1,HIGH);
+	pinModePPS(FPGA_PMOD_JA_4,HIGH);
+	//pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinModePPS(FPGA_PMOD_JA_2,LOW);
+
+	pinMode(FPGA_PMOD_JA_1,OUTPUT);
+	pinMode(FPGA_PMOD_JA_4, OUTPUT);
+	//pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+	pinMode(FPGA_PMOD_JA_2, OUTPUT);
+	
+	digitalWrite(FPGA_PMOD_JA_2,HIGH);
+}
+#endif
+
 #endif // SIMULATION
 
 extern "C" int _syscall(int *foo, int ID, ...);
