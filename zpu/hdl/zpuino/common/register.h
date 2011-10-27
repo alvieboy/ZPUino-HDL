@@ -2,12 +2,14 @@
 #define __REGISTER_H__
 
 #if defined( __ZPUINO_S3E_EVAL__ )
-#include "board_s3e_eval.h"
+# include "board_s3e_eval.h"
 #elif defined( __ZPUINO_PAPILIO_ONE__ )
-#  include "board_papilio_one.h"
+# include "board_papilio_one.h"
 #elif defined( __ZPUINO_PAPILIO_PLUS__ )
-#  include "board_papilio_plus.h"
-# else
+# include "board_papilio_plus.h"
+#elif defined( __ZPUINO_NEXYS2__ )
+# include "board_nexys2.h"
+#else
 #  error Unknown board.
 # endif
 

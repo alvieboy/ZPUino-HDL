@@ -1,0 +1,249 @@
+#ifndef __BOARD_H__
+#define __BOARD_H__
+
+//#define CLK_FREQ 78000000UL
+#define CLK_FREQ 96000000UL
+#define BOARD_MEMORYSIZE 0x8000
+#define SPIOFFSET 0x00000000
+
+#define BOARD_SPI_DIVIDER BIT(SPICP1)
+
+#define IOBASE 0x8000000
+#define IO_SLOT_OFFSET_BIT 23
+
+
+// JA, PMOD dual connector
+#define FPGA_PIN_L15 0
+#define FPGA_PIN_K12 1
+#define FPGA_PIN_L17 2
+#define FPGA_PIN_M15 3
+#define FPGA_PIN_K13 4
+#define FPGA_PIN_L16 5
+#define FPGA_PIN_M14 6
+#define FPGA_PIN_M16 7
+
+// JB, PMOD dual connector
+#define FPGA_PIN_M13 8
+#define FPGA_PIN_R18 9
+#define FPGA_PIN_R15 10
+#define FPGA_PIN_T17 11
+#define FPGA_PIN_P17 12
+#define FPGA_PIN_R16 13
+#define FPGA_PIN_T18 14
+#define FPGA_PIN_U18 15
+
+// JC, PMOD dual connector
+#define FPGA_PIN_G15 16
+#define FPGA_PIN_J16 17
+#define FPGA_PIN_G13 18
+#define FPGA_PIN_H16 19
+#define FPGA_PIN_H15 20
+#define FPGA_PIN_F14 21
+#define FPGA_PIN_G16 22
+#define FPGA_PIN_J12 23
+
+// JD, PMOD dual connector (only first half of JD is connected)
+#define FPGA_PIN_J13 24
+#define FPGA_PIN_M18 25
+#define FPGA_PIN_N18 26
+#define FPGA_PIN_P18 27
+
+// Buttons BT0-BTN2
+#define FPGA_PIN_B18 28
+#define FPGA_PIN_D18 29
+#define FPGA_PIN_E18 30
+
+// FX2 connector, IO40
+#define FPGA_PIN_B16 31
+
+// LEDs LD0-LD7
+#define FPGA_PIN_J14 32
+#define FPGA_PIN_J15 33
+#define FPGA_PIN_K15 34
+#define FPGA_PIN_K14 35
+#define FPGA_PIN_E16 36
+#define FPGA_PIN_P16 37
+#define FPGA_PIN_E4 38
+#define FPGA_PIN_P4 39
+
+// Nexys 2 onBoard 7seg display, segments A-G, DP
+#define FPGA_PIN_L18 40
+#define FPGA_PIN_F18 41
+#define FPGA_PIN_D17 42
+#define FPGA_PIN_D16 43
+#define FPGA_PIN_G14 44
+#define FPGA_PIN_J17 45
+#define FPGA_PIN_H14 46
+#define FPGA_PIN_C17 47
+
+// Nexys 2 onBoard 7seg display, digits 0-3
+#define FPGA_PIN_F17 48
+#define FPGA_PIN_H17 49
+#define FPGA_PIN_C18 50
+#define FPGA_PIN_F15 51
+
+// PS2 CLK/DATA
+#define FPGA_PIN_R12 52
+#define FPGA_PIN_P11 53
+
+// FX2 connector, IO1-IO39
+#define FPGA_PIN_B4 54
+#define FPGA_PIN_A4 55
+#define FPGA_PIN_C3 56
+#define FPGA_PIN_C4 57
+#define FPGA_PIN_B6 58
+#define FPGA_PIN_D5 59
+#define FPGA_PIN_C5 60
+#define FPGA_PIN_F7 61
+#define FPGA_PIN_E7 62
+#define FPGA_PIN_A6 63
+#define FPGA_PIN_C7 64
+#define FPGA_PIN_F8 65
+#define FPGA_PIN_D7 66
+#define FPGA_PIN_E8 67
+#define FPGA_PIN_E9 68
+#define FPGA_PIN_C9 69
+#define FPGA_PIN_A8 70
+#define FPGA_PIN_G9 71
+#define FPGA_PIN_F9 72
+#define FPGA_PIN_D10 73
+#define FPGA_PIN_A10 74
+#define FPGA_PIN_B10 75
+#define FPGA_PIN_A11 76
+#define FPGA_PIN_D11 77
+#define FPGA_PIN_E10 78
+#define FPGA_PIN_B11 79
+#define FPGA_PIN_C11 80
+#define FPGA_PIN_E11 81
+#define FPGA_PIN_F11 82
+#define FPGA_PIN_E12 83
+#define FPGA_PIN_F12 84
+#define FPGA_PIN_A13 85
+#define FPGA_PIN_B13 86
+#define FPGA_PIN_E13 87
+#define FPGA_PIN_A14 88
+#define FPGA_PIN_C14 89
+#define FPGA_PIN_D14 90
+#define FPGA_PIN_B14 91
+#define FPGA_PIN_A16 92
+
+// Alias generic GPIO pins to specific Nexys2 peripheral pins/devices 
+// JA, PMOD dual connector (1st half used for SPI)
+#define FPGA_PMOD_JA_1 FPGA_PIN_L15
+#define FPGA_PMOD_JA_2 FPGA_PIN_K12
+#define FPGA_PMOD_JA_3 FPGA_PIN_L17
+#define FPGA_PMOD_JA_4 FPGA_PIN_M15
+#define FPGA_PMOD_JA_7 FPGA_PIN_K13
+#define FPGA_PMOD_JA_8 FPGA_PIN_L16
+#define FPGA_PMOD_JA_9 FPGA_PIN_M14
+#define FPGA_PMOD_JA_10 FPGA_PIN_M16
+
+// JB, PMOD dual connector
+#define FPGA_PMOD_JB_1 FPGA_PIN_M13
+#define FPGA_PMOD_JB_2 FPGA_PIN_R18
+#define FPGA_PMOD_JB_3 FPGA_PIN_R15
+#define FPGA_PMOD_JB_4 FPGA_PIN_T17
+#define FPGA_PMOD_JB_7 FPGA_PIN_P17
+#define FPGA_PMOD_JB_8 FPGA_PIN_R16
+#define FPGA_PMOD_JB_9 FPGA_PIN_T18
+#define FPGA_PMOD_JB_10 FPGA_PIN_U18
+
+// JC, PMOD dual connector
+#define FPGA_PMOD_JC_1 FPGA_PIN_G15
+#define FPGA_PMOD_JC_2 FPGA_PIN_J16
+#define FPGA_PMOD_JC_3 FPGA_PIN_G13
+#define FPGA_PMOD_JC_4 FPGA_PIN_H16
+#define FPGA_PMOD_JC_7 FPGA_PIN_H15
+#define FPGA_PMOD_JC_8 FPGA_PIN_F14
+#define FPGA_PMOD_JC_9 FPGA_PIN_G16
+#define FPGA_PMOD_JC_10 FPGA_PIN_J12
+
+// JD, PMOD dual connector (only first half of JD is connected)
+#define FPGA_PMOD_JD_1 FPGA_PIN_J13
+#define FPGA_PMOD_JD_2 FPGA_PIN_M18
+#define FPGA_PMOD_JD_3 FPGA_PIN_N18
+#define FPGA_PMOD_JD_4 FPGA_PIN_P18
+
+// Buttons BT0-BTN2
+#define FPGA_BTN_0 FPGA_PIN_B18
+#define FPGA_BTN_1 FPGA_PIN_D18
+#define FPGA_BTN_2 FPGA_PIN_E18
+
+// FX2 connector, IO40
+#define FPGA_FXIO_40 FPGA_PIN_B16
+
+// LEDs LD0-LD7
+#define FPGA_LED_0 FPGA_PIN_J14
+#define FPGA_LED_1 FPGA_PIN_J15
+#define FPGA_LED_2 FPGA_PIN_K15
+#define FPGA_LED_3 FPGA_PIN_K14
+#define FPGA_LED_4 FPGA_PIN_E16
+#define FPGA_LED_5 FPGA_PIN_P16
+#define FPGA_LED_6 FPGA_PIN_E4
+#define FPGA_LED_7 FPGA_PIN_P4
+
+// Nexys 2 onBoard 7seg display, segments A-G, DP
+#define FPGA_DIS4x7_SEG_A FPGA_PIN_L18
+#define FPGA_DIS4x7_SEG_B FPGA_PIN_F18
+#define FPGA_DIS4x7_SEG_C FPGA_PIN_D17
+#define FPGA_DIS4x7_SEG_D FPGA_PIN_D16
+#define FPGA_DIS4x7_SEG_E FPGA_PIN_G14
+#define FPGA_DIS4x7_SEG_F FPGA_PIN_J17
+#define FPGA_DIS4x7_SEG_G FPGA_PIN_H14
+#define FPGA_DIS4x7_SEG_DP FPGA_PIN_C17
+
+// Nexys 2 onBoard 7seg display, digits 0-3
+#define FPGA_DIS4x7_DIG_0 FPGA_PIN_F17
+#define FPGA_DIS4x7_DIG_1 FPGA_PIN_H17
+#define FPGA_DIS4x7_DIG_2 FPGA_PIN_C18
+#define FPGA_DIS4x7_DIG_3 FPGA_PIN_F15
+
+// PS2 CLK/DATA
+#define FPGA_PS2_CLK FPGA_PIN_R12
+#define FPGA_PS2_DAT FPGA_PIN_P11
+
+// FX2 connector, IO1-IO39
+#define FPGA_FXIO_1 FPGA_PIN_B4
+#define FPGA_FXIO_2 FPGA_PIN_A4
+#define FPGA_FXIO_3 FPGA_PIN_C3
+#define FPGA_FXIO_4 FPGA_PIN_C4
+#define FPGA_FXIO_5 FPGA_PIN_B6
+#define FPGA_FXIO_6 FPGA_PIN_D5
+#define FPGA_FXIO_7 FPGA_PIN_C5
+#define FPGA_FXIO_8 FPGA_PIN_F7
+#define FPGA_FXIO_9 FPGA_PIN_E7
+#define FPGA_FXIO_10 FPGA_PIN_A6
+#define FPGA_FXIO_11 FPGA_PIN_C7
+#define FPGA_FXIO_12 FPGA_PIN_F8
+#define FPGA_FXIO_13 FPGA_PIN_D7
+#define FPGA_FXIO_14 FPGA_PIN_E8
+#define FPGA_FXIO_15 FPGA_PIN_E9
+#define FPGA_FXIO_16 FPGA_PIN_C9
+#define FPGA_FXIO_17 FPGA_PIN_A8
+#define FPGA_FXIO_18 FPGA_PIN_G9
+#define FPGA_FXIO_19 FPGA_PIN_F9
+#define FPGA_FXIO_20 FPGA_PIN_D10
+#define FPGA_FXIO_21 FPGA_PIN_A10
+#define FPGA_FXIO_22 FPGA_PIN_B10
+#define FPGA_FXIO_23 FPGA_PIN_A11
+#define FPGA_FXIO_24 FPGA_PIN_D11
+#define FPGA_FXIO_25 FPGA_PIN_E10
+#define FPGA_FXIO_26 FPGA_PIN_B11
+#define FPGA_FXIO_27 FPGA_PIN_C11
+#define FPGA_FXIO_28 FPGA_PIN_E11
+#define FPGA_FXIO_29 FPGA_PIN_F11
+#define FPGA_FXIO_30 FPGA_PIN_E12
+#define FPGA_FXIO_31 FPGA_PIN_F12
+#define FPGA_FXIO_32 FPGA_PIN_A13
+#define FPGA_FXIO_33 FPGA_PIN_B13
+#define FPGA_FXIO_34 FPGA_PIN_E13
+#define FPGA_FXIO_35 FPGA_PIN_A14
+#define FPGA_FXIO_36 FPGA_PIN_C14
+#define FPGA_FXIO_37 FPGA_PIN_D14
+#define FPGA_FXIO_38 FPGA_PIN_B14
+#define FPGA_FXIO_39 FPGA_PIN_A16
+
+// 
+#define SPI_FLASH_SEL_PIN FPGA_PMOD_JA_2
+
+#endif
