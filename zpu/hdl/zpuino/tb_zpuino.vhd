@@ -38,6 +38,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 library work;
 use work.zpuino_config.all;
+use work.zpu_config.all;
+use work.zpupkg.all;
+use work.zpuinopkg.all;
 
 entity tb_zpuino is
 end entity;
@@ -59,33 +62,6 @@ architecture behave of tb_zpuino is
   signal spi_pf_sck:   std_logic;
   signal spi_pf_nsel:  std_logic;
 
-
-  component zpuino_top is
-  generic (
-    spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0);
-    spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0)
-  );
-  port (
-    clk:      in std_logic;
-	 	rst:      in std_logic;
-
-    gpio_o:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_t:   out std_logic_vector(zpuino_gpio_count-1 downto 0);
-    gpio_i:   in std_logic_vector(zpuino_gpio_count-1 downto 0);
-    rx:       in std_logic;
-    tx:       out std_logic;
-
-    -- SRAM signals
-    sram_addr:  out std_logic_vector(18 downto 0);
-    sram_data:  inout std_logic_vector(15 downto 0);
-    sram_ce:    out std_logic;
-    sram_we:    out std_logic;
-    sram_oe:    out std_logic;
-    sram_be:    out std_logic;
-
-    vgaclk:     in std_logic
-  );
-  end component zpuino_top;
 
   component M25P16 IS
   GENERIC (	init_file: string := string'("initM25P16.txt");         -- Init file name
@@ -254,7 +230,18 @@ architecture behave of tb_zpuino is
   );
   END component sram;
 
+  -- I/O Signals
+  signal slot_cyc:   slot_std_logic_type;
+  signal slot_we:    slot_std_logic_type;
+  signal slot_stb:   slot_std_logic_type;
+  signal slot_read:  slot_cpuword_type;
+  signal slot_write: slot_cpuword_type;
+  signal slot_address:  slot_address_type;
+  signal slot_ack:   slot_std_logic_type;
+  signal slot_interrupt: slot_std_logic_type;
 
+  signal wb_clk_i: std_logic;
+  signal wb_rst_i: std_logic;
 begin
 
   mysram: sram
@@ -299,32 +286,29 @@ begin
     D       => sram_data
   );
 
+
+  wb_clk_i <= w_clk;
+  wb_rst_i <= w_rst;
+
+  zpuino:zpuino_top
+    port map (
+      clk           => wb_clk_i,
+	 	  rst           => wb_rst_i,
+      slot_cyc      => slot_cyc,
+      slot_we       => slot_we,
+      slot_stb      => slot_stb,
+      slot_read     => slot_read,
+      slot_write    => slot_write,
+      slot_address  => slot_address,
+      slot_ack      => slot_ack,
+      slot_interrupt=> slot_interrupt
+    );
+
+
   uart_rx <= rxsim;--uart_tx after 7 us;
 
   uart_tx <= gpio_o(1);
   gpio_i(48) <= uart_rx;
-
-  top: zpuino_top
-    generic map (
-    spp_cap_in => (others => '1'),
-    spp_cap_out=> (others => '1')
-   )
-
-    port map (
-      clk    => w_clk,
-	 	  rst    => w_rst,
-      gpio_i => gpio_i,
-      gpio_o => gpio_o,
-      gpio_t => gpio_t,
-      rx => '1',
-      tx => open,
-      sram_addr => sram_addr,
-      sram_data => sram_data,
-      sram_oe => sram_oe,
-      sram_we => sram_we,
-      sram_ce => sram_ce,
-      vgaclk => w_vgaclk
-  );
 
   --rxs: uart_pty_tx
   -- -port map(
@@ -366,5 +350,325 @@ begin
       report "End" severity failure;
       wait;
    end process;
+
+  --
+  --
+  -- ----------------  I/O connection to devices --------------------
+  --
+  --
+
+  --
+  -- IO SLOT 0
+  --
+
+  slot0: zpuino_spi
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(0),
+    wb_dat_i     => slot_write(0),
+    wb_adr_i   => slot_address(0),
+    wb_we_i        => slot_we(0),
+    wb_cyc_i      => slot_cyc(0),
+    wb_stb_i      => slot_stb(0),
+    wb_ack_o      => slot_ack(0),
+    wb_inta_o => slot_interrupt(0),
+
+    mosi      => spi_pf_mosi,
+    miso      => spi_pf_miso,
+    sck       => spi_pf_sck,
+    enabled   => open
+  );
+
+  --
+  -- IO SLOT 1
+  --
+
+  uart_inst: zpuino_uart
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(1),
+    wb_dat_i     => slot_write(1),
+    wb_adr_i   => slot_address(1),
+    wb_we_i      => slot_we(1),
+    wb_cyc_i       => slot_cyc(1),
+    wb_stb_i       => slot_stb(1),
+    wb_ack_o      => slot_ack(1),
+
+    wb_inta_o => slot_interrupt(1),
+
+    enabled   => open,
+    tx        => open,
+    rx        => '0'
+  );
+
+  --
+  -- IO SLOT 2
+  --
+
+  gpio_inst: zpuino_gpio
+  generic map (
+    gpio_count => zpuino_gpio_count
+  )
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(2),
+    wb_dat_i     => slot_write(2),
+    wb_adr_i   => slot_address(2),
+    wb_we_i        => slot_we(2),
+    wb_cyc_i       => slot_cyc(2),
+    wb_stb_i       => slot_stb(2),
+    wb_ack_o      => slot_ack(2),
+    wb_inta_o => slot_interrupt(2),
+
+    spp_data  => (others => '0'),
+    spp_read  => open,
+
+    gpio_i      => gpio_i,
+    gpio_t      => gpio_t,
+    gpio_o      => gpio_o,
+    spp_cap_in   => (others =>'1'),
+    spp_cap_out  => (others =>'1')
+  );
+
+  --
+  -- IO SLOT 3
+  --
+
+  timers_inst: zpuino_timers
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(3),
+    wb_dat_i     => slot_write(3),
+    wb_adr_i   => slot_address(3),
+    wb_we_i        => slot_we(3),
+    wb_cyc_i        => slot_cyc(3),
+    wb_stb_i        => slot_stb(3),
+    wb_ack_o      => slot_ack(3),
+
+    wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
+    wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+
+    spp_data  => open,
+    spp_en    => open,
+    comp      => open
+    );
+
+  --
+  -- IO SLOT 4  - DO NOT USE (it's already mapped to Interrupt Controller)
+  --
+
+  --
+  -- IO SLOT 5
+  --
+
+  sigmadelta_inst: zpuino_sigmadelta
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(5),
+    wb_dat_i     => slot_write(5),
+    wb_adr_i   => slot_address(5),
+    wb_we_i        => slot_we(5),
+    wb_cyc_i        => slot_cyc(5),
+    wb_stb_i        => slot_stb(5),
+    wb_ack_o      => slot_ack(5),
+    wb_inta_o => slot_interrupt(5),
+
+    spp_data  => open,
+    spp_en    => open,
+    sync_in   => '1'
+  );
+
+  --
+  -- IO SLOT 6
+  --
+
+  slot1: zpuino_spi
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(6),
+    wb_dat_i     => slot_write(6),
+    wb_adr_i   => slot_address(6),
+    wb_we_i        => slot_we(6),
+    wb_cyc_i        => slot_cyc(6),
+    wb_stb_i        => slot_stb(6),
+    wb_ack_o      => slot_ack(6),
+    wb_inta_o => slot_interrupt(6),
+
+    mosi      => open,
+    miso      => '1',
+    sck       => open,
+    enabled   => open
+  );
+
+
+
+  --
+  -- IO SLOT 7
+  --
+
+  crc16_inst: zpuino_crc16
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o     => slot_read(7),
+    wb_dat_i     => slot_write(7),
+    wb_adr_i   => slot_address(7),
+    wb_we_i     => slot_we(7),
+    wb_cyc_i        => slot_cyc(7),
+    wb_stb_i        => slot_stb(7),
+    wb_ack_o      => slot_ack(7),
+    wb_inta_o => slot_interrupt(7)
+  );
+
+  --
+  -- IO SLOT 8 (optional)
+  --
+
+  adc_inst: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o      => slot_read(8),
+    wb_dat_i     => slot_write(8),
+    wb_adr_i   => slot_address(8),
+    wb_we_i    => slot_we(8),
+    wb_cyc_i      => slot_cyc(8),
+    wb_stb_i      => slot_stb(8),
+    wb_ack_o      => slot_ack(8),
+    wb_inta_o =>  slot_interrupt(8)
+  );
+
+  --
+  -- IO SLOT 9
+  --
+
+  slot9: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(9),
+    wb_dat_i     => slot_write(9),
+    wb_adr_i   => slot_address(9),
+    wb_we_i        => slot_we(9),
+    wb_cyc_i        => slot_cyc(9),
+    wb_stb_i        => slot_stb(9),
+    wb_ack_o      => slot_ack(9),
+    wb_inta_o => slot_interrupt(9)
+  );
+
+  --
+  -- IO SLOT 10
+  --
+
+  slot10: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(10),
+    wb_dat_i     => slot_write(10),
+    wb_adr_i   => slot_address(10),
+    wb_we_i        => slot_we(10),
+    wb_cyc_i        => slot_cyc(10),
+    wb_stb_i        => slot_stb(10),
+    wb_ack_o      => slot_ack(10),
+    wb_inta_o => slot_interrupt(10)
+  );
+
+  --
+  -- IO SLOT 11
+  --
+
+  slot11: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(11),
+    wb_dat_i     => slot_write(11),
+    wb_adr_i   => slot_address(11),
+    wb_we_i        => slot_we(11),
+    wb_cyc_i        => slot_cyc(11),
+    wb_stb_i        => slot_stb(11),
+    wb_ack_o      => slot_ack(11),
+    wb_inta_o => slot_interrupt(11)
+  );
+
+  --
+  -- IO SLOT 12
+  --
+
+  slot12: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(12),
+    wb_dat_i     => slot_write(12),
+    wb_adr_i   => slot_address(12),
+    wb_we_i        => slot_we(12),
+    wb_cyc_i        => slot_cyc(12),
+    wb_stb_i        => slot_stb(12),
+    wb_ack_o      => slot_ack(12),
+    wb_inta_o => slot_interrupt(12)
+  );
+
+  --
+  -- IO SLOT 13
+  --
+
+  slot13: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(13),
+    wb_dat_i     => slot_write(13),
+    wb_adr_i   => slot_address(13),
+    wb_we_i        => slot_we(13),
+    wb_cyc_i        => slot_cyc(13),
+    wb_stb_i        => slot_stb(13),
+    wb_ack_o      => slot_ack(13),
+    wb_inta_o => slot_interrupt(13)
+  );
+
+  --
+  -- IO SLOT 14
+  --
+
+  slot14: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(14),
+    wb_dat_i     => slot_write(14),
+    wb_adr_i   => slot_address(14),
+    wb_we_i        => slot_we(14),
+    wb_cyc_i        => slot_cyc(14),
+    wb_stb_i        => slot_stb(14),
+    wb_ack_o      => slot_ack(14),
+    wb_inta_o => slot_interrupt(14)
+  );
+
+  --
+  -- IO SLOT 15
+  --
+
+  slot15: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(15),
+    wb_dat_i     => slot_write(15),
+    wb_adr_i   => slot_address(15),
+    wb_we_i        => slot_we(15),
+    wb_cyc_i        => slot_cyc(15),
+    wb_stb_i        => slot_stb(15),
+    wb_ack_o      => slot_ack(15),
+    wb_inta_o => slot_interrupt(15)
+  );
+
 
 end behave;
