@@ -1,0 +1,152 @@
+NET "CLK" TNM_NET = CLK;
+TIMESPEC TS_CLK = PERIOD "CLK" 20 ns HIGH 40%;
+
+NET "CLK" LOC = "B8" |IOSTANDARD = LVCMOS33 ;  # 
+NET "RST"  LOC = "H13" |IOSTANDARD = LVTTL  |PULLDOWN ;   #  pushbuton switch BTN3
+
+# UART RX/TX
+NET "UART_RX" LOC = "U6" | IOSTANDARD = LVTTL; 			# UART_RX  
+NET "UART_TX" LOC = "P9" | IOSTANDARD = LVTTL    | DRIVE = 8 |SLEW = SLOW ; 	# UART_TX   
+
+# all gpios are LVTTL
+NET "GPIO<*>" IOSTANDARD = LVTTL;
+
+# JA, PMOD dual connector
+NET "GPIO<0>"  LOC = "L15" | DRIVE = 2 | PULLUP ; # SPI_MISO  Bank = 1 , Pin name = IO_L09N_1/A11 , Type = DUAL , Sch name = JA1
+NET "GPIO<1>"  LOC = "K12" | DRIVE = 2 | PULLUP ; # SPI_MOSI  Bank = 1 , Pin name = IO_L11N_1/A9/RHCLK1 , Type = RHCLK/DUAL , Sch name = JA2
+NET "GPIO<2>"  LOC = "L17" | DRIVE = 2 | PULLUP ; # SPI_SCK  Bank = 1 , Pin name = IO_L10N_1/VREF_1 , Type = VREF , Sch name = JA3
+NET "GPIO<3>"  LOC = "M15" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L07P_1 , Type = I/O , Sch name = JA4
+NET "GPIO<4>"  LOC = "K13" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L11P_1/A10/RHCLK0 , Type = RHCLK/DUAL , Sch name = JA7
+NET "GPIO<5>"  LOC = "L16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L09P_1/A12 , Type = DUAL , Sch name = JA8
+NET "GPIO<6>"  LOC = "M14" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L05P_1 , Type = I/O , Sch name = JA9
+NET "GPIO<7>"  LOC = "M16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L07N_1 , Type = I/O , Sch name = JA10
+
+# JB, PMOD dual connector
+NET "GPIO<8>"  LOC = "M13" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L05N_1/VREF_1 , Type = VREF , Sch name = JB1
+NET "GPIO<9>"  LOC = "R18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L02P_1/A14 , Type = DUAL , Sch name = JB2
+NET "GPIO<10>" LOC = "R15" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L03P_1 , Type = I/O , Sch name = JB3
+NET "GPIO<11>" LOC = "T17" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L01N_1/A15 , Type = DUAL , Sch name = JB4
+NET "GPIO<12>" LOC = "P17" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L06P_1 , Type = I/O , Sch name = JB7
+NET "GPIO<13>" LOC = "R16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L03N_1/VREF_1 , Type = VREF , Sch name = JB8
+NET "GPIO<14>" LOC = "T18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L02N_1/A13 , Type = DUAL , Sch name = JB9
+NET "GPIO<15>" LOC = "U18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L01P_1/A16 , Type = DUAL , Sch name = JB10
+
+# JC, PMOD dual connector
+NET "GPIO<16>" LOC = "G15" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L18P_1 , Type = I/O , Sch name = JC1
+NET "GPIO<17>" LOC = "J16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L13N_1/A5/RHCLK5 , Type = RHCLK/DUAL , Sch name = JC2
+NET "GPIO<18>" LOC = "G13" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L20N_1 , Type = I/O , Sch name = JC3
+NET "GPIO<19>" LOC = "H16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L16P_1 , Type = I/O , Sch name = JC4
+NET "GPIO<20>" LOC = "H15" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L17N_1 , Type = I/O , Sch name = JC7
+NET "GPIO<21>" LOC = "F14" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L21N_1 , Type = I/O , Sch name = JC8
+NET "GPIO<22>" LOC = "G16" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L18N_1 , Type = I/O , Sch name = JC9
+NET "GPIO<23>" LOC = "J12" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L15P_1/A2 , Type = DUAL , Sch name = JC10
+
+# JD, PMOD dual connector
+#     1st half only, 2nd half is driving LED 0-3
+NET "GPIO<24>" LOC = "J13" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L15N_1/A1 , Type = DUAL , Sch name = JD1
+NET "GPIO<25>" LOC = "M18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L08N_1 , Type = I/O , Sch name = JD2
+NET "GPIO<26>" LOC = "N18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L08P_1 , Type = I/O , Sch name = JD3
+NET "GPIO<27>" LOC = "P18" | DRIVE = 2 | PULLUP ; # Bank = 1 , Pin name = IO_L06N_1 , Type = I/O , Sch name = JD4
+
+# Buttons BT0-BTN2
+NET "GPIO<28>" LOC = "B18"; # Bank = 1 , Pin name = IP , Type = INPUT , Sch name = BTN0
+NET "GPIO<29>" LOC = "D18"; # Bank = 1 , Pin name = IP/VREF_1 , Type = VREF , Sch name = BTN1
+NET "GPIO<30>" LOC = "E18"; # Bank = 1 , Pin name = IP , Type = INPUT , Sch name = BTN2
+# BTN3 is the reset switch
+#NET "GPIO<30>" LOC= "H13"; # Bank = 1 , Pin name = IP , Type = INPUT , Sch name = BTN3
+
+# FX2 connector, IO40
+NET "GPIO<31>" LOC = "B16" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L01P_0 , Type = I/O , Sch name = FX2-IO40
+
+# LEDs LD0-LD7
+NET "GPIO<32>" LOC = "J14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD0
+NET "GPIO<33>" LOC = "J15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD1
+NET "GPIO<34>" LOC = "K15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD2
+NET "GPIO<35>" LOC = "K14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD3
+NET "GPIO<36>" LOC = "E16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD4
+NET "GPIO<37>" LOC = "P16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD5
+NET "GPIO<38>" LOC = "E4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD6
+NET "GPIO<39>" LOC = "P4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD7
+
+# Connected to Nexys 2 onBoard 7seg display 
+NET "GPIO<40>" LOC = "L18"; # Bank = 1 , Pin name = IO_L10P_1 , Type = I/O , Sch name = CA
+NET "GPIO<41>" LOC = "F18"; # Bank = 1 , Pin name = IO_L19P_1 , Type = I/O , Sch name = CB
+NET "GPIO<42>" LOC = "D17"; # Bank = 1 , Pin name = IO_L23P_1/HDC , Type = DUAL , Sch name = CC
+NET "GPIO<43>" LOC = "D16"; # Bank = 1 , Pin name = IO_L23N_1/LDC0 , Type = DUAL , Sch name = CD
+NET "GPIO<44>" LOC = "G14"; # Bank = 1 , Pin name = IO_L20P_1 , Type = I/O , Sch name = CE
+NET "GPIO<45>" LOC = "J17"; # Bank = 1 , Pin name = IO_L13P_1/A6/RHCLK4/IRDY1 , Type = RHCLK/DUAL , Sch name = CF
+NET "GPIO<46>" LOC = "H14"; # Bank = 1 , Pin name = IO_L17P_1 , Type = I/O , Sch name = CG
+NET "GPIO<47>" LOC = "C17"; # Bank = 1 , Pin name = IO_L24N_1/LDC2 , Type = DUAL , Sch name = DP
+
+NET "GPIO<48>" LOC = "F17"; # Bank = 1 , Pin name = IO_L19N_1 , Type = I/O , Sch name = AN0
+NET "GPIO<49>" LOC = "H17"; # Bank = 1 , Pin name = IO_L16N_1/A0 , Type = DUAL , Sch name = AN1
+NET "GPIO<50>" LOC = "C18"; # Bank = 1 , Pin name = IO_L24P_1/LDC1 , Type = DUAL , Sch name = AN2
+NET "GPIO<51>" LOC = "F15"; # Bank = 1 , Pin name = IO_L21P_1 , Type = I/O , Sch name = AN3
+
+# PS2 mouse/keyboard
+NET "GPIO<52>" LOC = "R12" ; # PS2_CLK   
+NET "GPIO<53>" LOC = "P11" ; # PS2_DATA  
+
+# FX2 connector, IO1-IO39
+NET "GPIO<54>" LOC = "B4"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L24N_0 , Type = I/O , Sch name = FX2-IO1
+NET "GPIO<55>" LOC = "A4"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L24P_0 , Type = I/O , Sch name = FX2-IO2
+NET "GPIO<56>" LOC = "C3"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L25P_0 , Type = I/O , Sch name = FX2-IO3
+NET "GPIO<57>" LOC = "C4"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO , Type = I/O , Sch name = FX2-IO4
+NET "GPIO<58>" LOC = "B6"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L20P_0 , Type = I/O , Sch name = FX2-IO5
+NET "GPIO<59>" LOC = "D5"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L23N_0/VREF_0 , Type = VREF , Sch name = FX2-IO6
+NET "GPIO<60>" LOC = "C5"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L23P_0 , Type = I/O , Sch name = FX2-IO7
+NET "GPIO<61>" LOC = "F7"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L19P_0 , Type = I/O , Sch name = FX2-IO8
+NET "GPIO<62>" LOC = "E7"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L19N_0/VREF_0 , Type = VREF , Sch name = FX2-IO9
+NET "GPIO<63>" LOC = "A6"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L20N_0 , Type = I/O , Sch name = FX2-IO10
+NET "GPIO<64>" LOC = "C7"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L18P_0 , Type = I/O , Sch name = FX2-IO11
+NET "GPIO<65>" LOC = "F8"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L17N_0 , Type = I/O , Sch name = FX2-IO12
+NET "GPIO<66>" LOC = "D7"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L18N_0/VREF_0 , Type = VREF , Sch name = FX2-IO13
+NET "GPIO<67>" LOC = "E8"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L17P_0 , Type = I/O , Sch name = FX2-IO14
+NET "GPIO<68>" LOC = "E9"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L15P_0 , Type = I/O , Sch name = FX2-IO15
+NET "GPIO<69>" LOC = "C9"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L14P_0/GCLK10 , Type = GCLK , Sch name = FX2-IO16
+NET "GPIO<70>" LOC = "A8"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO , Type = I/O , Sch name = FX2-IO17
+NET "GPIO<71>" LOC = "G9"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO , Type = I/O , Sch name = FX2-IO18
+NET "GPIO<72>" LOC = "F9"  | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L15N_0 , Type = I/O , Sch name = FX2-IO19
+NET "GPIO<73>" LOC = "D10" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L11P_0/GCLK4 , Type = GCLK , Sch name = FX2-IO20
+NET "GPIO<74>" LOC = "A10" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L12N_0/GCLK7 , Type = GCLK , Sch name = FX2-IO21
+NET "GPIO<75>" LOC = "B10" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L12P_0/GCLK6 , Type = GCLK , Sch name = FX2-IO22
+NET "GPIO<76>" LOC = "A11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO , Type = I/O , Sch name = FX2-IO23
+NET "GPIO<77>" LOC = "D11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L09N_0 , Type = I/O , Sch name = FX2-IO24
+NET "GPIO<78>" LOC = "E10" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L11N_0/GCLK5 , Type = GCLK , Sch name = FX2-IO25
+NET "GPIO<79>" LOC = "B11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO/VREF_0 , Type = VREF , Sch name = FX2-IO26
+NET "GPIO<80>" LOC = "C11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L09P_0 , Type = I/O , Sch name = FX2-IO27
+NET "GPIO<81>" LOC = "E11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L08P_0 , Type = I/O , Sch name = FX2-IO28
+NET "GPIO<82>" LOC = "F11" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L08N_0 , Type = I/O , Sch name = FX2-IO29
+NET "GPIO<83>" LOC = "E12" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L06N_0 , Type = I/O , Sch name = FX2-IO30
+NET "GPIO<84>" LOC = "F12" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L06P_0 , Type = I/O , Sch name = FX2-IO31
+NET "GPIO<85>" LOC = "A13" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L05P_0 , Type = I/O , Sch name = FX2-IO32
+NET "GPIO<86>" LOC = "B13" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L05N_0/VREF_0 , Type = VREF , Sch name = FX2-IO33
+NET "GPIO<87>" LOC = "E13" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO , Type = I/O , Sch name = FX2-IO34
+NET "GPIO<88>" LOC = "A14" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L04N_0 , Type = I/O , Sch name = FX2-IO35
+NET "GPIO<89>" LOC = "C14" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L03N_0/VREF_0 , Type = VREF , Sch name = FX2-IO36
+NET "GPIO<90>" LOC = "D14" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L03P_0 , Type = I/O , Sch name = FX2-IO37
+NET "GPIO<91>" LOC = "B14" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L04P_0 , Type = I/O , Sch name = FX2-IO38
+NET "GPIO<92>" LOC = "A16" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L01N_0 , Type = I/O , Sch name = FX2-IO39
+
+# Pin assignment for VGA 
+NET "VGA_*" IOSTANDARD = LVTTL;
+# Connected to Nexys 2 
+NET "VGA_RED<0>" LOC= "R9"; # Bank = 2 , Pin name = IO/D5 , Type = DUAL , Sch name = RED0
+NET "VGA_RED<1>" LOC= "T8"; # Bank = 2 , Pin name = IO_L10N_2 , Type = I/O , Sch name = RED1
+NET "VGA_RED<2>" LOC= "R8"; # Bank = 2 , Pin name = IO_L10P_2 , Type = I/O , Sch name = RED2
+NET "VGA_GRN<0>" LOC= "N8"; # Bank = 2 , Pin name = IO_L09N_2 , Type = I/O , Sch name = GRN0
+NET "VGA_GRN<1>" LOC= "P8"; # Bank = 2 , Pin name = IO_L09P_2 , Type = I/O , Sch name = GRN1
+NET "VGA_GRN<2>" LOC= "P6"; # Bank = 2 , Pin name = IO_L05N_2 , Type = I/O , Sch name = GRN2
+NET "VGA_BLU<1>" LOC= "U5"; # Bank = 2 , Pin name = IO/VREF_2 , Type = VREF , Sch name = BLU1
+NET "VGA_BLU<2>" LOC= "U4"; # Bank = 2 , Pin name = IO_L03P_2/DOUT/BUSY , Type = DUAL , Sch name = BLU2
+NET "VGA_HS"     LOC= "T4" | PULLUP; # Bank = 2 , Pin name = IO_L03N_2/MOSI/CSI_B , Type = DUAL , Sch name = HSYNC
+NET "VGA_VS"     LOC= "U3" | PULLUP; # Bank = 2 , Pin name = IO_L01P_2/CSO_B , Type = DUAL , Sch name = VSYNC
+
+
+
+
+# TO DISABLE
+
+# FPGA_INIT_B Platform Flash PROM 1
+NET "FPGA_INIT_B" LOC = "T3" |IOSTANDARD = LVCMOS33 |SLEW = SLOW |DRIVE = 4 ;
+
