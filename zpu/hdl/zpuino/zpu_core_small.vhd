@@ -70,12 +70,12 @@ signal memAWriteEnable:     std_logic;
 signal memAWriteMask:       std_logic_vector(3 downto 0);
 signal memAAddr:            unsigned(maxAddrBit downto minAddrBit);
 signal memAWrite:           unsigned(wordSize-1 downto 0);
-signal memARead:            unsigned(wordSize-1 downto 0);
+signal memARead:            std_logic_vector(wordSize-1 downto 0);
 signal memBWriteEnable:     std_logic;
 signal memBWriteMask:       std_logic_vector(3 downto 0);
-signal memBAddr:            unsigned(maxAddrBit downto 0);
-signal memBWrite:           unsigned(7 downto 0);
-signal memBRead:            unsigned(7 downto 0);
+signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
+signal memBWrite:           unsigned(wordSize-1 downto 0);
+signal memBRead:            std_logic_vector(wordSize-1 downto 0);
 
 --signal busy:                std_logic;
 signal begin_inst:          std_logic;
@@ -94,30 +94,13 @@ signal io_we: std_logic;
 type State_Type is
 (
 State_Start,
---State_Fetch,
---State_WriteIODone,
 State_Execute,
---State_StoreToStack,
---State_Add,
---State_Or,
---State_And,
 State_Store,
---State_ReadIO,
---State_WriteIO,
 State_Load,
---State_FetchNext,
 State_AddSP,
---State_ReadIODone,
 State_Resync1,
 State_Resync2,
---State_Interrupt,
---State_Neqbranch,
---State_Eq,
---State_Storeb,
---State_Storeh,
 State_LoadSP,
---State_Loadb,
---State_Ashiftleft,
 State_WaitSP,
 State_Pop
 );
@@ -196,16 +179,6 @@ signal spnext_b:   unsigned(spMaxBit downto 2);
 
 constant minimal_implementation: boolean := true;
 
-
-subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
-signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
-signal memAWrite_stdlogic : std_logic_vector(memAWrite'range);
-signal memARead_stdlogic  : std_logic_vector(memARead'range);
-signal memBAddr_stdlogic  : std_logic_vector(maxAddrBitBRAM downto 0);
-signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
-signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
-signal memErr: std_logic;
-
 subtype index is integer range 0 to 3;
 
 signal tOpcode_sel : index;
@@ -220,10 +193,10 @@ begin
 end pc_to_cpuword;
 
 function pc_to_memaddr(pc: unsigned) return unsigned is
-  variable r: unsigned(maxAddrBit downto 0);
+  variable r: unsigned(maxAddrBit downto minAddrBit);
 begin
-  r := (others => DontCareValue);
-  r(maxAddrBit downto 0) := pc(maxAddrBit downto 0);
+  r := (others => '0');
+  r(maxAddrBit downto minAddrBit) := pc(maxAddrBit downto minAddrBit);
   return r;
 end pc_to_memaddr;
 
@@ -251,6 +224,20 @@ signal dipa,dipb: std_logic_vector(3 downto 0) := (others => '0');
 signal stack_b_addr_is_offset: std_logic;
 
 signal stack_mem_enable: std_logic;
+
+signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
+signal wb_cyc_o_i: std_logic;
+
+
+subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
+signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
+signal memAWrite_stdlogic : std_logic_vector(memAWrite'range);
+signal memARead_stdlogic  : std_logic_vector(memARead'range);
+signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
+signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
+signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
+
+
 
 begin
 
@@ -317,7 +304,7 @@ begin
 
   memAAddr_stdlogic  <= std_logic_vector(memAAddr(AddrBitBRAM_range));
   memAWrite_stdlogic <= std_logic_vector(memAWrite);
-  memBAddr_stdlogic  <= std_logic_vector(memBAddr);
+  memBAddr_stdlogic  <= std_logic_vector(memBAddr(AddrBitBRAM_range));
   memBWrite_stdlogic <= std_logic_vector(memBWrite);
   
   memory: dualport_ram
@@ -325,20 +312,21 @@ begin
       clk => wb_clk_i,
       memAWriteEnable => memAWriteEnable,
       memAWriteMask => memAWriteMask,
-      memAAddr => memAAddr_stdlogic,
       memAWrite => memAWrite_stdlogic,
-      memARead => memARead_stdlogic,
+      memAAddr => memAAddr_stdlogic,
+      memARead => memARead,
       memBWriteEnable => memBWriteEnable,
-      --memBWriteMask => memBWriteMask,
       memBAddr => memBAddr_stdlogic,
       memBWrite => memBWrite_stdlogic,
-      memBRead => memBRead_stdlogic,
+      memBRead => memBRead,
+      memBWriteMask => (others=>'1'),--memBWriteMask,
       memErr => open
     );
 
-  memARead <= unsigned(memARead_stdlogic);
-  memBRead <= unsigned(memBRead_stdlogic);
-  wb_we_o <= io_we;
+  --memARead <= unsigned(memARead_stdlogic);
+  --memBRead <= unsigned(memBRead_stdlogic);
+  --wb_we_o <= io_we;
+  wb_cyc_o <= wb_cyc_o_i;
 
   tOpcode_sel <= to_integer(pc(minAddrBit-1 downto 0));
 
@@ -350,19 +338,19 @@ begin
     variable localspOffset: unsigned(4 downto 0);
   begin
 
-        --case (tOpcode_sel) is
+        case (tOpcode_sel) is
 
-        --    when 0 => tOpcode := std_logic_vector(memBRead(31 downto 24));
+            when 0 => tOpcode := std_logic_vector(memBRead(31 downto 24));
 
-        --    when 1 => tOpcode := std_logic_vector(memBRead(23 downto 16));
+            when 1 => tOpcode := std_logic_vector(memBRead(23 downto 16));
 
-        --    when 2 => tOpcode := std_logic_vector(memBRead(15 downto 8));
+            when 2 => tOpcode := std_logic_vector(memBRead(15 downto 8));
 
-            --when 3 =>
-            tOpcode := std_logic_vector(memBRead(7 downto 0));
+            when 3 => tOpcode := std_logic_vector(memBRead(7 downto 0));
 
-        --    when others => tOpcode := std_logic_vector(memBRead(7 downto 0));
-       -- end case;
+            when others =>
+              null;--tOpcode := std_logic_vector(memBRead(7 downto 0));
+       end case;
 
     sampledOpcode <= tOpcode;
     localspOffset(4):=not tOpcode(4);
@@ -458,17 +446,17 @@ begin
   end process;
 
   -- Multiplier
-  process(wb_clk_i)
-    variable multR: unsigned(wordSize*2-1 downto 0);
-  begin
-    if rising_edge(wb_clk_i) then
-      multR := r.multInA * r.multInB;
-      mult3 <= multR(wordSize-1 downto 0);
-      mult2 <= mult3;
-      mult1 <= mult2;
-      mult0 <= mult1;
-    end if;
-  end process;
+--  process(wb_clk_i)
+--    variable multR: unsigned(wordSize*2-1 downto 0);
+--  begin
+--    if rising_edge(wb_clk_i) then
+--      multR := r.multInA * r.multInB;
+--      mult3 <= multR(wordSize-1 downto 0);
+--      mult2 <= mult3;
+--      mult1 <= mult2;
+--      mult0 <= mult1;
+--    end if;
+--  end process;
 
   -- Decode unit
 
@@ -483,10 +471,10 @@ begin
     end if;
   end process;
 
-  process(clk)
+  process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if rst='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         pc <= (others => '1');
         decode_valid_q <= '0';
       else
@@ -541,8 +529,8 @@ begin
   memAAddr <= topOfStack_read(maxAddrBit downto minAddrBit);
 
   -- IO Accesses
-  io_addr(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
-  io_write <= stack_b_read;
+  wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
+  wb_dat_o <= stack_b_read;
 
   process(topOfStack_read, r, opcode, wb_inta_i, pcnext, decodedOpcode, pce,
           stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state)
@@ -551,6 +539,7 @@ begin
 
     memBWrite <= (others => DontCareValue);
     memBWriteEnable <= '0';
+
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
 
@@ -749,7 +738,9 @@ begin
           when Decoded_Load =>
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
-              io_rd <= '1';
+              --io_rd <= '1';
+              wb_cyc_o_i<='1';
+              wb_stb_o<='1';
             end if;
 
             spnext_b <= topOfStack_read(spMaxBit downto 2);
@@ -825,7 +816,8 @@ begin
   process(state, decodedOpcode, topOfStack_read,stack_b_read)
   begin
     memAWriteEnable <= '0';
-    memAWrite <= (others => DontCareValue);
+    --memAWrite <= (others => DontCareValue);
+    memAWrite <= unsigned(stack_b_read);
 
     case state is
       when State_Execute =>
@@ -833,7 +825,6 @@ begin
           when Decoded_Store =>
             if topOfStack_read(maxAddrBitIncIO)='0' then
               memAWriteEnable <= '1';
-              memAWrite <= unsigned(stack_b_read);
             end if;
           when others =>
         end case;
@@ -1011,10 +1002,10 @@ begin
         if topOfStack_read(maxAddrBitIncIO)='1' then
           --if io_busy='0' then
           -- NOTE: keep writing even if IO is busy
-            topOfStack_write <= unsigned(io_read);
+            topOfStack_write <= unsigned(wb_dat_i);
           --end if;
         else
-          topOfStack_write <= memARead;
+          topOfStack_write <= unsigned(memARead);
         end if;
         end if;
       when others =>
@@ -1027,8 +1018,8 @@ begin
 
   stm: process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if rst='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         state <= State_Start;
       else
       case state is
@@ -1114,8 +1105,8 @@ begin
 
   process(wb_clk_i)
   begin
-    if rising_edge(clk) then
-      if rst='1' then
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
         sp <= unsigned(spStart(10 downto 2));
 --        r.state <= State_Start;
         r.idim <= '0';

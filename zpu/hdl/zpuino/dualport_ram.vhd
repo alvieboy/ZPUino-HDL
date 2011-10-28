@@ -44,50 +44,51 @@ entity dualport_ram is
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
     memAWriteMask:    in std_logic_vector(3 downto 0);
+    memBWriteMask:    in std_logic_vector(3 downto 0);
     memAAddr:         in std_logic_vector(maxAddrBit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector(maxAddrBit downto 0);
-    memBWrite:        in std_logic_vector(7 downto 0);
-    memBRead:         out std_logic_vector(7 downto 0);
+    memBAddr:         in std_logic_vector(maxAddrBit downto 2);
+    memBWrite:        in std_logic_vector(31 downto 0);
+    memBRead:         out std_logic_vector(31 downto 0);
     memErr:           out std_logic
   );
 end entity dualport_ram;
 
 architecture behave of dualport_ram is
 
-component dp_rom_8_32 is
-port (ADDRA: in std_logic_vector(maxAddrBit downto 0);
-      CLK : in std_logic;
-      ENA:   in std_logic;
-      WEA: in std_logic; -- to avoid a bug in Xilinx ISE
-      DOA: out STD_LOGIC_VECTOR (7 downto 0);
-      ADDRB: in std_logic_vector(maxAddrBit downto 2);
-      DIA: in STD_LOGIC_VECTOR (7 downto 0); -- to avoid a bug in Xilinx ISE
-      WEB: in std_logic;
-      ENB:   in std_logic;
-      DOB: out STD_LOGIC_VECTOR (31 downto 0);
-      DIB: in STD_LOGIC_VECTOR (31 downto 0));
-end component dp_rom_8_32;
+component prom_generic_dualport is
+  port (
+    clk:              in std_logic;
+    memAWriteEnable:  in std_logic;
+    memAWriteMask:    in std_logic_vector(3 downto 0);
+    memAAddr:         in std_logic_vector(13 downto 2);
+    memAWrite:        in std_logic_vector(31 downto 0);
+    memARead:         out std_logic_vector(31 downto 0);
+    memBWriteEnable:  in std_logic;
+    memBAddr:         in std_logic_vector(13 downto 2);
+    memBWrite:        in std_logic_vector(31 downto 0);
+    memBWriteMask:    in std_logic_vector(3 downto 0);
+    memBRead:         out std_logic_vector(31 downto 0)
+  );
+end component prom_generic_dualport;
 
 
 begin
-prom: dp_rom_8_32
+prom: prom_generic_dualport
   port map (
-    clk               => clk,
-    WEB   => memAWriteEnable,
-    ADDRB          => memAAddr,
-    DIB         => memAWrite,
-    ENA => '1',
-    ENB => '1',
---    memAWriteMask     => memAWriteMask,
-    DOB          => memARead,
-    WEA => memBWriteEnable,
-    ADDRA          => memBAddr,
-    DIA         => memBWrite,
-    --memBWriteMask     => memBWriteMask,
-    DOA          => memBRead
+    clk => clk,
+    memAWriteEnable => memAWriteEnable,
+    memAWriteMask => memAWriteMask,
+    memAAddr => memAAddr,
+    memAWrite => memAWrite,
+    memARead => memARead,
+    memBWriteEnable => memBWriteEnable,
+    memBAddr => memBAddr,
+    memBWrite => memBWrite,
+    memBWriteMask => memBWriteMask,
+    memBRead => memBRead
   );
 
 end behave;
