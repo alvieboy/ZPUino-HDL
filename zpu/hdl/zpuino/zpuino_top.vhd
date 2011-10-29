@@ -72,6 +72,17 @@ architecture behave of zpuino_top is
   );
   end component clkgen;
 
+  component zpuino_debug is
+  port (
+    dbg_pc:         in std_logic_vector(maxAddrBit downto 0);
+    dbg_opcode:     in std_logic_vector(7 downto 0);
+    dbg_sp:         in std_logic_vector(10 downto 2);
+    dbg_brk:        in std_logic;
+    dbg_stacka:     in std_logic_vector(wordSize-1 downto 0);
+    dbg_stackb:     in std_logic_vector(wordSize-1 downto 0)
+  );
+  end component;
+
 
   signal io_read:    std_logic_vector(wordSize-1 downto 0);
   signal io_write:   std_logic_vector(wordSize-1 downto 0);
@@ -116,6 +127,16 @@ begin
       dbg_stackb    => dbg_stackb
 
     );
+
+  dbg: zpuino_debug
+    port map (
+      dbg_pc        => dbg_pc,
+      dbg_opcode    => dbg_opcode,
+      dbg_sp        => dbg_sp,
+      dbg_brk       => dbg_brk,
+      dbg_stacka    => dbg_stacka,
+      dbg_stackb    => dbg_stackb
+   );
 
   io: zpuino_io
     port map (
