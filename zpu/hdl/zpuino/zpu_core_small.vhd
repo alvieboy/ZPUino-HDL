@@ -766,7 +766,7 @@ begin
           when Decoded_Load =>
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
-              --io_rd <= '1';
+              wb_we_o <= '0';
               wb_cyc_o_i<='1';
               wb_stb_o<='1';
             end if;
@@ -1030,6 +1030,7 @@ begin
           --if io_busy='0' then
           -- NOTE: keep writing even if IO is busy
             topOfStack_write <= unsigned(wb_dat_i);
+            stack_a_writeenable <= wb_ack_i;
           --end if;
         else
           topOfStack_write <= unsigned(memARead);
