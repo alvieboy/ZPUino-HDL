@@ -186,7 +186,7 @@ signal sp:         unsigned(spMaxBit downto 2);
 signal spnext:     unsigned(spMaxBit downto 2);
 signal spnext_b:   unsigned(spMaxBit downto 2);
 
-constant minimal_implementation: boolean := true;
+constant minimal_implementation: boolean := false;
 
 subtype index is integer range 0 to 3;
 
@@ -422,8 +422,8 @@ begin
 --      elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
 --        sampledDecodedOpcode<=Decoded_Loadb;
 
-      elsif (tOpcode(5 downto 0)=OpCode_Mult) then
-        sampledDecodedOpcode<=Decoded_Mult;
+--      elsif (tOpcode(5 downto 0)=OpCode_Mult) then
+--        sampledDecodedOpcode<=Decoded_Mult;
 
       else
         sampledDecodedOpcode<=Decoded_Emulate;
@@ -800,7 +800,7 @@ begin
 
           when Decoded_Idle =>
             -- TODO: Restore idim!!!
-
+            w.idim <= r.idim;
           when others =>
             w.break <= '1';
 
