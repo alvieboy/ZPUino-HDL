@@ -128,7 +128,7 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
-			spi_copy();
+			// spi_copy();  - TEST
 		}
 	}
 }
@@ -140,8 +140,10 @@ void enableTimer()
 #else
 	TMR0CMP = (CLK_FREQ/2000U)-1;
 #endif
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
+   // TEST
+	//  TMR0CNT = 0x0;
+    // TEST
+  //  TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
 }
 
 
@@ -413,6 +415,8 @@ static void cmd_progmem()
 	 buffer[5] is size,
 	 next bytes are data
 	 */
+    // TEST
+	return;
 
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
@@ -483,6 +487,10 @@ static void cmd_sst_aai_program()
 {
 	unsigned int count;
 	unsigned int txcount;
+
+	// TEST
+    return;
+
 #ifndef __ZPUINO_S3E_EVAL__
 
 	// buffer[1-2] is number of TX bytes

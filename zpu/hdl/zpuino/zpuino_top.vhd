@@ -83,6 +83,13 @@ architecture behave of zpuino_top is
   signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
 
+  signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);
+  signal dbg_opcode:     std_logic_vector(7 downto 0);
+  signal dbg_sp:         std_logic_vector(10 downto 2);
+  signal dbg_brk:        std_logic;
+  signal dbg_stacka:     std_logic_vector(wordSize-1 downto 0);
+  signal dbg_stackb:     std_logic_vector(wordSize-1 downto 0);
+
 begin
 
   core: zpu_core_small
@@ -99,7 +106,15 @@ begin
 	 		wb_inta_i     => interrupt,
 
       poppc_inst    => poppc_inst,
-	 		break         => open
+	 		break         => open,
+
+      dbg_pc        => dbg_pc,
+      dbg_opcode    => dbg_opcode,
+      dbg_sp        => dbg_sp,
+      dbg_brk       => dbg_brk,
+      dbg_stacka    => dbg_stacka,
+      dbg_stackb    => dbg_stackb
+
     );
 
   io: zpuino_io

@@ -119,7 +119,15 @@ package zpupkg is
 
     wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
-    break:          out std_logic
+    break:          out std_logic;
+
+    dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
+    dbg_opcode:     out std_logic_vector(7 downto 0);
+    dbg_sp:         out std_logic_vector(10 downto 2);
+    dbg_brk:        out std_logic;
+    dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
+    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0)
+
   );
   end component zpu_core_small;
 

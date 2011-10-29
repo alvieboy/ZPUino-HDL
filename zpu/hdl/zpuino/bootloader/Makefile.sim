@@ -16,10 +16,13 @@ DHRYSRC=.
 
 SKETCHBIN?=InvalidSketch.bin
 
-OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o crt0.o
+OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o 
+#crt0.o
 
-CFLAGS=-Os -nostartfiles -nostdlib -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ 
-LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections -nostartfiles
+#-nostartfiles -nostdlib
+CFLAGS=-Os  -Wall -mno-callpcrel -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ 
+LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
+#-nostartfiles
 
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
@@ -42,6 +45,6 @@ $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin.merged
-	../gen-prom-virtex-dualport_8_32 $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
+	../gen-prom-virtex-dualport_32_32 $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
 clean:	
 	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).bin.merged $(TARGET).s $(TARGET).S prom-simulation.vhd

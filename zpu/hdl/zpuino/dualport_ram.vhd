@@ -39,16 +39,19 @@ use IEEE.std_logic_unsigned.all;
 library work;
 use work.zpupkg.all;
 
+library UNISIM;
+use UNISIM.VCOMPONENTS.all;
+
 entity dualport_ram is
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
     memAWriteMask:    in std_logic_vector(3 downto 0);
-    memBWriteMask:    in std_logic_vector(3 downto 0);
     memAAddr:         in std_logic_vector(maxAddrBit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memBWriteEnable:  in std_logic;
+    memBWriteMask:    in std_logic_vector(3 downto 0);
     memBAddr:         in std_logic_vector(maxAddrBit downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0);
@@ -58,37 +61,77 @@ end entity dualport_ram;
 
 architecture behave of dualport_ram is
 
-component prom_generic_dualport is
-  port (
-    clk:              in std_logic;
-    memAWriteEnable:  in std_logic;
-    memAWriteMask:    in std_logic_vector(3 downto 0);
-    memAAddr:         in std_logic_vector(13 downto 2);
-    memAWrite:        in std_logic_vector(31 downto 0);
-    memARead:         out std_logic_vector(31 downto 0);
-    memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector(13 downto 2);
-    memBWrite:        in std_logic_vector(31 downto 0);
-    memBWriteMask:    in std_logic_vector(3 downto 0);
-    memBRead:         out std_logic_vector(31 downto 0)
-  );
-end component prom_generic_dualport;
+component dp_rom_32_32 is
+port (ADDRA: in std_logic_vector(13 downto 2);
+      CLK : in std_logic;
+      ENA:   in std_logic;
+      WEA: in std_logic; -- to avoid a bug in Xilinx ISE
+      DOA: out STD_LOGIC_VECTOR (31 downto 0);
+      ADDRB: in std_logic_vector(13 downto 2);
+      DIA: in STD_LOGIC_VECTOR (31 downto 0); -- to avoid a bug in Xilinx ISE
+      WEB: in std_logic;
+      ENB:   in std_logic;
+      DOB: out STD_LOGIC_VECTOR (31 downto 0);
+      DIB: in STD_LOGIC_VECTOR (31 downto 0));
+end component dp_rom_32_32;
 
+
+  signal memAWriteEnable_i:   std_logic;
+  signal memBWriteEnable_i:   std_logic;
+  constant nullAddr: std_logic_vector(maxAddrBit downto 12) := (others => '0');
+
+  constant protectionEnabled: std_logic := '0';
 
 begin
-prom: prom_generic_dualport
-  port map (
-    clk => clk,
-    memAWriteEnable => memAWriteEnable,
-    memAWriteMask => memAWriteMask,
-    memAAddr => memAAddr,
-    memAWrite => memAWrite,
-    memARead => memARead,
-    memBWriteEnable => memBWriteEnable,
-    memBAddr => memBAddr,
-    memBWrite => memBWrite,
-    memBWriteMask => memBWriteMask,
-    memBRead => memBRead
-  );
+  -- Boot loader address: 000XXXXXXXXXX
+  -- Disallow any writes to bootloader protected code (first 4096 bytes, 0x1000 hex (0x000 to 0xFFF)
 
+  memAWriteEnable_i <= memAWriteEnable when ( memAAddr(maxAddrBit downto 12)/=nullAddr or protectionEnabled='0') else '0';
+  memBWriteEnable_i <= memBWriteEnable when ( memBAddr(maxAddrBit downto 12)/=nullAddr or protectionEnabled='0') else '0';
+
+  process(memAWriteEnable,memAAddr(maxAddrBit downto 12),memBWriteEnable,memBAddr(maxAddrBit downto 12))
+  begin
+    memErr <= '0';
+    if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
+      memErr<='1';
+    end if;
+    if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
+      memErr<='1';
+    end if;
+  end process;
+
+  -- Sanity checks for simulation
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if memAWriteEnable='1' and memAAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
+        report "Write to BOOTLOADER port A not allowed!!! " severity note;
+      end if;
+    end if;
+  end process;
+
+  -- Sanity checks for simulation
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if memBWriteEnable='1' and memBAddr(maxAddrBit downto 12)="000" and protectionEnabled='1' then
+        report "Write to BOOTLOADER port B not allowed!!!" severity note;
+      end if;
+    end if;
+  end process;
+
+ram:  dp_rom_32_32
+   port map (
+					   DOA => memARead,
+					   ADDRA => memAAddr,
+             CLK => clk,
+					   DIA => memAWrite,
+					   ENA => '1',--memAWriteMask,
+					   WEA => memAWriteEnable,
+					   DOB => memBRead,
+					   ADDRB => memBAddr,
+					   DIB => memBWrite,
+					   ENB => '1',--memBWriteMask,
+					   WEB => memBWriteEnable
+             );
 end behave;

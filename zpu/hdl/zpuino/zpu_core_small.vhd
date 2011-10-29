@@ -60,7 +60,17 @@ entity zpu_core_small is
 
     wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
-    break:          out std_logic
+    break:          out std_logic;
+
+    -- Debug interface
+
+    dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
+    dbg_opcode:     out std_logic_vector(7 downto 0);
+    dbg_sp:         out std_logic_vector(10 downto 2);
+    dbg_brk:        out std_logic;
+    dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
+    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0)
+
   );
 end zpu_core_small;
 
@@ -70,12 +80,13 @@ signal memAWriteEnable:     std_logic;
 signal memAWriteMask:       std_logic_vector(3 downto 0);
 signal memAAddr:            unsigned(maxAddrBit downto minAddrBit);
 signal memAWrite:           unsigned(wordSize-1 downto 0);
-signal memARead:            std_logic_vector(wordSize-1 downto 0);
+signal memARead:            unsigned(wordSize-1 downto 0);
+
 signal memBWriteEnable:     std_logic;
 signal memBWriteMask:       std_logic_vector(3 downto 0);
 signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
 signal memBWrite:           unsigned(wordSize-1 downto 0);
-signal memBRead:            std_logic_vector(wordSize-1 downto 0);
+signal memBRead:            unsigned(wordSize-1 downto 0);
 
 --signal busy:                std_logic;
 signal begin_inst:          std_logic;
@@ -170,9 +181,7 @@ end record;
 
 signal r: zpuregs;
 signal w: zpuregs;
-
 constant spMaxBit: integer := 10;
-
 signal sp:         unsigned(spMaxBit downto 2);
 signal spnext:     unsigned(spMaxBit downto 2);
 signal spnext_b:   unsigned(spMaxBit downto 2);
@@ -240,6 +249,17 @@ signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 
 
 begin
+
+  -- Debug interface
+
+  dbg_pc <= std_logic_vector(pc);
+  dbg_opcode <= opcode;
+  dbg_sp <= std_logic_vector(sp);
+  dbg_brk <= r.break;
+  dbg_stacka <= stack_a_read;
+  dbg_stackb <= stack_b_read;
+
+
 
   stack_a_write <= std_logic_vector(topOfStack_write);
   topOfStack_read <= unsigned(stack_a_read);
@@ -314,17 +334,17 @@ begin
       memAWriteMask => memAWriteMask,
       memAWrite => memAWrite_stdlogic,
       memAAddr => memAAddr_stdlogic,
-      memARead => memARead,
+      memARead => memARead_stdlogic,
       memBWriteEnable => memBWriteEnable,
       memBAddr => memBAddr_stdlogic,
       memBWrite => memBWrite_stdlogic,
-      memBRead => memBRead,
-      memBWriteMask => (others=>'1'),--memBWriteMask,
+      memBRead => memBRead_stdlogic,
+      memBWriteMask => memBWriteMask,
       memErr => open
     );
 
-  --memARead <= unsigned(memARead_stdlogic);
-  --memBRead <= unsigned(memBRead_stdlogic);
+  memARead <= unsigned(memARead_stdlogic);
+  memBRead <= unsigned(memBRead_stdlogic);
   --wb_we_o <= io_we;
   wb_cyc_o <= wb_cyc_o_i;
 
@@ -349,7 +369,7 @@ begin
             when 3 => tOpcode := std_logic_vector(memBRead(7 downto 0));
 
             when others =>
-              null;--tOpcode := std_logic_vector(memBRead(7 downto 0));
+              tOpcode := std_logic_vector(memBRead(7 downto 0));
        end case;
 
     sampledOpcode <= tOpcode;
@@ -477,6 +497,7 @@ begin
       if wb_rst_i='1' then
         pc <= (others => '1');
         decode_valid_q <= '0';
+        decode_freeze_q<='1';
       else
 
         decode_freeze_q <= decode_freeze;
@@ -530,14 +551,19 @@ begin
 
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
+
   wb_dat_o <= stack_b_read;
+
+-- TEST
+--  wb_dat_o <= memBRead_stdlogic when wb_ack_i='1' else memARead_stdlogic;
+
 
   process(topOfStack_read, r, opcode, wb_inta_i, pcnext, decodedOpcode, pce,
           stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state)
     variable spOffset: unsigned(4 downto 0);
   begin
 
-    memBWrite <= (others => DontCareValue);
+    memBWrite <= (others => '0');
     memBWriteEnable <= '0';
 
     memAWriteMask <= (others => '1');
@@ -573,6 +599,8 @@ begin
 
     stack_b_write<=(others => DontCareValue);
 
+    --memBAddr<=(others => '0');
+    --memBAddr(10 downto 2)<=pcnext(8 downto 0);
     memBAddr <= pc_to_memaddr(pcnext);
 
     case state is
@@ -811,7 +839,6 @@ begin
     end case;
 
   end process;
-
 
   process(state, decodedOpcode, topOfStack_read,stack_b_read)
   begin

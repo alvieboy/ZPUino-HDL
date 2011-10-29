@@ -17,8 +17,7 @@
 
 #define BOARD_SPI_DIVIDER BIT(SPICP0)
 
-/* Fill iobase top bits with one, helps saving one IM instruction */
-#define IOBASE 0xF8000000
+#define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
 
 
