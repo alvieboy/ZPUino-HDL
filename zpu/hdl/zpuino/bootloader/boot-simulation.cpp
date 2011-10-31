@@ -18,10 +18,9 @@ struct bootloader_data_t {
     unsigned int spiend;
 };
 
-/* NOTE: this is not actually read-only, but we need to place
- it in bootloader area. I could create a new section, but I'm definitely lazy. */
+#define BDATA __attribute__((section(".bdata")))
 
-struct bootloader_data_t bdata __attribute__((section(".rodata")));
+struct bootloader_data_t bdata BDATA;
 
 
 
@@ -162,18 +161,8 @@ extern "C" int main(int argc,char**argv)
 	CRC16POLY = 0x8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
 
-	outbyte('A');
+	spi_copy();
 
-	printstring("\r\nZPUINO bootloader\r\n");
-
-	int i;
-	while (1) {
-		i=inbyte();
-		outbyte(i);
-	}
-	/*
-	 spi_copy();
-	 */
 	while (1) {
 	}
 }
