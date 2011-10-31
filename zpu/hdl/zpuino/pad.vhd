@@ -99,14 +99,21 @@ architecture behave of isync is
   signal s: std_logic;
 begin
 
-  latch: ILD
+--  latch: ILD
+--    port map (
+--      D => I,
+--      Q => s,
+--      G => C
+--    );
+
+  ff1: FD
     port map (
       D => I,
       Q => s,
-      G => C
+      C => C
     );
 
-  ff: FD
+  ff2: FD
     port map (
       D => s,
       Q => O,
