@@ -349,29 +349,29 @@ begin
   pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
   pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
 
-  -- pin16: IOPAD port map(I => gpio_o(16),O => gpio_i(16),T => gpio_t(16),C => sysclk,PAD => WING_B(0) );
-  pin16: OPAD port map (I => VGA_BLUE(0), PAD => WING_B(0) );
+  pin16: IOPAD port map(I => gpio_o(16),O => gpio_i(16),T => gpio_t(16),C => sysclk,PAD => WING_B(0) );
+  --pin16: OPAD port map (I => VGA_BLUE(0), PAD => WING_B(0) );
 
-  -- pin17: IOPAD port map(I => gpio_o(17),O => gpio_i(17),T => gpio_t(17),C => sysclk,PAD => WING_B(1) );
-  pin17: OPAD port map (I => VGA_BLUE(1), PAD => WING_B(1) );
+  pin17: IOPAD port map(I => gpio_o(17),O => gpio_i(17),T => gpio_t(17),C => sysclk,PAD => WING_B(1) );
+  --pin17: OPAD port map (I => VGA_BLUE(1), PAD => WING_B(1) );
 
-  -- pin18: IOPAD port map(I => gpio_o(18),O => gpio_i(18),T => gpio_t(18),C => sysclk,PAD => WING_B(2) );
-  pin18: OPAD port map (I => VGA_BLUE(2), PAD => WING_B(2) );
+  pin18: IOPAD port map(I => gpio_o(18),O => gpio_i(18),T => gpio_t(18),C => sysclk,PAD => WING_B(2) );
+  --pin18: OPAD port map (I => VGA_BLUE(2), PAD => WING_B(2) );
 
-  -- pin19: IOPAD port map(I => gpio_o(19),O => gpio_i(19),T => gpio_t(19),C => sysclk,PAD => WING_B(3) );
-  pin19: OPAD port map (I => VGA_BLUE(3), PAD => WING_B(3) );
+  pin19: IOPAD port map(I => gpio_o(19),O => gpio_i(19),T => gpio_t(19),C => sysclk,PAD => WING_B(3) );
+  --pin19: OPAD port map (I => VGA_BLUE(3), PAD => WING_B(3) );
 
-  -- pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) );
-  pin20: OPAD port map (I => VGA_GREEN(0), PAD => WING_B(4) );
+  pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) );
+  --pin20: OPAD port map (I => VGA_GREEN(0), PAD => WING_B(4) );
 
-  -- pin21: IOPAD port map(I => gpio_o(21),O => gpio_i(11),T => gpio_t(21),C => sysclk,PAD => WING_B(5) );
-  pin21: OPAD port map (I => VGA_GREEN(1), PAD => WING_B(5) );
+  pin21: IOPAD port map(I => gpio_o(21),O => gpio_i(21),T => gpio_t(21),C => sysclk,PAD => WING_B(5) );
+  --pin21: OPAD port map (I => VGA_GREEN(1), PAD => WING_B(5) );
 
-  -- pin22: IOPAD port map(I => gpio_o(22),O => gpio_i(22),T => gpio_t(22),C => sysclk,PAD => WING_B(6) );
-  pin22: OPAD port map (I => VGA_GREEN(2), PAD => WING_B(6) );
+  pin22: IOPAD port map(I => gpio_o(22),O => gpio_i(22),T => gpio_t(22),C => sysclk,PAD => WING_B(6) );
+  --pin22: OPAD port map (I => VGA_GREEN(2), PAD => WING_B(6) );
 
-  -- pin23: IOPAD port map(I => gpio_o(23),O => gpio_i(23),T => gpio_t(23),C => sysclk,PAD => WING_B(7) );
-  pin23: OPAD port map (I => VGA_GREEN(3), PAD => WING_B(7) );
+  pin23: IOPAD port map(I => gpio_o(23),O => gpio_i(23),T => gpio_t(23),C => sysclk,PAD => WING_B(7) );
+  --pin23: OPAD port map (I => VGA_GREEN(3), PAD => WING_B(7) );
 
   pin24: IOPAD port map(I => gpio_o(24),O => gpio_i(24),T => gpio_t(24),C => sysclk,PAD => WING_B(8) );
   pin25: IOPAD port map(I => gpio_o(25),O => gpio_i(25),T => gpio_t(25),C => sysclk,PAD => WING_B(9) );
@@ -385,23 +385,23 @@ begin
   pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
 
-  -- pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
-  pin34: OPAD port map (I => VGA_VSYNC, PAD => WING_C(2) );
+  pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
+  --pin34: OPAD port map (I => VGA_VSYNC, PAD => WING_C(2) );
 
-  -- pin35: IOPAD port map(I => gpio_o(35),O => gpio_i(35),T => gpio_t(35),C => sysclk,PAD => WING_C(3) );
-  pin35: OPAD port map (I => VGA_HSYNC, PAD => WING_C(3) );
+  pin35: IOPAD port map(I => gpio_o(35),O => gpio_i(35),T => gpio_t(35),C => sysclk,PAD => WING_C(3) );
+  --pin35: OPAD port map (I => VGA_HSYNC, PAD => WING_C(3) );
 
-  -- pin36: IOPAD port map(I => gpio_o(36),O => gpio_i(36),T => gpio_t(36),C => sysclk,PAD => WING_C(4) );
-  pin36: OPAD  port map(I => VGA_RED(0), PAD=>WING_C(4));
+  pin36: IOPAD port map(I => gpio_o(36),O => gpio_i(36),T => gpio_t(36),C => sysclk,PAD => WING_C(4) );
+  --pin36: OPAD  port map(I => VGA_RED(0), PAD=>WING_C(4));
 
-  -- pin37: IOPAD port map(I => gpio_o(37),O => gpio_i(37),T => gpio_t(37),C => sysclk,PAD => WING_C(5) );
-  pin37: OPAD  port map(I => VGA_RED(1), PAD=>WING_C(5));
+  pin37: IOPAD port map(I => gpio_o(37),O => gpio_i(37),T => gpio_t(37),C => sysclk,PAD => WING_C(5) );
+  --pin37: OPAD  port map(I => VGA_RED(1), PAD=>WING_C(5));
 
-  -- pin38: IOPAD port map(I => gpio_o(38),O => gpio_i(38),T => gpio_t(38),C => sysclk,PAD => WING_C(6) );
-  pin38: OPAD  port map(I => VGA_RED(2), PAD=>WING_C(6));
+  pin38: IOPAD port map(I => gpio_o(38),O => gpio_i(38),T => gpio_t(38),C => sysclk,PAD => WING_C(6) );
+  --pin38: OPAD  port map(I => VGA_RED(2), PAD=>WING_C(6));
 
-  -- pin39: IOPAD port map(I => gpio_o(39),O => gpio_i(39),T => gpio_t(39),C => sysclk,PAD => WING_C(7) );
-  pin39: OPAD  port map(I => VGA_RED(3), PAD=>WING_C(7));
+  pin39: IOPAD port map(I => gpio_o(39),O => gpio_i(39),T => gpio_t(39),C => sysclk,PAD => WING_C(7) );
+  --pin39: OPAD  port map(I => VGA_RED(3), PAD=>WING_C(7));
 
   pin40: IOPAD port map(I => gpio_o(40),O => gpio_i(40),T => gpio_t(40),C => sysclk,PAD => WING_C(8) );
   pin41: IOPAD port map(I => gpio_o(41),O => gpio_i(41),T => gpio_t(41),C => sysclk,PAD => WING_C(9) );
@@ -644,44 +644,72 @@ begin
   -- IO SLOT 9
   --
 
-  slot9: zpuino_vga2
-  port map (
-      wb_clk_i       => wb_clk_i,
-  	 	wb_rst_i    => wb_rst_i,
-      wb_dat_o      => slot_read(9),
-      wb_dat_i     => slot_write(9),
-      wb_adr_i   => slot_address(9),
-      wb_we_i    => slot_we(9),
-      wb_cyc_i      => slot_cyc(9),
-      wb_stb_i      => slot_stb(9),
-      wb_ack_o      => slot_ack(9),
-
+--  slot9: zpuino_vga2
+--  port map (
+--      wb_clk_i       => wb_clk_i,
+--  	 	wb_rst_i    => wb_rst_i,
+--      wb_dat_o      => slot_read(9),
+--      wb_dat_i     => slot_write(9),
+--      wb_adr_i   => slot_address(9),
+--     wb_we_i    => slot_we(9),
+--      wb_cyc_i      => slot_cyc(9),
+--      wb_stb_i      => slot_stb(9),
+--      wb_ack_o      => slot_ack(9),
+--
       -- Memory interface (wishbone master) 
-      mi_wb_dat_i   => mi_wb_dat_i,
-      mi_wb_dat_o   => mi_wb_dat_o,
-      mi_wb_adr_o   => mi_wb_adr_o,
-      mi_wb_sel_o   => mi_wb_sel_o,
-      mi_wb_cti_o   => mi_wb_cti_o,
-      mi_wb_we_o    => mi_wb_we_o,
-      mi_wb_cyc_o   => mi_wb_cyc_o,
-      mi_wb_stb_o   => mi_wb_stb_o,
-      mi_wb_ack_i   => mi_wb_ack_i,
+--      mi_wb_dat_i   => mi_wb_dat_i,
+--      mi_wb_dat_o   => mi_wb_dat_o,
+--      mi_wb_adr_o   => mi_wb_adr_o,
+--      mi_wb_sel_o   => mi_wb_sel_o,
+--      mi_wb_cti_o   => mi_wb_cti_o,
+--      mi_wb_we_o    => mi_wb_we_o,
+--      mi_wb_cyc_o   => mi_wb_cyc_o,
+--      mi_wb_stb_o   => mi_wb_stb_o,
+--      mi_wb_ack_i   => mi_wb_ack_i,
 
     -- VGA interface
 
-      vgaclk        => vgaclk,
-      vga_hsync     => vga_hsync,
-      vga_vsync     => vga_vsync,
-      vga_r         => vga_r_i,
-      vga_g         => vga_g_i,
-      vga_b         => vga_b_i
+--      vgaclk        => vgaclk,
+--      vga_hsync     => vga_hsync,
+--      vga_vsync     => vga_vsync,
+--      vga_r         => vga_r_i,
+--      vga_g         => vga_g_i,
+--      vga_b         => vga_b_i
+--  );
+
+      vga_hsync  <= '0';
+      vga_vsync  <= '0';
+      vga_r_i      <= (others => '0');
+      vga_g_i      <= (others => '0');
+      vga_b_i      <= (others => '0');
+      mi_wb_cyc_o <='0';
+      mi_wb_stb_o <='0';
+      mi_wb_we_o <='0';
+      mi_wb_dat_o <= (others =>'0');
+      mi_wb_adr_o <= (others =>'0');
+      mi_wb_sel_o <= (others =>'0');
+      mi_wb_cti_o <= (others =>'0');
+
+  slot9: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(9),
+    wb_dat_i     => slot_write(9),
+    wb_adr_i   => slot_address(9),
+    wb_we_i        => slot_we(9),
+    wb_cyc_i        => slot_cyc(9),
+    wb_stb_i        => slot_stb(9),
+    wb_ack_o      => slot_ack(9),
+    wb_inta_o => slot_interrupt(9)
   );
+
 
   --
   -- IO SLOT 10
   --
 
-  slot10: wb_char_ram_8x8
+  slot10: zpuino_empty_device
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,

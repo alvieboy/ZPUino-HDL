@@ -140,7 +140,7 @@ Decoded_Not,
 Decoded_Flip,
 Decoded_Store,
 Decoded_PopSP,
-Decoded_Interrupt,
+--Decoded_Interrupt,
 Decoded_Neqbranch,
 Decoded_Eq,
 Decoded_Storeb,
@@ -246,7 +246,7 @@ signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
 signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
 signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 
-
+signal do_interrupt: std_logic;
 
 begin
 
@@ -345,7 +345,6 @@ begin
 
   memARead <= unsigned(memARead_stdlogic);
   memBRead <= unsigned(memBRead_stdlogic);
-  --wb_we_o <= io_we;
   wb_cyc_o <= wb_cyc_o_i;
 
   tOpcode_sel <= to_integer(pc(minAddrBit-1 downto 0));
@@ -551,15 +550,14 @@ begin
 
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(topOfStack_read(maxAddrBitIncIO downto 0));
-
   wb_dat_o <= stack_b_read;
 
--- TEST
---  wb_dat_o <= memBRead_stdlogic when wb_ack_i='1' else memARead_stdlogic;
 
+  do_interrupt <= '1' when wb_inta_i='1' and r.idim='0' and r.inInterrupt='0' and decode_valid_q='1' else '0';
+  --do_interrupt<='0';
 
   process(topOfStack_read, r, opcode, wb_inta_i, pcnext, decodedOpcode, pce,
-          stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state)
+          stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state, do_interrupt)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -599,14 +597,9 @@ begin
 
     stack_b_write<=(others => DontCareValue);
 
-    --memBAddr<=(others => '0');
-    --memBAddr(10 downto 2)<=pcnext(8 downto 0);
     memBAddr <= pc_to_memaddr(pcnext);
 
     case state is
-
---      when State_Start2 =>
---        decode_freeze <= '1';
 
       when State_Resync2 =>
         spnext <= sp;
@@ -633,6 +626,16 @@ begin
         trace_topOfStack <= std_logic_vector( topOfStack_read );
         trace_topOfStackB <= std_logic_vector( stack_b_read );
 
+        if do_interrupt='1' then
+
+           w.inInterrupt <= '1';
+           jump_address <= to_unsigned(32, maxAddrBit+1);
+           decode_jump <= '1';
+           spnext <= sp - 1;
+           spnext_b <= sp;
+           report "Interrupt" severity note;
+
+        else
 
         case decodedOpcode is
           when Decoded_Im =>
@@ -651,15 +654,6 @@ begin
             spnext <= sp + 1;
             spnext_b <= sp + 2;
             poppc_inst <= '1';
-
-          when Decoded_Interrupt =>
-
-            jump_address <= to_unsigned(32, maxAddrBit+1);
-            decode_jump <= '1';
-            spnext <= sp - 1;
-            spnext_b <= sp;
-
-            report "FIXME" severity failure;
 
           when Decoded_Emulate =>
 
@@ -805,6 +799,7 @@ begin
             w.break <= '1';
 
         end case;
+        end if; -- interrupt
 
       when State_WaitSP =>
 
@@ -843,7 +838,6 @@ begin
   process(state, decodedOpcode, topOfStack_read,stack_b_read)
   begin
     memAWriteEnable <= '0';
-    --memAWrite <= (others => DontCareValue);
     memAWrite <= unsigned(stack_b_read);
 
     case state is
@@ -864,7 +858,7 @@ begin
   -- Top of stack generator
 
   process(topOfStack_read, r, opcode, wb_inta_i, pcnext, decodedOpcode, pce,
-     stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state)
+     stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state, do_interrupt)
     variable spOffset: unsigned(4 downto 0);
   begin
 
@@ -878,6 +872,12 @@ begin
         stack_a_writeenable<='0';
   
       when State_Execute =>
+
+        if do_interrupt='1' then
+            topOfStack_write <= (others => '0');
+            topOfStack_write(maxAddrBit downto 0) <= pce;
+        else
+
         case decodedOpcode is
           when Decoded_Im =>
             if r.idim='0' then
@@ -897,11 +897,6 @@ begin
 
             stack_a_writeenable <= '0';
             topOfStack_write <= (others => DontCareValue);
-
-          when Decoded_Interrupt =>
-
-            topOfStack_write <= (others => '0');
-            topOfStack_write(maxAddrBit downto 0) <= pc;
 
           when Decoded_Emulate =>
 
@@ -997,6 +992,7 @@ begin
             null;
 
         end case;
+        end if; -- Interrupt
 
       when State_WaitSP =>
 
@@ -1064,6 +1060,7 @@ begin
           state <= State_Execute;
   
         when State_Execute =>
+          if do_interrupt='0' then
           case decodedOpcode is
             when Decoded_LoadSP =>
               state <= State_LoadSP;
@@ -1101,8 +1098,8 @@ begin
 
           when others =>
             null;
-        end case;
-
+          end case;
+          end if;
         when State_WaitSP =>
           state <= State_Execute;
   
@@ -1138,6 +1135,7 @@ begin
         sp <= unsigned(spStart(10 downto 2));
 --        r.state <= State_Start;
         r.idim <= '0';
+        r.inInterrupt <= '0';
         --topOfStack <= (others => '0');
         r.break <= '0';
         r.inInterrupt<='1';

@@ -2,8 +2,8 @@
 #include <stdarg.h>
 
 //#undef DEBUG_SERIAL
-//#undef SIMULATION
-//#define VERBOSE_LOADER
+// #define SIMULATION
+#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -68,6 +68,15 @@ struct bootloader_data_t bdata BDATA;
 
 void outbyte(int);
 
+extern "C" {
+	void udivmodsi4(){
+	}
+	void __divsi3() {
+	}
+	void __modsi3() {
+	}
+};
+
 void __attribute__((noreturn)) spi_copy();
 
 #ifdef DEBUG_SERIAL
@@ -128,7 +137,7 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
-			//spi_copy();
+			spi_copy();
 		}
 	}
 }
@@ -359,7 +368,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
-	//outbyte('.');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -687,31 +695,6 @@ void processCommand()
 	handlers[pos]();
 }
 
-#ifdef SIMULATION
-
-void configure_pins()
-{
-	GPIOTRIS(0)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(1)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
-	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
-
-	//outputPinForFunction( 0, IOPIN_UART_TX);
-	outputPinForFunction( 4 , IOPIN_SPI_SCK);
-	outputPinForFunction( 3 , IOPIN_SPI_MOSI);
-
-	pinMode(IOPIN_UART_TX,OUTPUT);
-	pinMode(IOPIN_SPI_MOSI,OUTPUT);
-	pinMode(IOPIN_SPI_SCK,OUTPUT);
-	pinMode(FPGA_SS_B,OUTPUT);
-
-	inputPinForFunction( 1, IOPIN_UART_RX);
-	//pinMode(IOPIN_SPI_MISO,INPUT);
-
-}
-
-#else
-
 #ifdef __ZPUINO_S3E_EVAL__
 
 void configure_pins()
@@ -814,8 +797,6 @@ void configure_pins()
 }
 #endif
 
-#endif // SIMULATION
-
 extern "C" int _syscall(int *foo, int ID, ...);
 
 
@@ -830,18 +811,16 @@ extern "C" int main(int argc,char**argv)
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 
 	configure_pins();
-//	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 
-//	INTRCTL=1;
+	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
+	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
 	printstring("\r\nZPUINO bootloader\r\n");
 #endif
 
 
-#ifndef SIMULATION
 	enableTimer();
-#endif
 
 	CRC16POLY = 0x8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
@@ -853,9 +832,9 @@ extern "C" int main(int argc,char**argv)
 	spi_disable();
 #endif
 
-#ifdef SIMULATION
-	spi_copy();
-#endif
+//#ifdef SIMULATION
+//	spi_copy();
+//#endif
 
 	syncSeen = 0;
 	unescaping = 0;
