@@ -63,6 +63,21 @@ end entity zpuino_top;
 
 architecture behave of zpuino_top is
 
+  component zpuino_stack is
+  port (
+    stack_clk: in std_logic;
+    stack_a_read: out std_logic_vector(wordSize-1 downto 0);
+    stack_b_read: out std_logic_vector(wordSize-1 downto 0);
+    stack_a_write: in std_logic_vector(wordSize-1 downto 0);
+    stack_b_write: in std_logic_vector(wordSize-1 downto 0);
+    stack_a_writeenable: in std_logic;
+    stack_b_writeenable: in std_logic;
+    stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 0);
+    stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 0)
+  );
+  end component zpuino_stack;
+
+
   component clkgen is
   port (
     clkin:  in std_logic;
@@ -101,6 +116,13 @@ architecture behave of zpuino_top is
   signal dbg_stacka:     std_logic_vector(wordSize-1 downto 0);
   signal dbg_stackb:     std_logic_vector(wordSize-1 downto 0);
 
+  signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
+  signal stack_a_writeenable, stack_b_writeenable: std_logic;
+  signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
+  signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
+  signal stack_clk: std_logic;
+
+
 begin
 
   core: zpu_core_small
@@ -119,6 +141,16 @@ begin
       poppc_inst    => poppc_inst,
 	 		break         => open,
 
+      stack_clk     => stack_clk,
+      stack_a_read  => stack_a_read,
+      stack_b_read  => stack_b_read,
+      stack_a_write => stack_a_write,
+      stack_b_write => stack_b_write,
+      stack_a_writeenable => stack_a_writeenable,
+      stack_b_writeenable => stack_b_writeenable,
+      stack_a_addr  => stack_a_addr,
+      stack_b_addr  => stack_b_addr,
+
       dbg_pc        => dbg_pc,
       dbg_opcode    => dbg_opcode,
       dbg_sp        => dbg_sp,
@@ -127,6 +159,19 @@ begin
       dbg_stackb    => dbg_stackb
 
     );
+
+  stack: zpuino_stack
+  port map (
+    stack_clk     => stack_clk,
+    stack_a_read  => stack_a_read,
+    stack_b_read  => stack_b_read,
+    stack_a_write => stack_a_write,
+    stack_b_write => stack_b_write,
+    stack_a_writeenable => stack_a_writeenable,
+    stack_b_writeenable => stack_b_writeenable,
+    stack_a_addr  => stack_a_addr,
+    stack_b_addr  => stack_b_addr
+  );
 
   dbg: zpuino_debug
     port map (

@@ -62,6 +62,18 @@ entity zpu_core_small is
     poppc_inst:     out std_logic;
     break:          out std_logic;
 
+    -- STACK
+
+    stack_a_read: in std_logic_vector(wordSize-1 downto 0);
+    stack_b_read: in std_logic_vector(wordSize-1 downto 0);
+    stack_a_write: out std_logic_vector(wordSize-1 downto 0);
+    stack_b_write: out std_logic_vector(wordSize-1 downto 0);
+    stack_a_writeenable: out std_logic;
+    stack_b_writeenable: out std_logic;
+    stack_a_addr: out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_b_addr: out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_clk: out std_logic;
+
     -- Debug interface
 
     dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
@@ -224,15 +236,14 @@ signal jump_address: unsigned(maxAddrBit downto 0);
 signal topOfStack_write: unsigned(wordSize-1 downto 0);
 signal topOfStack_read: unsigned(wordSize-1 downto 0);
 
-signal stack_a_addr,stack_b_addr: std_logic_vector(8 downto 0);
-signal stack_a_writeenable, stack_b_writeenable: std_logic;
-signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
-signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
-signal dipa,dipb: std_logic_vector(3 downto 0) := (others => '0');
+--signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
+--signal stack_a_writeenable, stack_b_writeenable: std_logic;
+--signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
+--signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
 
 signal stack_b_addr_is_offset: std_logic;
 
-signal stack_mem_enable: std_logic;
+--signal stack_mem_enable: std_logic;
 
 signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
 signal wb_cyc_o_i: std_logic;
@@ -264,37 +275,9 @@ begin
   stack_a_write <= std_logic_vector(topOfStack_write);
   topOfStack_read <= unsigned(stack_a_read);
 
-  -- STACK
+  stack_clk <= wb_clk_i;
 
-  stack: RAMB16_S36_S36
-  generic map (
-    WRITE_MODE_A => "WRITE_FIRST",
-    WRITE_MODE_B => "WRITE_FIRST"
-    )
-  port map (
-    DOA  => stack_a_read,
-    DOB  => stack_b_read,
-    DOPA => open,
-    DOPB => open,
-
-    ADDRA => stack_a_addr,
-    ADDRB => stack_b_addr,
-    CLKA  => wb_clk_i,
-    CLKB  => wb_clk_i,
-    DIA   => stack_a_write,
-    DIB   => stack_b_write,
-    DIPA  => dipa,
-    DIPB  => dipb,
-    ENA   => stack_mem_enable,
-    ENB   => stack_mem_enable,
-    SSRA  => '0',
-    SSRB  => '0',
-    WEA   => stack_a_writeenable,
-    WEB   => stack_b_writeenable
-    );
-
-
-  stack_mem_enable <= '1';--not io_busy;
+--  stack_mem_enable <= '1';--not io_busy;
 
   -- generate a trace file.
   -- 

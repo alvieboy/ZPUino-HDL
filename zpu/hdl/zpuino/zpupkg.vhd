@@ -121,6 +121,16 @@ package zpupkg is
     poppc_inst:     out std_logic;
     break:          out std_logic;
 
+    stack_a_read:   in std_logic_vector(wordSize-1 downto 0);
+    stack_b_read:   in std_logic_vector(wordSize-1 downto 0);
+    stack_a_write:  out std_logic_vector(wordSize-1 downto 0);
+    stack_b_write:  out std_logic_vector(wordSize-1 downto 0);
+    stack_a_writeenable: out std_logic;
+    stack_b_writeenable: out std_logic;
+    stack_a_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_b_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_clk:      out std_logic;
+
     dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
     dbg_opcode:     out std_logic_vector(7 downto 0);
     dbg_sp:         out std_logic_vector(10 downto 2);
