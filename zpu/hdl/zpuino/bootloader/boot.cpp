@@ -3,7 +3,7 @@
 
 //#undef DEBUG_SERIAL
 // #define SIMULATION
-#define VERBOSE_LOADER
+//#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -421,9 +421,8 @@ static void cmd_progmem()
 	 buffer[5] is size,
 	 next bytes are data
 	 */
-    // TEST
-	return;
-
+	// TEST
+    return;
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
 	unsigned char *source;
@@ -493,9 +492,6 @@ static void cmd_sst_aai_program()
 {
 	unsigned int count;
 	unsigned int txcount;
-
-	// TEST
-    return;
 
 #ifndef __ZPUINO_S3E_EVAL__
 
