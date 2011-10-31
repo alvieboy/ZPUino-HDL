@@ -120,6 +120,7 @@ State_Start,
 State_Execute,
 State_Store,
 State_Load,
+State_Loadb,
 State_AddSP,
 State_Resync1,
 State_Resync2,
@@ -228,7 +229,6 @@ signal decode_freeze_q: std_logic;
 
 signal decode_jump: std_logic;
 signal decode_valid_q: std_logic;
---signal decode_membusy: std_logic;
 
 signal decode_valid_dly_q: std_logic;
 signal jump_address: unsigned(maxAddrBit downto 0);
@@ -236,14 +236,7 @@ signal jump_address: unsigned(maxAddrBit downto 0);
 signal topOfStack_write: unsigned(wordSize-1 downto 0);
 signal topOfStack_read: unsigned(wordSize-1 downto 0);
 
---signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
---signal stack_a_writeenable, stack_b_writeenable: std_logic;
---signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
---signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
-
 signal stack_b_addr_is_offset: std_logic;
-
---signal stack_mem_enable: std_logic;
 
 signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
 signal wb_cyc_o_i: std_logic;
@@ -401,8 +394,8 @@ begin
 --      elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
 --        sampledDecodedOpcode<=Decoded_Ashiftleft;
 
---      elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
---        sampledDecodedOpcode<=Decoded_Loadb;
+      elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
+        sampledDecodedOpcode<=Decoded_Loadb;
 
 --      elsif (tOpcode(5 downto 0)=OpCode_Mult) then
 --        sampledDecodedOpcode<=Decoded_Mult;
@@ -740,7 +733,7 @@ begin
               spnext <= sp + 1;
             end if;
 
-          when Decoded_Load =>
+          when Decoded_Load | Decoded_Loadb =>
 
             if topOfStack_read(maxAddrBitIncIO)='1' then
               wb_we_o <= '0';
@@ -843,6 +836,7 @@ begin
   process(topOfStack_read, r, opcode, wb_inta_i, pcnext, decodedOpcode, pce,
      stack_b_read, pc, wb_ack_i, memARead, wb_dat_i, sp, state, do_interrupt)
     variable spOffset: unsigned(4 downto 0);
+    variable memvalue: unsigned(wordSize-1 downto 0);
   begin
 
     topOfStack_write <= topOfStack_read;
@@ -956,7 +950,7 @@ begin
             stack_a_writeenable <= '0';
             topOfStack_write <= (others => DontCareValue);
 
-          when Decoded_Load =>
+          when Decoded_Load | Decoded_Loadb =>
 
           when Decoded_PopSP =>
 
@@ -1015,6 +1009,41 @@ begin
           topOfStack_write <= unsigned(memARead);
         end if;
         end if;
+
+      when State_Loadb =>
+
+        if topOfStack_read(31) = '1' then
+          -- It's a stack access
+          memvalue := unsigned(stack_b_read);
+
+        else
+        if topOfStack_read(maxAddrBitIncIO)='1' then
+          --if io_busy='0' then
+          -- NOTE: keep writing even if IO is busy
+            memvalue := unsigned(wb_dat_i);
+            stack_a_writeenable <= wb_ack_i;
+          --end if;
+        else
+          memvalue := unsigned(memARead);
+        end if;
+        end if;
+
+
+        topOfStack_write <= (others => '0');
+
+        case topOfStack_read(1 downto 0) is
+          when "00" =>
+            topOfStack_write(7 downto 0) <= memvalue(31 downto 24);
+          when "01" =>
+            topOfStack_write(7 downto 0) <= memvalue(23 downto 16);
+          when "10" =>
+            topOfStack_write(7 downto 0) <= memvalue(15 downto 8);
+          when "11" =>
+            topOfStack_write(7 downto 0) <= memvalue(7 downto 0);
+          when others =>
+        end case;
+
+
       when others =>
 
     end case;
@@ -1073,6 +1102,9 @@ begin
             when Decoded_Load =>
               state <= State_Load;
 
+            when Decoded_Loadb =>
+              state <= State_Loadb;
+
             when Decoded_PopSP =>
               state <= State_Resync2;
 
@@ -1097,7 +1129,7 @@ begin
         when State_AddSP =>
           state <= State_Execute;
         
-        when State_Load =>
+        when State_Load | State_Loadb =>
           if topOfStack_read(maxAddrBitIncIO)='0' or wb_ack_i='1' then
             state <= State_Execute;
           end if;
