@@ -173,15 +173,15 @@ begin
     stack_b_addr  => stack_b_addr
   );
 
-  dbg: zpuino_debug
-    port map (
-      dbg_pc        => dbg_pc,
-      dbg_opcode    => dbg_opcode,
-      dbg_sp        => dbg_sp,
-      dbg_brk       => dbg_brk,
-      dbg_stacka    => dbg_stacka,
-      dbg_stackb    => dbg_stackb
-   );
+--  dbg: zpuino_debug
+--    port map (
+--      dbg_pc        => dbg_pc,
+--      dbg_opcode    => dbg_opcode,
+--      dbg_sp        => dbg_sp,
+--      dbg_brk       => dbg_brk,
+--      dbg_stacka    => dbg_stacka,
+--      dbg_stackb    => dbg_stackb
+--   );
 
   io: zpuino_io
     port map (
