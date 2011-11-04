@@ -139,7 +139,7 @@ package zpupkg is
 	constant	OpCode_PopPC	: std_logic_vector(3 downto 0) := "0100";
 	constant	OpCode_Add		: std_logic_vector(3 downto 0) := "0101";
 	constant	OpCode_And		: std_logic_vector(3 downto 0) := "0110";
-	constant	OpCode_Or		: std_logic_vector(3 downto 0) := "0111";
+	constant	OpCode_Or		  : std_logic_vector(3 downto 0) := "0111";
 	
 	constant	OpCode_Load		: std_logic_vector(3 downto 0) := "1000";
 	constant	OpCode_Not		: std_logic_vector(3 downto 0) := "1001";
@@ -168,7 +168,10 @@ package zpupkg is
 	constant	OpCode_Eq					: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(46, 6));
 	constant	OpCode_Neq					: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(47, 6));
 
+	constant	OpCode_Neg					: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(48, 6));
+
 	constant	OpCode_Sub					: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(49, 6));
+	constant	OpCode_Xor					: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(50, 6));
 	constant	OpCode_Loadb				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(51, 6));
 	constant	OpCode_Storeb				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(52, 6));
 

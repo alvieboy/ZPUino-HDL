@@ -128,6 +128,7 @@ Decoded_PopPC,
 Decoded_Add,
 Decoded_Or,
 Decoded_And,
+Decoded_Xor,
 Decoded_Load,
 Decoded_Not,
 Decoded_Flip,
@@ -135,10 +136,12 @@ Decoded_Store,
 Decoded_PopSP,
 Decoded_Interrupt,
 Decoded_Neqbranch,
+Decoded_Call,
 Decoded_Eq,
 Decoded_Storeb,
 Decoded_Storeh,
 Decoded_Ulessthan,
+Decoded_Lessthan,
 Decoded_Ashiftleft,
 Decoded_Ashiftright,
 Decoded_Loadb,
@@ -322,6 +325,9 @@ begin
       if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
         sampledDecodedOpcode<=Decoded_Neqbranch;
 
+      elsif (tOpcode(5 downto 0)=OpCode_Call) then
+        sampledDecodedOpcode<=Decoded_Call;
+
       elsif (tOpcode(5 downto 0)=OpCode_Eq) then
         sampledDecodedOpcode<=Decoded_Eq;
 
@@ -334,6 +340,9 @@ begin
       elsif (tOpcode(5 downto 0)=OpCode_Ulessthan) then
         sampledDecodedOpcode<=Decoded_Ulessthan;
 
+      elsif (tOpcode(5 downto 0)=OpCode_Lessthan) then
+        sampledDecodedOpcode<=Decoded_Lessthan;
+
       elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
         sampledDecodedOpcode<=Decoded_Ashiftleft;
 
@@ -345,6 +354,9 @@ begin
 
       elsif (tOpcode(5 downto 0)=OpCode_Mult) then
         sampledDecodedOpcode<=Decoded_Mult;
+
+      elsif (tOpcode(5 downto 0)=OpCode_Xor) then
+        sampledDecodedOpcode<=Decoded_Xor;
 
       else
         sampledDecodedOpcode<=Decoded_Emulate;
@@ -580,6 +592,24 @@ begin
 
             w.state <= State_Decode;
 
+          when Decoded_Call =>
+
+            --w.sp <= r.sp - 1;
+            --memAWriteEnable <= '1';
+            --memAAddr <= r.sp;
+            --memAWrite <= r.topOfStack;
+            --memAWriteEnable <=
+            w.topOfStack <= (others => '0');
+            w.topOfStack(maxAddrBit downto 0) <= r.pc;
+
+            --w.pc <= (others => '0');
+            w.pc <= r.topOfStack(w.pc'high downto w.pc'low);
+
+            --memBAddr <= (others => '0');
+            memBAddr <= r.topOfStack(memBAddr'high downto memBAddr'low);
+
+            w.state <= State_Decode;
+
           when Decoded_PushSP =>
 
             w.sp <= r.sp - 1;
@@ -608,6 +638,14 @@ begin
             w.aluop <= '1';
             w.state <= State_Decode;
 
+          when Decoded_Xor =>
+
+            w.sp <= r.sp + 1;
+            w.aluresult <= r.topOfStack xor memARead;
+            w.topOfStack <= (others => DontCareValue);
+            w.aluop <= '1';
+            w.state <= State_Decode;
+
           when Decoded_Eq =>
             w.sp <= r.sp + 1;
 
@@ -622,6 +660,15 @@ begin
 
             w.topOfStack <= (others => '0');
             if r.topOfStack < memARead then
+              w.topOfStack(0) <= '1';
+            end if;
+            w.state <= State_Decode;
+
+          when Decoded_Lessthan =>
+            w.sp <= r.sp + 1;
+
+            w.topOfStack <= (others => '0');
+            if signed(r.topOfStack) < signed(memARead) then
               w.topOfStack(0) <= '1';
             end if;
             w.state <= State_Decode;
