@@ -12,12 +12,15 @@
 
 const int port = 7263;
 struct sockaddr_in sock;
-int mastersockfd;
+int mastersockfd=-1;
 int fd = -1;
 
 
 int pty_initialize()
 {
+	if (1)
+		return 0;
+
 	mastersockfd=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	socklen_t clientsocksize=sizeof(struct sockaddr_in);
 	struct sockaddr_in clientsock;
@@ -49,6 +52,8 @@ int pty_available()
 {
 	struct timeval tv = { 0, 0 };
 	fd_set rfs;
+	if (mastersockfd <0)
+        return 0;
 	
 	int r;
 	FD_ZERO(&rfs);
@@ -67,6 +72,9 @@ int pty_receive()
 {
 	unsigned char r;
 
+	if (mastersockfd <0)
+        return 0;
+
 	if (read(fd,&r,1)<0) {
 		//fprintf(stderr,"Cannot read from pty ????\n");
 		return -1; // No one connected, probably
@@ -79,7 +87,9 @@ int pty_transmit(int t)
 {
 	unsigned char r = (unsigned)t & 0xff;
 	printf("TX data: %02x\n",r);
-    
+	if (mastersockfd <0)
+        return 0;
+
 	write(fd,&r,1);
 	return 0;
 }
