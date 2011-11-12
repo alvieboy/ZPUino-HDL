@@ -66,6 +66,8 @@ package zpupkg is
 		memAWrite : in std_logic_vector(wordSize-1 downto 0);
 		memARead : out std_logic_vector(wordSize-1 downto 0);
 		memBWriteEnable : in std_logic;
+    memAEnable : in std_logic;
+    memBEnable : in std_logic;
     memBWriteMask : in std_logic_vector(3 downto 0);
 		memBAddr : in std_logic_vector(maxAddrBit downto minAddrBit);
 		memBWrite : in std_logic_vector(wordSize-1 downto 0);

@@ -50,11 +50,13 @@ entity dualport_ram is
     memAAddr:         in std_logic_vector(maxAddrBit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
+    memAEnable:       in std_logic;
     memBWriteEnable:  in std_logic;
     memBWriteMask:    in std_logic_vector(3 downto 0);
     memBAddr:         in std_logic_vector(maxAddrBit downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0);
+    memBEnable:       in std_logic;
     memErr:           out std_logic
   );
 end entity dualport_ram;
@@ -126,12 +128,12 @@ ram:  dp_rom_32_32
 					   ADDRA => memAAddr,
              CLK => clk,
 					   DIA => memAWrite,
-					   ENA => '1',--memAWriteMask,
+					   ENA => memAEnable,
 					   WEA => memAWriteEnable,
 					   DOB => memBRead,
 					   ADDRB => memBAddr,
 					   DIB => memBWrite,
-					   ENB => '1',--memBWriteMask,
+					   ENB => memBEnable,
 					   WEB => memBWriteEnable
              );
 end behave;
