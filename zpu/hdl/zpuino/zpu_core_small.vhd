@@ -69,7 +69,9 @@ entity zpu_core_small is
     stack_a_write: out std_logic_vector(wordSize-1 downto 0);
     stack_b_write: out std_logic_vector(wordSize-1 downto 0);
     stack_a_writeenable: out std_logic;
+    stack_a_enable: out std_logic;
     stack_b_writeenable: out std_logic;
+    stack_b_enable: out std_logic;
     stack_a_addr: out std_logic_vector(stackSize_bits-1+2 downto 2);  -- Helps debugging
     stack_b_addr: out std_logic_vector(stackSize_bits-1+2 downto 2);
     stack_clk: out std_logic;
@@ -190,7 +192,7 @@ type zpuregs is record
   break:      std_logic;
   inInterrupt:std_logic;
   tos:        unsigned(wordSize-1 downto 0);
-  --nos:        unsigned(wordSize-1 downto 0);
+  nosq:       unsigned(wordSize-1 downto 0);
   state:      State_Type;
   stack_a_writeenable_q: std_logic;
 end record;
@@ -247,6 +249,8 @@ type decoderegs_type is record
   idim:           std_logic;
 end record;
 
+signal sampledStackBAddress: std_logic_vector(stackSize_bits-1+2 downto 2);
+
 signal decr: decoderegs_type;
 signal sp_pushsp, sp_popsp, sp_dualpopsp, sp_load:             unsigned(spMaxBit downto 2);
 
@@ -260,7 +264,7 @@ signal decode_load_sp: std_logic;
 --signal topOfStack_write: unsigned(wordSize-1 downto 0);
 --signal topOfStack_read: unsigned(wordSize-1 downto 0);
 
-signal stack_b_addr_is_offset: std_logic;
+--signal stack_b_addr_is_offset: std_logic;
 
 signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
 signal wb_cyc_o_i: std_logic;
@@ -340,6 +344,8 @@ begin
 
   tOpcode_sel <= to_integer(decr.fetchpc(minAddrBit-1 downto 0));
 
+  stack_b_addr <= std_logic_vector(sp_load) when decode_load_sp='1' else sampledStackBAddress;
+
   -- move out calculation of the opcode to a seperate process
   -- to make things a bit easier to read
   decodeControl:
@@ -348,11 +354,12 @@ begin
     variable localspOffset: unsigned(4 downto 0);
   begin
 
-    if decode_load_sp='1' then
-      stack_b_addr <= std_logic_vector(sp_load);
-    else
-      stack_b_addr <= std_logic_vector(sp_popsp);
-    end if;
+    --if decode_load_sp='1' then
+    --  stack_b_addr <= std_logic_vector(sp_load);
+    --else
+    --  stack_b_addr <= std_logic_vector(sp_popsp);
+    --end if;
+    sampledStackBAddress <= std_logic_vector(sp_popsp);
 
       case (tOpcode_sel) is
 
@@ -403,9 +410,10 @@ begin
         sampledDecodedOpcode<=Decoded_DupStackB;
       else
         sampledDecodedOpcode<=Decoded_LoadSP;
-        if decode_load_sp='0' then
-          stack_b_addr <= std_logic_vector(decr.spnext + localspOffset);
-        end if;
+        --if decode_load_sp='0' then
+        sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
+
+        --end if;
      
       end if;
 
@@ -451,6 +459,8 @@ begin
       if localspOffset=0 then
         sampledDecodedOpcode<=Decoded_Shift;
       else
+        -- TODO: include addspB
+        sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
         sampledDecodedOpcode<=Decoded_AddSP;
       end if;
     else
@@ -482,6 +492,7 @@ begin
         when OpCode_Store =>
           sampledStackOperation <= Stack_DualPop;   -- Dual pop, actually
           sampledDecodedOpcode<=Decoded_Store;
+          sampledStackBAddress <= std_logic_vector(sp_dualpopsp);
         when OpCode_PopSP =>
           --sampledStackOperation <= Stack_Load;
           sampledDecodedOpcode<=Decoded_PopSP;
@@ -489,6 +500,7 @@ begin
           sampledDecodedOpcode<=Decoded_Nop;
       end case;
     end if;
+
   end process;
 
   -- Multiplier
@@ -574,7 +586,7 @@ begin
         -- NEXT here, plaese
          -- w.sp := sp_load;
           w.spnext := sp_load;
-        report "Load SP" severity note;
+        --report "Load SP" severity note;
         else
         if decode_freeze='0' and decode_jump='0' then
           case sampledStackOperation is
@@ -638,13 +650,12 @@ begin
 
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
-  wb_dat_o <= std_logic_vector( stack_b_read );
-
 
   do_interrupt <= '1' when wb_inta_i='1' and exr.idim='0' and exr.inInterrupt='0' and decr.valid='1' else '0';
   --do_interrupt<='0';
 
-  process(decr, exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_b_read, wb_ack_i, memARead, wb_dat_i, do_interrupt,exr)
+
+  process(decr, exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read, wb_ack_i, memARead, wb_dat_i, do_interrupt,exr)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
     variable operandb: unsigned(31 downto 0);
@@ -654,8 +665,10 @@ begin
     memBWriteEnable <= '0';
     memAWriteMask <= (others => '1');
     memBWriteMask <= (others => '1');
-    stack_b_addr_is_offset<='0';
+    --stack_b_addr_is_offset<='0';
     stack_b_writeenable <= '0';
+    stack_a_enable <= '1';
+    stack_b_enable <= '1';
 
     decode_load_sp <= '0';
     decode_freeze <= '0';
@@ -681,6 +694,7 @@ begin
 
     stack_b_writeenable <= '0';
     stack_a_write <= std_logic_vector(exr.tos);
+
 --    spnext <= exr.sp;
 --    spnext_b <= exr.sp + 1;
 
@@ -709,6 +723,10 @@ begin
     end if;
 
     nos <= operandb;
+    wb_dat_o <= std_logic_vector( nos );
+
+    memAWrite<=nos;
+    memAWriteEnable<='0';
 
     case exr.state is
 
@@ -934,10 +952,13 @@ begin
 
           when Decoded_AddSP =>
 
-            decode_freeze <= '1';
+            --decode_freeze <= '1';
             --spnext_b <= sp + spOffset;
+            w.tos := w.tos + unsigned(stack_b_read);
+            stack_a_writeenable <= '1';
+            w.stack_a_writeenable_q:='1';
 
-            w.state := State_AddSP;
+            --w.state := State_AddSP;
 
           when Decoded_Shift =>
             w.tos := exr.tos + exr.tos;
@@ -979,7 +1000,7 @@ begin
             --w.state := State_WaitSP;
             --w.tos := operandb;
             stack_a_writeenable<='1';
-            w.stack_a_writeenable_q:='1';
+            --w.stack_a_writeenable_q:='1';
 
 
 
@@ -1005,12 +1026,17 @@ begin
               wb_we_o    <='1';
               wb_cyc_o_i <='1';
               wb_stb_o   <='1';
+              w.nosq := nos; -- Save value to be written
+              -- Hold stack values
+              stack_a_enable<='0';
+              stack_b_enable<='0';
               w.state := State_Store;
             else
+              memAWriteEnable<='1';
               --w.sp := exr.sp + 1;
               -- Read back
-              w.tos := operandb;--unsigned(stack_b_read);--exr.nos;
-
+              w.tos := unsigned(stack_b_read);--exr.nos;
+              --w.state := State_Resync2;
             end if;
 
           when Decoded_Load | Decoded_Loadb =>
@@ -1019,14 +1045,21 @@ begin
               wb_we_o <= '0';
               wb_cyc_o_i<='1';
               wb_stb_o<='1';
+             
+            else
+              -- TODO - check stack here
+              --w.tos := memARead;
             end if;
-            stack_a_writeenable<='1';
-            w.stack_a_writeenable_q:='1';
 
+             decode_freeze<='1';
             w.state := State_Load;
+            --stack_a_writeenable<='1';
+            --w.stack_a_writeenable_q:='1';
+
+            --w.state := State_Load;
             --spnext_b <= tos(spMaxBit downto 2);
 
-            decode_freeze<='1';
+            
 
           when Decoded_PopSP =>
             --w.sp := exr.tos(10 downto 2);
@@ -1035,11 +1068,13 @@ begin
 
             --stack_a_writeenable<='1';
             --w.stack_a_writeenable_q:='1';
-            decode_freeze <= '1';
-            decode_load_sp <= '1';
+            if decr.sp /= exr.tos(spMaxBit downto 2) then
+              decode_freeze <= '1';
+              decode_load_sp <= '1';
 
-            --w.tos := stack_a_read;
-            w.state := State_Resync2;
+              --w.tos := stack_a_read;
+              w.state := State_Resync2;
+            end if;
 
           when Decoded_Break =>
             w.break := '1';
@@ -1085,21 +1120,24 @@ begin
         wb_cyc_o_i<='1';
         wb_stb_o<='1';
         wb_we_o <='1';
+        --wb_dat_o <= std_logic_vector(exr.nosq);
+        stack_a_enable<='0';
+        stack_b_enable<='0';
 
         if wb_ack_i='1' then
           -- w.sp := exr.sp + 1;
           w.tos := unsigned(wb_dat_i);
-          w.state := State_Execute;
+          w.state := State_Resync2;
+          stack_a_enable<='0';
+          stack_b_enable<='0';
           --spnext_b <= sp + 2;
-        else
-          decode_freeze<='1';
         end if;
 
-        --decode_freeze <= '1';
+        decode_freeze <= '1';
 
       when State_LoadSP =>
 
-      when State_AddSP =>
+--      when State_AddSP =>
         
       when State_Load =>
         if exr.tos(maxAddrBitIncIO)='1' then
@@ -1113,7 +1151,7 @@ begin
             w.state := State_Execute;
           end if;
         else
-
+          w.tos := memARead;
           w.state := State_Execute;
         end if;
 
@@ -1129,6 +1167,9 @@ begin
         exr.break <= '0';
       else
         exr <= w;
+        if exr.break='1' then
+          report "BREAK" severity failure;
+        end if;
       end if;
     end if;
 

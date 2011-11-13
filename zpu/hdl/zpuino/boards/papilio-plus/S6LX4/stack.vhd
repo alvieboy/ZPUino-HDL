@@ -18,7 +18,9 @@ entity zpuino_stack is
     stack_a_write: in std_logic_vector(wordSize-1 downto 0);
     stack_b_write: in std_logic_vector(wordSize-1 downto 0);
     stack_a_writeenable: in std_logic;
+    stack_a_enable: in std_logic;
     stack_b_writeenable: in std_logic;
+    stack_b_enable: in std_logic;
     stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 0);
     stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 0)
   );
@@ -33,7 +35,8 @@ begin
   stack: RAMB16_S36_S36
   generic map (
     WRITE_MODE_A => "WRITE_FIRST",
-    WRITE_MODE_B => "WRITE_FIRST"
+    WRITE_MODE_B => "WRITE_FIRST",
+    SIM_COLLISION_CHECK => "NONE"
     )
   port map (
     DOA  => stack_a_read,
@@ -49,8 +52,8 @@ begin
     DIB   => stack_b_write,
     DIPA  => dipa,
     DIPB  => dipb,
-    ENA   => '1', --stack_mem_enable,
-    ENB   => '1',--stack_mem_enable,
+    ENA   => stack_a_enable,
+    ENB   => stack_b_enable,
     SSRA  => '0',
     SSRB  => '0',
     WEA   => stack_a_writeenable,

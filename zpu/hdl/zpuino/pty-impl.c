@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define DUMMY 0
 
 const int port = 7263;
 struct sockaddr_in sock;
@@ -18,7 +19,7 @@ int fd = -1;
 
 int pty_initialize()
 {
-	if (1)
+	if (DUMMY)
 		return 0;
 
 	mastersockfd=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
