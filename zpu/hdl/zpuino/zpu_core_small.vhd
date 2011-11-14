@@ -226,12 +226,11 @@ begin
   return r;
 end pc_to_memaddr;
 
--- Decoder registers
+-- Prefetch stage registers
 
 type stackChangeType is (
   Stack_Same,
   Stack_Push,
-  --Stack_DualPop,
   Stack_Pop
 );
 
@@ -239,21 +238,36 @@ type decoderegs_type is record
 
   freeze:         std_logic;
   valid:          std_logic;
+  validmem:       std_logic;
   decodedOpcode:  DecodedOpcodeType;
-  needStackB:     std_logic;
   opcode:         std_logic_vector(OpCode_Size-1 downto 0);
   pc:             unsigned(maxAddrBit downto 0);
   fetchpc:        unsigned(maxAddrBit downto 0);
+  idim:           std_logic;
+  stackOperation: stackChangeType;
+  spOffset:       unsigned(4 downto 0);
+
+end record;
+
+type prefetchregs_type is record
   sp:             unsigned(spMaxBit downto 2);
   spnext:         unsigned(spMaxBit downto 2);
-  stackOperation: stackChangeType;
+  valid:          std_logic;
+  freeze:         std_logic;
+  decodedOpcode:  DecodedOpcodeType;
+  opcode:         std_logic_vector(OpCode_Size-1 downto 0);
+  pc:             unsigned(maxAddrBit downto 0);
+  fetchpc:        unsigned(maxAddrBit downto 0);
   idim:           std_logic;
+  load:           std_logic;
 end record;
+
+signal prefr: prefetchregs_type;
 
 signal sampledStackBAddress: std_logic_vector(stackSize_bits-1+2 downto 2);
 
 signal decr: decoderegs_type;
-signal sp_pushsp, sp_popsp,  sp_load:             unsigned(spMaxBit downto 2);--sp_dualpopsp,
+signal sp_pushsp, sp_popsp,  sp_load:  unsigned(spMaxBit downto 2);
 
 signal decode_freeze: std_logic;
 signal decode_jump: std_logic;
@@ -284,18 +298,20 @@ signal sampledNeedStackB: std_logic;
 
 
 signal sampledStackOperation: stackChangeType;
+signal sampledspOffset: unsigned(4 downto 0);
+
 signal nos: unsigned(wordSize-1 downto 0);
 
 begin
 
   -- Debug interface
 
-  dbg_pc <= std_logic_vector(decr.pc);
-  dbg_opcode <= decr.opcode;
-  dbg_sp <= std_logic_vector(decr.sp);
+  dbg_pc <= std_logic_vector(prefr.pc);
+  dbg_opcode <= prefr.opcode;
+  dbg_sp <= std_logic_vector(prefr.sp);
   dbg_brk <= exr.break;
   dbg_stacka <= std_logic_vector(exr.tos);
-  dbg_stackb <= stack_b_read;
+  dbg_stackb <= std_logic_vector(nos);
 
   stack_clk <= wb_clk_i;
 
@@ -360,7 +376,7 @@ begin
     --else
     --  stack_b_addr <= std_logic_vector(sp_popsp);
     --end if;
-    sampledStackBAddress <= std_logic_vector(sp_popsp);
+    --sampledStackBAddress <= std_logic_vector(sp_popsp);
 
       case (tOpcode_sel) is
 
@@ -377,7 +393,7 @@ begin
        end case;
 
     sampledOpcode <= tOpcode;
-    sampledNeedStackB <= '0';
+    --sampledNeedStackB <= '0';
     sampledStackOperation <= Stack_Same;
 
     localspOffset(4):=not tOpcode(4);
@@ -386,7 +402,7 @@ begin
     if (tOpcode(7 downto 7)=OpCode_Im) then
       sampledDecodedOpcode<=Decoded_Im;
 
-      if decr.idim='0' or decr.freeze='1' or decr.valid='0' then
+      if decr.idim='0' then
         sampledStackOperation <= Stack_Push;
       end if;
       
@@ -412,7 +428,7 @@ begin
       else
         sampledDecodedOpcode<=Decoded_LoadSP;
         --if decode_load_sp='0' then
-        sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
+        --sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
 
         --end if;
      
@@ -461,7 +477,7 @@ begin
         sampledDecodedOpcode<=Decoded_Shift;
       else
         -- TODO: include addspB
-        sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
+        --sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
         sampledDecodedOpcode<=Decoded_AddSP;
       end if;
     else
@@ -501,6 +517,7 @@ begin
           sampledDecodedOpcode<=Decoded_Nop;
       end case;
     end if;
+    sampledspOffset <= localspOffset;
 
   end process;
 
@@ -519,10 +536,12 @@ begin
 
   -- Decode/Fetch unit
 
-  sp_pushsp <= decr.spnext - 1;
-  sp_popsp <= decr.spnext + 1;
-  --sp_dualpopsp <= decr.spnext + 2;
+  
+  sp_pushsp <= prefr.spnext - 1;
+  sp_popsp <= prefr.spnext + 1;
   sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed
+
+  memBEnable <= not decode_freeze;
 
   process(decr, jump_address, decode_jump, wb_clk_i, sp_load,
           sp_pushsp,sp_popsp,sampledDecodedOpcode,sampledOpcode,exr.decode_load_sp,decode_freeze,
@@ -539,75 +558,51 @@ begin
       pcnext <= decr.fetchpc + 1;
     end if;
 
-    memBEnable <= not decode_freeze;
+    memBAddr <= pc_to_memaddr(pcnext);
 
     if wb_rst_i='1' then
       w.pc     := (others => '0');
       w.valid  := '0';
+      w.validmem  := '0';
       w.freeze := '1';
       w.fetchpc := (others => '1');
-      w.spnext := unsigned(spStart(10 downto 2));
-      w.sp := unsigned(spStart(10 downto 2));
     else
 
       w.freeze := decode_freeze;
 
+
       if decode_freeze='0' then
         w.fetchpc := pcnext;
-        --w.valid := not decode_jump;
       end if;
 
-      if decr.freeze='0' then
-        w.valid := not decode_jump;
-        w.pc := decr.fetchpc;
+      if decode_freeze='0' then--decr.freeze='0' then
+
+        if decode_jump='1' then
+          w.validmem := '1';
+          w.valid := '0';
+        else
+          w.validmem := '1';
+          w.valid := decr.validmem;
+        end if;
+
+        if decode_jump='0' then
+          w.pc := decr.fetchpc;
+        end if;
+
         w.opcode := sampledOpcode;
         w.decodedOpcode := sampledDecodedOpcode;
         w.stackOperation := sampledStackOperation;
-
-        if sampledDecodedOpcode=Decoded_Im then
-          w.idim := '1';
-        else
+        w.spOffset := sampledspOffset;
+        -- Reset if we're jumping
+        if decode_jump='1' then
           w.idim := '0';
+        else
+          w.idim := sampledOpcode(7);
         end if;
-
-        --  case decr.stackOperation is
-        --    when Stack_Push =>
-        --      w.sp := decr.sp - 1;
-        --    when Stack_Pop =>
-        --     w.sp := decr.sp + 1;
-        --   when others =>
-        -- end case;
-
-        --end if;
-
-        end if;
-      end if;
-
-        -- Stack
-      if exr.decode_load_sp='1' then
-        -- NEXT here, plaese
-         -- w.sp := sp_load;
-        w.spnext := sp_load;
-      elsif decode_force_pop='1' then
-        w.spnext := sp_popsp;
-        --report "Load SP" severity note;
-      else
-        if decode_freeze='0' and decode_jump='0' then
-          case sampledStackOperation is
-            when Stack_Push =>
-              w.spnext := sp_pushsp;
-            when Stack_Pop =>
-              w.spnext := sp_popsp;
-            --when Stack_DualPop =>
-            --  w.spnext := sp_dualpopsp;
-           when others =>
-         end case;
-         w.sp := decr.spnext;
 
       end if;
 
-
-
+      
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -616,13 +611,80 @@ begin
 
   end process;
 
-  process(decr,exr,nos)
+
+  -- Prefetch
+
+  process(wb_clk_i, wb_rst_i, decr, prefr, sp_popsp, sp_pushsp, decode_freeze, decode_jump, sp_load)
+    variable w: prefetchregs_type;
+  begin
+    w := prefr;
+
+    if wb_rst_i='1' then
+      w.spnext := unsigned(spStart(10 downto 2));
+      w.sp := unsigned(spStart(10 downto 2));
+    else
+
+      --w.valid := decr.valid;
+
+      if decr.valid='1' then
+
+        -- Stack
+        w.load := exr.decode_load_sp;
+
+        if exr.decode_load_sp='1' then
+          w.spnext := sp_load;
+        elsif decode_force_pop='1' then
+          w.spnext := sp_popsp;
+        else
+          if (decode_freeze='0' and decode_jump='0') or prefr.load='1' then
+            case decr.stackOperation is
+              when Stack_Push =>
+                w.spnext := sp_pushsp;
+              when Stack_Pop =>
+                w.spnext := sp_popsp;
+              when others =>
+            end case;
+            w.sp := prefr.spnext;
+          end if;
+        end if;
+      end if;
+
+      case decr.decodedOpcode is
+        when Decoded_LoadSP | decoded_AddSP =>
+          sampledStackBAddress <= std_logic_vector(prefr.spnext + decr.spOffset);
+        when others =>
+          sampledStackBAddress <= std_logic_vector(sp_popsp);
+      end case;
+
+      if decode_jump='1' then
+        w.valid := '0';
+      else
+        w.valid := decr.valid;
+      end if;
+      
+      if decode_freeze='0' then
+        w.decodedOpcode := decr.decodedOpcode;
+        w.opcode := decr.opcode;
+        w.pc := decr.pc;
+        w.fetchpc := decr.fetchpc;
+        w.idim := decr.idim;
+      end if;
+    end if;
+
+    if rising_edge(wb_clk_i) then
+      prefr <= w;
+    end if;
+   
+  end process;
+  
+
+  process(prefr,exr,nos)
   begin
         trace_pc <= (others => '0');
-        trace_pc(maxAddrBit downto 0) <= std_logic_vector(decr.pc);
-        trace_opcode <= decr.opcode;
+        trace_pc(maxAddrBit downto 0) <= std_logic_vector(prefr.pc);
+        trace_opcode <= prefr.opcode;
         trace_sp <= (others => '0');
-        trace_sp(10 downto 2) <= std_logic_vector(decr.sp);
+        trace_sp(10 downto 2) <= std_logic_vector(prefr.sp);
         trace_topOfStack <= std_logic_vector( exr.tos );
         trace_topOfStackB <= std_logic_vector( nos );
   end process;
@@ -659,7 +721,7 @@ begin
   --do_interrupt<='0';
 
 
-  process(decr, exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read, wb_ack_i, memARead, wb_dat_i, do_interrupt,exr)
+  process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read, wb_ack_i, memARead, wb_dat_i, do_interrupt,exr)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
     variable operandb: unsigned(31 downto 0);
@@ -689,7 +751,7 @@ begin
     begin_inst<='0';
     w.decode_load_sp := '0';
 
-    stack_a_addr <= std_logic_vector( decr.sp );
+    stack_a_addr <= std_logic_vector( prefr.sp );
     --stack_b_addr <= std_logic_vector( exr.sp + 2 );
     stack_a_writeenable <= '0';
     w.stack_a_writeenable_q:='0';
@@ -704,20 +766,19 @@ begin
 
     doInterrupt <= '0';
 
-    spOffset(4):=not decr.opcode(4);
-    spOffset(3 downto 0) := unsigned(decr.opcode(3 downto 0));
+    spOffset(4):=not prefr.opcode(4);
+    spOffset(3 downto 0) := unsigned(prefr.opcode(3 downto 0));
 
     if wb_inta_i='0' then
       w.inInterrupt := '0';
     end if;
 
-    if decr.decodedOpcode=Decoded_Im then
+    if prefr.decodedOpcode=Decoded_Im then
       decode_is_idim <= '1';
     else
       decode_is_idim <= '0';
     end if;
 
-    memBAddr <= pc_to_memaddr(pcnext);
     stack_b_write<=(others => DontCareValue);
 
     if exr.stack_a_writeenable_q='1' then
@@ -753,7 +814,7 @@ begin
 
       when State_Execute =>
 
-        if decr.valid='1' then
+        if prefr.valid='1' then
 
         w.idim := '0';
 
@@ -772,13 +833,13 @@ begin
            report "Interrupt" severity note;
 
            w.tos := (others => '0');
-           w.tos(maxAddrBit downto 0) := decr.pc;
+           w.tos(maxAddrBit downto 0) := prefr.pc;
            --w.nos := exr.tos;
 
             -- Write back NOS
         else
 
-        case decr.decodedOpcode is
+        case prefr.decodedOpcode is
           when Decoded_Im =>
 
             w.idim := '1';
@@ -789,10 +850,10 @@ begin
                 --spnext_b <= sp;
 
                 for i in wordSize-1 downto 7 loop
-                  w.tos(i) := decr.opcode(6);
+                  w.tos(i) := prefr.opcode(6);
                 end loop;
 
-                w.tos(6 downto 0) := unsigned(decr.opcode(6 downto 0));
+                w.tos(6 downto 0) := unsigned(prefr.opcode(6 downto 0));
                 -- Write back NOS
                 --w.nos := exr.tos;
 
@@ -803,7 +864,7 @@ begin
 
               else
                 w.tos(wordSize-1 downto 7) := exr.tos(wordSize-8 downto 0);
-                w.tos(6 downto 0) := unsigned(decr.opcode(6 downto 0));
+                w.tos(6 downto 0) := unsigned(prefr.opcode(6 downto 0));
 
               end if;
 
@@ -817,7 +878,7 @@ begin
             poppc_inst <= '1';
 
             w.tos := operandb;--unsigned(stack_b_read);--exr.nos;
-
+            stack_b_enable<='0';
 
             -- Read back 
 
@@ -831,10 +892,10 @@ begin
 
             decode_jump <= '1';
             jump_address <= (others => '0');
-            jump_address(9 downto 5) <= unsigned(decr.opcode(4 downto 0));
+            jump_address(9 downto 5) <= unsigned(prefr.opcode(4 downto 0));
 
             w.tos := (others => '0');
-            w.tos(maxAddrBit downto 0) := decr.fetchpc;
+            w.tos(maxAddrBit downto 0) := prefr.fetchpc;
             stack_a_writeenable<='1';
             w.stack_a_writeenable_q:='1';
             -- Write Back NOS
@@ -850,7 +911,7 @@ begin
             --spnext_b <= sp;
             w.tos := (others => '0');
             w.tos(31) := '1'; -- Stack address
-            w.tos(10 downto 2) := decr.sp;
+            w.tos(10 downto 2) := prefr.sp;
             -- Write Back
             --w.nos := exr.tos;
             stack_a_writeenable<='1';
@@ -980,7 +1041,7 @@ begin
             --stack_a_addr <= std_logic_vector(exr.sp);
             stack_a_writeenable <= '1';
             w.stack_a_writeenable_q:='1';
-            stack_a_addr <= std_logic_vector(decr.sp + spOffset);
+            stack_a_addr <= std_logic_vector(prefr.sp + spOffset);
             decode_freeze <= '1';
 
             -- Read back ?
@@ -1076,7 +1137,7 @@ begin
 
             --stack_a_writeenable<='1';
             --w.stack_a_writeenable_q:='1';
-            if decr.sp /= exr.tos(spMaxBit downto 2) then
+            if prefr.sp /= exr.tos(spMaxBit downto 2) then
               decode_freeze <= '1';
               w.decode_load_sp := '1';
 
@@ -1095,7 +1156,7 @@ begin
             --decode_freeze <= '1';
             if unsigned(stack_b_read)/=0 then
               decode_jump <= '1';
-              jump_address <= decr.pc + exr.tos(maxAddrBit downto 0);
+              jump_address <= prefr.pc + exr.tos(maxAddrBit downto 0);
             else
               decode_freeze <= '1'; -- Going to Pop
             end if;
@@ -1119,6 +1180,7 @@ begin
 
 
       when State_WaitSPB =>
+        stack_b_enable<='0';
 
         --w.nos := unsigned(stack_b_read);
         --decode_freeze <= '1';
