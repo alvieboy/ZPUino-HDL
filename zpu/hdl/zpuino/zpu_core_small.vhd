@@ -649,11 +649,14 @@ begin
         end if;
       end if;
 
+      sampledStackBAddress <= std_logic_vector(sp_popsp);
+
       case decr.decodedOpcode is
         when Decoded_LoadSP | decoded_AddSP =>
-          sampledStackBAddress <= std_logic_vector(prefr.spnext + decr.spOffset);
+          if decode_force_pop='0' then
+            sampledStackBAddress <= std_logic_vector(prefr.spnext + decr.spOffset);
+          end if;
         when others =>
-          sampledStackBAddress <= std_logic_vector(sp_popsp);
       end case;
 
       if decode_jump='1' then
@@ -1091,6 +1094,9 @@ begin
               --w.tos := unsigned(stack_b_read);--exr.nos;
               decode_freeze<='1';
               decode_force_pop<='1';
+              --stack_a_enable<='0';
+              --stack_b_enable<='0';
+
               w.state := State_Resync2;
 
             end if;
@@ -1100,7 +1106,7 @@ begin
               wb_we_o    <='1';
               wb_cyc_o_i <='1';
               wb_stb_o   <='1';
-              w.nosq := nos; -- Save value to be written
+--              w.nosq := nos; -- Save value to be written
               -- Hold stack values
               stack_a_enable<='0';
               stack_b_enable<='0';
