@@ -1085,6 +1085,14 @@ begin
               --spnext_b <= tos(spMaxBit downto 2);
               --stack_b_writeenable <= '1';
               -- TODO - write to stack
+              stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
+              stack_a_write <= std_logic_vector(nos);
+              stack_a_writeenable<='1';
+              --w.tos := unsigned(stack_b_read);--exr.nos;
+              decode_freeze<='1';
+              decode_force_pop<='1';
+              w.state := State_Resync2;
+
             end if;
 
             if exr.tos(maxAddrBitIncIO)='1' then
@@ -1101,7 +1109,7 @@ begin
               memAWriteEnable<='1';
               --w.sp := exr.sp + 1;
               -- Read back
-              w.tos := unsigned(stack_b_read);--exr.nos;
+              --w.tos := unsigned(stack_b_read);--exr.nos;
               decode_freeze<='1';
               decode_force_pop<='1';
               w.state := State_Resync2;
@@ -1196,10 +1204,10 @@ begin
 
         if wb_ack_i='1' then
           -- w.sp := exr.sp + 1;
-          w.tos := unsigned(wb_dat_i);
+          --w.tos := unsigned(wb_dat_i);
           w.state := State_Resync2;
           stack_a_enable<='0';
-          stack_b_enable<='0';
+          stack_b_enable<='1';
           decode_force_pop<='1';
           --spnext_b <= sp + 2;
         end if;
