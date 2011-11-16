@@ -191,7 +191,7 @@ end record;
 
 signal exr: zpuregs;
 
-constant minimal_implementation: boolean := true;
+constant minimal_implementation: boolean := false;
 
 subtype index is integer range 0 to 3;
 
@@ -426,35 +426,14 @@ begin
         sampledDecodedOpcode<=Decoded_Emulate;
         sampledStackOperation<=Stack_Push; -- will push PC
       else
-      report "error" severity failure; -- TODO
 
-      if (tOpcode(5 downto 0)=OpCode_Neqbranch) then
-        sampledDecodedOpcode<=Decoded_Neqbranch;
-
-      elsif (tOpcode(5 downto 0)=OpCode_Eq) then
-        sampledDecodedOpcode<=Decoded_Eq;
-
---      elsif (tOpcode(5 downto 0)=OpCode_Storeb) then
---        sampledDecodedOpcode<=Decoded_Storeb;
-
---      elsif (tOpcode(5 downto 0)=OpCode_Storeh) then
---        sampledDecodedOpcode<=Decoded_Storeh;
-
-      elsif (tOpcode(5 downto 0)=OpCode_Ulessthan) then
-        sampledDecodedOpcode<=Decoded_Ulessthan;
-
---      elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
---        sampledDecodedOpcode<=Decoded_Ashiftleft;
-
-      elsif (tOpcode(5 downto 0)=OpCode_Loadb) then
-        sampledDecodedOpcode<=Decoded_Loadb;
-
---      elsif (tOpcode(5 downto 0)=OpCode_Mult) then
---        sampledDecodedOpcode<=Decoded_Mult;
-
-      else
-        sampledDecodedOpcode<=Decoded_Emulate;
-      end if;
+        if (tOpcode(5 downto 0)=OpCode_Loadb) then
+          sampledStackOperation<=Stack_Same;
+          sampledDecodedOpcode<=Decoded_Loadb;
+        else
+          sampledDecodedOpcode<=Decoded_Emulate;
+          sampledStackOperation<=Stack_Push; -- will push PC
+        end if;
       end if;
     elsif (tOpcode(7 downto 4)=OpCode_AddSP) then
       if localspOffset=0 then
@@ -533,10 +512,7 @@ begin
 
     w := decr;
 
---    if decr.validmem='1' then
-      pcnext <= decr.fetchpc + 1;
---    end if;
-    --end if;
+    pcnext <= decr.fetchpc + 1;
 
     memBAddr <= pc_to_memaddr(w.fetchpc);
 
@@ -557,10 +533,8 @@ begin
         else
           w.validmem := '1';
           w.valid := decr.validmem;
-          --if decr.validmem='1' then
           w.pcint := decr.fetchpc;
           w.pc := decr.pcint;
-          --end if;
         end if;
 
         w.opcode := sampledOpcode;
@@ -578,7 +552,6 @@ begin
 
       end if;
 
-      
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -655,7 +628,6 @@ begin
     end if;
    
   end process;
-  
 
   process(prefr,exr,nos)
   begin
@@ -940,7 +912,7 @@ begin
               w.state := State_Resync2;
             end if;
 
-          when Decoded_Load =>
+          when Decoded_Load | Decoded_Loadb =>
 
             decode_freeze<='1';
 
@@ -1030,12 +1002,47 @@ begin
 
       when State_LoadStack =>
 
-        w.tos := unsigned(stack_a_read);
+        if prefr.decodedOpcode=Decoded_Loadb then
+          w.tos(wordSize-1 downto 8) := (others => '0');
+          case exr.tos(1 downto 0) is
+            when "11" =>
+              w.tos(7 downto 0) := unsigned(stack_a_read(7 downto 0));
+            when "10" =>
+              w.tos(7 downto 0) := unsigned(stack_a_read(15 downto 8));
+            when "01" =>
+              w.tos(7 downto 0) := unsigned(stack_a_read(23 downto 16));
+            when "00" =>
+              w.tos(7 downto 0) := unsigned(stack_a_read(31 downto 24));
+            when others =>
+              null;
+          end case;
+        else
+          w.tos := unsigned(stack_a_read);
+        end if;
+
         w.state := State_Execute;
 
       when State_LoadMemory =>
 
-        w.tos := memARead;
+        if prefr.decodedOpcode=Decoded_Loadb then
+          w.tos(wordSize-1 downto 8) := (others => '0');
+          case exr.tos(1 downto 0) is
+            when "11" =>
+              w.tos(7 downto 0) := memARead(7 downto 0);
+            when "10" =>
+              w.tos(7 downto 0) := memARead(15 downto 8);
+            when "01" =>
+              w.tos(7 downto 0) := memARead(23 downto 16);
+            when "00" =>
+              w.tos(7 downto 0) := memARead(31 downto 24);
+            when others =>
+              null;
+          end case;
+
+        else
+          w.tos := memARead;
+        end if;
+
         w.state := State_Execute;
 
       when others =>
