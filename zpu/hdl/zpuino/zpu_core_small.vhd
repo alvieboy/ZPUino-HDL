@@ -430,6 +430,9 @@ begin
         if (tOpcode(5 downto 0)=OpCode_Loadb) then
           sampledStackOperation<=Stack_Same;
           sampledDecodedOpcode<=Decoded_Loadb;
+        elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+          sampledStackOperation<=Stack_Pop;
+          sampledDecodedOpcode<=Decoded_Neqbranch;
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -784,6 +787,22 @@ begin
             -- Delay
 
             w.state := State_WaitSPB;
+
+          when Decoded_Neqbranch=>
+
+            decode_freeze<='1';
+            decode_force_pop<='1';
+
+            if unsigned(operandb)/=0 then
+              decode_jump <= '1';
+              jump_address <= prefr.pc + exr.tos(maxAddrBit downto 0);
+              decode_freeze<='0';
+              --w.tos := operandb;
+              --stack_b_enable<='0';
+            end if;
+
+            w.state := State_Resync2;
+
 
           when Decoded_Emulate =>
 
