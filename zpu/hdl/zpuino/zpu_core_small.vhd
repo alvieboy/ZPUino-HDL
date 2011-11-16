@@ -185,7 +185,7 @@ type zpuregs is record
   inInterrupt:std_logic;
   tos:        unsigned(wordSize-1 downto 0);
   state:      State_Type;
-  stack_a_writeenable_q: std_logic;
+  wroteback: std_logic;
   decode_load_sp: std_logic;
 end record;
 
@@ -676,7 +676,7 @@ begin
   do_interrupt <= '1' when wb_inta_i='1' and exr.idim='0' and exr.inInterrupt='0' and prefr.valid='1' else '0';
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
-          wb_ack_i, memARead, wb_dat_i, do_interrupt,exr, prefr)
+          wb_ack_i, memARead, wb_dat_i, do_interrupt,exr, prefr, nos)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
     variable operandb: unsigned(31 downto 0);
@@ -709,7 +709,7 @@ begin
     stack_a_addr <= std_logic_vector( prefr.sp );
 
     stack_a_writeenable <= '0';
-    w.stack_a_writeenable_q:='0';
+    w.wroteback:='0';
 
     memAEnable <= '1'; -- TODO: optimize this for power. (move up in the pipeline)
 
@@ -728,7 +728,7 @@ begin
 
     stack_b_write<=(others => DontCareValue);
 
-    if exr.stack_a_writeenable_q='1' then
+    if exr.wroteback='1' then
       operandb := unsigned(stack_a_read);
     else
       operandb := unsigned(stack_b_read);
@@ -769,7 +769,7 @@ begin
            report "Interrupt" severity note;
 
            stack_a_writeenable<='1';
-           w.stack_a_writeenable_q:='1';
+           w.wroteback:='1';
 
            w.tos := (others => '0');
            w.tos(maxAddrBit downto 0) := prefr.pc;
@@ -790,7 +790,7 @@ begin
                 w.tos(6 downto 0) := unsigned(prefr.opcode(6 downto 0));
 
                 stack_a_writeenable<='1';
-                w.stack_a_writeenable_q:='1';
+                w.wroteback:='1';
 
               else
                 w.tos(wordSize-1 downto 7) := exr.tos(wordSize-8 downto 0);
@@ -822,7 +822,7 @@ begin
             w.tos := (others => '0');
             w.tos(maxAddrBit downto 0) := prefr.fetchpc;
             stack_a_writeenable<='1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
 
           when Decoded_PushSP =>
 
@@ -830,7 +830,7 @@ begin
             w.tos(31) := '1'; -- Stack address
             w.tos(10 downto 2) := prefr.sp;
             stack_a_writeenable<='1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
 
           when Decoded_Add =>
 
@@ -871,18 +871,18 @@ begin
 
             w.tos := unsigned(stack_b_read);
             stack_a_writeenable <= '1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
 
           when Decoded_DupStackB =>
 
             w.tos := operandb;
             stack_a_writeenable <= '1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
 
           when Decoded_Dup =>
 
             stack_a_writeenable<='1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
 
           when Decoded_AddSP =>
 
@@ -896,7 +896,7 @@ begin
 
             w.tos := operandb;
             stack_a_writeenable <= '1';
-            w.stack_a_writeenable_q:='1';
+            w.wroteback:='1';
             stack_a_addr <= std_logic_vector(prefr.sp + spOffset);
             decode_freeze <= '1';
 
@@ -958,12 +958,12 @@ begin
 
           when Decoded_PopSP =>
 
-            if prefr.sp /= exr.tos(spMaxBit downto 2) then
+            --if prefr.sp /= exr.tos(spMaxBit downto 2) then
               decode_freeze <= '1';
               w.decode_load_sp := '1';
 
               w.state := State_Resync1;
-            end if;
+            --end if;
 
           when Decoded_Break =>
             w.break := '1';
