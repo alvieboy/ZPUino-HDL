@@ -230,8 +230,9 @@ type decoderegs_type is record
   opcode:         std_logic_vector(OpCode_Size-1 downto 0);
   pc:             unsigned(maxAddrBit downto 0);
   fetchpc:        unsigned(maxAddrBit downto 0);
-  pcint:        unsigned(maxAddrBit downto 0);
+  pcint:          unsigned(maxAddrBit downto 0);
   idim:           std_logic;
+  force_pop:      std_logic;
   stackOperation: stackChangeType;
   spOffset:       unsigned(4 downto 0);
 
@@ -377,11 +378,15 @@ begin
        end case;
 
     sampledOpcode <= tOpcode;
-    --sampledNeedStackB <= '0';
     sampledStackOperation <= Stack_Same;
 
     localspOffset(4):=not tOpcode(4);
     localspOffset(3 downto 0) := unsigned(tOpcode(3 downto 0));
+
+    if decr.force_pop='1' then
+      sampledDecodedOpcode <= Decoded_Pop;
+      sampledStackOperation <= Stack_Pop;
+    else
 
     if (tOpcode(7 downto 7)=OpCode_Im) then
       sampledDecodedOpcode<=Decoded_Im;
@@ -411,11 +416,6 @@ begin
         sampledDecodedOpcode<=Decoded_DupStackB;
       else
         sampledDecodedOpcode<=Decoded_LoadSP;
-        --if decode_load_sp='0' then
-        --sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
-
-        --end if;
-     
       end if;
 
 
@@ -430,9 +430,9 @@ begin
         if (tOpcode(5 downto 0)=OpCode_Loadb) then
           sampledStackOperation<=Stack_Same;
           sampledDecodedOpcode<=Decoded_Loadb;
-        elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
-          sampledStackOperation<=Stack_Pop;
-          sampledDecodedOpcode<=Decoded_Neqbranch;
+--        elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+--          sampledStackOperation<=Stack_Pop;
+--          sampledDecodedOpcode<=Decoded_Neqbranch;
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -480,6 +480,8 @@ begin
           sampledDecodedOpcode<=Decoded_Nop;
       end case;
     end if;
+
+    end if;
     sampledspOffset <= localspOffset;
 
   end process;
@@ -511,6 +513,7 @@ begin
           pcnext, wb_rst_i, sampledStackOperation, decode_force_pop, sampledspOffset
           )
     variable w: decoderegs_type;
+    variable injectpop: std_logic;
   begin
 
     w := decr;
@@ -519,15 +522,28 @@ begin
 
     memBAddr <= pc_to_memaddr(w.fetchpc);
 
+    case sampledDecodedOpcode is
+      when decoded_Store =>
+        injectpop := '1';
+      when others =>
+        injectpop := '0';
+    end case;
+
     if wb_rst_i='1' then
       w.pc     := (others => '0');
       w.valid  := '0';
       w.validmem  := '0';
       w.fetchpc := (others => '0');
+      w.force_pop := '0';
     else
 
       if decode_freeze='0' then
-        w.fetchpc := pcnext;
+
+        if inject_pop='0' then --decr.force_pop='0' then
+          w.fetchpc := pcnext;
+        end if;
+
+        w.force_pop := '0';
 
         if decode_jump='1' then
           w.validmem := '0';
@@ -536,19 +552,26 @@ begin
         else
           w.validmem := '1';
           w.valid := decr.validmem;
+          
           w.pcint := decr.fetchpc;
           w.pc := decr.pcint;
+
+          if inject_pop='1' then
+            w.force_pop:='1';
+          end if;
+
         end if;
 
         w.opcode := sampledOpcode;
         w.decodedOpcode := sampledDecodedOpcode;
         w.stackOperation := sampledStackOperation;
         w.spOffset := sampledspOffset;
-        -- Reset if we're jumping
+
+        -- Reset IDIM if we're jumping. Also don't set if we are injecting a Pop instruction
         if decode_jump='1' then
           w.idim := '0';
         else
-          if decr.validmem='1' then
+          if decr.validmem='1' and decr.force_pop='0' then
             w.idim := sampledOpcode(7);
           end if;
         end if;
@@ -587,8 +610,8 @@ begin
 
         if exr.decode_load_sp='1' then
           w.spnext := sp_load;
-        elsif decode_force_pop='1' then
-          w.spnext := sp_popsp;
+        --elsif decode_force_pop='1' then
+        --  w.spnext := sp_popsp;
         else
           if (decode_freeze='0' and decode_jump='0') or prefr.load='1' then
             case decr.stackOperation is
@@ -605,9 +628,9 @@ begin
 
       case decr.decodedOpcode is
         when Decoded_LoadSP | decoded_AddSP =>
-          if decode_force_pop='0' then
+          --if decode_force_pop='0' then
             sampledStackBAddress <= std_logic_vector(prefr.spnext + decr.spOffset);
-          end if;
+          --end if;
         when others =>
       end case;
 
@@ -908,10 +931,11 @@ begin
               stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
               stack_a_write <= std_logic_vector(nos);
               stack_a_writeenable<='1';
-              decode_freeze<='1';
-              decode_force_pop<='1';
+              --decode_freeze<='1';
+              --decode_force_pop<='1';
 
-              w.state := State_Resync2;
+              --w.state := State_Resync2;
+              w.state := State_Execute;
 
             elsif exr.tos(maxAddrBitIncIO)='1' then
 
@@ -926,9 +950,10 @@ begin
               w.state := State_Store;
             else
               memAWriteEnable<='1';
-              decode_freeze<='1';
-              decode_force_pop<='1';
-              w.state := State_Resync2;
+              --decode_freeze<='1';
+              --decode_force_pop<='1';
+              --w.state := State_Resync2;
+              w.state := State_Execute;
             end if;
 
           when Decoded_Load | Decoded_Loadb =>
@@ -959,14 +984,14 @@ begin
           when Decoded_Break =>
             w.break := '1';
 
---          when Decoded_Neqbranch =>
---
---            if unsigned(stack_b_read)/=0 then
---              decode_jump <= '1';
---              jump_address <= prefr.pc + exr.tos(maxAddrBit downto 0);
---            else
---              decode_freeze <= '1'; -- Going to Pop
---            end if;
+          when Decoded_Neqbranch =>
+
+            if unsigned(stack_b_read)/=0 then
+              decode_jump <= '1';
+              jump_address <= prefr.pc + exr.tos(maxAddrBit downto 0);
+            else
+              decode_freeze <= '1'; -- Going to Pop
+            end if;
 
 --          when Decoded_Idle =>
             --w.idim := exr.idim;
@@ -997,13 +1022,16 @@ begin
         stack_b_enable<='0';
 
         if wb_ack_i='1' then
-          w.state := State_Resync2;
-          stack_a_enable<='0';
-          stack_b_enable<='1';
-          decode_force_pop<='1';
+          --w.state := State_Resync2;
+          --stack_a_enable<='0';
+          --stack_b_enable<='1';
+          w.state := State_Execute;
+          --decode_force_pop<='1';
+        else
+          decode_freeze <= '1';
         end if;
 
-        decode_freeze <= '1';
+        
 
       when State_LoadSP =>
 
