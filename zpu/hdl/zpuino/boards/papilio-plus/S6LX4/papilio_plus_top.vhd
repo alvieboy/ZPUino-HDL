@@ -123,9 +123,9 @@ architecture behave of papilio_plus_top is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0111111111111111111111111111111111111111111111111111000";
+    "0000000000000000000000000000000000000000000000000000000";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0111111111111111111111111111111111111111111111111101111";
+    "0000000000000000000000000000000000000000000000000000000";
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
@@ -553,7 +553,7 @@ begin
   -- IO SLOT 5
   --
 
-  sigmadelta_inst: zpuino_sigmadelta
+  sigmadelta_inst: zpuino_empty_device--zpuino_sigmadelta
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -564,11 +564,11 @@ begin
     wb_cyc_i        => slot_cyc(5),
     wb_stb_i        => slot_stb(5),
     wb_ack_o      => slot_ack(5),
-    wb_inta_o => slot_interrupt(5),
+    wb_inta_o => slot_interrupt(5)
 
-    spp_data  => sigmadelta_spp_data,
-    spp_en    => sigmadelta_spp_en,
-    sync_in   => timers_comp
+    --spp_data  => sigmadelta_spp_data,
+   -- spp_en    => sigmadelta_spp_en,
+   -- sync_in   => timers_comp
   );
 
   --
@@ -690,7 +690,8 @@ begin
       mi_wb_sel_o <= (others =>'0');
       mi_wb_cti_o <= (others =>'0');
 
-  slot9: zpuino_empty_device
+
+slot9: zpuino_empty_device
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
