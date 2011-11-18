@@ -187,6 +187,9 @@ type zpuregs is record
   state:      State_Type;
   wroteback: std_logic;
   decode_load_sp: std_logic;
+  jumpdly: std_logic;
+  jaddr:      unsigned(maxAddrBit downto 0);
+
 end record;
 
 signal exr: zpuregs;
@@ -744,6 +747,8 @@ begin
     memAWrite<=nos;
     memAWriteEnable<='0';
 
+    w.jaddr := prefr.pc + exr.tos(maxAddrBit downto 0);
+
     case exr.state is
 
       when State_Resync1 | State_Start  =>
@@ -913,6 +918,13 @@ begin
 
           when Decoded_Pop =>
 
+            if exr.jumpdly='1' then
+              decode_jump <= '1';
+              jump_address <= exr.jaddr;
+            end if;
+            w.jumpdly := '0';
+
+
             w.tos := operandb;
 
           when Decoded_Store =>
@@ -975,16 +987,10 @@ begin
             w.break := '1';
 
           when Decoded_Neqbranch =>
-
             if operandb/=0 then
-              decode_jump <= '1';
-              jump_address <= prefr.pc + exr.tos(maxAddrBit downto 0);
-            --else
-            --  decode_freeze <= '1'; -- Going to Pop
+              w.jumpdly := '1';
             end if;
 
---          when Decoded_Idle =>
-            --w.idim := exr.idim;
           when others =>
             w.break := '1';
 
@@ -1094,6 +1100,7 @@ begin
         exr.inInterrupt <= '0';
         exr.break <= '0';
         exr.decode_load_sp <= '0';
+        exr.jumpdly <= '0';
       else
         exr <= w;
         if exr.break='1' then
