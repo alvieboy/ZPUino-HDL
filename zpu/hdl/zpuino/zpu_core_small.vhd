@@ -39,6 +39,7 @@ use ieee.numeric_std.all;
 library work;
 use work.zpu_config.all;
 use work.zpupkg.all;
+use work.wishbonepkg.all;
 
 library UNISIM;
 use UNISIM.vcomponents.all;
@@ -64,17 +65,26 @@ entity zpu_core_small is
 
     -- STACK
 
-    stack_a_read: in std_logic_vector(wordSize-1 downto 0);
-    stack_b_read: in std_logic_vector(wordSize-1 downto 0);
-    stack_a_write: out std_logic_vector(wordSize-1 downto 0);
-    stack_b_write: out std_logic_vector(wordSize-1 downto 0);
-    stack_a_writeenable: out std_logic;
-    stack_a_enable: out std_logic;
-    stack_b_writeenable: out std_logic;
-    stack_b_enable: out std_logic;
-    stack_a_addr: out std_logic_vector(stackSize_bits-1+2 downto 2);  -- Helps debugging
-    stack_b_addr: out std_logic_vector(stackSize_bits-1+2 downto 2);
-    stack_clk: out std_logic;
+    stack_a_read:         in std_logic_vector(wordSize-1 downto 0);
+    stack_b_read:         in std_logic_vector(wordSize-1 downto 0);
+    stack_a_write:        out std_logic_vector(wordSize-1 downto 0);
+    stack_b_write:        out std_logic_vector(wordSize-1 downto 0);
+    stack_a_writeenable:  out std_logic;
+    stack_a_enable:       out std_logic;
+    stack_b_writeenable:  out std_logic;
+    stack_b_enable:       out std_logic;
+    stack_a_addr:         out std_logic_vector(stackSize_bits-1+2 downto 2);  -- Helps debugging
+    stack_b_addr:         out std_logic_vector(stackSize_bits-1+2 downto 2);
+    stack_clk:            out std_logic;
+
+    -- ROM wb interface
+
+    rom_wb_ack_i:       in std_logic;
+    rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_cyc_o:       out std_logic;
+    rom_wb_stb_o:       out std_logic;
+    rom_wb_cti_o:       out std_logic_vector(2 downto 0);
 
     -- Debug interface
 
@@ -90,32 +100,15 @@ end zpu_core_small;
 
 architecture behave of zpu_core_small is
 
-signal memAWriteEnable:     std_logic;
-signal memAWriteMask:       std_logic_vector(3 downto 0);
-signal memAAddr:            unsigned(maxAddrBit downto minAddrBit);
-signal memAWrite:           unsigned(wordSize-1 downto 0);
-signal memARead:            unsigned(wordSize-1 downto 0);
-signal memAEnable:          std_logic;
-
-signal memBEnable:          std_logic;
-signal memBWriteEnable:     std_logic;
-signal memBWriteMask:       std_logic_vector(3 downto 0);
-signal memBAddr:            unsigned(maxAddrBit downto minAddrBit);
-signal memBWrite:           unsigned(wordSize-1 downto 0);
-signal memBRead:            unsigned(wordSize-1 downto 0);
-
---signal busy:                std_logic;
 signal begin_inst:          std_logic;
-
 signal trace_opcode:        std_logic_vector(7 downto 0);
 signal trace_pc:            std_logic_vector(maxAddrBitIncIO downto 0);
 signal trace_sp:            std_logic_vector(maxAddrBitIncIO downto minAddrBit);
 signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 
-signal doInterrupt:         std_logic;
-
 -- state machine.
+
 type State_Type is
 (
 State_Start,
@@ -189,7 +182,7 @@ type zpuregs is record
   decode_load_sp: std_logic;
   jumpdly: std_logic;
   jaddr:      unsigned(maxAddrBit downto 0);
-
+  bytesel:  unsigned(1 downto 0);
 end record;
 
 signal exr: zpuregs;
@@ -210,7 +203,7 @@ begin
 end pc_to_cpuword;
 
 function pc_to_memaddr(pc: unsigned) return unsigned is
-  variable r: unsigned(maxAddrBit downto minAddrBit);
+  variable r: unsigned(maxAddrBitIncIO downto 0);
 begin
   r := (others => '0');
   r(maxAddrBit downto minAddrBit) := pc(maxAddrBit downto minAddrBit);
@@ -228,7 +221,7 @@ type stackChangeType is (
 type decoderegs_type is record
 
   valid:          std_logic;
-  validmem:       std_logic;
+  --validmem:       std_logic;
   decodedOpcode:  DecodedOpcodeType;
   opcode:         std_logic_vector(OpCode_Size-1 downto 0);
   pc:             unsigned(maxAddrBit downto 0);
@@ -275,13 +268,13 @@ signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
 signal wb_cyc_o_i: std_logic;
 
 
-subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
-signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
-signal memAWrite_stdlogic : std_logic_vector(memAWrite'range);
-signal memARead_stdlogic  : std_logic_vector(memARead'range);
-signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
-signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
-signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
+--subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
+--signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
+--signal memAWrite_stdlogic : std_logic_vector(memAWrite'range);
+--signal memARead_stdlogic  : std_logic_vector(memARead'range);
+--signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
+--signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
+--signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 
 signal do_interrupt: std_logic;
 
@@ -290,6 +283,9 @@ signal sampledStackOperation: stackChangeType;
 signal sampledspOffset: unsigned(4 downto 0);
 
 signal nos: unsigned(wordSize-1 downto 0);
+-- Test
+
+signal jump_q : std_logic;
 
 begin
 
@@ -321,31 +317,31 @@ begin
   end generate;
 
 
-  memAAddr_stdlogic  <= std_logic_vector(memAAddr(AddrBitBRAM_range));
-  memAWrite_stdlogic <= std_logic_vector(memAWrite);
-  memBAddr_stdlogic  <= std_logic_vector(memBAddr(AddrBitBRAM_range));
-  memBWrite_stdlogic <= std_logic_vector(memBWrite);
+--  memAAddr_stdlogic  <= std_logic_vector(memAAddr(AddrBitBRAM_range));
+--  memAWrite_stdlogic <= std_logic_vector(memAWrite);
+--  memBAddr_stdlogic  <= std_logic_vector(memBAddr(AddrBitBRAM_range));
+--  memBWrite_stdlogic <= std_logic_vector(memBWrite);
   
-  memory: dualport_ram
-    port map (
-      clk => wb_clk_i,
-      memAWriteEnable => memAWriteEnable,
-      memAWriteMask => memAWriteMask,
-      memAWrite => memAWrite_stdlogic,
-      memAAddr => memAAddr_stdlogic,
-      memARead => memARead_stdlogic,
-      memAEnable => memAEnable,
-      memBEnable => memBEnable,
-      memBWriteEnable => memBWriteEnable,
-      memBAddr => memBAddr_stdlogic,
-      memBWrite => memBWrite_stdlogic,
-      memBRead => memBRead_stdlogic,
-      memBWriteMask => memBWriteMask,
-      memErr => open
-    );
+--  memory: dualport_ram
+--    port map (
+--      clk => wb_clk_i,
+--      memAWriteEnable => memAWriteEnable,
+--      memAWriteMask => memAWriteMask,
+--      memAWrite => memAWrite_stdlogic,
+--      memAAddr => memAAddr_stdlogic,
+--      memARead => memARead_stdlogic,
+--      memAEnable => memAEnable,
+--      memBEnable => memBEnable,
+--      memBWriteEnable => memBWriteEnable,
+--      memBAddr => memBAddr_stdlogic,
+--      memBWrite => memBWrite_stdlogic,
+--      memBRead => memBRead_stdlogic,
+--      memBWriteMask => memBWriteMask,
+--      memErr => open
+--    );
 
-  memARead <= unsigned(memARead_stdlogic);
-  memBRead <= unsigned(memBRead_stdlogic);
+--  memARead <= unsigned(memARead_stdlogic);
+--  memBRead <= unsigned(memBRead_stdlogic);
   wb_cyc_o <= wb_cyc_o_i;
 
   tOpcode_sel <= to_integer(decr.pcint(minAddrBit-1 downto 0));
@@ -355,7 +351,7 @@ begin
   -- move out calculation of the opcode to a seperate process
   -- to make things a bit easier to read
   decodeControl:
-  process(memBRead, tOpcode_sel, sp_load, sp_popsp, exr.decode_load_sp,decr)
+  process(rom_wb_dat_i, tOpcode_sel, sp_load, sp_popsp, exr.decode_load_sp,decr)
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
   begin
@@ -369,16 +365,16 @@ begin
 
       case (tOpcode_sel) is
 
-            when 0 => tOpcode := std_logic_vector(memBRead(31 downto 24));
+            when 0 => tOpcode := std_logic_vector(rom_wb_dat_i(31 downto 24));
 
-            when 1 => tOpcode := std_logic_vector(memBRead(23 downto 16));
+            when 1 => tOpcode := std_logic_vector(rom_wb_dat_i(23 downto 16));
 
-            when 2 => tOpcode := std_logic_vector(memBRead(15 downto 8));
+            when 2 => tOpcode := std_logic_vector(rom_wb_dat_i(15 downto 8));
 
-            when 3 => tOpcode := std_logic_vector(memBRead(7 downto 0));
+            when 3 => tOpcode := std_logic_vector(rom_wb_dat_i(7 downto 0));
 
             when others =>
-              tOpcode := std_logic_vector(memBRead(7 downto 0));
+              tOpcode := std_logic_vector(rom_wb_dat_i(7 downto 0));
        end case;
 
     sampledOpcode <= tOpcode;
@@ -511,11 +507,13 @@ begin
   sp_popsp <= prefr.spnext + 1;
   sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed
 
-  memBEnable <= not decode_freeze;
+  rom_wb_cyc_o <= '1';
+  rom_wb_stb_o <= not decode_freeze;
 
   process(decr, jump_address, decode_jump, wb_clk_i, sp_load,
           sp_pushsp,sp_popsp,sampledDecodedOpcode,sampledOpcode,exr.decode_load_sp,decode_freeze,
-          pcnext, wb_rst_i, sampledStackOperation, decode_force_pop, sampledspOffset
+          pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, decode_force_pop, sampledspOffset,
+          jump_q
           )
     variable w: decoderegs_type;
     variable inject_pop: std_logic;
@@ -525,21 +523,22 @@ begin
 
     pcnext <= decr.fetchpc + 1;
 
-    memBAddr <= pc_to_memaddr(w.fetchpc);
+    rom_wb_adr_o <= std_logic_vector(pc_to_memaddr(w.fetchpc));
 
     inject_pop := '0';
-    if decr.validmem='1' then
+    if rom_wb_ack_i='1' and jump_q='0' then
     case sampledDecodedOpcode is
       when decoded_Store | decoded_Neqbranch =>
         inject_pop := '1';
       when others =>
     end case;
     end if;
+    rom_wb_cti_o <= CTI_CYCLE_INCRADDR;
 
     if wb_rst_i='1' then
       w.pc     := (others => '0');
       w.valid  := '0';
-      w.validmem  := '0';
+      --w.validmem  := '0';
       w.fetchpc := (others => '0');
       w.force_pop := '0';
     else
@@ -553,17 +552,19 @@ begin
         w.force_pop := '0';
 
         if decode_jump='1' then
-          w.validmem := '0';
+          --w.validmem := '0';
           w.fetchpc := jump_address;
           w.valid := '0';
+          rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
         else
-          w.validmem := '1';
-          w.valid := decr.validmem;
+          --rom_wb_cti_o <= CTI_CYCLE_INCADDR;
+          --w.validmem := '1';
+          w.valid := rom_wb_ack_i and not jump_q;--decr.validmem;
           
           w.pcint := decr.fetchpc;
           w.pc := decr.pcint;
 
-          if inject_pop='1' and decr.validmem='1' then
+          if inject_pop='1' and rom_wb_ack_i='1' and jump_q='0' then
             w.force_pop:='1';
           end if;
 
@@ -578,7 +579,7 @@ begin
         if decode_jump='1' then
           w.idim := '0';
         else
-          if decr.validmem='1' and decr.force_pop='0' then
+          if rom_wb_ack_i='1' and jump_q='0' and decr.force_pop='0' then
             w.idim := sampledOpcode(7);
           end if;
         end if;
@@ -589,6 +590,7 @@ begin
 
     if rising_edge(wb_clk_i) then
       decr <= w;
+       jump_q <= decode_jump;
     end if;
 
   end process;
@@ -675,7 +677,7 @@ begin
         trace_topOfStackB <= std_logic_vector( nos );
   end process;
 
-  memAAddr <= exr.tos(maxAddrBit downto minAddrBit);
+  --memAAddr <= exr.tos(maxAddrBit downto minAddrBit);
 
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
@@ -683,18 +685,13 @@ begin
   do_interrupt <= '1' when wb_inta_i='1' and exr.idim='0' and exr.inInterrupt='0' and prefr.valid='1' else '0';
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
-          wb_ack_i, memARead, wb_dat_i, do_interrupt,exr, prefr, nos)
+          wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
     variable operandb: unsigned(31 downto 0);
   begin
 
     w := exr;
-
-    memBWrite <= (others => '0');
-    memBWriteEnable <= '0';
-    memAWriteMask <= (others => '1');
-    memBWriteMask <= (others => '1');
 
     stack_b_writeenable <= '0';
     stack_a_enable <= '1';
@@ -718,13 +715,9 @@ begin
     stack_a_writeenable <= '0';
     w.wroteback:='0';
 
-    memAEnable <= '1'; -- TODO: optimize this for power. (move up in the pipeline)
-
     stack_b_writeenable <= '0';
     stack_a_write <= std_logic_vector(exr.tos);
     decode_force_pop<='0';
-
-    doInterrupt <= '0';
 
     spOffset(4):=not prefr.opcode(4);
     spOffset(3 downto 0) := unsigned(prefr.opcode(3 downto 0));
@@ -744,8 +737,8 @@ begin
     nos <= operandb;
     wb_dat_o <= std_logic_vector( nos );
 
-    memAWrite<=nos;
-    memAWriteEnable<='0';
+    --memAWrite<=nos;
+    --  memAWriteEnable<='0';
 
     w.jaddr := prefr.pc + exr.tos(maxAddrBit downto 0);
 
@@ -939,39 +932,35 @@ begin
               --w.state := State_Resync2;
               w.state := State_Execute;
 
-            elsif exr.tos(maxAddrBitIncIO)='1' then
+            else
 
-              decode_freeze<='1';
               wb_we_o    <='1';
               wb_cyc_o_i <='1';
               wb_stb_o   <='1';
 
-              -- Hold stack values
-              stack_a_enable<='0';
-              stack_b_enable<='0';
-              w.state := State_Store;
-            else
-              memAWriteEnable<='1';
-              --decode_freeze<='1';
-              --decode_force_pop<='1';
-              --w.state := State_Resync2;
-              w.state := State_Execute;
+              -- Hold stack values, if we're to delay
+              --if wb_ack_i='0' then
+                decode_freeze<='1';
+                stack_a_enable<='0';
+                stack_b_enable<='0';
+                w.state := State_Store;
+              --end if;
+
             end if;
 
           when Decoded_Load | Decoded_Loadb =>
 
             decode_freeze<='1';
+            w.bytesel := exr.tos(1 downto 0); -- Byte select
 
-            if exr.tos(maxAddrBitIncIO)='1' then
+            if exr.tos(wordSize-1)='1' then
+              stack_a_addr<=std_logic_vector(exr.tos(10 downto 2));
+              w.state := State_LoadStack;
+            else 
               wb_we_o <= '0';
               wb_cyc_o_i<='1';
               wb_stb_o<='1';
               w.state := State_Load;
-            elsif exr.tos(wordSize-1)='1' then
-              stack_a_addr<=std_logic_vector(exr.tos(10 downto 2));
-              w.state := State_LoadStack;
-            else
-              w.state := State_LoadMemory;
             end if;
 
           when Decoded_PopSP =>
@@ -1031,62 +1020,53 @@ begin
 
       when State_LoadSP =>
 
+      when State_Loadb =>
+        w.tos(wordSize-1 downto 8) := (others => '0');
+        case exr.bytesel is
+          when "11" =>
+            w.tos(7 downto 0) := unsigned(exr.tos(7 downto 0));
+          when "10" =>
+            w.tos(7 downto 0) := unsigned(exr.tos(15 downto 8));
+          when "01" =>
+            w.tos(7 downto 0) := unsigned(exr.tos(23 downto 16));
+          when "00" =>
+            w.tos(7 downto 0) := unsigned(exr.tos(31 downto 24));
+          when others =>
+            null;
+        end case;
+        w.state := State_Execute;
+
       when State_Load =>
 
           wb_we_o <='0';
           wb_cyc_o_i<='1';
           wb_stb_o<='1';
+
           if wb_ack_i='0' then
             decode_freeze<='1'; -- Don't push ops while busy
           else
+            --wb_cyc_o_i<='0';
+            --wb_stb_o<='0';
             w.tos := unsigned(wb_dat_i);
-            w.state := State_Execute;
+
+            if prefr.decodedOpcode=Decoded_Loadb then
+              decode_freeze<='1'; -- Don't push ops while busy
+              w.state := State_Loadb;
+            else
+              w.state := State_Execute;
+            end if;
+
           end if;
 
       when State_LoadStack =>
+        w.tos := unsigned(stack_a_read);
 
         if prefr.decodedOpcode=Decoded_Loadb then
-          w.tos(wordSize-1 downto 8) := (others => '0');
-          case exr.tos(1 downto 0) is
-            when "11" =>
-              w.tos(7 downto 0) := unsigned(stack_a_read(7 downto 0));
-            when "10" =>
-              w.tos(7 downto 0) := unsigned(stack_a_read(15 downto 8));
-            when "01" =>
-              w.tos(7 downto 0) := unsigned(stack_a_read(23 downto 16));
-            when "00" =>
-              w.tos(7 downto 0) := unsigned(stack_a_read(31 downto 24));
-            when others =>
-              null;
-          end case;
+          decode_freeze<='1';
+          w.state:=State_Loadb;
         else
-          w.tos := unsigned(stack_a_read);
+          w.state := State_Execute;
         end if;
-
-        w.state := State_Execute;
-
-      when State_LoadMemory =>
-
-        if prefr.decodedOpcode=Decoded_Loadb then
-          w.tos(wordSize-1 downto 8) := (others => '0');
-          case exr.tos(1 downto 0) is
-            when "11" =>
-              w.tos(7 downto 0) := memARead(7 downto 0);
-            when "10" =>
-              w.tos(7 downto 0) := memARead(15 downto 8);
-            when "01" =>
-              w.tos(7 downto 0) := memARead(23 downto 16);
-            when "00" =>
-              w.tos(7 downto 0) := memARead(31 downto 24);
-            when others =>
-              null;
-          end case;
-
-        else
-          w.tos := memARead;
-        end if;
-
-        w.state := State_Execute;
 
       when others =>
          null;

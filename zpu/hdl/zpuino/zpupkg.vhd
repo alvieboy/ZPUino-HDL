@@ -57,26 +57,6 @@ package zpupkg is
 	constant	stack_bits		: integer := 5; 
 	constant	stack_size		: integer := 2**stack_bits; 
 
-
-	component dualport_ram is
-	port (clk : in std_logic;
-		memAWriteEnable : in std_logic;
-    memAWriteMask : in std_logic_vector(3 downto 0);
-		memAAddr : in std_logic_vector(maxAddrBit downto minAddrBit);
-		memAWrite : in std_logic_vector(wordSize-1 downto 0);
-		memARead : out std_logic_vector(wordSize-1 downto 0);
-		memBWriteEnable : in std_logic;
-    memAEnable : in std_logic;
-    memBEnable : in std_logic;
-    memBWriteMask : in std_logic_vector(3 downto 0);
-		memBAddr : in std_logic_vector(maxAddrBit downto minAddrBit);
-		memBWrite : in std_logic_vector(wordSize-1 downto 0);
-		memBRead : out std_logic_vector(wordSize-1 downto 0);
-    memErr: out std_logic
-    );
-	end component;
-	
-
 	component dram is
 		port (clk : in std_logic;
 			areset : in std_logic;
@@ -134,6 +114,15 @@ package zpupkg is
     stack_a_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
     stack_b_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
     stack_clk:      out std_logic;
+
+    -- ROM wb interface
+
+    rom_wb_ack_i:       in std_logic;
+    rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_cyc_o:       out std_logic;
+    rom_wb_stb_o:       out std_logic;
+    rom_wb_cti_o:       out std_logic_vector(2 downto 0);
 
     dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
     dbg_opcode:     out std_logic_vector(7 downto 0);
