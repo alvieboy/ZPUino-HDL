@@ -2,7 +2,7 @@
 #include <stdarg.h>
 
 //#undef DEBUG_SERIAL
-// #define SIMULATION
+//#define SIMULATION
 //#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
@@ -34,7 +34,7 @@
 #define BOOTLOADER_MAX_CMD 0x0A
 
 #ifdef SIMULATION
-# define BOOTLOADER_WAIT_MILLIS 1
+# define BOOTLOADER_WAIT_MILLIS 10
 #else
 # define BOOTLOADER_WAIT_MILLIS 1000
 #endif

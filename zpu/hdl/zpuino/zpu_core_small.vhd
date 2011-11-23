@@ -127,6 +127,7 @@ State_WaitSPB,
 State_Pop
 );
 
+--subtype DecodedOpcodeType is std_logic_vector(32 downto 0);
 type DecodedOpcodeType is
 (
 Decoded_Nop,
@@ -152,7 +153,7 @@ Decoded_Not,
 Decoded_Flip,
 Decoded_Store,
 Decoded_PopSP,
---Decoded_Interrupt,
+Decoded_Interrupt,
 Decoded_Neqbranch,
 Decoded_Eq,
 Decoded_Storeb,
@@ -164,10 +165,14 @@ Decoded_Loadb,
 Decoded_Mult
 );
 
-
+attribute SYN_ENCODING: string;
+attribute SYN_ENCODING of DecodedOpcodeType: type is "onehot";
 
 signal sampledOpcode: std_logic_vector(OpCode_Size-1 downto 0);
 signal sampledDecodedOpcode : DecodedOpcodeType;
+
+attribute SYN_ENCODING of sampledDecodedOpcode: signal is "onehot";
+
 signal pcnext:     unsigned(maxAddrBit downto 0);
 
 constant spMaxBit: integer := 10;
@@ -252,6 +257,7 @@ signal prefr: prefetchregs_type;
 signal sampledStackBAddress: std_logic_vector(stackSize_bits-1+2 downto 2);
 
 signal decr: decoderegs_type;
+
 signal sp_pushsp, sp_popsp,  sp_load:  unsigned(spMaxBit downto 2);
 
 signal decode_freeze: std_logic;
@@ -387,8 +393,10 @@ begin
     if decr.force_pop='1' then
       sampledDecodedOpcode <= Decoded_Pop;
       sampledStackOperation <= Stack_Pop;
+    elsif do_interrupt='1' then
+      sampledDecodedOpcode <= Decoded_Interrupt;
+      sampledStackOperation <= Stack_Push;
     else
-
     if (tOpcode(7 downto 7)=OpCode_Im) then
       sampledDecodedOpcode<=Decoded_Im;
 
@@ -682,7 +690,10 @@ begin
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
 
-  do_interrupt <= '1' when wb_inta_i='1' and exr.idim='0' and exr.inInterrupt='0' and prefr.valid='1' else '0';
+  do_interrupt <= '1' when wb_inta_i='1' and prefr.idim='0'
+    and exr.inInterrupt='0'
+    and prefr.valid='1'
+    else '0';
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
           wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos)
@@ -762,7 +773,9 @@ begin
 
         begin_inst<=not prefr.force_pop;
 
-        if do_interrupt='1' then
+        case prefr.decodedOpcode is
+
+          when Decoded_Interrupt =>
 
            w.inInterrupt := '1';
            jump_address <= to_unsigned(32, maxAddrBit+1);
@@ -775,10 +788,10 @@ begin
 
            w.tos := (others => '0');
            w.tos(maxAddrBit downto 0) := prefr.pc;
+           stack_b_enable<='0';
+           w.state := State_WaitSPB;
 
-        else
 
-        case prefr.decodedOpcode is
           when Decoded_Im =>
 
             w.idim := '1';
@@ -984,7 +997,6 @@ begin
             w.break := '1';
 
         end case;
-        end if; -- interrupt
         end if; -- valid
 
       when State_WaitSP =>

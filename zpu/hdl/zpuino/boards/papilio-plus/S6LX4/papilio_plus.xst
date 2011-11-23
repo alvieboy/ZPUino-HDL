@@ -22,7 +22,7 @@ run
 -case Maintain
 -slice_utilization_ratio 100
 -bram_utilization_ratio 100
--fsm_extract YES -fsm_encoding Auto
+-fsm_extract No -fsm_encoding User
 -safe_implementation No
 -fsm_style LUT
 -ram_extract Yes
