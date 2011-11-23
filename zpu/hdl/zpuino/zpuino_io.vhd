@@ -149,7 +149,7 @@ begin
             io_we <= wb_we_i;
           elsif io_device_ack='1' then
             io_stb<='0';
-            io_we<='0'; -- safe side
+            --io_we<='0'; -- safe side
             -- How to keep cyc ????
           end if;
 

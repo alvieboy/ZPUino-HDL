@@ -127,51 +127,45 @@ State_WaitSPB,
 State_Pop
 );
 
---subtype DecodedOpcodeType is std_logic_vector(32 downto 0);
-type DecodedOpcodeType is
-(
-Decoded_Nop,
-Decoded_Idle,
-Decoded_Im,
-Decoded_LoadSP,
-Decoded_Dup,
-Decoded_DupStackB,
-Decoded_StoreSP,
-Decoded_Pop,
-Decoded_PopDown,
-Decoded_AddSP,
-Decoded_Shift,
-Decoded_Emulate,
-Decoded_Break,
-Decoded_PushSP,
-Decoded_PopPC,
-Decoded_Add,
-Decoded_Or,
-Decoded_And,
-Decoded_Load,
-Decoded_Not,
-Decoded_Flip,
-Decoded_Store,
-Decoded_PopSP,
-Decoded_Interrupt,
-Decoded_Neqbranch,
-Decoded_Eq,
-Decoded_Storeb,
-Decoded_Storeh,
-Decoded_Ulessthan,
-Decoded_Ashiftleft,
-Decoded_Ashiftright,
-Decoded_Loadb,
-Decoded_Mult
-);
-
-attribute SYN_ENCODING: string;
-attribute SYN_ENCODING of DecodedOpcodeType: type is "onehot";
+subtype DecodedOpcodeType is std_logic_vector(32 downto 0);
+--type DecodedOpcodeType is
+--(
+constant Decoded_Nop:         DecodedOpcodeType := "000000000000000000000000000000001";
+constant Decoded_Idle:        DecodedOpcodeType := "000000000000000000000000000000010";
+constant Decoded_Im:          DecodedOpcodeType := "000000000000000000000000000000100";
+constant Decoded_LoadSP:      DecodedOpcodeType := "000000000000000000000000000001000";
+constant Decoded_Dup:         DecodedOpcodeType := "000000000000000000000000000010000";
+constant Decoded_DupStackB:   DecodedOpcodeType := "000000000000000000000000000100000";
+constant Decoded_StoreSP:     DecodedOpcodeType := "000000000000000000000000001000000";
+constant Decoded_Pop:         DecodedOpcodeType := "000000000000000000000000010000000";
+constant Decoded_PopDown:     DecodedOpcodeType := "000000000000000000000000100000000";
+constant Decoded_AddSP:       DecodedOpcodeType := "000000000000000000000001000000000";
+constant Decoded_Shift:       DecodedOpcodeType := "000000000000000000000010000000000";
+constant Decoded_Emulate:     DecodedOpcodeType := "000000000000000000000100000000000";
+constant Decoded_Break:       DecodedOpcodeType := "000000000000000000001000000000000";
+constant Decoded_PushSP:      DecodedOpcodeType := "000000000000000000010000000000000";
+constant Decoded_PopPC:       DecodedOpcodeType := "000000000000000000100000000000000";
+constant Decoded_Add:         DecodedOpcodeType := "000000000000000001000000000000000";
+constant Decoded_Or:          DecodedOpcodeType := "000000000000000010000000000000000";
+constant Decoded_And:         DecodedOpcodeType := "000000000000000100000000000000000";
+constant Decoded_Load:        DecodedOpcodeType := "000000000000001000000000000000000";
+constant Decoded_Not:         DecodedOpcodeType := "000000000000010000000000000000000";
+constant Decoded_Flip:        DecodedOpcodeType := "000000000000100000000000000000000";
+constant Decoded_Store:       DecodedOpcodeType := "000000000001000000000000000000000";
+constant Decoded_PopSP:       DecodedOpcodeType := "000000000010000000000000000000000";
+constant Decoded_Interrupt:   DecodedOpcodeType := "000000000100000000000000000000000";
+constant Decoded_Neqbranch:   DecodedOpcodeType := "000000001000000000000000000000000";
+constant Decoded_Eq:          DecodedOpcodeType := "000000010000000000000000000000000";
+constant Decoded_Storeb:      DecodedOpcodeType := "000000100000000000000000000000000";
+constant Decoded_Storeh:      DecodedOpcodeType := "000001000000000000000000000000000";
+constant Decoded_Ulessthan:   DecodedOpcodeType := "000010000000000000000000000000000";
+constant Decoded_Ashiftleft:  DecodedOpcodeType := "000100000000000000000000000000000";
+constant Decoded_Ashiftright: DecodedOpcodeType := "001000000000000000000000000000000";
+constant Decoded_Loadb:       DecodedOpcodeType := "010000000000000000000000000000000";
+constant Decoded_Mult:        DecodedOpcodeType := "100000000000000000000000000000000";
 
 signal sampledOpcode: std_logic_vector(OpCode_Size-1 downto 0);
 signal sampledDecodedOpcode : DecodedOpcodeType;
-
-attribute SYN_ENCODING of sampledDecodedOpcode: signal is "onehot";
 
 signal pcnext:     unsigned(maxAddrBit downto 0);
 
