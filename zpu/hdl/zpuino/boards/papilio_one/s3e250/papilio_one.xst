@@ -16,7 +16,7 @@ run
 -glob_opt AllClockNets
 -read_cores YES
 -write_timing_constraints YES
--cross_clock_analysis NO
+-cross_clock_analysis Yes
 -hierarchy_separator /
 -bus_delimiter <>
 -case Maintain

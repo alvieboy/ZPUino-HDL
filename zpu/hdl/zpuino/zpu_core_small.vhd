@@ -244,6 +244,7 @@ type decoderegs_type is record
   --validmem:       std_logic;
   decodedOpcode:  DecodedOpcodeType;
   tosSource:      tosSourceType;
+  opWillFreeze:   std_logic; -- '1' if we know in advance this opcode will freeze pipeline
   opcode:         std_logic_vector(OpCode_Size-1 downto 0);
   pc:             unsigned(maxAddrBit downto 0);
   fetchpc:        unsigned(maxAddrBit downto 0);
@@ -266,12 +267,14 @@ type prefetchregs_type is record
   fetchpc:        unsigned(maxAddrBit downto 0);
   idim:           std_logic;
   load:           std_logic;
+  opWillFreeze:   std_logic;
   force_pop,force_pop_q:      std_logic; -- Just for trace
 end record;
 
 signal prefr: prefetchregs_type;
 
 signal sampledStackBAddress: std_logic_vector(stackSize_bits-1+2 downto 2);
+signal sampledOpWillFreeze: std_logic;
 
 signal decr: decoderegs_type;
 
@@ -374,6 +377,7 @@ begin
     sampledOpcode <= tOpcode;
     sampledStackOperation <= Stack_Same;
     sampledTosSource <= Tos_Source_None;
+    sampledOpWillFreeze <= '0';
 
     localspOffset(4):=not tOpcode(4);
     localspOffset(3 downto 0) := unsigned(tOpcode(3 downto 0));
@@ -410,6 +414,7 @@ begin
         sampledTosSource <= Tos_Source_None;
       else
         sampledDecodedOpcode<=Decoded_StoreSP;
+        sampledOpWillFreeze<='1';
         sampledTosSource <= Tos_Source_StackB;
       end if;
     elsif (tOpcode(7 downto 5)=OpCode_LoadSP) then
@@ -439,6 +444,7 @@ begin
         if (tOpcode(5 downto 0)=OpCode_Loadb) then
           sampledStackOperation<=Stack_Same;
           sampledDecodedOpcode<=Decoded_Loadb;
+          sampledOpWillFreeze<='1';
         elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
           sampledStackOperation<=Stack_Pop;
           sampledDecodedOpcode<=Decoded_Neqbranch;
@@ -484,6 +490,7 @@ begin
           sampledTosSource <= Tos_Source_And;
         when OpCode_Load =>
           sampledDecodedOpcode<=Decoded_Load;
+          sampledOpWillFreeze<='1';
           --sampledTosSource <= Tos_Source_
         when OpCode_Not =>
           sampledDecodedOpcode<=Decoded_Not;
@@ -494,8 +501,10 @@ begin
         when OpCode_Store =>
           sampledStackOperation <= Stack_Pop;   -- Dual pop, actually
           sampledDecodedOpcode<=Decoded_Store;
+          sampledOpWillFreeze<='1'; -- Not needed for stack access, need improvement
         when OpCode_PopSP =>
           sampledDecodedOpcode<=Decoded_PopSP;
+          sampledOpWillFreeze<='1';
         when others =>
           sampledDecodedOpcode<=Decoded_Nop;
       end case;
@@ -590,6 +599,7 @@ begin
         end if;
 
         w.opcode := sampledOpcode;
+        w.opWillFreeze := sampledOpWillFreeze;
         w.decodedOpcode := sampledDecodedOpcode;
         w.stackOperation := sampledStackOperation;
         w.spOffset := sampledspOffset;
@@ -901,31 +911,6 @@ begin
             stack_a_writeenable<='1';
             w.wroteback:='1';
 
-          when Decoded_Add =>
-
- 
-
-          when Decoded_And =>
-
-
-          when Decoded_Eq =>
-
-
---          when Decoded_Ulessthan =>
---
---            w.tos := (others => '0');
---            if exr.tos < operandb then
---              w.tos(0) := '1';
---            end if;
-
-          when Decoded_Or =>
-
-
-          when Decoded_Not =>
-
-
-          when Decoded_Flip =>
-
           when Decoded_LoadSP =>
 
             stack_a_writeenable <= '1';
@@ -933,7 +918,6 @@ begin
 
           when Decoded_DupStackB =>
 
-            --w.tos := operandb;
             stack_a_writeenable <= '1';
             w.wroteback:='1';
 
@@ -945,9 +929,6 @@ begin
           when Decoded_AddSP =>
 
             stack_a_writeenable <= '1';
-
-          when Decoded_Shift =>
-            
 
           when Decoded_StoreSP =>
 
@@ -972,9 +953,6 @@ begin
             end if;
             w.jumpdly := '0';
 
-
-            --w.tos := operandb;
-
           when Decoded_Store =>
 
             if exr.tos(31)='1' then
@@ -983,9 +961,7 @@ begin
               stack_a_writeenable<='1';
               --decode_freeze<='1';
 
-              --w.state := State_Resync2;
-              w.state := State_Execute;
-
+              --w.state := State_WaitSPB;
             else
 
               wb_we_o    <='1';
@@ -1035,7 +1011,7 @@ begin
             end if;
 
           when others =>
-            w.break := '1';
+          --  w.break := '1';
 
         end case;
         end if; -- valid
