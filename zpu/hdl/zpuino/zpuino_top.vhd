@@ -50,11 +50,26 @@ entity zpuino_top is
     -- Connection to board IO module
 
     slot_cyc:   out slot_std_logic_type;
-    slot_we:    out slot_std_logic_type;
-    slot_stb:   out slot_std_logic_type;
-    slot_read:  in slot_cpuword_type;
-    slot_write: out slot_cpuword_type;
-    slot_address:  out slot_address_type;
+    slot_we:    out std_logic;
+    slot_stb:   out std_logic;
+    slot_0_read:      in cpuword_type := (others => DontCareValue);
+    slot_1_read:      in cpuword_type := (others => DontCareValue);
+    slot_2_read:      in cpuword_type := (others => DontCareValue);
+    slot_3_read:      in cpuword_type := (others => DontCareValue);
+    slot_4_read:      in cpuword_type := (others => DontCareValue);
+    slot_5_read:      in cpuword_type := (others => DontCareValue);
+    slot_6_read:      in cpuword_type := (others => DontCareValue);
+    slot_7_read:      in cpuword_type := (others => DontCareValue);
+    slot_8_read:      in cpuword_type := (others => DontCareValue);
+    slot_9_read:      in cpuword_type := (others => DontCareValue);
+    slot_10_read:      in cpuword_type := (others => DontCareValue);
+    slot_11_read:      in cpuword_type := (others => DontCareValue);
+    slot_12_read:      in cpuword_type := (others => DontCareValue);
+    slot_13_read:      in cpuword_type := (others => DontCareValue);
+    slot_14_read:      in cpuword_type := (others => DontCareValue);
+    slot_15_read:      in cpuword_type := (others => DontCareValue);
+    slot_write: out std_logic_vector(wordSize-1 downto 0);
+    slot_address:  out address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type
 
@@ -120,7 +135,22 @@ begin
       slot_cyc      => slot_cyc,
       slot_we       => slot_we,
       slot_stb      => slot_stb,
-      slot_read     => slot_read,
+      slot_0_read     => slot_0_read,
+      slot_1_read     => slot_1_read,
+      slot_2_read     => slot_2_read,
+      slot_3_read     => slot_3_read,
+      slot_4_read     => slot_4_read,
+      slot_5_read     => slot_5_read,
+      slot_6_read     => slot_6_read,
+      slot_7_read     => slot_7_read,
+      slot_8_read     => slot_8_read,
+      slot_9_read     => slot_9_read,
+      slot_10_read     => slot_10_read,
+      slot_11_read     => slot_11_read,
+      slot_12_read     => slot_12_read,
+      slot_13_read     => slot_13_read,
+      slot_14_read     => slot_14_read,
+      slot_15_read     => slot_14_read,
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,

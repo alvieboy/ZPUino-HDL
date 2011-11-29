@@ -104,11 +104,11 @@ architecture behave of papilio_one_top is
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
-  signal slot_we:    slot_std_logic_type;
-  signal slot_stb:   slot_std_logic_type;
+  signal slot_we:    std_logic;
+  signal slot_stb:   std_logic;
   signal slot_read:  slot_cpuword_type;
-  signal slot_write: slot_cpuword_type;
-  signal slot_address:  slot_address_type;
+  signal slot_write: cpuword_type;
+  signal slot_address:  address_type;
   signal slot_ack:   slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
 
@@ -138,16 +138,16 @@ architecture behave of papilio_one_top is
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
 
   -- For busy-implementation
-  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
+--  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
+--  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
 
-  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal io_write: std_logic_vector(wordSize-1 downto 0);
-  signal io_cyc: std_logic;
-  signal io_stb: std_logic;
-  signal io_we: std_logic;
+--  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
+--  signal io_write: std_logic_vector(wordSize-1 downto 0);
+--  signal io_cyc: std_logic;
+--  signal io_stb: std_logic;
+--  signal io_we: std_logic;
 
-  signal io_device_ack: std_logic;
+--  signal io_device_ack: std_logic;
 
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
@@ -242,11 +242,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(0),
-    wb_dat_i     => slot_write(0),
-    wb_adr_i   => slot_address(0),
-    wb_we_i        => slot_we(0),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i      => slot_cyc(0),
-    wb_stb_i      => slot_stb(0),
+    wb_stb_i      => slot_stb,
     wb_ack_o      => slot_ack(0),
     wb_inta_o => slot_interrupt(0),
 
@@ -265,11 +265,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(1),
-    wb_dat_i     => slot_write(1),
-    wb_adr_i   => slot_address(1),
-    wb_we_i      => slot_we(1),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i      => slot_we,
     wb_cyc_i       => slot_cyc(1),
-    wb_stb_i       => slot_stb(1),
+    wb_stb_i       => slot_stb,
     wb_ack_o      => slot_ack(1),
 
     wb_inta_o => slot_interrupt(1),
@@ -291,11 +291,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(2),
-    wb_dat_i     => slot_write(2),
-    wb_adr_i   => slot_address(2),
-    wb_we_i        => slot_we(2),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i       => slot_cyc(2),
-    wb_stb_i       => slot_stb(2),
+    wb_stb_i       => slot_stb,
     wb_ack_o      => slot_ack(2),
     wb_inta_o => slot_interrupt(2),
 
@@ -318,11 +318,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(3),
-    wb_dat_i     => slot_write(3),
-    wb_adr_i   => slot_address(3),
-    wb_we_i        => slot_we(3),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(3),
-    wb_stb_i        => slot_stb(3),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(3),
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
@@ -346,11 +346,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(5),
-    wb_dat_i     => slot_write(5),
-    wb_adr_i   => slot_address(5),
-    wb_we_i        => slot_we(5),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(5),
-    wb_stb_i        => slot_stb(5),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5),
 
@@ -368,11 +368,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(6),
-    wb_dat_i     => slot_write(6),
-    wb_adr_i   => slot_address(6),
-    wb_we_i        => slot_we(6),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(6),
-    wb_stb_i        => slot_stb(6),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(6),
     wb_inta_o => slot_interrupt(6),
 
@@ -393,11 +393,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o     => slot_read(7),
-    wb_dat_i     => slot_write(7),
-    wb_adr_i   => slot_address(7),
-    wb_we_i     => slot_we(7),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i     => slot_we,
     wb_cyc_i        => slot_cyc(7),
-    wb_stb_i        => slot_stb(7),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(7),
     wb_inta_o => slot_interrupt(7)
   );
@@ -411,11 +411,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(8),
-    wb_dat_i     => slot_write(8),
-    wb_adr_i   => slot_address(8),
-    wb_we_i    => slot_we(8),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i    => slot_we,
     wb_cyc_i      => slot_cyc(8),
-    wb_stb_i      => slot_stb(8),
+    wb_stb_i      => slot_stb,
     wb_ack_o      => slot_ack(8),
     wb_inta_o =>  slot_interrupt(8)
   );
@@ -429,11 +429,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(9),
-    wb_dat_i     => slot_write(9),
-    wb_adr_i   => slot_address(9),
-    wb_we_i        => slot_we(9),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(9),
-    wb_stb_i        => slot_stb(9),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(9),
     wb_inta_o => slot_interrupt(9)
   );
@@ -447,11 +447,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(10),
-    wb_dat_i     => slot_write(10),
-    wb_adr_i   => slot_address(10),
-    wb_we_i        => slot_we(10),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(10),
-    wb_stb_i        => slot_stb(10),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(10),
     wb_inta_o => slot_interrupt(10)
   );
@@ -465,11 +465,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(11),
-    wb_dat_i     => slot_write(11),
-    wb_adr_i   => slot_address(11),
-    wb_we_i        => slot_we(11),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(11),
-    wb_stb_i        => slot_stb(11),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(11),
     wb_inta_o => slot_interrupt(11)
   );
@@ -483,11 +483,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(12),
-    wb_dat_i     => slot_write(12),
-    wb_adr_i   => slot_address(12),
-    wb_we_i        => slot_we(12),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(12),
-    wb_stb_i        => slot_stb(12),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(12),
     wb_inta_o => slot_interrupt(12)
   );
@@ -501,11 +501,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(13),
-    wb_dat_i     => slot_write(13),
-    wb_adr_i   => slot_address(13),
-    wb_we_i        => slot_we(13),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(13),
-    wb_stb_i        => slot_stb(13),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(13),
     wb_inta_o => slot_interrupt(13)
   );
@@ -519,11 +519,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(14),
-    wb_dat_i     => slot_write(14),
-    wb_adr_i   => slot_address(14),
-    wb_we_i        => slot_we(14),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(14),
-    wb_stb_i        => slot_stb(14),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(14),
     wb_inta_o => slot_interrupt(14)
   );
@@ -537,11 +537,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(15),
-    wb_dat_i     => slot_write(15),
-    wb_adr_i   => slot_address(15),
-    wb_we_i        => slot_we(15),
+    wb_dat_i     => slot_write,
+    wb_adr_i   => slot_address,
+    wb_we_i        => slot_we,
     wb_cyc_i        => slot_cyc(15),
-    wb_stb_i        => slot_stb(15),
+    wb_stb_i        => slot_stb,
     wb_ack_o      => slot_ack(15),
     wb_inta_o => slot_interrupt(15)
   );
