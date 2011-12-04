@@ -57,8 +57,9 @@ entity zpuino_top is
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
-    slot_interrupt: in slot_std_logic_type
+    slot_interrupt: in slot_std_logic_type;
 
+    dbg_reset:  out std_logic
   );
 end entity zpuino_top;
 
@@ -97,7 +98,10 @@ architecture behave of zpuino_top is
     dbg_sp:         in std_logic_vector(10 downto 2);
     dbg_brk:        in std_logic;
     dbg_stacka:     in std_logic_vector(wordSize-1 downto 0);
-    dbg_stackb:     in std_logic_vector(wordSize-1 downto 0)
+    dbg_stackb:     in std_logic_vector(wordSize-1 downto 0);
+    dbg_step:       out std_logic;
+    dbg_freeze:       out std_logic;
+    dbg_reset:       out std_logic
   );
   end component;
 
@@ -198,6 +202,8 @@ architecture behave of zpuino_top is
   signal dbg_brk:        std_logic;
   signal dbg_stacka:     std_logic_vector(wordSize-1 downto 0);
   signal dbg_stackb:     std_logic_vector(wordSize-1 downto 0);
+  signal dbg_step:       std_logic := '0';
+  signal dbg_freeze:     std_logic;
 
   signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
   signal stack_a_writeenable, stack_b_writeenable, stack_a_enable,stack_b_enable: std_logic;
@@ -267,8 +273,9 @@ begin
       dbg_sp        => dbg_sp,
       dbg_brk       => dbg_brk,
       dbg_stacka    => dbg_stacka,
-      dbg_stackb    => dbg_stackb
-
+      dbg_stackb    => dbg_stackb,
+      dbg_freeze    => dbg_freeze,
+      dbg_step      => dbg_step
     );
 
   stack: zpuino_stack
@@ -315,7 +322,10 @@ begin
       dbg_sp        => dbg_sp,
       dbg_brk       => dbg_brk,
       dbg_stacka    => dbg_stacka,
-      dbg_stackb    => dbg_stackb
+      dbg_stackb    => dbg_stackb,
+      dbg_freeze     => dbg_freeze,
+      dbg_step      => dbg_step,
+      dbg_reset     => dbg_reset
    );
 
 
@@ -391,6 +401,5 @@ begin
     s1_wb_stb_o   => io_stb,
     s1_wb_ack_i   => io_ack
   );
-
 
 end behave;

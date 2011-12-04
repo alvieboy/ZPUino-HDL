@@ -129,7 +129,10 @@ package zpupkg is
     dbg_sp:         out std_logic_vector(10 downto 2);
     dbg_brk:        out std_logic;
     dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
-    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0)
+    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0);
+    dbg_step:       in std_logic; -- async
+    dbg_freeze:     in std_logic -- async
+
 
   );
   end component zpu_core_small;

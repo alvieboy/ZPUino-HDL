@@ -66,7 +66,8 @@ package zpuinopkg is
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
-    slot_interrupt: in slot_std_logic_type
+    slot_interrupt: in slot_std_logic_type;
+    dbg_reset: out std_logic
 
   );
   end component zpuino_top;

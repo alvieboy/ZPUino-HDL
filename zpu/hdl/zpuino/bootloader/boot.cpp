@@ -3,7 +3,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-//#define VERBOSE_LOADER
+#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -147,7 +147,7 @@ void enableTimer()
 #ifdef SIMULATION
 	TMR0CMP = (CLK_FREQ/100000U)-1;
 #else
-	TMR0CMP = (CLK_FREQ/2000U)-1;
+	TMR0CMP = (CLK_FREQ/20000U)-1;
 #endif
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
@@ -295,8 +295,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	if (sketchsize>SPICODESIZE) {
 #ifdef VERBOSE_LOADER
 		printstring("Sketch too long");
-		printhexbyte((sketchsize>>8)&0xff);
-		printhexbyte((sketchsize)&0xff);
+		//printhexbyte((sketchsize>>8)&0xff);
+		//printhexbyte((sketchsize)&0xff);
 		printstring("\r\n");
 #endif
 		while(1) {}
@@ -342,9 +342,9 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	if (*board != BOARD_ID) {
 		printstring("BOARD ");
-		printhex(*board);
+		//printhex(*board);
 		printstring(" != ");
-		printhex(BOARD_ID);
+		//printhex(BOARD_ID);
 		while(1) {};
 	}
 
@@ -368,6 +368,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
+	outbyte('i');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -812,7 +813,7 @@ extern "C" int main(int argc,char**argv)
 	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
-	printstring("\r\nZPUINO bootloader\r\n");
+	printstring("\r\nZPUINO\r\n");
 #endif
 
 
