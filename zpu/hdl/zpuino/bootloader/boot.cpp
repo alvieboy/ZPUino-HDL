@@ -4,6 +4,7 @@
 //#undef DEBUG_SERIAL
 //#define SIMULATION
 //#define VERBOSE_LOADER
+//#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -163,16 +164,26 @@ unsigned int inbyte()
 		}
 
 #endif
+
+#ifdef BOOT_IMMEDIATLY
+		spi_copy();
+#else
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
 			spi_copy();
 		}
+#endif
+
 	}
 }
 
 void enableTimer()
 {
+#ifdef BOOT_IMMEDIATLY
+	return; // TEST
+#endif
+
 #ifdef SIMULATION
 	TMR0CMP = (CLK_FREQ/100000U)-1;
 #else
