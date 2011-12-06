@@ -73,8 +73,8 @@ entity zpu_core_small is
     stack_a_enable:       out std_logic;
     stack_b_writeenable:  out std_logic;
     stack_b_enable:       out std_logic;
-    stack_a_addr:         out std_logic_vector(stackSize_bits-1 downto 0);  -- Helps debugging
-    stack_b_addr:         out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_a_addr:         out std_logic_vector(stackSize_bits+1 downto 2);
+    stack_b_addr:         out std_logic_vector(stackSize_bits+1 downto 2);
     stack_clk:            out std_logic;
 
     -- ROM wb interface
@@ -111,7 +111,6 @@ component pulse is
   );
 end component;
 
-
 signal begin_inst:          std_logic;
 signal trace_opcode:        std_logic_vector(7 downto 0);
 signal trace_pc:            std_logic_vector(maxAddrBitIncIO downto 0);
@@ -139,7 +138,6 @@ State_WaitSPB,
 State_Pop
 );
 
---subtype DecodedOpcodeType is std_logic_vector(32 downto 0);
 type DecodedOpcodeType is
 (
 Decoded_Nop,
@@ -153,6 +151,7 @@ Decoded_StoreSP,
 Decoded_Pop,
 Decoded_PopDown,
 Decoded_AddSP,
+Decoded_AddStackB,
 Decoded_Shift,
 Decoded_Emulate,
 Decoded_Break,
@@ -191,9 +190,6 @@ type zpuregs is record
   inInterrupt:std_logic;
   tos:        unsigned(wordSize-1 downto 0);
   state:      State_Type;
-  --wroteback: std_logic;
-  --deode_load_sp: std_logic;
-  freeze_on_resync: std_logic;
   jumpdly: std_logic;
   jaddr:      unsigned(maxAddrBit downto 0);
   bytesel:  unsigned(1 downto 0);
@@ -208,7 +204,6 @@ constant minimal_implementation: boolean := true;
 subtype index is integer range 0 to 3;
 
 signal tOpcode_sel : index;
---signal inInterrupt : std_logic;
 
 function pc_to_cpuword(pc: unsigned) return unsigned is
   variable r: unsigned(wordSize-1 downto 0);
@@ -251,6 +246,7 @@ type tosSourceType is
   Tos_Source_Flip,
   Tos_Source_LoadSP,
   Tos_Source_AddSP,
+  Tos_Source_AddStackB,
   Tos_Source_Shift,
   Tos_Source_None
 );
@@ -258,7 +254,6 @@ type tosSourceType is
 type decoderegs_type is record
 
   valid:          std_logic;
-  --validmem:       std_logic;
   decodedOpcode:  DecodedOpcodeType;
   tosSource:      tosSourceType;
   opWillFreeze:   std_logic; -- '1' if we know in advance this opcode will freeze pipeline
@@ -267,7 +262,6 @@ type decoderegs_type is record
   fetchpc:        unsigned(maxAddrBit downto 0);
   pcint:          unsigned(maxAddrBit downto 0);
   idim:           std_logic;
-  --force_pop:      std_logic;
   stackOperation: stackChangeType;
   spOffset:       unsigned(4 downto 0);
 
@@ -285,7 +279,7 @@ type prefetchregs_type is record
   idim:           std_logic;
   load:           std_logic;
   opWillFreeze:   std_logic;
-  --force_pop,force_pop_q:      std_logic; -- Just for trace
+  recompute_sp:   std_logic;
 end record;
 
 signal prefr: prefetchregs_type;
@@ -300,23 +294,8 @@ signal sp_pushsp, sp_popsp, sp_dualpopsp, sp_load:  unsigned(spMaxBit downto 2);
 signal decode_freeze: std_logic;
 signal decode_jump: std_logic;
 signal jump_address: unsigned(maxAddrBit downto 0);
-
---signal topOfStack_write: unsigned(wordSize-1 downto 0);
---signal topOfStack_read: unsigned(wordSize-1 downto 0);
-
---signal stack_b_addr_is_offset: std_logic;
-
 signal mult0,mult1,mult2,mult3: unsigned(31 downto 0);
 signal wb_cyc_o_i: std_logic;
-
-
---subtype AddrBitBRAM_range is natural range maxAddrBitBRAM downto minAddrBit;
---signal memAAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
---signal memAWrite_stdlogic : std_logic_vector(memAWrite'range);
---signal memARead_stdlogic  : std_logic_vector(memARead'range);
---signal memBAddr_stdlogic  : std_logic_vector(AddrBitBRAM_range);
---signal memBWrite_stdlogic : std_logic_vector(memBWrite'range);
---signal memBRead_stdlogic  : std_logic_vector(memBRead'range);
 
 signal do_interrupt: std_logic;
 
@@ -326,16 +305,15 @@ signal sampledspOffset: unsigned(4 downto 0);
 signal sampledTosSource: tosSourceType;
 signal nos: unsigned(wordSize-1 downto 0);
 signal wroteback_q: std_logic;
-signal move_sp: std_logic;
+
 -- Test
 
 signal jump_q : std_logic;
-
-
 signal freeze_all: std_logic := '0';
 signal single_step: std_logic := '0';
 
 begin
+
 
   -- Debug interface
 
@@ -369,10 +347,13 @@ begin
 
   tOpcode_sel <= to_integer(decr.pcint(minAddrBit-1 downto 0));
 
-  stack_b_addr <= sampledStackBAddress;--std_logic_vector(sp_load) when exr.decode_load_sp='1' else sampledStackBAddress;
+  stack_b_addr <= sampledStackBAddress;
 
-  -- move out calculation of the opcode to a seperate process
-  -- to make things a bit easier to read
+  do_interrupt <= '1' when wb_inta_i='1'
+    and exr.inInterrupt='0'
+    and prefr.valid='1'
+    else '0';
+
   decodeControl:
   process(rom_wb_dat_i, tOpcode_sel, sp_load, sp_popsp, decr,
     do_interrupt)
@@ -402,13 +383,7 @@ begin
     localspOffset(4):=not tOpcode(4);
     localspOffset(3 downto 0) := unsigned(tOpcode(3 downto 0));
 
-    -- If last issued operation was a STORE, and we are just finishing a jump...
-    --if decr.force_pop='1' then
-    --  sampledDecodedOpcode <= Decoded_Pop;
-    --  sampledStackOperation <= Stack_Pop;
-    --  sampledTosSource <= Tos_Source_StackB;
-    --els
-    if do_interrupt='1' then
+    if do_interrupt='1' and decr.idim='0' then
       sampledDecodedOpcode <= Decoded_Interrupt;
       sampledStackOperation <= Stack_Push;
       sampledTosSource <= Tos_Source_PC;
@@ -479,9 +454,10 @@ begin
       if localspOffset=0 then
         sampledDecodedOpcode<=Decoded_Shift;
         sampledTosSource <= Tos_Source_Shift;
+      elsif localspOffset=1 then
+        sampledDecodedOpcode<=Decoded_AddStackB;
+        sampledTosSource <= Tos_Source_AddStackB;
       else
-        -- TODO: include addspB
-        --sampledStackBAddress <= std_logic_vector(decr.spnext + localspOffset);
         sampledDecodedOpcode<=Decoded_AddSP;
         sampledTosSource <= Tos_Source_AddSP;
       end if;
@@ -512,7 +488,6 @@ begin
         when OpCode_Load =>
           sampledDecodedOpcode<=Decoded_Load;
           sampledOpWillFreeze<='1';
-          --sampledTosSource <= Tos_Source_
         when OpCode_Not =>
           sampledDecodedOpcode<=Decoded_Not;
           sampledTosSource <= Tos_Source_Not;
@@ -523,7 +498,6 @@ begin
           sampledStackOperation <= Stack_DualPop;   -- Dual pop, actually
           sampledDecodedOpcode<=Decoded_Store;
           sampledOpWillFreeze<='1'; -- Not needed for stack access, need improvement
-          --sampledTosSource <= Tos_Source_StackB;
         when OpCode_PopSP =>
           sampledDecodedOpcode<=Decoded_PopSP;
           sampledOpWillFreeze<='1';
@@ -550,13 +524,9 @@ begin
 --    end if;
 --  end process;
 
-  -- Decode/Fetch unit
 
-  
-  sp_pushsp <= prefr.spnext - 1;
-  sp_popsp <= prefr.spnext + 1;
-  sp_dualpopsp <= prefr.spnext + 2;
-  sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed
+
+  -- Decode/Fetch unit
 
   rom_wb_cyc_o <= '1';
   rom_wb_stb_o <= not decode_freeze;
@@ -594,7 +564,7 @@ begin
       --w.force_pop := '0';
     else
 
-      if decode_freeze='0' then
+      if (decode_freeze='0' or prefr.recompute_sp='1' ) and decode_load_sp='0' then
 
         --if inject_pop='0' then
           w.fetchpc := pcnext;
@@ -648,7 +618,12 @@ begin
   end process;
 
 
-  -- Prefetch
+  -- Prefetch/Load unit.
+  
+  sp_pushsp <= prefr.spnext - 1;
+  sp_popsp <= prefr.spnext + 1;
+  sp_dualpopsp <= prefr.spnext + 2;
+  sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed
 
   process(wb_clk_i, wb_rst_i, decr, prefr, sp_popsp, sp_pushsp, sp_dualpopsp, decode_freeze, decode_jump, sp_load,
           decode_load_sp)
@@ -663,8 +638,9 @@ begin
       w.sp := unsigned(spStart(10 downto 2));
       w.valid := '0';
       w.idim := '0';
+      w.recompute_sp:='0';
     else
-
+      w.recompute_sp:='0';
       if decr.valid='1' then
 
         -- Stack
@@ -672,9 +648,9 @@ begin
 
         if decode_load_sp='1' then
           w.spnext := sp_load;
-          w.sp := sp_load;--prefr.spnext;
+          w.recompute_sp := '1';
         else
-          if (decode_freeze='0' and decode_jump='0') or decode_load_sp='1' then
+          if (decode_freeze='0' and decode_jump='0') or prefr.recompute_sp='1' then
             case decr.stackOperation is
               when Stack_Push =>
                 w.spnext := sp_pushsp;
@@ -710,8 +686,6 @@ begin
         w.pc := decr.pc;
         w.fetchpc := decr.pcint;
         w.idim := decr.idim;
---        w.force_pop_q := decr.force_pop;
---        w.force_pop := prefr.force_pop_q;
       end if;
     end if;
 
@@ -732,15 +706,8 @@ begin
         trace_topOfStackB <= std_logic_vector( nos );
   end process;
 
-  --memAAddr <= exr.tos(maxAddrBit downto minAddrBit);
-
   -- IO Accesses
   wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
-
-  do_interrupt <= '1' when wb_inta_i='1' and prefr.idim='0'
-    and exr.inInterrupt='0'
-    and prefr.valid='1'
-    else '0';
 
   freeze_all <= dbg_freeze;
 
@@ -749,7 +716,6 @@ begin
           single_step, freeze_all, dbg_step, wroteback_q)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
-    variable operandb: unsigned(31 downto 0);
     variable instruction_executed: std_logic;
     variable wroteback: std_logic;
   begin
@@ -773,7 +739,6 @@ begin
 
     poppc_inst <= '0';
     begin_inst<='0';
-    --w.decode_load_sp := '0';
 
     stack_a_addr <= std_logic_vector( prefr.sp );
 
@@ -793,18 +758,13 @@ begin
     stack_b_write<=(others => DontCareValue);
 
     if wroteback_q='1' then
-      operandb := unsigned(stack_a_read);
+      nos <= unsigned(stack_a_read);
     else
-      operandb := unsigned(stack_b_read);
+      nos <= unsigned(stack_b_read);
     end if;
 
-    nos <= operandb;
     wb_dat_o <= std_logic_vector( nos );
 
-    w.freeze_on_resync := '0';
-
-    --memAWrite<=nos;
-    --  memAWriteEnable<='0';
     decode_load_sp <= '0';
 
     w.jaddr := prefr.pc + exr.tos(maxAddrBit downto 0);
@@ -813,6 +773,13 @@ begin
       when State_Start  =>
         decode_freeze <= '1';
         w.state := State_Resync1; 
+
+      when State_WaitSP =>
+        decode_freeze <= '1';
+
+        stack_a_enable<='1';
+        w.state := State_Resync1;
+        wroteback := '0';
 
       when State_Resync1 =>
         decode_freeze <= '1';
@@ -827,7 +794,7 @@ begin
         
         w.tos := unsigned(stack_a_read);
         instruction_executed := '1';
-        decode_freeze <= '1';
+        decode_freeze <= '0';
         wroteback := '0';
         stack_b_enable <= '1';
         w.state := State_Execute;
@@ -843,7 +810,7 @@ begin
         wroteback := '0';
         w.idim := '0';
 
-        begin_inst<='1';--not prefr.force_pop;
+        begin_inst<='1';
 
         instruction_executed := '1';
 
@@ -868,7 +835,7 @@ begin
             w.tos(6 downto 0) := unsigned(prefr.opcode(6 downto 0));
 
           when Tos_Source_StackB =>
-            w.tos := operandb;
+            w.tos := nos;
 
           when Tos_Source_SP =>
             w.tos := (others => '0');
@@ -876,17 +843,17 @@ begin
             w.tos(10 downto 2) := prefr.sp;
 
           when Tos_Source_Add =>
-            w.tos := exr.tos + operandb;
+            w.tos := exr.tos + nos;
 
           when Tos_Source_And =>
-            w.tos := exr.tos and operandb;
+            w.tos := exr.tos and nos;
 
           when Tos_Source_Or =>
-            w.tos := exr.tos or operandb;
+            w.tos := exr.tos or nos;
 
           when Tos_Source_Eq =>
             w.tos := (others => '0');
-            if operandb = exr.tos then
+            if nos = exr.tos then
               w.tos(0) := '1';
             end if;
 
@@ -904,6 +871,9 @@ begin
           when Tos_Source_AddSP =>
             w.tos := w.tos + unsigned(stack_b_read);
 
+          when Tos_Source_AddStackB =>
+            w.tos := w.tos + nos;
+
           when Tos_Source_Shift =>
             w.tos := exr.tos + exr.tos;
           when others =>
@@ -917,16 +887,11 @@ begin
            w.inInterrupt := '1';
            jump_address <= to_unsigned(32, maxAddrBit+1);
            decode_jump <= '1';
-
-           report "Interrupt" severity note;
-
            stack_a_writeenable<='1';
            wroteback:='1';
-
            stack_b_enable<='0';
            instruction_executed := '0';
            w.state := State_WaitSPB;
-
 
           when Decoded_Im0 =>
 
@@ -985,7 +950,7 @@ begin
 
           when Decoded_StoreSP =>
 
-            --w.tos := operandb;
+            --w.tos := nos;
             stack_a_writeenable <= '1';
             wroteback:='1';
             stack_a_addr <= std_logic_vector(prefr.sp + spOffset);
@@ -1014,10 +979,15 @@ begin
               stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
               stack_a_write <= std_logic_vector(nos);
               stack_a_writeenable<='1';
-              --decode_freeze<='1';
+              decode_freeze<='1';
 
               w.state := State_Resync1;
             else
+
+              --
+              -- NOTE: not returning here immediatly when wb_ack is set prevents implementation
+              -- from being full whishbone compatible.
+              --
 
               wb_we_o    <='1';
               wb_cyc_o_i <='1';
@@ -1025,9 +995,10 @@ begin
 
               -- Hold stack values, if we're to delay
               --if wb_ack_i='0' then
-                --decode_freeze<='1';
+                decode_freeze<='1';
                 stack_a_enable<='0';
                 stack_b_enable<='0';
+                wroteback := wroteback_q; -- Keep WB
 
                 instruction_executed := '0';
 
@@ -1042,6 +1013,8 @@ begin
             w.bytesel := exr.tos(1 downto 0); -- Byte select
 
             instruction_executed := '0';
+            wroteback := wroteback_q; -- Keep WB
+            stack_a_enable <= '0';
 
             if exr.tos(wordSize-1)='1' then
               stack_a_addr<=std_logic_vector(exr.tos(10 downto 2));
@@ -1055,48 +1028,38 @@ begin
 
           when Decoded_PopSP =>
 
-            --if prefr.sp /= exr.tos(spMaxBit downto 2) then
-              --decode_freeze <= '1';
-              decode_load_sp <= '1';
-
-              instruction_executed := '0';
-              --stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
-              --decode_freeze<='1';
-              w.state := State_Resync1;
-            --end if;
+            decode_freeze <= '1';
+            decode_load_sp <= '1';
+            instruction_executed := '0';
+            stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
+            w.state := State_Resync2;
 
           when Decoded_Break =>
+
             decode_freeze<='1';
             w.break := '1';
 
           when Decoded_Neqbranch =>
-            if operandb/=0 then
+            if nos/=0 then
               w.jumpdly := '1';
             end if;
 
           when others =>
-          --  w.break := '1';
 
         end case;
-       else -- freeze_all
-        --if single_step='0' then
-          decode_freeze<='1';
-          stack_a_enable<='0';
-          stack_b_enable<='0';
+      else -- freeze_all
+        --
+        -- Freeze the entire pipeline.
+        --
+        decode_freeze<='1';
+        stack_a_enable<='0';
+        stack_b_enable<='0';
 
        end if;
        end if; -- valid
 
-      when State_WaitSP =>
-
-        w.tos := unsigned(stack_a_read);
-        instruction_executed:='1';
-        w.state := State_Execute;
-        wroteback := '0';
-
       when State_WaitSPB =>
 
-        --stack_b_enable<='0';
         instruction_executed:='1';
         wroteback := '0';
         w.state := State_Execute;
@@ -1110,27 +1073,17 @@ begin
         stack_b_enable<='0';
 
         decode_freeze <= '1';
+        stack_a_addr <= std_logic_vector(prefr.spnext);
+        -- Keep writeback flag
+        wroteback := wroteback_q;
 
         if wb_ack_i='1' then
-          --w.state := State_Resync2;
           stack_a_enable<='1';
           stack_b_enable<='1';
---          instruction_executed:='1';
           wroteback := '0';
-          --w.state := State_Resync1;
-          --w.tos := unsigned(stack_b_read);
-          w.state := State_Resync1;
-          --w.freeze_on_resync := '1';
-
-          --decode_freeze <= '1';
-
-          --w.state := State_Execute;
+          decode_freeze <= '1';
+          w.state := State_Resync2;
         end if;
-
-        
-
-      --when State_LoadSP =>
-      --  wroteback := '0';
 
       when State_Loadb =>
         w.tos(wordSize-1 downto 8) := (others => '0');
@@ -1157,14 +1110,12 @@ begin
           wb_stb_o<='1';
 
           if wb_ack_i='0' then
-            decode_freeze<='1'; -- Don't push ops while busy
+            decode_freeze<='1';
           else
-            --wb_cyc_o_i<='0';
-            --wb_stb_o<='0';
             w.tos := unsigned(wb_dat_i);
 
             if prefr.decodedOpcode=Decoded_Loadb then
-              decode_freeze<='1'; -- Don't push ops while busy
+              decode_freeze<='1';
               w.state := State_Loadb;
             else
               instruction_executed:='1';
@@ -1198,14 +1149,10 @@ begin
         exr.idim <= '0';
         exr.inInterrupt <= '0';
         exr.break <= '0';
-        --exrdecode_load_sp <= '0';
         exr.jumpdly <= '0';
       else
         exr <= w;
-
-        --if freeze_all='0' or single_step='1' then
         wroteback_q <= wroteback;
-        --end if;
 
         if exr.break='1' then
           report "BREAK" severity failure;

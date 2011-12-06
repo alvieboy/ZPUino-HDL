@@ -3,7 +3,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-#define VERBOSE_LOADER
+//#define VERBOSE_LOADER
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -77,6 +77,35 @@ extern "C" {
 	}
 };
 
+extern "C" void printnibble(unsigned int c)
+{
+	c&=0xf;
+	if (c>9)
+		outbyte(c+'a'-10);
+	else
+		outbyte(c+'0');
+}
+extern "C" void printstring(const char *str)
+{
+	while (*str) {
+		outbyte(*str);
+		str++;
+	}
+}
+
+extern "C" void printhexbyte(unsigned int c)
+{
+	printnibble(c>>4);
+	printnibble(c);
+}
+extern "C" void printhex(unsigned int c)
+{
+	printhexbyte(c>>24);
+	printhexbyte(c>>16);
+	printhexbyte(c>>8);
+	printhexbyte(c);
+}
+
 void __attribute__((noreturn)) spi_copy();
 
 #ifdef DEBUG_SERIAL
@@ -147,7 +176,7 @@ void enableTimer()
 #ifdef SIMULATION
 	TMR0CMP = (CLK_FREQ/100000U)-1;
 #else
-	TMR0CMP = (CLK_FREQ/20000U)-1;
+	TMR0CMP = (CLK_FREQ/2000U)-1;
 #endif
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
@@ -203,39 +232,11 @@ static inline unsigned int spiread()
 	return SPIDATA;
 }
 
-extern "C" void printnibble(unsigned int c)
-{
-	c&=0xf;
-	if (c>9)
-		outbyte(c+'a'-10);
-	else
-		outbyte(c+'0');
-}
-extern "C" void printstring(const char *str)
-{
-	while (*str) {
-		outbyte(*str);
-		str++;
-	}
-}
-
-extern "C" void printhexbyte(unsigned int c)
-{
-	printnibble(c>>4);
-	printnibble(c);
-}
-extern "C" void printhex(unsigned int c)
-{
-	printhexbyte(c>>24);
-	printhexbyte(c>>16);
-	printhexbyte(c>>8);
-	printhexbyte(c);
-}
 void __attribute__((noreturn)) spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
 #ifdef VERBOSE_LOADER
-	printstring("Starting sketch\r\n");
+	printstring("SS\r\n");
 #endif
 
 	__asm__("im %0\n"
@@ -271,7 +272,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	unsigned int sketchcrc;
 
 #ifdef VERBOSE_LOADER
-	printstring("Starting copy...\r\n");
+	printstring("CP\r\n");
 #endif
 
 	spi_enable();
@@ -294,7 +295,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	if (sketchsize>SPICODESIZE) {
 #ifdef VERBOSE_LOADER
-		printstring("Sketch too long");
+		printstring("SLK");
 		//printhexbyte((sketchsize>>8)&0xff);
 		//printhexbyte((sketchsize)&0xff);
 		printstring("\r\n");
@@ -306,7 +307,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
 #ifdef VERBOSE_LOADER
-	printstring("Filling\n");
+	//printstring("Filling\n");
 #endif
 	while (sketchsize--) {
 		for (int i=4;i!=0;i--) {
@@ -323,7 +324,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		*target++ = spiread();
 	}
 #ifdef VERBOSE_LOADER
-	printstring("Filled\n");
+   // printstring("Filled\n");
 #endif
 
 	spi_disable();
@@ -341,9 +342,9 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	}
 
 	if (*board != BOARD_ID) {
-		printstring("BOARD ");
+		printstring("B!");
 		//printhex(*board);
-		printstring(" != ");
+		//printstring(" != ");
 		//printhex(BOARD_ID);
 		while(1) {};
 	}
@@ -368,7 +369,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
-	outbyte('i');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -681,6 +681,7 @@ void processCommand()
 	tcrc|=buffer[--bufferpos]<<8;
 	unsigned int rcrc=CRC16ACC;
 	if (rcrc!=tcrc) {
+		//printstring("C!");
 		return;
 	}
 
