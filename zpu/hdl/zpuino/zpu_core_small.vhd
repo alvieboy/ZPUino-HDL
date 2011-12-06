@@ -1018,6 +1018,7 @@ begin
 
             if exr.tos(wordSize-1)='1' then
               stack_a_addr<=std_logic_vector(exr.tos(10 downto 2));
+              stack_a_enable<='1';
               w.state := State_LoadStack;
             else 
               wb_we_o <= '0';
