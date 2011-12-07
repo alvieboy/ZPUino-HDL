@@ -136,6 +136,7 @@ State_LoadSP,
 State_WaitSP,
 State_WaitSPB,
 State_ResyncFromStoreStack,
+State_Neqbranch,
 State_Pop
 );
 
@@ -190,10 +191,12 @@ type zpuregs is record
   break:      std_logic;
   inInterrupt:std_logic;
   tos:        unsigned(wordSize-1 downto 0);
+  nos_save:   unsigned(wordSize-1 downto 0);
   state:      State_Type;
   jumpdly: std_logic;
   jaddr:      unsigned(maxAddrBit downto 0);
   bytesel:  unsigned(1 downto 0);
+
 end record;
 
 signal decode_load_sp: std_logic;
@@ -442,9 +445,10 @@ begin
           sampledStackOperation<=Stack_Same;
           sampledDecodedOpcode<=Decoded_Loadb;
           sampledOpWillFreeze<='1';
-        --elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
-        --  sampledStackOperation<=Stack_DualPop;
-        --  sampledDecodedOpcode<=Decoded_Neqbranch;
+        elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+          sampledStackOperation<=Stack_DualPop;
+          sampledDecodedOpcode<=Decoded_Neqbranch;
+          sampledOpWillFreeze <= '1';
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -466,6 +470,7 @@ begin
       case tOpcode(3 downto 0) is
         when OpCode_Break =>
           sampledDecodedOpcode<=Decoded_Break;
+          sampledOpWillFreeze <= '1';
         when OpCode_PushSP =>
           sampledStackOperation <= Stack_Push;
           sampledDecodedOpcode<=Decoded_PushSP;
@@ -498,7 +503,7 @@ begin
         when OpCode_Store =>
           sampledStackOperation <= Stack_DualPop;   -- Dual pop, actually
           sampledDecodedOpcode<=Decoded_Store;
-          sampledOpWillFreeze<='1'; -- Not needed for stack access, need improvement
+          sampledOpWillFreeze<='1';
         when OpCode_PopSP =>
           sampledDecodedOpcode<=Decoded_PopSP;
           sampledOpWillFreeze<='1';
@@ -684,6 +689,7 @@ begin
         w.decodedOpcode := decr.decodedOpcode;
         w.tosSource := decr.tosSource;
         w.opcode := decr.opcode;
+        w.opWillFreeze := decr.opWillFreeze;
         w.pc := decr.pc;
         w.fetchpc := decr.pcint;
         w.idim := decr.idim;
@@ -763,6 +769,7 @@ begin
     else
       nos <= unsigned(stack_b_read);
     end if;
+    w.nos_save := nos;
 
     wb_dat_o <= std_logic_vector( nos );
 
@@ -813,6 +820,9 @@ begin
        instruction_executed:='0';
 
        if prefr.valid='1' then
+
+        decode_freeze <= prefr.opWillFreeze;
+
         if freeze_all='0' or single_step='1' then
 
         wroteback := '0';
@@ -962,7 +972,7 @@ begin
             stack_a_writeenable <= '1';
             wroteback:='1';
             stack_a_addr <= std_logic_vector(prefr.sp + spOffset);
-            decode_freeze <= '1';
+            -- From decoder decode_freeze <= '1';
 
             -- Delay so we can wait for Spb?
             instruction_executed := '0';
@@ -975,11 +985,11 @@ begin
 
           when Decoded_Pop =>
 
-            if exr.jumpdly='1' then
-              decode_jump <= '1';
-              jump_address <= exr.jaddr;
-            end if;
-            w.jumpdly := '0';
+           -- if exr.jumpdly='1' then
+           --   decode_jump <= '1';
+           --   jump_address <= exr.jaddr;
+           -- end if;
+           -- w.jumpdly := '0';
 
           when Decoded_Store =>
 
@@ -987,7 +997,7 @@ begin
               stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
               stack_a_write <= std_logic_vector(nos);
               stack_a_writeenable<='1';
-              decode_freeze<='1';
+              -- from decoder decode_freeze<='1';
 
 
               w.state := State_ResyncFromStoreStack;
@@ -1004,7 +1014,7 @@ begin
 
               -- Hold stack values, if we're to delay
               --if wb_ack_i='0' then
-                decode_freeze<='1';
+                -- from decoder decode_freeze<='1';
                 stack_a_enable<='0';
                 stack_b_enable<='0';
                 wroteback := wroteback_q; -- Keep WB
@@ -1018,7 +1028,7 @@ begin
 
           when Decoded_Load | Decoded_Loadb =>
 
-            decode_freeze<='1';
+            -- from decoder decode_freeze<='1';
             w.bytesel := exr.tos(1 downto 0); -- Byte select
 
             instruction_executed := '0';
@@ -1038,7 +1048,7 @@ begin
 
           when Decoded_PopSP =>
 
-            decode_freeze <= '1';
+            -- from decoder decode_freeze <= '1';
             decode_load_sp <= '1';
             instruction_executed := '0';
             stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
@@ -1050,10 +1060,9 @@ begin
             w.break := '1';
 
           when Decoded_Neqbranch =>
-            if nos/=0 then
-              --w.jumpdly := '1';
-            end if;
-
+            
+            instruction_executed := '0';
+            w.state := State_NeqBranch;
 
           when others =>
 
@@ -1147,6 +1156,23 @@ begin
           wroteback := '0';
           w.state := State_Execute;
         end if;
+
+      when State_NeqBranch =>
+        if exr.nos_save/=0 then
+          decode_jump <= '1';
+          jump_address <= exr.tos(maxAddrBit downto 0) + prefr.pc;
+          poppc_inst <= '1';
+          decode_freeze <= '0';
+        else
+          decode_freeze <='1';
+        end if;
+
+        instruction_executed := '0';
+
+        stack_a_addr <= std_logic_vector(prefr.spnext);
+        wroteback:='0';
+        w.state := State_Resync2;
+
 
       when others =>
          null;

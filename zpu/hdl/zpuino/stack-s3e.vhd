@@ -35,7 +35,8 @@ begin
   stack: RAMB16_S36_S36
   generic map (
     WRITE_MODE_A => "WRITE_FIRST",
-    WRITE_MODE_B => "WRITE_FIRST"
+    WRITE_MODE_B => "WRITE_FIRST",
+    SIM_COLLISION_CHECK => "GENERATE_X_ONLY"
     )
   port map (
     DOA  => stack_a_read,
