@@ -135,6 +135,7 @@ State_Resync2,
 State_LoadSP,
 State_WaitSP,
 State_WaitSPB,
+State_ResyncFromStoreStack,
 State_Pop
 );
 
@@ -199,7 +200,7 @@ signal decode_load_sp: std_logic;
 
 signal exr: zpuregs;
 
-constant minimal_implementation: boolean := true;
+constant minimal_implementation: boolean := false;
 
 subtype index is integer range 0 to 3;
 
@@ -441,9 +442,9 @@ begin
           sampledStackOperation<=Stack_Same;
           sampledDecodedOpcode<=Decoded_Loadb;
           sampledOpWillFreeze<='1';
-        elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
-          sampledStackOperation<=Stack_Pop;
-          sampledDecodedOpcode<=Decoded_Neqbranch;
+        --elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
+        --  sampledStackOperation<=Stack_DualPop;
+        --  sampledDecodedOpcode<=Decoded_Neqbranch;
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -788,6 +789,13 @@ begin
         w.state := State_Resync2;
         wroteback := '0';
 
+      when State_ResyncFromStoreStack =>
+        decode_freeze <= '1';
+        stack_a_addr <= std_logic_vector(prefr.spnext);
+        stack_a_enable<='1';
+        w.state := State_Resync2;
+        wroteback := '0';
+
       when State_Resync2 =>
 
         -- Wait for stackB?
@@ -981,7 +989,8 @@ begin
               stack_a_writeenable<='1';
               decode_freeze<='1';
 
-              w.state := State_Resync1;
+
+              w.state := State_ResyncFromStoreStack;
             else
 
               --
@@ -1042,8 +1051,9 @@ begin
 
           when Decoded_Neqbranch =>
             if nos/=0 then
-              w.jumpdly := '1';
+              --w.jumpdly := '1';
             end if;
+
 
           when others =>
 
