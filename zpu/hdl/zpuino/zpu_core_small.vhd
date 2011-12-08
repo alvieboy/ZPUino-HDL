@@ -176,6 +176,7 @@ Decoded_Ulessthan,
 Decoded_Ashiftleft,
 Decoded_Ashiftright,
 Decoded_Loadb,
+Decoded_Call,
 Decoded_Mult
 );
 
@@ -449,6 +450,18 @@ begin
           sampledStackOperation<=Stack_DualPop;
           sampledDecodedOpcode<=Decoded_Neqbranch;
           sampledOpWillFreeze <= '1';
+        elsif (tOpcode(5 downto 0)=OpCode_Call) then
+          sampledDecodedOpcode<=Decoded_Call;
+          sampledStackOperation<=Stack_Same;
+          sampledTosSource<=Tos_Source_FetchPC;
+
+        elsif (tOpcode(5 downto 0)=OpCode_Eq) then
+          sampledDecodedOpcode<=Decoded_Eq;
+          sampledStackOperation<=Stack_Pop;
+          sampledTosSource<=Tos_Source_Eq;
+--        elsif (tOpcode(5 downto 0)=OpCode_StoreB) then
+--          sampledDecodedOpcode<=Decoded_StoreB;
+--          sampledStackOperation<=Stack_DualPop;
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -920,7 +933,7 @@ begin
 
           when Decoded_Nop =>
 
-          when Decoded_PopPC =>
+          when Decoded_PopPC | Decoded_Call =>
 
             decode_jump <= '1';
             jump_address <= exr.tos(maxAddrBit downto 0);
