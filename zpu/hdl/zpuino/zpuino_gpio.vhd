@@ -119,7 +119,7 @@ end generate;
 
 -- Generate muxers for input
 
-spprgen: for i in 0 to gpio_count-1 generate -- spp_read(0) is invalid.
+spprgen: for i in 0 to gpio_count-1 generate
 
   gpio_i_q(i) <= gpio_i(i) when spp_cap_in(i)='1' else DontCareValue;
 

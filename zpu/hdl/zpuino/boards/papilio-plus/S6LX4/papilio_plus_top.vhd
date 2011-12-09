@@ -123,9 +123,9 @@ architecture behave of papilio_plus_top is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0000000000000000000000000000000000000000000000000000000";
+    "1111110000000000000000000000000000000000000000000000000";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0000000000000000000000000000000000000000000000000000000";
+    "1111110000000000000000000000000000000000000000000000000";
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;

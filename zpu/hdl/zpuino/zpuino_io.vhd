@@ -231,7 +231,7 @@ begin
   process(wb_dat_i,wb_adr_i,io_write,io_address)
   begin
     for i in 0 to num_devices-1 loop
-      slot_write_i(i) <= io_write;--wb_dat_i;
+      slot_write_i(i) <= io_write;
       slot_address_i(i) <= io_address(maxAddrBitIncIO-1 downto 2);
     end loop;
   end process;
@@ -258,14 +258,14 @@ begin
     slotNumber := to_integer(unsigned(io_address(maxAddrBitIncIO-1 downto maxAddrBitIncIO-zpuino_number_io_select_bits)));
 
     for i in 0 to num_devices-1 loop
+
+      slot_stb_i(i) <= io_stb;
+      slot_we_i(i) <= io_we;
+
       if i = slotNumber then
-        slot_stb_i(i) <= io_stb;-- and wb_stb_i;
-        slot_cyc_i(i) <= io_cyc;-- and wb_cyc_i;
-        slot_we_i(i) <= io_we;-- and wb_we_i;
+        slot_cyc_i(i) <= io_cyc;
       else
-        slot_stb_i(i) <= '0';
         slot_cyc_i(i) <= '0';
-        slot_we_i(i) <= '0';
       end if;
     end loop;
 
