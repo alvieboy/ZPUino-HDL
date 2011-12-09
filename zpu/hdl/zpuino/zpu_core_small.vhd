@@ -111,12 +111,33 @@ component pulse is
   );
 end component;
 
+component lshifter is
+  port (
+    clk: in std_logic;
+    rst: in std_logic;
+    enable:  in std_logic;
+    done: out std_logic;
+    input:  in std_logic_vector(31 downto 0);
+    amount: in std_logic_vector(4 downto 0);
+    output: out std_logic_vector(31 downto 0)
+
+  );
+end component;
+
+signal lshifter_enable: std_logic;
+signal lshifter_done: std_logic;
+signal lshifter_input: std_logic_vector(31 downto 0);
+signal lshifter_amount: std_logic_vector(4 downto 0);
+signal lshifter_output: std_logic_vector(31 downto 0);
+
 signal begin_inst:          std_logic;
 signal trace_opcode:        std_logic_vector(7 downto 0);
 signal trace_pc:            std_logic_vector(maxAddrBitIncIO downto 0);
 signal trace_sp:            std_logic_vector(maxAddrBitIncIO downto minAddrBit);
 signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
+
+
 
 -- state machine.
 
@@ -125,6 +146,7 @@ type State_Type is
 State_Start,
 State_Execute,
 State_Store,
+State_StoreB,
 State_Load,
 State_LoadMemory,
 State_LoadStack,
@@ -137,6 +159,7 @@ State_WaitSP,
 State_WaitSPB,
 State_ResyncFromStoreStack,
 State_Neqbranch,
+State_Ashiftleft,
 State_Pop
 );
 
@@ -173,6 +196,7 @@ Decoded_Eq,
 Decoded_Storeb,
 Decoded_Storeh,
 Decoded_Ulessthan,
+Decoded_Lessthan,
 Decoded_Ashiftleft,
 Decoded_Ashiftright,
 Decoded_Loadb,
@@ -192,12 +216,16 @@ type zpuregs is record
   break:      std_logic;
   inInterrupt:std_logic;
   tos:        unsigned(wordSize-1 downto 0);
+  tos_save:   unsigned(wordSize-1 downto 0);
   nos_save:   unsigned(wordSize-1 downto 0);
   state:      State_Type;
-  jumpdly: std_logic;
-  jaddr:      unsigned(maxAddrBit downto 0);
-  bytesel:  unsigned(1 downto 0);
-
+  --jumpdly: std_logic;
+  --jaddr:      unsigned(maxAddrBit downto 0);
+  --bytesel:  unsigned(1 downto 0);
+  -- Wishbone control signals (registered)
+  wb_cyc:     std_logic;
+  wb_stb:     std_logic;
+  wb_we:      std_logic;
 end record;
 
 signal decode_load_sp: std_logic;
@@ -253,6 +281,8 @@ type tosSourceType is
   Tos_Source_AddSP,
   Tos_Source_AddStackB,
   Tos_Source_Shift,
+  Tos_Source_Ulessthan,
+  Tos_Source_Lessthan,
   Tos_Source_None
 );
 
@@ -328,6 +358,17 @@ begin
   dbg_brk <= exr.break;
   dbg_stacka <= std_logic_vector(exr.tos);
   dbg_stackb <= std_logic_vector(nos);
+
+  shl: lshifter
+  port map (
+    clk     => wb_clk_i,
+    rst     => wb_rst_i,
+    enable  => lshifter_enable,
+    done    => lshifter_done,
+    input   => lshifter_input,
+    amount  => lshifter_amount,
+    output  => lshifter_output
+  );
 
   stack_clk <= wb_clk_i;
 
@@ -459,9 +500,24 @@ begin
           sampledDecodedOpcode<=Decoded_Eq;
           sampledStackOperation<=Stack_Pop;
           sampledTosSource<=Tos_Source_Eq;
+        elsif (tOpcode(5 downto 0)=OpCode_Ulessthan) then
+          sampledDecodedOpcode<=Decoded_Ulessthan;
+          sampledStackOperation<=Stack_Pop;
+          sampledTosSource<=Tos_Source_Ulessthan;
+
+        elsif (tOpcode(5 downto 0)=OpCode_Lessthan) then
+          sampledDecodedOpcode<=Decoded_Lessthan;
+          sampledStackOperation<=Stack_Pop;
+          sampledTosSource<=Tos_Source_Lessthan;
+
 --        elsif (tOpcode(5 downto 0)=OpCode_StoreB) then
 --          sampledDecodedOpcode<=Decoded_StoreB;
 --          sampledStackOperation<=Stack_DualPop;
+--          sampledOpWillFreeze<='1';
+        elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
+          sampledDecodedOpcode<=Decoded_Ashiftleft;
+          sampledStackOperation<=Stack_Pop;
+          sampledOpWillFreeze<='1';
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -553,7 +609,7 @@ begin
   process(decr, jump_address, decode_jump, wb_clk_i, sp_load,sp_dualpopsp,
           sp_pushsp,sp_popsp,sampledDecodedOpcode,sampledOpcode,decode_load_sp,decode_freeze,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
-          jump_q,sampledTosSource
+          jump_q,sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze
           )
     variable w: decoderegs_type;
     --variable inject_pop: std_logic;
@@ -726,14 +782,21 @@ begin
         trace_topOfStackB <= std_logic_vector( nos );
   end process;
 
-  -- IO Accesses
-  wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
+  -- IO/Memory Accesses
+
+  -- wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
+  wb_adr_o(maxAddrBitIncIO downto 0) <= std_logic_vector(exr.tos_save(maxAddrBitIncIO downto 0));
+  wb_cyc_o_i <= exr.wb_cyc;
+  wb_stb_o <= exr.wb_stb;
+  wb_we_o <= exr.wb_we;
+  --wb_dat_o <= std_logic_vector( nos );
+  wb_dat_o <= std_logic_vector( exr.nos_save );
 
   freeze_all <= dbg_freeze;
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
           wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos,
-          single_step, freeze_all, dbg_step, wroteback_q)
+          single_step, freeze_all, dbg_step, wroteback_q,lshifter_done,lshifter_output)
     variable spOffset: unsigned(4 downto 0);
     variable w: zpuregs;
     variable instruction_executed: std_logic;
@@ -753,9 +816,9 @@ begin
 
     jump_address <= (others => DontCareValue);
 
-    wb_cyc_o_i <= '0';
-    wb_stb_o <= DontCareValue;
-    wb_we_o <= DontCareValue;
+    lshifter_enable <= '0';
+    lshifter_amount <= std_logic_vector(exr.tos_save(4 downto 0));
+    lshifter_input <= std_logic_vector(exr.nos_save);
 
     poppc_inst <= '0';
     begin_inst<='0';
@@ -782,13 +845,11 @@ begin
     else
       nos <= unsigned(stack_b_read);
     end if;
-    w.nos_save := nos;
 
-    wb_dat_o <= std_logic_vector( nos );
 
     decode_load_sp <= '0';
 
-    w.jaddr := prefr.pc + exr.tos(maxAddrBit downto 0);
+    --w.jaddr := prefr.pc + exr.tos(maxAddrBit downto 0);
 
     case exr.state is
       when State_Start  =>
@@ -840,6 +901,8 @@ begin
 
         wroteback := '0';
         w.idim := '0';
+        w.nos_save := nos;
+        w.tos_save := exr.tos;
 
         begin_inst<='1';
 
@@ -885,6 +948,18 @@ begin
           when Tos_Source_Eq =>
             w.tos := (others => '0');
             if nos = exr.tos then
+              w.tos(0) := '1';
+            end if;
+
+          when Tos_Source_Ulessthan =>
+            w.tos := (others => '0');
+            if exr.tos < nos then
+              w.tos(0) := '1';
+            end if;
+
+          when Tos_Source_Lessthan =>
+            w.tos := (others => '0');
+            if signed(exr.tos) < signed(nos) then
               w.tos(0) := '1';
             end if;
 
@@ -998,11 +1073,12 @@ begin
 
           when Decoded_Pop =>
 
-           -- if exr.jumpdly='1' then
-           --   decode_jump <= '1';
-           --   jump_address <= exr.jaddr;
-           -- end if;
-           -- w.jumpdly := '0';
+          when Decoded_Ashiftleft =>
+            --lshifter_enable <= '1';
+            w.state := State_Ashiftleft;
+            --wroteback_q <= wroteback;
+            --stack_a_enable<='0';
+            --stack_b_enable<='0';
 
           when Decoded_Store =>
 
@@ -1016,33 +1092,21 @@ begin
               w.state := State_ResyncFromStoreStack;
             else
 
-              --
-              -- NOTE: not returning here immediatly when wb_ack is set prevents implementation
-              -- from being full whishbone compatible.
-              --
+              w.wb_we  := '1';
+              w.wb_cyc := '1';
+              w.wb_stb := '1';
 
-              wb_we_o    <='1';
-              wb_cyc_o_i <='1';
-              wb_stb_o   <='1';
-
-              -- Hold stack values, if we're to delay
-              --if wb_ack_i='0' then
-                -- from decoder decode_freeze<='1';
-                stack_a_enable<='0';
-                stack_b_enable<='0';
-                wroteback := wroteback_q; -- Keep WB
-
-                instruction_executed := '0';
-
-                w.state := State_Store;
-              --end if;
+              wroteback := wroteback_q; -- Keep WB
+              stack_a_enable<='0';
+              stack_b_enable<='0';
+              instruction_executed := '0';
+              w.state := State_Store;
 
             end if;
 
-          when Decoded_Load | Decoded_Loadb =>
+          when Decoded_Load | Decoded_Loadb | Decoded_StoreB =>
 
-            -- from decoder decode_freeze<='1';
-            w.bytesel := exr.tos(1 downto 0); -- Byte select
+            --w.tos_save := exr.tos; -- Byte select
 
             instruction_executed := '0';
             wroteback := wroteback_q; -- Keep WB
@@ -1053,9 +1117,9 @@ begin
               stack_a_enable<='1';
               w.state := State_LoadStack;
             else 
-              wb_we_o <= '0';
-              wb_cyc_o_i<='1';
-              wb_stb_o<='1';
+              w.wb_we  :='0';
+              w.wb_cyc :='1';
+              w.wb_stb :='1';
               w.state := State_Load;
             end if;
 
@@ -1091,6 +1155,16 @@ begin
        end if;
        end if; -- valid
 
+      when State_Ashiftleft =>
+        decode_freeze <= '1';
+        lshifter_enable <= '1';
+
+        if lshifter_done='1' then
+          decode_freeze<='0';
+          w.tos := unsigned(lshifter_output);
+          w.state := State_Execute;
+        end if;
+
       when State_WaitSPB =>
 
         instruction_executed:='1';
@@ -1098,9 +1172,6 @@ begin
         w.state := State_Execute;
   
       when State_Store =>
-        wb_cyc_o_i<='1';
-        wb_stb_o<='1';
-        wb_we_o <='1';
         
         stack_a_enable<='0';
         stack_b_enable<='0';
@@ -1115,12 +1186,13 @@ begin
           stack_b_enable<='1';
           wroteback := '0';
           decode_freeze <= '1';
+          w.wb_cyc := '0';
           w.state := State_Resync2;
         end if;
 
       when State_Loadb =>
         w.tos(wordSize-1 downto 8) := (others => '0');
-        case exr.bytesel is
+        case exr.tos_save(1 downto 0) is
           when "11" =>
             w.tos(7 downto 0) := unsigned(exr.tos(7 downto 0));
           when "10" =>
@@ -1138,18 +1210,22 @@ begin
 
       when State_Load =>
 
-          wb_we_o <='0';
-          wb_cyc_o_i<='1';
-          wb_stb_o<='1';
+          --wb_we_o <='0';
+          --wb_cyc_o_i<='1';
+          --wb_stb_o<='1';
 
           if wb_ack_i='0' then
             decode_freeze<='1';
           else
             w.tos := unsigned(wb_dat_i);
+            w.wb_cyc := '0';
 
             if prefr.decodedOpcode=Decoded_Loadb then
               decode_freeze<='1';
               w.state := State_Loadb;
+            elsif prefr.decodedOpcode=Decoded_Storeb then
+              decode_freeze<='1';
+              w.state := State_Storeb;
             else
               instruction_executed:='1';
               wroteback := '0';
@@ -1164,6 +1240,9 @@ begin
         if prefr.decodedOpcode=Decoded_Loadb then
           decode_freeze<='1';
           w.state:=State_Loadb;
+        elsif prefr.decodedOpcode=Decoded_Storeb then
+          decode_freeze<='1';
+          w.state:=State_Storeb;
         else
           instruction_executed:='1';
           wroteback := '0';
@@ -1186,6 +1265,30 @@ begin
         wroteback:='0';
         w.state := State_Resync2;
 
+      when State_StoreB =>
+        decode_freeze <= '1';
+        --
+        -- At this point, we have loaded the 32-bit, and it's in TOS
+        -- The IO address is still saved in save_TOS.
+        -- The original write value is still at save_NOS
+        --
+        -- So we mangle the write value, and update save_NOS, and restore
+        -- the IO address to TOS
+        w.nos_save := exr.tos;
+
+        case exr.tos_save(1 downto 0) is
+          when "00" =>
+            w.nos_save(31 downto 24) := exr.nos_save(7 downto 0);
+          when "01" =>
+            w.nos_save(23 downto 16) := exr.nos_save(7 downto 0);
+          when "10" =>
+            w.nos_save(15 downto 8) := exr.nos_save(7 downto 0);
+          when "11" =>
+            w.nos_save(7 downto 0) := exr.nos_save(7 downto 0);
+          when others =>
+            null;
+        end case;
+
 
       when others =>
          null;
@@ -1195,11 +1298,12 @@ begin
 
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
-        exr.state <= State_Start;
+        exr.state <= State_Execute;
         exr.idim <= '0';
         exr.inInterrupt <= '0';
         exr.break <= '0';
-        exr.jumpdly <= '0';
+        exr.wb_cyc <= '0';
+        exr.wb_stb <= '1';
       else
         exr <= w;
         wroteback_q <= wroteback;
