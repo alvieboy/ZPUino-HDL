@@ -124,11 +124,29 @@ component lshifter is
   );
 end component;
 
+component multiplier is
+  port (
+    clk: in std_logic;
+    rst: in std_logic;
+    enable:  in std_logic;
+    done: out std_logic;
+    inputA:  in std_logic_vector(31 downto 0);
+    inputB: in std_logic_vector(31 downto 0);
+    output: out std_logic_vector(31 downto 0)
+  );
+end component multiplier;
+
 signal lshifter_enable: std_logic;
 signal lshifter_done: std_logic;
 signal lshifter_input: std_logic_vector(31 downto 0);
 signal lshifter_amount: std_logic_vector(4 downto 0);
 signal lshifter_output: std_logic_vector(31 downto 0);
+
+signal multiplier_enable: std_logic;
+signal multiplier_done: std_logic;
+signal multiplier_inputA: std_logic_vector(31 downto 0);
+signal multiplier_inputB: std_logic_vector(31 downto 0);
+signal multiplier_output: std_logic_vector(31 downto 0);
 
 signal begin_inst:          std_logic;
 signal trace_opcode:        std_logic_vector(7 downto 0);
@@ -156,7 +174,8 @@ State_LoadSP,
 State_WaitSPB,
 State_ResyncFromStoreStack,
 State_Neqbranch,
-State_Ashiftleft
+State_Ashiftleft,
+State_Mult
 );
 
 type DecodedOpcodeType is
@@ -215,9 +234,6 @@ type zpuregs is record
   tos_save:   unsigned(wordSize-1 downto 0);
   nos_save:   unsigned(wordSize-1 downto 0);
   state:      State_Type;
-  --jumpdly: std_logic;
-  --jaddr:      unsigned(maxAddrBit downto 0);
-  --bytesel:  unsigned(1 downto 0);
   -- Wishbone control signals (registered)
   wb_cyc:     std_logic;
   wb_stb:     std_logic;
@@ -366,6 +382,17 @@ begin
     output  => lshifter_output
   );
 
+  mul: multiplier
+  port map (
+    clk     => wb_clk_i,
+    rst     => wb_rst_i,
+    enable  => multiplier_enable,
+    done    => multiplier_done,
+    inputA  => multiplier_inputA,
+    inputB  => multiplier_inputB,
+    output  => multiplier_output
+  );
+
   stack_clk <= wb_clk_i;
 
   traceFileGenerate:
@@ -510,6 +537,10 @@ begin
 --          sampledDecodedOpcode<=Decoded_StoreB;
 --          sampledStackOperation<=Stack_DualPop;
 --          sampledOpWillFreeze<='1';
+        elsif (tOpcode(5 downto 0)=OpCode_Mult) then
+          sampledDecodedOpcode<=Decoded_Mult;
+          sampledStackOperation<=Stack_Pop;
+          sampledOpWillFreeze<='1';
         elsif (tOpcode(5 downto 0)=OpCode_Ashiftleft) then
           sampledDecodedOpcode<=Decoded_Ashiftleft;
           sampledStackOperation<=Stack_Pop;
@@ -581,21 +612,6 @@ begin
     sampledspOffset <= localspOffset;
 
   end process;
-
-  -- Multiplier
---  process(wb_clk_i)
---    variable multR: unsigned(wordSize*2-1 downto 0);
---  begin
---    if rising_edge(wb_clk_i) then
---      multR := r.multInA * r.multInB;
---      mult3 <= multR(wordSize-1 downto 0);
---      mult2 <= mult3;
---      mult1 <= mult2;
---      mult0 <= mult1;
---    end if;
---  end process;
-
-
 
   -- Decode/Fetch unit
 
@@ -788,6 +804,10 @@ begin
     lshifter_enable <= '0';
     lshifter_amount <= std_logic_vector(exr.tos_save(4 downto 0));
     lshifter_input <= std_logic_vector(exr.nos_save);
+
+    multiplier_enable <= '0';
+    multiplier_inputA <= std_logic_vector(exr.tos_save);
+    multiplier_inputB <= std_logic_vector(exr.nos_save);
 
     poppc_inst <= '0';
     begin_inst<='0';
@@ -1024,6 +1044,9 @@ begin
           when Decoded_Ashiftleft =>
             w.state := State_Ashiftleft;
 
+          when Decoded_Mult =>
+            w.state := State_Mult;
+
           when Decoded_Store =>
 
             if exr.tos(31)='1' then
@@ -1110,6 +1133,16 @@ begin
         if lshifter_done='1' then
           decode_freeze<='0';
           w.tos := unsigned(lshifter_output);
+          w.state := State_Execute;
+        end if;
+
+      when State_Mult =>
+        decode_freeze <= '1';
+        multiplier_enable <= '1';
+
+        if multiplier_done='1' then
+          decode_freeze<='0';
+          w.tos := unsigned(multiplier_output);
           w.state := State_Execute;
         end if;
 
