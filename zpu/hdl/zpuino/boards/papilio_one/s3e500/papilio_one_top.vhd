@@ -164,6 +164,7 @@ architecture behave of papilio_one_top is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
+  signal dbg_reset: std_logic;
 
 begin
 
@@ -186,7 +187,7 @@ begin
   clkgen_inst: clkgen
   port map (
     clkin   => clk,
-    rstin   => '0'  ,
+    rstin   => dbg_reset,
     clkout  => sysclk,
     rstout  => clkgen_rst
   );
@@ -223,7 +224,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      dbg_reset     => dbg_reset
     );
 
 
