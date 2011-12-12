@@ -420,7 +420,7 @@ begin
 
   do_interrupt <= '1' when wb_inta_i='1'
     and exr.inInterrupt='0'
-    and prefr.valid='1'
+    --and prefr.valid='1'
     else '0';
 
   decodeControl:
