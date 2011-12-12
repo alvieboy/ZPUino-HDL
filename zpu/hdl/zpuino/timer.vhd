@@ -45,24 +45,24 @@ use work.zpuinopkg.all;
 
 entity timer is
   generic (
-    TSCENABLED: boolean := false
+    TSCENABLED: boolean := false;
+    PWMCOUNT: integer range 1 to 8 := 2;
+    WIDTH: integer range 1 to 32 := 16
   );
   port (
-    wb_clk_i:      in std_logic;
+    wb_clk_i:   in std_logic;
 	 	wb_rst_i:   in std_logic;
-    wb_dat_o:     out std_logic_vector(wordSize-1 downto 0);
-    wb_dat_i:    in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i:  in std_logic_vector(1 downto 0);
-    wb_we_i:       in std_logic;
-    wb_cyc_i:       in std_logic;
-    wb_stb_i:       in std_logic;
-    wb_ack_o:       out std_logic;
-    wb_inta_o:      out std_logic;
-    -- Connection to GPIO pin
-    spp_data: out std_logic;
-    spp_en:   out std_logic;
+    wb_dat_o:   out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i:   in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i:   in std_logic_vector(4 downto 0);
+    wb_we_i:    in std_logic;
+    wb_cyc_i:   in std_logic;
+    wb_stb_i:   in std_logic;
+    wb_ack_o:   out std_logic;
+    wb_inta_o:  out std_logic;
 
-    comp:     out std_logic -- Compare output
+    pwm_out:    out std_logic_vector(PWMCOUNT-1 downto 0)
+
   );
 end entity timer;
 
@@ -77,35 +77,65 @@ architecture behave of timer is
   );
   end component prescaler;
 
-signal tmr0_cnt_q: unsigned(15 downto 0);
-signal tmr0_cmp_q: unsigned(15 downto 0);
-signal tmr0_oc_q: unsigned(15 downto 0);
-signal tmr0_en_q: std_logic;
-signal tmr0_dir_q: std_logic;
-signal tmr0_ccm_q: std_logic;
-signal tmr0_ien_q: std_logic;
-signal tmr0_oce_q: std_logic;
-signal tmr0_intr:  std_logic;
-signal tmr0_cout:  std_logic;
+type singlepwmregs is record
+  cmplow: unsigned(WIDTH-1 downto 0);
+  cmphigh: unsigned(WIDTH-1 downto 0);
+  en: std_logic;
+end record;
+
+type pwmregs is array(PWMCOUNT-1 downto 0) of singlepwmregs;
+
+type timerregs is record
+  cnt:  unsigned(WIDTH-1 downto 0); -- current timer counter value
+  cmp:  unsigned(WIDTH-1 downto 0); -- top timer compare value
+  ccm:  std_logic; -- clear on compare match
+  en:   std_logic; -- enable
+  dir:  std_logic; -- direction
+  ien:  std_logic; -- interrupt enable
+  oce:  std_logic; -- output compare enable
+  intr: std_logic; -- interrupt
+  pres: std_logic_vector(2 downto 0); -- Prescaler
+  updp: std_logic_vector(1 downto 0);
+  presrst: std_logic;
+  pwmr: pwmregs;
+  pwmrb:pwmregs;
+end record;
+
+constant UPDATE_NOW: std_logic_vector(1 downto 0) := "00";
+constant UPDATE_ZERO_SYNC: std_logic_vector(1 downto 0) := "01";
+
 
 signal tmr0_prescale_rst: std_logic;
-signal tmr0_prescale: std_logic_vector(2 downto 0);
+--signal tmr0_prescale: std_logic_vector(2 downto 0);
 signal tmr0_prescale_event: std_logic;
 
 signal TSC_q: unsigned(wordSize-1 downto 0);
 
+signal tmrr: timerregs;
+
+function eq(a:std_logic_vector; b:std_logic_vector) return std_logic is
+begin
+  if a=b then
+    return '1';
+  else
+    return '0';
+  end if;
+end function;
+
+signal do_interrupt: std_logic;
+
 begin
 
-  wb_inta_o <= tmr0_intr;
-  comp <= tmr0_cout;
+  wb_inta_o <= tmrr.intr;
+--  comp <= tmrr.cout;
 
   wb_ack_o <= wb_cyc_i and wb_stb_i;
 
   tmr0prescale_inst: prescaler
     port map (
       clk     => wb_clk_i,
-      rst     => tmr0_prescale_rst,
-      prescale=> tmr0_prescale,
+      rst     => tmrr.presrst,
+      prescale=> tmrr.pres,
       event   => tmr0_prescale_event
     );
 
@@ -123,22 +153,24 @@ begin
   end generate;
 
   -- Read
-  process(wb_adr_i,tmr0_en_q, tmr0_ccm_q, tmr0_dir_q,tmr0_ien_q, tmr0_cnt_q,tmr0_cmp_q,tmr0_prescale,tmr0_intr,TSC_q,tmr0_oce_q)
+  process(wb_adr_i, tmrr,TSC_q)
   begin
     wb_dat_o <= (others => '0');
     case wb_adr_i is
-      when "00" =>
-        wb_dat_o(0) <= tmr0_en_q;
-        wb_dat_o(1) <= tmr0_ccm_q;
-        wb_dat_o(2) <= tmr0_dir_q;
-        wb_dat_o(3) <= tmr0_ien_q;
-        wb_dat_o(6 downto 4) <= tmr0_prescale;
-        wb_dat_o(7) <= tmr0_intr;
-        wb_dat_o(8) <= tmr0_oce_q;
-      when "01" =>
-        wb_dat_o(15 downto 0) <= std_logic_vector(tmr0_cnt_q);
-      when "10" =>
-        wb_dat_o(15 downto 0) <= std_logic_vector(tmr0_cmp_q);
+      when "00000" =>
+        wb_dat_o(0) <= tmrr.en;
+        wb_dat_o(1) <= tmrr.ccm;
+        wb_dat_o(2) <= tmrr.dir;
+        wb_dat_o(3) <= tmrr.ien;
+        wb_dat_o(6 downto 4) <= tmrr.pres;
+        wb_dat_o(7) <= tmrr.intr;
+        wb_dat_o(8) <= tmrr.oce;
+        wb_dat_o(10 downto 9) <= tmrr.updp;
+
+      when "00001" =>
+        wb_dat_o(15 downto 0) <= std_logic_vector(tmrr.cnt);
+      when "00010" =>
+        wb_dat_o(15 downto 0) <= std_logic_vector(tmrr.cmp);
       when others =>
         if TSCENABLED then
           wb_dat_o <= std_logic_vector(TSC_q);
@@ -148,102 +180,140 @@ begin
     end case;
   end process;
 
-
-  process(wb_clk_i)
+  process(wb_clk_i, tmrr, wb_rst_i,wb_cyc_i,wb_stb_i,wb_we_i,wb_adr_i,wb_dat_i)
+    variable w: timerregs;
+    variable write_ctrl: std_logic;
+    variable write_cmp: std_logic;
+    variable write_cnt: std_logic;
+    variable write_pwm: std_logic;
+    variable ovf: std_logic;
+    variable pwmindex: integer;
   begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
-        tmr0_en_q <= '0';
-        tmr0_ccm_q <= '0';
-        tmr0_dir_q <= '1';
-        tmr0_ien_q <= '0';
-        tmr0_oce_q <= '0';
-        tmr0_cmp_q <= (others => '1');
-        tmr0_prescale <= (others => '0');
-        tmr0_prescale_rst <= '1';
-      else
-        tmr0_prescale_rst <= not tmr0_en_q;
-        if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
-          case wb_adr_i is
-            when "00" =>
-              tmr0_en_q <= wb_dat_i(0);
-              tmr0_ccm_q <= wb_dat_i(1);
-              tmr0_dir_q <= wb_dat_i(2);
-              tmr0_ien_q <= wb_dat_i(3);
-              tmr0_prescale <= wb_dat_i(6 downto 4);
-              tmr0_oce_q <= wb_dat_i(8);
-              --tmr0_prescale_rst <= '1';
-            when "10" =>
-              tmr0_cmp_q <= unsigned(wb_dat_i(15 downto 0));
-            when "11" =>
-              tmr0_oc_q <= unsigned(wb_dat_i(15 downto 0));
+    w := tmrr;
+    -- These are just helpers
+    write_ctrl := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00000");
+    write_cnt  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00001");
+    write_cmp  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00010");
+    write_pwm  := wb_cyc_i and wb_stb_i and wb_we_i and wb_adr_i(4);
 
+    ovf:='0';
+    if tmrr.cnt = tmrr.cmp then
+      ovf:='1';
+    end if;
+
+    do_interrupt <= '0';
+
+    if wb_rst_i='1' then
+        w.en := '0';
+        w.ccm := '0';
+        w.dir := '0';
+        w.ien := '0';
+        w.oce := '0';
+        w.pres := (others => '0');
+        w.presrst := '1';
+        w.updp := UPDATE_ZERO_SYNC;
+
+    else
+      if do_interrupt='1' then
+        w.intr := '1';
+      end if;
+
+      w.presrst := '0';
+
+      -- Wishbone access
+      if write_ctrl='1' then
+        w.en  := wb_dat_i(0);
+        w.ccm := wb_dat_i(1);
+        w.dir := wb_dat_i(2);
+        w.ien := wb_dat_i(3);
+        w.pres:= wb_dat_i(6 downto 4);
+        w.oce := wb_dat_i(8);
+        w.updp := wb_dat_i(10 downto 9);
+
+        if wb_dat_i(7)='0' then
+          w.intr:='0';
+        end if;
+      end if;
+
+      if write_cmp='1' then
+        w.cmp := unsigned(wb_dat_i(WIDTH-1 downto 0));
+      end if;
+
+      if write_cnt='1' then
+        w.cnt := unsigned(wb_dat_i(WIDTH-1 downto 0));
+      else
+        if tmrr.en='1' and tmr0_prescale_event='1' then
+          -- If output matches, set interrupt
+          if ovf='1' then
+            if tmrr.ien='1' then
+              do_interrupt<='1';
+            end if;
+          end if;
+
+          -- CCM
+            if tmrr.ccm='1' and ovf='1' then
+              w.cnt := (others => '0');
+            else
+              if tmrr.dir='1' then
+                w.cnt := tmrr.cnt + 1;
+              else
+                w.cnt := tmrr.cnt - 1;
+              end if;
+            end if;
+
+          end if;
+
+        end if;
+
+      end if;
+
+    if write_pwm='1' then
+      for i in 0 to PWMCOUNT-1 loop
+        if wb_adr_i(3 downto 2) = std_logic_vector(to_unsigned(i,2)) then
+          -- Write values to this PWM
+          case wb_adr_i(1 downto 0) is
+            when "00" =>
+              w.pwmrb(i).cmplow := unsigned(wb_dat_i(WIDTH-1 downto 0));
+            when "01" =>
+              w.pwmrb(i).cmphigh := unsigned(wb_dat_i(WIDTH-1 downto 0));
+            when "10" =>
+              w.pwmrb(i).en := wb_dat_i(0);
+            when "11" =>
             when others =>
           end case;
         end if;
-      end if;
+      end loop;
     end if;
-  end process;
 
-  -- Timer 0 count
-  process(wb_clk_i)
-  begin
+    for i in 0 to PWMCOUNT-1 loop
+      case tmrr.updp is
+        when UPDATE_NOW =>
+          w.pwmr(i) := tmrr.pwmrb(i);
+        when UPDATE_ZERO_SYNC =>
+          if ovf='1' then
+            w.pwmr(i) := tmrr.pwmrb(i);
+          end if;
+        when others =>
+          w.pwmr(i) := tmrr.pwmrb(i);
+      end case;
+    end loop;
+
+
     if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
-        tmr0_cnt_q <= (others => '0');
-        tmr0_intr <= '0';
-        tmr0_cout <= '0';
-      else
-        if wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1' and wb_adr_i="01" then
-          tmr0_cnt_q <= unsigned(wb_dat_i(15 downto 0));
+      tmrr <= w;
+      for i in 0 to PWMCOUNT-1 loop
+        if tmrr.pwmr(i).en='1' then
+          if tmrr.cnt >= tmrr.pwmr(i).cmplow and tmrr.cnt<tmrr.pwmr(i).cmphigh then
+            pwm_out(i) <= '1';
+          else
+            pwm_out(i) <= '0';
+          end if;
         else
-          if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' and wb_adr_i="00" then
-            if wb_dat_i(7)='0' then
-              tmr0_intr <= '0';
-            end if;
-          end if;
-
-          tmr0_cout <= '0';
-
-          if tmr0_en_q='1' and tmr0_prescale_event='1' then -- Timer enabled..
-            if tmr0_cnt_q=tmr0_cmp_q then
-              if tmr0_ien_q='1' then
-                tmr0_intr <= '1';
-              end if;
-              tmr0_cout <= '1';
-            end if;
-
-            if tmr0_cnt_q=tmr0_cmp_q and tmr0_ccm_q='1' then
-                -- Clear on compare match
-              tmr0_cnt_q<=(others => '0');
-            else
-              -- count up or down
-
-                if tmr0_dir_q='1' then
-                  tmr0_cnt_q <= tmr0_cnt_q + 1;
-                else
-                  tmr0_cnt_q <= tmr0_cnt_q - 1;
-                end if;
-            end if;
-          end if;
+          pwm_out(i)<='0';
         end if;
-      end if;
+      end loop;
     end if;
+
   end process;
 
-  -- Output compare ( synchronous )
-
-  process(wb_clk_i)
-  begin
-    if rising_edge(wb_clk_i) then
-      if tmr0_oc_q >= tmr0_cnt_q then
-        spp_data <= '1';
-      else
-        spp_data <= '0';
-      end if;
-    end if;
-  end process;
-
-  spp_en <= tmr0_oce_q; -- Output compare enable
-
-end behave;
+end behave;     

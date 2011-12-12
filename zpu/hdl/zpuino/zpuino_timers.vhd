@@ -56,6 +56,7 @@ entity zpuino_timers is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
+    
 
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0);
@@ -68,25 +69,22 @@ architecture behave of zpuino_timers is
 
   component timer is
   generic (
-    TSCENABLED: boolean := false
+    TSCENABLED: boolean := false;
+    PWMCOUNT: integer range 1 to 8 := 2;
+    WIDTH: integer range 1 to 32 := 16
   );
   port (
     wb_clk_i:      in std_logic;
 	 	wb_rst_i:   in std_logic;
     wb_dat_o:     out std_logic_vector(wordSize-1 downto 0);
     wb_dat_i:    in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i:  in std_logic_vector(1 downto 0);
+    wb_adr_i:  in std_logic_vector(4 downto 0);
     wb_we_i:       in std_logic;
     wb_cyc_i:       in std_logic;
     wb_stb_i:       in std_logic;
     wb_ack_o:     out std_logic;
     wb_inta_o: out std_logic;
-
-    -- Connection to GPIO pin
-    spp_data: out std_logic;
-    spp_en:   out std_logic;
-
-    comp:     out std_logic
+    pwm_out:    out std_logic_vector(PWMCOUNT-1 downto 0)
 
   );
   end component timer;
@@ -126,16 +124,16 @@ begin
       wb_rst_i  => wb_rst_i,
       wb_dat_o    => timer0_read,
       wb_dat_i   => wb_dat_i,
-      wb_adr_i => wb_adr_i(3 downto 2),
+      wb_adr_i => wb_adr_i(6 downto 2),
       wb_cyc_i      => timer0_cyc,
       wb_stb_i      => timer0_stb,
       wb_we_i      => timer0_we,
       wb_ack_o     => timer0_ack,
-      wb_inta_o   => timer0_interrupt,
+      wb_inta_o   => timer0_interrupt
 
-      spp_data=> timer0_spp_data,
-      spp_en  => timer0_spp_en,
-      comp    => timer0_comp
+      --spp_data=> timer0_spp_data,
+      --spp_en  => timer0_spp_en,
+      --comp    => timer0_comp
     );
 
   timer1_inst: timer
@@ -144,22 +142,22 @@ begin
       wb_rst_i  => wb_rst_i,
       wb_dat_o    => timer1_read,
       wb_dat_i   => wb_dat_i,
-      wb_adr_i => wb_adr_i(3 downto 2),
+      wb_adr_i => wb_adr_i(6 downto 2),
       wb_cyc_i      => timer1_cyc,
       wb_stb_i      => timer1_stb,
       wb_we_i      => timer1_we,
       wb_ack_o     => timer1_ack,
-      wb_inta_o   => timer1_interrupt,
+      wb_inta_o   => timer1_interrupt
 
-      spp_data=> timer1_spp_data,
-      spp_en  => timer1_spp_en
+      --spp_data=> timer1_spp_data,
+      --spp_en  => timer1_spp_en
     );
 
 
   process(wb_adr_i,timer0_read,timer1_read)
   begin
     wb_dat_o <= (others => '0');
-    case wb_adr_i(4) is
+    case wb_adr_i(7) is
       when '0' =>
         wb_dat_o <= timer0_read;
       when '1' =>
@@ -169,12 +167,12 @@ begin
     end case;
   end process;
 
-  timer0_cyc <= wb_cyc_i when wb_adr_i(4)='0' else '0';
-  timer1_cyc <= wb_cyc_i when wb_adr_i(4)='1' else '0';
-  timer0_stb <= wb_stb_i when wb_adr_i(4)='0' else '0';
-  timer1_stb <= wb_stb_i when wb_adr_i(4)='1' else '0';
-  timer0_we <= wb_we_i when wb_adr_i(4)='0' else '0';
-  timer1_we <= wb_we_i when wb_adr_i(4)='1' else '0';
+  timer0_cyc <= wb_cyc_i when wb_adr_i(7)='0' else '0';
+  timer1_cyc <= wb_cyc_i when wb_adr_i(7)='1' else '0';
+  timer0_stb <= wb_stb_i when wb_adr_i(7)='0' else '0';
+  timer1_stb <= wb_stb_i when wb_adr_i(7)='1' else '0';
+  timer0_we <= wb_we_i when wb_adr_i(7)='0' else '0';
+  timer1_we <= wb_we_i when wb_adr_i(7)='1' else '0';
 
 
   wb_ack_o <= timer0_ack or timer1_ack;
