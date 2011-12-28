@@ -136,6 +136,8 @@ begin
               rom_do_wait<='1';
               rom_wb_ack_o<='1';
             end if;
+          elsif rom_wb_cyc_i='0' then
+            rom_wb_ack_o<='0';
           end if;
         end if;
       end if;

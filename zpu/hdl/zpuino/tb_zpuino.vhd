@@ -301,7 +301,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      jtag_ctrl_chain_in => (others => '0')
     );
 
 

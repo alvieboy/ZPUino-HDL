@@ -59,7 +59,11 @@ entity zpuino_top is
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
 
-    dbg_reset:  out std_logic
+    dbg_reset:  out std_logic;
+
+    jtag_data_chain_out: out std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+
   );
 end entity zpuino_top;
 
@@ -91,17 +95,29 @@ architecture behave of zpuino_top is
   );
   end component clkgen;
 
-  component zpuino_debug is
+  component zpuino_debug_core is
   port (
+    clk: in std_logic;
+    rst: in std_logic;
     dbg_pc:         in std_logic_vector(maxAddrBit downto 0);
-    dbg_opcode:     in std_logic_vector(7 downto 0);
+    dbg_opcode_in:     in std_logic_vector(7 downto 0);
+    dbg_opcode_out: out std_logic_vector(7 downto 0);
     dbg_sp:         in std_logic_vector(10 downto 2);
     dbg_brk:        in std_logic;
+    dbg_valid:      in std_logic;
+    dbg_idim:       in std_logic;
+    dbg_ready:      in std_logic;
     dbg_stacka:     in std_logic_vector(wordSize-1 downto 0);
     dbg_stackb:     in std_logic_vector(wordSize-1 downto 0);
     dbg_step:       out std_logic;
     dbg_freeze:       out std_logic;
-    dbg_reset:       out std_logic
+    dbg_reset:       out std_logic;
+    dbg_flush:       out std_logic;
+    dbg_inject:       out std_logic;
+    dbg_injectmode:       out std_logic;
+    jtag_data_chain_out: out std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+
   );
   end component;
 
@@ -198,12 +214,19 @@ architecture behave of zpuino_top is
 
   signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);
   signal dbg_opcode:     std_logic_vector(7 downto 0);
+  signal dbg_opcode_in:  std_logic_vector(7 downto 0);
   signal dbg_sp:         std_logic_vector(10 downto 2);
   signal dbg_brk:        std_logic;
   signal dbg_stacka:     std_logic_vector(wordSize-1 downto 0);
   signal dbg_stackb:     std_logic_vector(wordSize-1 downto 0);
   signal dbg_step:       std_logic := '0';
   signal dbg_freeze:     std_logic;
+  signal dbg_flush:      std_logic;
+  signal dbg_valid:      std_logic;
+  signal dbg_ready:      std_logic;
+  signal dbg_inject:     std_logic;
+  signal dbg_injectmode: std_logic;
+  signal dbg_idim:      std_logic;
 
   signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
   signal stack_a_writeenable, stack_b_writeenable, stack_a_enable,stack_b_enable: std_logic;
@@ -270,12 +293,19 @@ begin
 
       dbg_pc        => dbg_pc,
       dbg_opcode    => dbg_opcode,
+      dbg_opcode_in => dbg_opcode_in,
       dbg_sp        => dbg_sp,
       dbg_brk       => dbg_brk,
       dbg_stacka    => dbg_stacka,
       dbg_stackb    => dbg_stackb,
       dbg_freeze    => dbg_freeze,
-      dbg_step      => dbg_step
+      dbg_step      => dbg_step,
+      dbg_flush => dbg_flush,
+      dbg_inject => dbg_inject,
+      dbg_valid => dbg_valid,
+      dbg_ready => dbg_ready,
+      dbg_idim => dbg_idim,
+      dbg_injectmode => dbg_injectmode
     );
 
   stack: zpuino_stack
@@ -315,17 +345,29 @@ begin
     rom_wb_cti_i      => rom_wb_cti_i
   );
 
-  dbg: zpuino_debug
+  dbg: zpuino_debug_core
     port map (
+      clk           => clk,
+      rst           => rst,
       dbg_pc        => dbg_pc,
-      dbg_opcode    => dbg_opcode,
+      dbg_opcode_in => dbg_opcode,
+      dbg_opcode_out=> dbg_opcode_in,
       dbg_sp        => dbg_sp,
       dbg_brk       => dbg_brk,
       dbg_stacka    => dbg_stacka,
       dbg_stackb    => dbg_stackb,
-      dbg_freeze     => dbg_freeze,
+      dbg_freeze    => dbg_freeze,
       dbg_step      => dbg_step,
-      dbg_reset     => dbg_reset
+      dbg_reset     => dbg_reset,
+      dbg_flush     => dbg_flush,
+      dbg_inject    => dbg_inject,
+      dbg_injectmode=> dbg_injectmode,
+      dbg_valid     => dbg_valid,
+      dbg_ready     => dbg_ready,
+      dbg_idim      => dbg_idim,
+      jtag_data_chain_out => jtag_data_chain_out,
+      jtag_ctrl_chain_in => jtag_ctrl_chain_in
+
    );
 
 

@@ -126,13 +126,19 @@ package zpupkg is
 
     dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
     dbg_opcode:     out std_logic_vector(7 downto 0);
+    dbg_opcode_in:  in std_logic_vector(7 downto 0);
     dbg_sp:         out std_logic_vector(10 downto 2);
     dbg_brk:        out std_logic;
+    dbg_valid:      out std_logic;
+    dbg_ready:      out std_logic;
+    dbg_idim:       out std_logic;
     dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
     dbg_stackb:     out std_logic_vector(wordSize-1 downto 0);
-    dbg_step:       in std_logic; -- async
-    dbg_freeze:     in std_logic -- async
-
+    dbg_step:       in std_logic;
+    dbg_freeze:     in std_logic;
+    dbg_inject:     in std_logic;
+    dbg_injectmode: in std_logic;
+    dbg_flush:      in std_logic
 
   );
   end component zpu_core_small;

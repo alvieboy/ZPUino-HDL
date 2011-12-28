@@ -56,7 +56,9 @@ entity papilio_one_top is
     SPI_MOSI:   out std_logic;
     SPI_CS:     inout std_logic; 
 
-    GPIO:       inout std_logic_vector(47 downto 0);
+    WING_A:     inout std_logic_vector(15 downto 0);
+    WING_B:     inout std_logic_vector(15 downto 0);
+    WING_C:     inout std_logic_vector(15 downto 0);
 
     TXD:        out std_logic;
     RXD:        in std_logic
@@ -142,13 +144,13 @@ architecture behave of papilio_one_top is
   signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
   signal write_save_q: std_logic_vector(wordSize-1 downto 0);
 
-  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal io_write: std_logic_vector(wordSize-1 downto 0);
-  signal io_cyc: std_logic;
-  signal io_stb: std_logic;
-  signal io_we: std_logic;
+--  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
+--  signal io_write: std_logic_vector(wordSize-1 downto 0);
+--  signal io_cyc: std_logic;
+--  signal io_stb: std_logic;
+--  signal io_we: std_logic;
 
-  signal io_device_ack: std_logic;
+--  signal io_device_ack: std_logic;
 
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
@@ -165,6 +167,15 @@ architecture behave of papilio_one_top is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
+  signal jtag_data_chain_out: std_logic_vector(97 downto 0);
+  signal jtag_ctrl_chain_in:  std_logic_vector(9 downto 0);
+
+  component zpuino_debug_spartan3e is
+  port (
+    jtag_data_chain_in: in std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(9 downto 0)
+  );
+  end component;
 
 begin
 
@@ -192,25 +203,6 @@ begin
     rstout  => clkgen_rst
   );
 
-  bufgen: for i in 0 to 47 generate
-    iop: IOPAD
-      port map(
-        I => gpio_o(i),
-        O => gpio_i(i),
-        T => gpio_t(i),
-        C => sysclk,
-        PAD => gpio(i)
-      );
-  end generate;
-
-  -- Other ports are special, we need to avoid outputs on input-only pins
-
-  ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
-  obuftx:   OPAD port map ( I => tx,   PAD => TXD );
-  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
-  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
 
   zpuino:zpuino_top
     port map (
@@ -225,8 +217,19 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      dbg_reset     => dbg_reset
+      dbg_reset     => dbg_reset,
+      jtag_data_chain_out => jtag_data_chain_out,
+      jtag_ctrl_chain_in  => jtag_ctrl_chain_in
+
     );
+
+  dbgport: zpuino_debug_spartan3e
+    port map (
+      jtag_data_chain_in => jtag_data_chain_out,
+      jtag_ctrl_chain_out => jtag_ctrl_chain_in
+    );
+
+
 
 
   --
@@ -549,8 +552,71 @@ begin
   );
 
 
+  pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
+  pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
+  pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
+  pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
+  pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
+  pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
+  pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
+  pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
+  pin08: IOPAD port map(I => gpio_o(8), O => gpio_i(8), T => gpio_t(8), C => sysclk,PAD => WING_A(8) );
+  pin09: IOPAD port map(I => gpio_o(9), O => gpio_i(9), T => gpio_t(9), C => sysclk,PAD => WING_A(9) );
+  pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
+  pin11: IOPAD port map(I => gpio_o(11),O => gpio_i(11),T => gpio_t(11),C => sysclk,PAD => WING_A(11) );
+  pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
+  pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
+  pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
+  pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
+
+  pin16: IOPAD port map(I => gpio_o(16),O => gpio_i(16),T => gpio_t(16),C => sysclk,PAD => WING_B(0) );
+  pin17: IOPAD port map(I => gpio_o(17),O => gpio_i(17),T => gpio_t(17),C => sysclk,PAD => WING_B(1) );
+  pin18: IOPAD port map(I => gpio_o(18),O => gpio_i(18),T => gpio_t(18),C => sysclk,PAD => WING_B(2) );
+  pin19: IOPAD port map(I => gpio_o(19),O => gpio_i(19),T => gpio_t(19),C => sysclk,PAD => WING_B(3) );
+  pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) );
+  pin21: IOPAD port map(I => gpio_o(21),O => gpio_i(21),T => gpio_t(21),C => sysclk,PAD => WING_B(5) );
+  pin22: IOPAD port map(I => gpio_o(22),O => gpio_i(22),T => gpio_t(22),C => sysclk,PAD => WING_B(6) );
+  pin23: IOPAD port map(I => gpio_o(23),O => gpio_i(23),T => gpio_t(23),C => sysclk,PAD => WING_B(7) );
+  pin24: IOPAD port map(I => gpio_o(24),O => gpio_i(24),T => gpio_t(24),C => sysclk,PAD => WING_B(8) );
+  pin25: IOPAD port map(I => gpio_o(25),O => gpio_i(25),T => gpio_t(25),C => sysclk,PAD => WING_B(9) );
+  pin26: IOPAD port map(I => gpio_o(26),O => gpio_i(26),T => gpio_t(26),C => sysclk,PAD => WING_B(10) );
+  pin27: IOPAD port map(I => gpio_o(27),O => gpio_i(27),T => gpio_t(27),C => sysclk,PAD => WING_B(11) );
+  pin28: IOPAD port map(I => gpio_o(28),O => gpio_i(28),T => gpio_t(28),C => sysclk,PAD => WING_B(12) );
+  pin29: IOPAD port map(I => gpio_o(29),O => gpio_i(29),T => gpio_t(29),C => sysclk,PAD => WING_B(13) );
+  pin30: IOPAD port map(I => gpio_o(30),O => gpio_i(30),T => gpio_t(30),C => sysclk,PAD => WING_B(14) );
+  pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
+
+  pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
+  pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
+  pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
+  pin35: IOPAD port map(I => gpio_o(35),O => gpio_i(35),T => gpio_t(35),C => sysclk,PAD => WING_C(3) );
+  pin36: IOPAD port map(I => gpio_o(36),O => gpio_i(36),T => gpio_t(36),C => sysclk,PAD => WING_C(4) );
+  pin37: IOPAD port map(I => gpio_o(37),O => gpio_i(37),T => gpio_t(37),C => sysclk,PAD => WING_C(5) );
+  pin38: IOPAD port map(I => gpio_o(38),O => gpio_i(38),T => gpio_t(38),C => sysclk,PAD => WING_C(6) );
+  pin39: IOPAD port map(I => gpio_o(39),O => gpio_i(39),T => gpio_t(39),C => sysclk,PAD => WING_C(7) );
+  pin40: IOPAD port map(I => gpio_o(40),O => gpio_i(40),T => gpio_t(40),C => sysclk,PAD => WING_C(8) );
+  pin41: IOPAD port map(I => gpio_o(41),O => gpio_i(41),T => gpio_t(41),C => sysclk,PAD => WING_C(9) );
+  pin42: IOPAD port map(I => gpio_o(42),O => gpio_i(42),T => gpio_t(42),C => sysclk,PAD => WING_C(10) );
+  pin43: IOPAD port map(I => gpio_o(43),O => gpio_i(43),T => gpio_t(43),C => sysclk,PAD => WING_C(11) );
+  pin44: IOPAD port map(I => gpio_o(44),O => gpio_i(44),T => gpio_t(44),C => sysclk,PAD => WING_C(12) );
+  pin45: IOPAD port map(I => gpio_o(45),O => gpio_i(45),T => gpio_t(45),C => sysclk,PAD => WING_C(13) );
+  pin46: IOPAD port map(I => gpio_o(46),O => gpio_i(46),T => gpio_t(46),C => sysclk,PAD => WING_C(14) );
+  pin47: IOPAD port map(I => gpio_o(47),O => gpio_i(47),T => gpio_t(47),C => sysclk,PAD => WING_C(15) );
+
+
   uart_rx <= rx;
   tx <= uart_tx;
+
+
+  -- Other ports are special, we need to avoid outputs on input-only pins
+
+  ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
+  obuftx:   OPAD port map ( I => tx,   PAD => TXD );
+  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
+  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
+  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
+
 
   process(spi_enabled,spi2_enabled,spi_enabled,
           uart_enabled,sigmadelta_spp_en, uart_tx,
