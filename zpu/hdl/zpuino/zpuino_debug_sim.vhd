@@ -32,9 +32,9 @@ begin
     wait for 150 ns;
 
     loop
-      wait for 30 ns;
+     wait for 30 ns;
       jtag_debug <= '1';
-      wait for 20 ns;
+      wait for 40 ns;
       jtag_debug<='0';
     end loop;
 

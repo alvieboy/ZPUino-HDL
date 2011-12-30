@@ -279,6 +279,12 @@ type tosSourceType is
   Tos_Source_None
 );
 
+type decoderstate_type is (
+  State_Run,
+  State_Jump,
+  State_Inject
+);
+
 type decoderegs_type is record
 
   valid:          std_logic;
@@ -295,6 +301,7 @@ type decoderegs_type is record
   spOffset:       unsigned(4 downto 0);
   im_emu:         std_logic;
   ininjection:    std_logic;
+  state:          decoderstate_type;
 end record;
 
 type prefetchregs_type is record
@@ -353,7 +360,7 @@ signal wroteback_q: std_logic;
 
 -- Test
 
-signal jump_q : std_logic;
+--signal jump_q : std_logic;
 signal freeze_all: std_logic := '0';
 signal single_step: std_logic := '0';
 
@@ -422,7 +429,7 @@ begin
     --and prefr.valid='1'
     else '0';
 
-  injection_mode<='1' when dbg_injectmode='1' and (jump_q='0' and pfu_busy='0' and exu_busy='0' )else '0';
+  --injection_mode<='1' when dbg_injectmode='1' and (jump_q='0' and pfu_busy='0' and exu_busy='0' )else '0';
 
   decodeControl:
   process(rom_wb_dat_i, tOpcode_sel, sp_load, decr,
@@ -619,14 +626,13 @@ begin
 
   -- Decode/Fetch unit
 
-  rom_wb_cyc_o <= not injection_mode; -- '1'
   rom_wb_stb_o <= not exu_busy;
 
   process(decr, jump_address, decode_jump, wb_clk_i, sp_load,
           sampledDecodedOpcode,sampledOpcode,decode_load_sp,
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
-          jump_q,sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
+          sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
           dbg_flush, dbg_inject, injection_mode
           )
     variable w: decoderegs_type;
@@ -636,7 +642,7 @@ begin
 
     pcnext <= decr.fetchpc + 1;
 
-    rom_wb_adr_o <= std_logic_vector(pc_to_memaddr(w.fetchpc));
+    rom_wb_adr_o <= std_logic_vector(pc_to_memaddr(decr.fetchpc));
 
     rom_wb_cti_o <= CTI_CYCLE_INCRADDR;
 
@@ -647,88 +653,86 @@ begin
       w.ininjection := '0';
       w.im:='0';
       w.im_emu:='0';
+      w.state := State_Run;
     else
 
-      if pfu_busy='0' then 
+      rom_wb_cyc_o <= '1';
 
-        w.ininjection:= injection_mode;
+      case decr.state is
+        when State_Run =>
 
-        if injection_mode='0' then
-          w.fetchpc := pcnext;
-        end if;
+          if pfu_busy='0' then
+            w.fetchpc := pcnext;
 
-        if decode_jump='1' then
-          w.fetchpc := jump_address;
-          w.valid := '0';
-          rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
-        else
-          if dbg_flush='1' then
-            w.valid := '0';
-          else
-            if injection_mode='1' then
+            -- Jump request
+            if decode_jump='1' then
+              w.fetchpc := jump_address;
+              w.valid := '0';
+              w.im := '0';
+              rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+              w.state := State_Jump;
+            else
+              if dbg_injectmode='1' then
+                -- At this point we ought to push a new op into the pipeline.
+                -- Since we're entering inject mode, invalidate next operation,
+                -- but save the current IM flag.
+                w.im_emu := decr.im;
+                w.valid := '0';
+                rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+                -- Wait until no work is to be done
+                if prefr.valid='0' and decr.valid='0' and exu_busy='0' then
+                  w.state := State_Inject;
+                  w.im:='0';
+                end if;
 
-              if decr.ininjection='0' then
-                w.im_emu:=decr.idim;
-                w.fetchpc := decr.pcint; -- Go back, we need to refetch
+              else
+                w.valid := rom_wb_ack_i;
+
+                if rom_wb_ack_i='1' then
+                  w.im := sampledOpcode(7);
+                end if;
+
+                w.pcint := decr.fetchpc;
+                w.opcode := sampledOpcode;
+                w.pc := decr.pcint;
               end if;
 
-              w.valid := dbg_inject;
-            else
-              w.valid := rom_wb_ack_i and not jump_q;
             end if;
+
+            w.opWillFreeze := sampledOpWillFreeze;
+            w.decodedOpcode := sampledDecodedOpcode;
+            w.stackOperation := sampledStackOperation;
+            w.spOffset := sampledspOffset;
+            w.tosSource := sampledTosSource;
+            w.idim := decr.im;
           end if;
 
-          if injection_mode='0' then
-            w.pcint := decr.fetchpc;
-            w.pc := decr.pcint;
-          end if;
-
-        end if; -- decode_jump
-
-        if injection_mode='0' or dbg_inject='1' then
-          w.opcode := sampledOpcode;
-        end if;
-
-        w.opWillFreeze := sampledOpWillFreeze;
-        w.decodedOpcode := sampledDecodedOpcode;
-        w.stackOperation := sampledStackOperation;
-        w.spOffset := sampledspOffset;
-        w.tosSource := sampledTosSource;
-
-        -- Reset IM if we're jumping.
-        if decode_jump='1' then
-          w.im := '0';
-        else
-          if injection_mode='1' then
-            if dbg_inject='1' then
-              w.im := sampledOpcode(7);
-            end if;
-          else
-            if decr.ininjection='1' then
-              w.im := decr.im_emu;
-            else
-
-            if rom_wb_ack_i='1' and jump_q='0' then
-              w.im := sampledOpcode(7);
-            end if;
-
-            end if;
-
-          end if;
-          w.idim := decr.im;
-        end if;
-      else
-
-        if dbg_flush='1' or (injection_mode ='1' and dbg_inject='0') then
+        when State_Jump =>
           w.valid := '0';
-        end if;
-      end if;
+          w.pcint := decr.fetchpc;
+          w.fetchpc := pcnext;
+          w.state := State_Run;
 
-    end if;
+        when State_Inject =>
+          -- NOTE: disable ROM
+          rom_wb_cyc_o <= '0';
+
+          if dbg_injectmode='0' then
+            -- Bye bye injection mode.
+            w.im := decr.im_emu;
+            --rom_wb_cyc_o <= '1';
+            w.fetchpc := decr.pcint;
+            w.pcint := w.fetchpc;
+            w.state := State_Run;
+          else
+            w.valid := '0';
+          end if;
+      end case;
+    end if; -- rst
 
     if rising_edge(wb_clk_i) then
       decr <= w;
-      jump_q <= decode_jump;
+      --jump_q <= decode_jump;
     end if;
 
   end process;
@@ -759,7 +763,7 @@ begin
 
       w.recompute_sp:='0';
 
-      if decr.valid='1' then
+      --if decr.valid='1' then
 
         -- Stack
         w.load := decode_load_sp;
@@ -769,11 +773,12 @@ begin
           w.spnext := sp_load;
           w.recompute_sp := '1';
         else
-
+          
           if exu_busy='1' then
             pfu_busy <='1';
           end if;
 
+          if decr.valid='1' then
           if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
             case decr.stackOperation is
               when Stack_Push =>
@@ -786,8 +791,9 @@ begin
             end case;
             w.sp := prefr.spnext;
           end if;
+          end if;
         end if;
-      end if;
+      --end if;
 
       case decr.decodedOpcode is
         when Decoded_LoadSP | decoded_AddSP =>
@@ -1389,7 +1395,8 @@ begin
   dbg_ready <= '1' when exr.state=state_execute
     and decode_load_sp='0'
     and decode_jump='0'
-    and jump_q='0'
+    and decr.state = State_Inject
+    --and jump_q='0'
       else '0';
 
 end behave;
