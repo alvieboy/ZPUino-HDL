@@ -333,38 +333,38 @@ type exuregs_type is record
   wb_we:      std_logic;
 end record;
 
+-- Registers for each stage
 signal exr:     exuregs_type;
 signal prefr:   prefetchregs_type;
 signal decr:    decoderegs_type;
 
-signal pcnext:     unsigned(maxAddrBit downto 0);
-signal sp_load:  unsigned(spMaxBit downto 2);
-signal decode_load_sp: std_logic;
+signal pcnext:          unsigned(maxAddrBit downto 0);  -- Helper only. TODO: move into variable
+signal sp_load:         unsigned(spMaxBit downto 2);    -- SP value to load, coming from EXU into PFU
+signal decode_load_sp:  std_logic;                      -- Load SP signal from EXU to PFU
+signal exu_busy:        std_logic;                      -- EXU busy ( stalls PFU )
+signal pfu_busy:        std_logic;                      -- PFU busy ( stalls DFU )
+signal decode_jump:     std_logic;                      -- Jump signal from EXU to DFU
+signal jump_address:    unsigned(maxAddrBit downto 0);  -- Jump address from EXU to DFU
+signal do_interrupt:    std_logic;                      -- Helper.
 
-signal exu_busy: std_logic;
-signal pfu_busy: std_logic;
 
-signal decode_jump: std_logic;
-signal jump_address: unsigned(maxAddrBit downto 0);
-
-signal do_interrupt: std_logic;
-
-signal sampledOpcode: std_logic_vector(OpCode_Size-1 downto 0);
-signal sampledDecodedOpcode : DecodedOpcodeType;
-signal sampledOpWillFreeze: std_logic;
+-- Sampled signals from the opcode. Left as signals
+-- in order to simulate design.
+signal sampledOpcode:         std_logic_vector(OpCode_Size-1 downto 0);
+signal sampledDecodedOpcode:  DecodedOpcodeType;
+signal sampledOpWillFreeze:   std_logic;
 signal sampledStackOperation: stackChangeType;
-signal sampledspOffset: unsigned(4 downto 0);
-signal sampledTosSource: tosSourceType;
-signal nos: unsigned(wordSize-1 downto 0); -- This is only a helper
-signal wroteback_q: std_logic;
+signal sampledspOffset:       unsigned(4 downto 0);
+signal sampledTosSource:      tosSourceType;
 
--- Test
+signal nos:                   unsigned(wordSize-1 downto 0); -- This is only a helper
+signal wroteback_q:           std_logic; -- TODO: get rid of this here, move to EXU regs
 
---signal jump_q : std_logic;
+-- Test debug signals
+
 signal freeze_all: std_logic := '0';
 signal single_step: std_logic := '0';
 
-signal injection_mode: std_logic;
 
 begin
 
@@ -422,22 +422,18 @@ begin
 
   tOpcode_sel <= to_integer(decr.pcint(minAddrBit-1 downto 0));
 
---  stack_b_addr <= sampledStackBAddress;
-
   do_interrupt <= '1' when wb_inta_i='1'
     and exr.inInterrupt='0'
-    --and prefr.valid='1'
     else '0';
 
-  --injection_mode<='1' when dbg_injectmode='1' and (jump_q='0' and pfu_busy='0' and exu_busy='0' )else '0';
 
   decodeControl:
   process(rom_wb_dat_i, tOpcode_sel, sp_load, decr,
-    do_interrupt, dbg_inject, dbg_opcode_in, injection_mode)
+    do_interrupt, dbg_inject, dbg_opcode_in)
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
   begin
-    if injection_mode='1' then
+    if false then
       tOpcode := dbg_opcode_in;
     else
       case (tOpcode_sel) is
@@ -608,7 +604,7 @@ begin
           sampledDecodedOpcode<=Decoded_Flip;
           sampledTosSource <= Tos_Source_Flip;
         when OpCode_Store =>
-          sampledStackOperation <= Stack_DualPop;   -- Dual pop, actually
+          sampledStackOperation <= Stack_DualPop;
           sampledDecodedOpcode<=Decoded_Store;
           sampledOpWillFreeze<='1';
         when OpCode_PopSP =>
@@ -633,7 +629,7 @@ begin
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
-          dbg_flush, dbg_inject, injection_mode
+          dbg_flush, dbg_inject
           )
     variable w: decoderegs_type;
   begin
@@ -722,7 +718,7 @@ begin
             w.im := decr.im_emu;
             --rom_wb_cyc_o <= '1';
             w.fetchpc := decr.pcint;
-            w.pcint := w.fetchpc;
+            --w.pcint := w.fetchpc;
             w.state := State_Run;
           else
             w.valid := '0';
@@ -732,7 +728,6 @@ begin
 
     if rising_edge(wb_clk_i) then
       decr <= w;
-      --jump_q <= decode_jump;
     end if;
 
   end process;
@@ -801,7 +796,7 @@ begin
         when others =>
       end case;
 
-      if decode_jump='1' then
+      if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
         w.valid := '0';
       else
         if dbg_flush='1' then
@@ -813,12 +808,12 @@ begin
       
       if exu_busy='0' then
         w.decodedOpcode := decr.decodedOpcode;
-        w.tosSource := decr.tosSource;
-        w.opcode := decr.opcode;
-        w.opWillFreeze := decr.opWillFreeze;
-        w.pc := decr.pc;
-        w.fetchpc := decr.pcint;
-        w.idim := decr.idim;
+        w.tosSource     := decr.tosSource;
+        w.opcode        := decr.opcode;
+        w.opWillFreeze  := decr.opWillFreeze;
+        w.pc            := decr.pc;
+        w.fetchpc       := decr.pcint;
+        w.idim          := decr.idim;
       end if;
 
     end if;
@@ -954,7 +949,8 @@ begin
 
         instruction_executed := '1';
 
-        -- TOS
+        -- TOS big muxer
+
         case prefr.tosSource is
           when Tos_Source_PC =>
             w.tos := (others => '0');
@@ -1365,6 +1361,7 @@ begin
         exr.wb_stb <= '1';
       else
         exr <= w;
+        -- TODO: move wroteback_q into EXU regs
         wroteback_q <= wroteback;
 
         if exr.break='1' then
@@ -1373,13 +1370,13 @@ begin
 
         -- Some sanity checks, to be caught in simulation
         if prefr.valid='1' then
-        if prefr.tosSource=Tos_Source_Idim0 and prefr.idim='1' then
-          report "Invalid IDIM flag 0" severity error;
-        end if;
-
-        if prefr.tosSource=Tos_Source_IdimN and prefr.idim='0' then
-          report "Invalid IDIM flag 1" severity error;
-        end if;
+          if prefr.tosSource=Tos_Source_Idim0 and prefr.idim='1' then
+            report "Invalid IDIM flag 0" severity error;
+          end if;
+  
+          if prefr.tosSource=Tos_Source_IdimN and prefr.idim='0' then
+            report "Invalid IDIM flag 1" severity error;
+          end if;
         end if;
 
       end if;
