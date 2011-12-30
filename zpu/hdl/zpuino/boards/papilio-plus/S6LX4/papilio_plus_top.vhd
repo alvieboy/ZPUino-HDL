@@ -304,6 +304,15 @@ architecture behave of papilio_plus_top is
   signal sram_stb_o: std_logic;
   signal sram_ack_i: std_logic;
 
+  signal jtag_data_chain_out: std_logic_vector(97 downto 0);
+  signal jtag_ctrl_chain_in:  std_logic_vector(9 downto 0);
+
+  component zpuino_debug_spartan6 is
+  port (
+    jtag_data_chain_in: in std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(9 downto 0)
+  );
+  end component;
 
 begin
 
@@ -416,12 +425,12 @@ begin
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
 
   obuftx:   OPAD port map ( I => tx,           PAD => TXD );
-  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
+  ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
   ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
-  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
+  ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
   oled:     OPAD port map ( I => gpio_o(54),   PAD => LED );
 
@@ -442,7 +451,15 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      jtag_data_chain_out => jtag_data_chain_out,
+      jtag_ctrl_chain_in  => jtag_ctrl_chain_in
+    );
+
+  dbgport: zpuino_debug_spartan6
+    port map (
+      jtag_data_chain_in => jtag_data_chain_out,
+      jtag_ctrl_chain_out => jtag_ctrl_chain_in
     );
 
   --
@@ -871,9 +888,9 @@ slot9: zpuino_empty_device
 
     gpio_spp_data <= (others => DontCareValue);
 
-    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
-    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
-    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
+--    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
+--    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
+--    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
     gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
     gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
     gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1

@@ -230,6 +230,14 @@ architecture behave of tb_zpuino is
   );
   END component sram;
 
+  component zpuino_debug_sim is
+  port (
+    jtag_data_chain_in: in std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(9 downto 0)
+  );
+  end component;
+
+
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
   signal slot_we:    slot_std_logic_type;
@@ -239,6 +247,10 @@ architecture behave of tb_zpuino is
   signal slot_address:  slot_address_type;
   signal slot_ack:   slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
+
+  signal jtag_data_chain_out: std_logic_vector(97 downto 0);
+  signal jtag_ctrl_chain_in: std_logic_vector(9 downto 0);
+
 
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
@@ -302,7 +314,14 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      jtag_ctrl_chain_in => (others => '0')
+      jtag_ctrl_chain_in => jtag_ctrl_chain_in,
+      jtag_data_chain_out => jtag_data_chain_out
+    );
+
+  dbgport: zpuino_debug_sim
+    port map (
+      jtag_data_chain_in => jtag_data_chain_out,
+      jtag_ctrl_chain_out => jtag_ctrl_chain_in
     );
 
 
