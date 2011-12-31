@@ -732,8 +732,10 @@ begin
             w.state := State_Run;
           else
             -- Handle opcode injection
-            -- TODO: merge this with main decode
-            if pfu_busy='0' then
+            -- TODO: merge this with main decode.
+
+            -- NOTE: we don't check busy here, it's up to debug unit to do it
+            --if pfu_busy='0' then
               --w.fetchpc := pcnext;
 
             -- Jump request
@@ -761,7 +763,7 @@ begin
               w.idim := decr.im;
 
             end if;
-          end if;
+          --end if;
       end case;
     end if; -- rst
 
