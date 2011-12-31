@@ -629,7 +629,7 @@ begin
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
-          dbg_flush, dbg_inject
+          dbg_flush, dbg_inject,dbg_injectmode,
           )
     variable w: decoderegs_type;
   begin
@@ -650,6 +650,7 @@ begin
       w.im:='0';
       w.im_emu:='0';
       w.state := State_Run;
+      rom_wb_cyc_o <= '0';
     else
 
       rom_wb_cyc_o <= '1';

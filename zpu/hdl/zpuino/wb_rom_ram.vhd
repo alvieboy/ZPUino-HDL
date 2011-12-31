@@ -67,7 +67,7 @@ architecture behave of wb_rom_ram is
   signal memBRead:         std_logic_vector(31 downto 0);
   signal memBEnable:       std_logic;
 
-  signal rom_burst: std_logic;
+  --signal rom_burst: std_logic;
   signal rom_do_wait: std_logic;
 
   type ramregs_type is record
@@ -111,12 +111,12 @@ begin
     if rising_edge(rom_wb_clk_i) then
       if rom_wb_rst_i='1' then
         rom_wb_ack_o <= '0';
-        rom_burst <= '0';
+        --rom_burst <= '0';
         rom_do_wait<='0';
       else
         if rom_do_wait='1' then
           if rom_wb_cti_i=CTI_CYCLE_INCRADDR then
-              rom_burst<='1';
+              --rom_burst<='1';
               rom_do_wait<='0';
               rom_wb_ack_o<='1';
             else
@@ -128,11 +128,11 @@ begin
 
           if rom_wb_cyc_i='1' and rom_wb_stb_i='1' then
             if rom_wb_cti_i=CTI_CYCLE_INCRADDR then
-              rom_burst<='1';
+              --rom_burst<='1';
               rom_do_wait<='0';
               rom_wb_ack_o<='1';
             else
-              rom_burst<='0';
+              --rom_burst<='0';
               rom_do_wait<='1';
               rom_wb_ack_o<='1';
             end if;
