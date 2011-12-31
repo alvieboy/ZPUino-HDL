@@ -97,11 +97,13 @@ entity zpu_core_extreme is
     dbg_idim:        out std_logic;
     dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
     dbg_stackb:     out std_logic_vector(wordSize-1 downto 0);
+
     dbg_step:       in std_logic;
     dbg_freeze:     in std_logic;
     dbg_inject:     in std_logic;
     dbg_injectmode: in std_logic;
     dbg_flush:      in std_logic;
+
     dbg_valid:      out std_logic
   );
 end zpu_core_extreme;
@@ -282,7 +284,8 @@ type tosSourceType is
 type decoderstate_type is (
   State_Run,
   State_Jump,
-  State_Inject
+  State_Inject,
+  State_InjectJump
 );
 
 type decoderegs_type is record
@@ -300,7 +303,7 @@ type decoderegs_type is record
   stackOperation: stackChangeType;
   spOffset:       unsigned(4 downto 0);
   im_emu:         std_logic;
-  ininjection:    std_logic;
+  emumode:        std_logic;
   state:          decoderstate_type;
 end record;
 
@@ -433,7 +436,7 @@ begin
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
   begin
-    if false then
+    if dbg_inject='1' then
       tOpcode := dbg_opcode_in;
     else
       case (tOpcode_sel) is
@@ -629,7 +632,7 @@ begin
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
-          dbg_flush, dbg_inject,dbg_injectmode,
+          dbg_flush, dbg_inject,dbg_injectmode
           )
     variable w: decoderegs_type;
   begin
@@ -646,7 +649,7 @@ begin
       w.pc     := (others => '0');
       w.valid  := '0';
       w.fetchpc := (others => '0');
-      w.ininjection := '0';
+      --w.ininjection := '0';
       w.im:='0';
       w.im_emu:='0';
       w.state := State_Run;
@@ -659,7 +662,9 @@ begin
         when State_Run =>
 
           if pfu_busy='0' then
-            w.fetchpc := pcnext;
+            if dbg_injectmode='0' then
+              w.fetchpc := pcnext;
+            end if;
 
             -- Jump request
             if decode_jump='1' then
@@ -681,6 +686,7 @@ begin
                   w.state := State_Inject;
                   w.im:='0';
                 end if;
+                w.pc := decr.pcint;
 
               else
                 w.valid := rom_wb_ack_i;
@@ -710,19 +716,51 @@ begin
           w.fetchpc := pcnext;
           w.state := State_Run;
 
+        when State_InjectJump =>
+          w.valid := '0';
+          w.pcint := decr.fetchpc;
+          w.fetchpc := pcnext;
+          w.state := State_Inject;
+
         when State_Inject =>
           -- NOTE: disable ROM
           rom_wb_cyc_o <= '0';
 
           if dbg_injectmode='0' then
-            -- Bye bye injection mode.
             w.im := decr.im_emu;
-            --rom_wb_cyc_o <= '1';
             w.fetchpc := decr.pcint;
-            --w.pcint := w.fetchpc;
             w.state := State_Run;
           else
-            w.valid := '0';
+            -- Handle opcode injection
+            -- TODO: merge this with main decode
+            if pfu_busy='0' then
+              --w.fetchpc := pcnext;
+
+            -- Jump request
+              if decode_jump='1' then
+                w.fetchpc := jump_address;
+                w.valid := '0';
+                w.im := '0';
+                w.state := State_InjectJump;
+              else
+                w.valid := dbg_inject;
+
+                if dbg_inject='1' then
+                  w.im := sampledOpcode(7);
+                  --w.pcint := decr.fetchpc;
+                  w.opcode := sampledOpcode;
+                  w.pc := decr.pcint;
+                end if;
+              end if;
+
+              w.opWillFreeze := sampledOpWillFreeze;
+              w.decodedOpcode := sampledDecodedOpcode;
+              w.stackOperation := sampledStackOperation;
+              w.spOffset := sampledspOffset;
+              w.tosSource := sampledTosSource;
+              w.idim := decr.im;
+
+            end if;
           end if;
       end case;
     end if; -- rst

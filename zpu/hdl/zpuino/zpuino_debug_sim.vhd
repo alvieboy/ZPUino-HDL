@@ -35,7 +35,28 @@ begin
      wait for 30 ns;
       jtag_debug <= '1';
       wait for 40 ns;
+      --
+      jtag_opcode <= x"88";  -- IM 8
+      jtag_inject <= '1';
+      wait for 10 ns;
+      jtag_inject <= '0';
+      wait for 80 ns;
+
+      jtag_opcode <= x"08";  -- LOAD
+      jtag_inject <= '1';
+      wait for 10 ns;
+      jtag_inject <= '0';
+      wait for 80 ns;
+
+      jtag_opcode <= x"50";  -- STORESP 0
+      jtag_inject <= '1';
+      wait for 10 ns;
+      jtag_inject <= '0';
+      wait for 80 ns;
+
+
       jtag_debug<='0';
+      wait for 60 ns;
     end loop;
 
     wait;
