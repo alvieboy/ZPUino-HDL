@@ -44,7 +44,7 @@ use work.wishbonepkg.all;
 library UNISIM;
 use UNISIM.vcomponents.all;
 
-entity zpu_core_small is
+entity zpu_core_extreme is
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -104,9 +104,9 @@ entity zpu_core_small is
     dbg_flush:      in std_logic;
     dbg_valid:      out std_logic
   );
-end zpu_core_small;
+end zpu_core_extreme;
 
-architecture behave of zpu_core_small is
+architecture behave of zpu_core_extreme is
 
 component pulse is
   port (

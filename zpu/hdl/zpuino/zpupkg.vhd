@@ -84,7 +84,7 @@ package zpupkg is
 			);
 	end component;
 
-  component zpu_core_small is
+  component zpu_core_extreme is
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -141,7 +141,7 @@ package zpupkg is
     dbg_flush:      in std_logic
 
   );
-  end component zpu_core_small;
+  end component;
 
 	-- opcode decode constants
 	constant	OpCode_Im		: std_logic_vector(7 downto 7) := "1";
