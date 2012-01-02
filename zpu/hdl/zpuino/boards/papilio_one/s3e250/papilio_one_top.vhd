@@ -611,11 +611,11 @@ begin
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => gpio_i(49), C => sysclk );
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
-  ospiclk:  OPAD port map ( I => gpio_o(51),   PAD => SPI_SCK );
+  ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
   ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
-  ospimosi: OPAD port map ( I => gpio_o(53),   PAD => SPI_MOSI );
+  ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 
   process(spi_enabled,spi2_enabled,spi_enabled,
@@ -627,9 +627,9 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
-    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
-    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
+--    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
+--    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
+--    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
     gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
     gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
     gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1

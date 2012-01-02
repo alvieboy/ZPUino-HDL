@@ -433,8 +433,7 @@ static void cmd_progmem()
 	 buffer[5] is size,
 	 next bytes are data
 	 */
-	// TEST
-    return;
+
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
 	unsigned char *source;
@@ -746,42 +745,42 @@ void configure_pins()
 #ifdef __ZPUINO_PAPILIO_ONE__
 void configure_pins()
 {
-	outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
+ /*   outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
 	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
 	inputPinForFunction( FPGA_PIN_SPI_MISO, IOPIN_SPI_MISO);
-
-	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
+   */
+/*	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
 	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);
-	pinModePPS(FPGA_PIN_FLASHCS,LOW);
-	pinModePPS(WING_C_0,LOW);
+*/  pinModePPS(FPGA_PIN_FLASHCS,LOW);
+/*	pinModePPS(WING_C_0,LOW);*/
 
-	pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
-	pinMode(FPGA_PIN_SPI_SCK, OUTPUT);
+	//pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
+	//pinMode(FPGA_PIN_SPI_SCK, OUTPUT);
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
-	pinMode(WING_C_0, OUTPUT);
+	//pinMode(WING_C_0, OUTPUT);
 	
-	digitalWrite(WING_C_0,HIGH);
+/*   digitalWrite(WING_C_0,HIGH);*/
 
 }
 #endif
 #ifdef __ZPUINO_PAPILIO_PLUS__
 void configure_pins()
 {
-	outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
+	/*outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
 	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
 	inputPinForFunction( FPGA_PIN_SPI_MISO, IOPIN_SPI_MISO);
-
-	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
-	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);
+    */
+  /*  pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
+	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);*/
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
-	pinModePPS(WING_C_0,LOW);
+/*	pinModePPS(WING_C_0,LOW);*/
 
-	pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
-	pinMode(FPGA_PIN_SPI_SCK, OUTPUT);
+/*	pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
+	pinMode(FPGA_PIN_SPI_SCK, OUTPUT);*/
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
-	pinMode(WING_C_0, OUTPUT);
+/*	pinMode(WING_C_0, OUTPUT);
 	
-	digitalWrite(WING_C_0,HIGH);
+	digitalWrite(WING_C_0,HIGH);*/
 
 }
 #endif
@@ -884,14 +883,3 @@ extern "C" int main(int argc,char**argv)
 		}
 	}
 }
-/*
-extern "C" void __attribute__((noreturn)) _opcode_swap_c(unsigned int pc,unsigned int sp,unsigned int addra,unsigned int addrb)
-{
-	printhex(pc);
-	printhex(sp);
-	printhex(addra);
-	printhex(addrb);
-
-
-	while(1);
-} */
