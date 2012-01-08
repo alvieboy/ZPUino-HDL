@@ -12,7 +12,8 @@ entity zpuino_debug_jtag is
   port (
     -- Connections to JTAG stuff
 
-    TCK: in std_logic;
+    TCKIR: in std_logic;
+    TCKDR: in std_logic;
     TDI: in std_logic;
     CAPTUREIR: in std_logic;
     UPDATEIR:  in std_logic;
@@ -53,12 +54,12 @@ architecture behave of zpuino_debug_jtag is
 
 begin
 
-  process(TCK, TLR)
+  process(TCKIR, TLR)
   begin
     if TLR='1' then
       ir <= IDCODE;
     else
-      if rising_edge(TCK) then
+      if rising_edge(TCKIR) then
         if CAPTUREIR='1' then
           irs <= IDCODE;
        elsif UPDATEIR='1' then
@@ -74,9 +75,9 @@ begin
 
   TDO_IR <= irs(0);
 
-  process(TCK)
+  process(TCKDR)
   begin
-    if rising_edge(TCK) then
+    if rising_edge(TCKDR) then
       if ir=IDCODE then
         if CAPTUREDR='1' then
           --report "Capture DR: chain " & str(ir) severity note;
@@ -92,9 +93,9 @@ begin
   end process;
 
 
-  process(TCK)
+  process(TCKDR)
   begin
-    if rising_edge(TCK) then
+    if rising_edge(TCKDR) then
       if ir=DATACHAIN then
         if CAPTUREDR='1' then
           --report "Capture DR: chain " & str(ir) & " gives " & str(jtag_data_chain_in) severity note;
@@ -108,9 +109,9 @@ begin
     end if;
   end process;
 
-  process(TCK)
+  process(TCKDR)
   begin
-    if rising_edge(TCK) then
+    if rising_edge(TCKDR) then
       if ir=CONTROLCHAIN then
         if CAPTUREDR='1' then
           --controlchain_s <= (others =>'0'); --

@@ -241,7 +241,8 @@ architecture behave of tb_zpuino is
   port (
     -- Connections to JTAG stuff
 
-    TCK: in std_logic;
+    TCKIR: in std_logic;
+    TCKDR: in std_logic;
     TDI: in std_logic;
     CAPTUREIR: in std_logic;
     UPDATEIR:  in std_logic;
@@ -305,7 +306,7 @@ architecture behave of tb_zpuino is
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in: std_logic_vector(11 downto 0);
 
-  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
+  signal TCKDR,TCKIR,TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
   signal jTCK,jTDI,jTDO,jTMS: std_logic;
   
   signal wb_clk_i: std_logic;
@@ -382,7 +383,8 @@ begin
       jtag_data_chain_in => jtag_data_chain_out,
       jtag_ctrl_chain_out => jtag_ctrl_chain_in,
 
-      TCK         => TCK,
+      TCKIR       => TCKIR,
+      TCKDR       => TCKDR,
       TDI         => TDI,
       CAPTUREIR   => CAPTUREIR,
       UPDATEIR    => UPDATEIR,
@@ -395,6 +397,9 @@ begin
       TDO_IR      => TDO_IR,
       TDO_DR      => TDO_DR
     );
+
+  TCKDR <= TCK;
+  TCKIR <= TCK;
 
   jtag: jtag_openocd_rbb
   port map (
