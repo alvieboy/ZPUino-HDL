@@ -51,6 +51,15 @@ architecture behave of tap is
 
   signal r: tapregs_type;
 
+  signal i_CAPTUREIR:std_logic;
+  signal i_UPDATEIR: std_logic;
+  signal i_SHIFTIR:  std_logic;
+  signal i_CAPTUREDR:std_logic;
+  signal i_UPDATEDR: std_logic;
+  signal i_SHIFTDR:  std_logic;
+  signal i_TLR:      std_logic;
+
+
 begin
 
 process (TCK, r)
@@ -196,12 +205,20 @@ end process;
   out_TCK <= TCK;
   out_TDI <= TDI;
 
-  out_UPDATEDR <= '1' when r.state=State_UpdateDR else '0';
-  out_CAPTUREDR <= '1' when r.state=State_CaptureDR else '0';
-  out_SHIFTDR <= '1' when r.state=State_ShiftDR else '0';
-  out_UPDATEIR <= '1' when r.state=State_UpdateIR else '0';
-  out_CAPTUREIR <= '1' when r.state=State_CaptureIR else '0';
-  out_SHIFTIR <= '1' when r.state=State_ShiftIR else '0';
-  out_TLR<='1' when r.state=State_TestLogicReset else '0';
+  i_UPDATEDR <= '1' when r.state=State_UpdateDR else '0';
+  i_CAPTUREDR <= '1' when r.state=State_CaptureDR else '0';
+  i_SHIFTDR <= '1' when r.state=State_ShiftDR else '0';
+  i_UPDATEIR <= '1' when r.state=State_UpdateIR else '0';
+  i_CAPTUREIR <= '1' when r.state=State_CaptureIR else '0';
+  i_SHIFTIR <= '1' when r.state=State_ShiftIR else '0';
+  i_TLR<='1' when r.state=State_TestLogicReset else '0';
+
+  out_UPDATEDR  <= transport i_UPDATEDR after 1 ns;
+  out_CAPTUREDR <= transport i_CAPTUREDR after 1 ns;
+  out_SHIFTDR   <= transport i_SHIFTDR after 1 ns;
+  out_UPDATEIR  <= transport i_UPDATEIR after 1 ns;
+  out_CAPTUREIR <= transport i_CAPTUREIR after 1 ns;
+  out_SHIFTIR   <= transport i_SHIFTIR after 1 ns;
+  out_TLR       <= transport i_TLR after 1 ns;
 
 end behave;
