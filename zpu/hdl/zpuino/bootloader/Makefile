@@ -17,7 +17,7 @@ DHRYSRC=.
 
 OBJ=boot.o boot-c.o boot-s.o 
 
-CFLAGS=-Os -Wall -mno-callpcrel -fdata-sections \
+CFLAGS=-Os -g -Wall -mno-callpcrel -fdata-sections \
  -ffunction-sections -I../common -D__ZPUINO_$(BOARD)__ $(EXTRACFLAGS) $(DEFINES)
 LDFLAGS= -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
 CXXFLAGS=$(CFLAGS) -fno-exceptions

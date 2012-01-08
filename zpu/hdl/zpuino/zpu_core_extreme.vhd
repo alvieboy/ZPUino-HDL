@@ -1,6 +1,7 @@
 -- ZPU
 --
 -- Copyright 2004-2008 oharboe - Øyvind Harboe - oyvind.harboe@zylin.com
+-- Copyright 2010-2012 Alvaro Lopes - alvieboy@alvie.com
 -- 
 -- The FreeBSD license
 -- 
@@ -110,15 +111,6 @@ end zpu_core_extreme;
 
 architecture behave of zpu_core_extreme is
 
-component pulse is
-  port (
-    pulse_in: in std_logic;
-    pulse_out: out std_logic;
-    clk: in std_logic;
-    rst: in std_logic
-  );
-end component;
-
 component lshifter is
   port (
     clk: in std_logic;
@@ -162,8 +154,6 @@ signal trace_pc:            std_logic_vector(maxAddrBitIncIO downto 0);
 signal trace_sp:            std_logic_vector(maxAddrBitIncIO downto minAddrBit);
 signal trace_topOfStack:    std_logic_vector(wordSize-1 downto 0);
 signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
-
-
 
 -- state machine.
 
@@ -304,6 +294,7 @@ type decoderegs_type is record
   spOffset:       unsigned(4 downto 0);
   im_emu:         std_logic;
   emumode:        std_logic;
+  break:          std_logic;
   state:          decoderstate_type;
 end record;
 
@@ -317,6 +308,7 @@ type prefetchregs_type is record
   pc:             unsigned(maxAddrBit downto 0);
   fetchpc:        unsigned(maxAddrBit downto 0);
   idim:           std_logic;
+  break:          std_logic;
   load:           std_logic;
   opWillFreeze:   std_logic;
   recompute_sp:   std_logic;
@@ -649,10 +641,10 @@ begin
       w.pc     := (others => '0');
       w.valid  := '0';
       w.fetchpc := (others => '0');
-      --w.ininjection := '0';
       w.im:='0';
       w.im_emu:='0';
       w.state := State_Run;
+      w.break := '0';
       rom_wb_cyc_o <= '0';
     else
 
@@ -662,7 +654,7 @@ begin
         when State_Run =>
 
           if pfu_busy='0' then
-            if dbg_injectmode='0' then
+            if dbg_injectmode='0' and decr.break='0' then
               w.fetchpc := pcnext;
             end if;
 
@@ -671,10 +663,11 @@ begin
               w.fetchpc := jump_address;
               w.valid := '0';
               w.im := '0';
+              w.break := '0'; -- Invalidate eventual break after branch instruction
               rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
               w.state := State_Jump;
             else
-              if dbg_injectmode='1' then
+              if dbg_injectmode='1' then --or decr.break='1' then
                 -- At this point we ought to push a new op into the pipeline.
                 -- Since we're entering inject mode, invalidate next operation,
                 -- but save the current IM flag.
@@ -686,18 +679,32 @@ begin
                   w.state := State_Inject;
                   w.im:='0';
                 end if;
-                w.pc := decr.pcint;
+
+                if decr.break='0' then
+                  w.pc := decr.pcint;
+                end if;
 
               else
-                w.valid := rom_wb_ack_i;
+                if decr.break='1' then
+                  w.valid := '0';
+                else
+                  w.valid := rom_wb_ack_i;
+                end if;
 
                 if rom_wb_ack_i='1' then
                   w.im := sampledOpcode(7);
+                  if sampledDecodedOpcode=Decoded_Break then
+                    w.break:='1';
+                  end if;
                 end if;
 
-                w.pcint := decr.fetchpc;
+                if prefr.break='0' then
+                  w.pcint := decr.fetchpc;
+                  w.pc := decr.pcint;
+                end if;
+
                 w.opcode := sampledOpcode;
-                w.pc := decr.pcint;
+                
               end if;
 
             end if;
@@ -730,6 +737,7 @@ begin
             w.im := decr.im_emu;
             w.fetchpc := decr.pcint;
             w.state := State_Run;
+            w.break := '0';
           else
             -- Handle opcode injection
             -- TODO: merge this with main decode.
@@ -749,9 +757,10 @@ begin
 
                 if dbg_inject='1' then
                   w.im := sampledOpcode(7);
+                  --w.break := '0';
                   --w.pcint := decr.fetchpc;
                   w.opcode := sampledOpcode;
-                  w.pc := decr.pcint;
+                  --w.pc := decr.pcint;
                 end if;
               end if;
 
@@ -855,6 +864,7 @@ begin
         w.pc            := decr.pc;
         w.fetchpc       := decr.pcint;
         w.idim          := decr.idim;
+        w.break         := decr.break;
       end if;
 
     end if;
@@ -985,6 +995,7 @@ begin
         w.nos_save := nos;
         w.tos_save := exr.tos;
         w.idim := prefr.idim;
+        w.break:= prefr.break;
 
         begin_inst<='1';
 
@@ -1211,9 +1222,9 @@ begin
             stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
             w.state := State_Resync2;
 
-          when Decoded_Break =>
+          --when Decoded_Break =>
 
-            w.break := '1';
+          --  w.break := '1';
 
           when Decoded_Neqbranch =>
             
@@ -1405,9 +1416,9 @@ begin
         -- TODO: move wroteback_q into EXU regs
         wroteback_q <= wroteback;
 
-        if exr.break='1' then
-          report "BREAK" severity failure;
-        end if;
+        --if exr.break='1' then
+        --  report "BREAK" severity failure;
+        --end if;
 
         -- Some sanity checks, to be caught in simulation
         if prefr.valid='1' then

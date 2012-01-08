@@ -26,11 +26,11 @@ entity zpuino_debug_core is
     dbg_step:       out std_logic;
     dbg_inject:     out std_logic;
     dbg_injectmode: out std_logic;
-    dbg_reset:       out std_logic;
-    dbg_flush:       out std_logic;
+    dbg_reset:      out std_logic;
+    dbg_flush:      out std_logic;
 
-    jtag_data_chain_out: out std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+    jtag_data_chain_out:  out std_logic_vector(97 downto 0);
+    jtag_ctrl_chain_in:   in std_logic_vector(10 downto 0)
   );
 end entity;
 
@@ -48,12 +48,9 @@ architecture behave of zpuino_debug_core is
     state_enter_inject,
     state_flush,
     state_inject,
+    state_leave_inject,
     state_step
   );
-
-  --signal jtag_debug: std_logic;
-  --signal jtag_inject: std_logic;
-  --signal jtag_opcode: std_logic_vector(7 downto 0);
 
   type dbgregs_type is record
     state: state_type;
@@ -148,9 +145,14 @@ begin
             w.injectmode := '1';
             w.opcode := jtag_opcode;
           elsif jtag_debug='0' then
-            w.injectmode:='0';
-            w.state := state_idle;
+            w.flush:='1';
+            w.state := state_leave_inject;
           end if;
+
+        when state_leave_inject =>
+          w.flush := '0';
+          w.injectmode:='0';
+          w.state := state_idle;
 
         when state_enter_inject =>
           -- w.state := state_flush;

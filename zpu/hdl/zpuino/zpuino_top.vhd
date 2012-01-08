@@ -62,7 +62,7 @@ entity zpuino_top is
     dbg_reset:  out std_logic;
 
     jtag_data_chain_out: out std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+    jtag_ctrl_chain_in: in std_logic_vector(10 downto 0)
 
   );
 end entity zpuino_top;
@@ -99,6 +99,7 @@ architecture behave of zpuino_top is
   port (
     clk: in std_logic;
     rst: in std_logic;
+
     dbg_pc:         in std_logic_vector(maxAddrBit downto 0);
     dbg_opcode_in:     in std_logic_vector(7 downto 0);
     dbg_opcode_out: out std_logic_vector(7 downto 0);
@@ -116,7 +117,7 @@ architecture behave of zpuino_top is
     dbg_inject:       out std_logic;
     dbg_injectmode:       out std_logic;
     jtag_data_chain_out: out std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+    jtag_ctrl_chain_in: in std_logic_vector(10 downto 0)
 
   );
   end component;

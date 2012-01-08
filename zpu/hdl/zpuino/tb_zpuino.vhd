@@ -230,12 +230,66 @@ architecture behave of tb_zpuino is
   );
   END component sram;
 
-  component zpuino_debug_sim is
+--  component zpuino_debug_sim is
+--  port (
+--    jtag_data_chain_in: in std_logic_vector(97 downto 0);
+--    jtag_ctrl_chain_out: out std_logic_vector(10 downto 0)
+--  );
+--  end component;
+
+  component zpuino_debug_jtag is
   port (
+    -- Connections to JTAG stuff
+
+    TCK: in std_logic;
+    TDI: in std_logic;
+    CAPTUREIR: in std_logic;
+    UPDATEIR:  in std_logic;
+    SHIFTIR:  in std_logic;
+    CAPTUREDR: in std_logic;
+    UPDATEDR:  in std_logic;
+    SHIFTDR:  in std_logic;
+    TLR:  in std_logic;
+
+    TDO_IR:   out std_logic;
+    TDO_DR:   out std_logic;
+
+
     jtag_data_chain_in: in std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(9 downto 0)
+    jtag_ctrl_chain_out: out std_logic_vector(10 downto 0)
   );
   end component;
+
+  component jtag_openocd_rbb is
+  port (
+    TDI:  out std_logic;
+    TMS:  out std_logic;
+    TCK:  out std_logic;
+    TDO:  in std_logic
+  );
+  end component jtag_openocd_rbb;
+
+
+  component tap is
+  port (
+    TDI:  in std_logic;
+    TDO:  out std_logic;
+    TMS:  in std_logic;
+    TCK:  in std_logic;
+
+    out_TCK: out std_logic;
+    out_TDI: out std_logic;
+    out_CAPTUREIR: out std_logic;
+    out_UPDATEIR:  out std_logic;
+    out_SHIFTIR:  out std_logic;
+    out_CAPTUREDR: out std_logic;
+    out_UPDATEDR:  out std_logic;
+    out_SHIFTDR:  out std_logic;
+    out_TLR:  out std_logic;
+    in_TDO_IR:   in std_logic;
+    in_TDO_DR:   in std_logic
+  );
+  end component tap;
 
 
   -- I/O Signals
@@ -249,9 +303,11 @@ architecture behave of tb_zpuino is
   signal slot_interrupt: slot_std_logic_type;
 
   signal jtag_data_chain_out: std_logic_vector(97 downto 0);
-  signal jtag_ctrl_chain_in: std_logic_vector(9 downto 0);
+  signal jtag_ctrl_chain_in: std_logic_vector(10 downto 0);
 
-
+  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
+  signal jTCK,jTDI,jTDO,jTMS: std_logic;
+  
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 begin
@@ -318,11 +374,54 @@ begin
       jtag_data_chain_out => jtag_data_chain_out
     );
 
-  dbgport: zpuino_debug_sim
+  dbgport: zpuino_debug_jtag
     port map (
       jtag_data_chain_in => jtag_data_chain_out,
-      jtag_ctrl_chain_out => jtag_ctrl_chain_in
+      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
+
+      TCK         => TCK,
+      TDI         => TDI,
+      CAPTUREIR   => CAPTUREIR,
+      UPDATEIR    => UPDATEIR,
+      SHIFTIR     => SHIFTIR,
+      CAPTUREDR   => CAPTUREDR,
+      UPDATEDR    => UPDATEDR,
+      SHIFTDR     => SHIFTDR,
+      TLR         => TLR,
+
+      TDO_IR      => TDO_IR,
+      TDO_DR      => TDO_DR
     );
+
+  jtag: jtag_openocd_rbb
+  port map (
+    TDI => jTDI,
+    TDO => jTDO,
+    TMS => jTMS,
+    TCK => jTCK
+  );
+
+
+  tap_inst: tap
+  port map (
+    TDI => jTDI,
+    TDO => jTDO,
+    TMS => jTMS,
+    TCK => jTCK,
+
+    out_TCK       => TCK,
+    out_TDI       => TDI,
+    out_CAPTUREIR => CAPTUREIR,
+    out_UPDATEIR  => UPDATEIR,
+    out_SHIFTIR   => SHIFTIR,
+    out_CAPTUREDR => CAPTUREDR,
+    out_UPDATEDR  => UPDATEDR,
+    out_SHIFTDR   => SHIFTDR,
+    out_TLR       => TLR,
+    in_TDO_IR     => TDO_IR,
+    in_TDO_DR     => TDO_DR
+  );
+
 
 
   uart_rx <= rxsim;--uart_tx after 7 us;

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DUMMY 0
+#define DUMMY 1
 
 const int port = 7263;
 struct sockaddr_in sock;

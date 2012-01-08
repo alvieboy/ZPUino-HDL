@@ -69,7 +69,7 @@ package zpuinopkg is
     slot_interrupt: in slot_std_logic_type;
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(9 downto 0)
+    jtag_ctrl_chain_in: in std_logic_vector(10 downto 0)
 
 
   );

@@ -145,7 +145,7 @@ unsigned int inbyte()
 extern "C" int main(int argc,char**argv)
 {
 	ivector = &_zpu_interrupt;
-
+//    asm("breakpoint\n");
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	configure_pins();
