@@ -26,17 +26,12 @@ entity zpuino_debug_jtag is
     TDO_DR:   out std_logic;
 
 
-    jtag_data_chain_in: in std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(10 downto 0)
+    jtag_data_chain_in: in std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
   );
 end entity;
 
 architecture behave of zpuino_debug_jtag is
-
-  alias jtag_emureq: std_logic is jtag_ctrl_chain_out(0);
-  alias jtag_inject: std_logic is jtag_ctrl_chain_out(1);
-  alias jtag_step:   std_logic is jtag_ctrl_chain_out(2);
-  alias jtag_opcode: std_logic_vector(7 downto 0) is jtag_ctrl_chain_out(10 downto 3);
 
   subtype irtype is std_logic_vector(3 downto 0);
   signal ir, irs: irtype;

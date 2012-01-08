@@ -57,18 +57,26 @@ package zpupkg is
 	constant	stack_bits		: integer := 5; 
 	constant	stack_size		: integer := 2**stack_bits; 
 
-	component dram is
-		port (clk : in std_logic;
-			areset : in std_logic;
-			mem_writeEnable : in std_logic;
-			mem_readEnable : in std_logic;
-			mem_addr : in std_logic_vector(maxAddrBit downto 0);
-			mem_write : in std_logic_vector(wordSize-1 downto 0);
-			mem_read : out std_logic_vector(wordSize-1 downto 0);
-			mem_busy : out std_logic;
-			mem_writeMask : in std_logic_vector(wordBytes-1 downto 0));
-	end component;
+  type zpu_dbg_out_type is record
+    pc:         std_logic_vector(maxAddrBit downto 0);
+    opcode:     std_logic_vector(7 downto 0);
+    sp:         std_logic_vector(10 downto 2);
+    brk:        std_logic;
+    ready:      std_logic;
+    idim:       std_logic;
+    stacka:     std_logic_vector(wordSize-1 downto 0);
+    stackb:     std_logic_vector(wordSize-1 downto 0);
+    valid:      std_logic;
+  end record;
 
+  type zpu_dbg_in_type is record
+    step:       std_logic;
+    freeze:     std_logic;
+    inject:     std_logic;
+    injectmode: std_logic;
+    flush:      std_logic;
+    opcode:     std_logic_vector(7 downto 0);
+  end record;
 
 	component trace is
 	  port(
@@ -124,22 +132,9 @@ package zpupkg is
     rom_wb_stb_o:       out std_logic;
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);
 
-    dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
-    dbg_opcode:     out std_logic_vector(7 downto 0);
-    dbg_opcode_in:  in std_logic_vector(7 downto 0);
-    dbg_sp:         out std_logic_vector(10 downto 2);
-    dbg_brk:        out std_logic;
-    dbg_valid:      out std_logic;
-    dbg_ready:      out std_logic;
-    dbg_idim:       out std_logic;
-    dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
-    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0);
-    dbg_step:       in std_logic;
-    dbg_freeze:     in std_logic;
-    dbg_inject:     in std_logic;
-    dbg_injectmode: in std_logic;
-    dbg_flush:      in std_logic
-
+    -- Debug interface
+    dbg_out:        out zpu_dbg_out_type;
+    dbg_in:         in zpu_dbg_in_type
   );
   end component;
 

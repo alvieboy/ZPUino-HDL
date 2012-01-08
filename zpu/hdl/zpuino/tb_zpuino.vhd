@@ -255,8 +255,8 @@ architecture behave of tb_zpuino is
     TDO_DR:   out std_logic;
 
 
-    jtag_data_chain_in: in std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(10 downto 0)
+    jtag_data_chain_in: in std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
   );
   end component;
 
@@ -302,14 +302,16 @@ architecture behave of tb_zpuino is
   signal slot_ack:   slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
 
-  signal jtag_data_chain_out: std_logic_vector(97 downto 0);
-  signal jtag_ctrl_chain_in: std_logic_vector(10 downto 0);
+  signal jtag_data_chain_out: std_logic_vector(98 downto 0);
+  signal jtag_ctrl_chain_in: std_logic_vector(11 downto 0);
 
   signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
   signal jTCK,jTDI,jTDO,jTMS: std_logic;
   
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
+
+  signal dbg_reset: std_logic;
 begin
 
   mysram: sram
@@ -356,7 +358,7 @@ begin
 
 
   wb_clk_i <= w_clk;
-  wb_rst_i <= w_rst;
+  wb_rst_i <= w_rst or dbg_reset;
 
   zpuino:zpuino_top
     port map (
@@ -370,6 +372,7 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
+      dbg_reset     => dbg_reset,
       jtag_ctrl_chain_in => jtag_ctrl_chain_in,
       jtag_data_chain_out => jtag_data_chain_out
     );

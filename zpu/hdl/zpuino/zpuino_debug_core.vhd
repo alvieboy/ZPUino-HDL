@@ -12,25 +12,13 @@ entity zpuino_debug_core is
   port (
     clk:            in std_logic;
     rst:            in std_logic;
-    dbg_pc:         in std_logic_vector(maxAddrBit downto 0);
-    dbg_opcode_in:  in std_logic_vector(7 downto 0);
-    dbg_opcode_out: out std_logic_vector(7 downto 0);
-    dbg_sp:         in std_logic_vector(10 downto 2);
-    dbg_brk:        in std_logic;
-    dbg_valid:      in std_logic;
-    dbg_ready:      in std_logic;
-    dbg_idim:       in std_logic;
-    dbg_stacka:     in std_logic_vector(wordSize-1 downto 0);
-    dbg_stackb:     in std_logic_vector(wordSize-1 downto 0);
-    dbg_freeze:     out std_logic;
-    dbg_step:       out std_logic;
-    dbg_inject:     out std_logic;
-    dbg_injectmode: out std_logic;
-    dbg_reset:      out std_logic;
-    dbg_flush:      out std_logic;
 
-    jtag_data_chain_out:  out std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_in:   in std_logic_vector(10 downto 0)
+    dbg_in:         in zpu_dbg_out_type;
+    dbg_out:        out zpu_dbg_in_type;
+    dbg_reset:      out std_logic;
+
+    jtag_data_chain_out:  out std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_in:   in std_logic_vector(11 downto 0)
   );
 end entity;
 
@@ -73,27 +61,38 @@ architecture behave of zpuino_debug_core is
 
   alias jtag_debug:  std_logic is jtag_ctrl_chain_in(0);
   alias jtag_inject: std_logic is jtag_ctrl_chain_in(1);
-  alias jtag_opcode: std_logic_vector(7 downto 0) is jtag_ctrl_chain_in(9 downto 2);
+  alias jtag_step: std_logic is jtag_ctrl_chain_in(2);
+  alias jtag_reset: std_logic is jtag_ctrl_chain_in(3);
+  alias jtag_opcode: std_logic_vector(7 downto 0) is jtag_ctrl_chain_in(11 downto 4);
+
+  signal pc_i: std_logic_vector(wordSize-1 downto 0);
+  signal sp_i: std_logic_vector(wordSize-1 downto 0);
+
 
 begin
 
+  pc_i(wordSize-1 downto dbg_in.pc'high+1) <= (others => '0');
+  pc_i(dbg_in.pc'high downto dbg_in.pc'low) <= dbg_in.pc;
+
+  sp_i(wordSize-1 downto dbg_in.sp'high+1) <= (others => '0');
+  sp_i(dbg_in.sp'high downto dbg_in.sp'low) <= dbg_in.sp;
+  sp_i(dbg_in.sp'low-1 downto 0) <= (others => '0');
+
   -- jtag chain output
   jtag_data_chain_out <=
-    dbg_pc &
-    dbg_opcode_in &
-    dbg_sp &
-    dbg_brk &
-    dbg_stacka &
-    dbg_stackb &
-    dbg_idim &
+    dbg_in.idim &
+    sp_i &
+    dbg_in.stacka &
+    pc_i &
+    dbg_in.brk &
     status_injection_ready
     ;
 
 
   status_injection_ready <= '1' when dbgr.state = state_debug else '0';
 
-  process(clk, rst, dbgr, dbg_valid, jtag_debug, jtag_opcode,
-          inject_q, dbg_ready, dbg_pc, dbg_idim, jtag_ctrl_chain_in)
+  process(clk, rst, dbgr, dbg_in.valid, jtag_debug, jtag_opcode,
+          inject_q, dbg_in.ready, dbg_in.pc, dbg_in.idim, jtag_ctrl_chain_in)
     variable w: dbgregs_type;
   begin
 
@@ -129,7 +128,7 @@ begin
             -- end if;
 
             -- Wait for pipeline to finish
-            if dbg_valid='0' and dbg_ready='1' then
+            if dbg_in.valid='0' and dbg_in.ready='1' then
               --report "Enter PC " & hstr(dbg_pc) & " IDIM flag " & chr(dbg_idim) severity note;
               w.state:=state_debug;
             end if;
@@ -176,7 +175,7 @@ begin
           injected <= '0';
           w.inject := '0';
 
-          if dbg_valid='1' then
+          if dbg_in.valid='1' then
           --  w.step := '1';
             w.state := state_debug;
           end if;
@@ -193,15 +192,21 @@ begin
   end process;
 
   
-  dbg_freeze      <= dbgr.freeze;
-  dbg_reset       <= dbgr.reset;
-  dbg_inject      <= dbgr.inject;
-  dbg_injectmode  <= dbgr.injectmode;-- and dbg_ready;
-  dbg_step        <= dbgr.step;
-  dbg_flush       <= dbgr.flush;
-  dbg_opcode_out  <= dbgr.opcode;
+  dbg_out.freeze      <= dbgr.freeze;
+  --dbg_reset           <= dbgr.reset;
+  dbg_out.inject      <= dbgr.inject;
+  dbg_out.injectmode  <= dbgr.injectmode;-- and dbg_ready;
+  dbg_out.step        <= dbgr.step;
+  dbg_out.flush       <= dbgr.flush;
+  dbg_out.opcode      <= dbgr.opcode;
 
 
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      dbg_reset <= jtag_ctrl_chain_in(3);
+    end if;
+  end process;
 
   -- Synchronization stuff
 

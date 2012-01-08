@@ -89,23 +89,8 @@ entity zpu_core_extreme is
 
     -- Debug interface
 
-    dbg_pc:         out std_logic_vector(maxAddrBit downto 0);
-    dbg_opcode:     out std_logic_vector(7 downto 0);
-    dbg_opcode_in:  in std_logic_vector(7 downto 0);
-    dbg_sp:         out std_logic_vector(10 downto 2);
-    dbg_brk:        out std_logic;
-    dbg_ready:        out std_logic;
-    dbg_idim:        out std_logic;
-    dbg_stacka:     out std_logic_vector(wordSize-1 downto 0);
-    dbg_stackb:     out std_logic_vector(wordSize-1 downto 0);
-
-    dbg_step:       in std_logic;
-    dbg_freeze:     in std_logic;
-    dbg_inject:     in std_logic;
-    dbg_injectmode: in std_logic;
-    dbg_flush:      in std_logic;
-
-    dbg_valid:      out std_logic
+    dbg_out:            out zpu_dbg_out_type;
+    dbg_in:             in zpu_dbg_in_type
   );
 end zpu_core_extreme;
 
@@ -366,13 +351,13 @@ begin
 
   -- Debug interface
 
-  dbg_pc <= std_logic_vector(prefr.pc);
-  dbg_opcode <= prefr.opcode;
-  dbg_sp <= std_logic_vector(prefr.sp);
-  dbg_brk <= exr.break;
-  dbg_stacka <= std_logic_vector(exr.tos);
-  dbg_stackb <= std_logic_vector(nos);
-  dbg_idim <= prefr.idim;
+  dbg_out.pc <= std_logic_vector(prefr.pc);
+  dbg_out.opcode <= prefr.opcode;
+  dbg_out.sp <= std_logic_vector(prefr.sp);
+  dbg_out.brk <= exr.break;
+  dbg_out.stacka <= std_logic_vector(exr.tos);
+  dbg_out.stackb <= std_logic_vector(nos);
+  dbg_out.idim <= prefr.idim;
 
   shl: lshifter
   port map (
@@ -424,12 +409,12 @@ begin
 
   decodeControl:
   process(rom_wb_dat_i, tOpcode_sel, sp_load, decr,
-    do_interrupt, dbg_inject, dbg_opcode_in)
+    do_interrupt, dbg_in.inject, dbg_in.opcode)
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
   begin
-    if dbg_inject='1' then
-      tOpcode := dbg_opcode_in;
+    if dbg_in.inject='1' then
+      tOpcode := dbg_in.opcode;
     else
       case (tOpcode_sel) is
 
@@ -624,7 +609,7 @@ begin
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
-          dbg_flush, dbg_inject,dbg_injectmode
+          dbg_in.flush, dbg_in.inject,dbg_in.injectmode
           )
     variable w: decoderegs_type;
   begin
@@ -654,7 +639,7 @@ begin
         when State_Run =>
 
           if pfu_busy='0' then
-            if dbg_injectmode='0' and decr.break='0' then
+            if dbg_in.injectmode='0' and decr.break='0' then
               w.fetchpc := pcnext;
             end if;
 
@@ -667,7 +652,7 @@ begin
               rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
               w.state := State_Jump;
             else
-              if dbg_injectmode='1' then --or decr.break='1' then
+              if dbg_in.injectmode='1' then --or decr.break='1' then
                 -- At this point we ought to push a new op into the pipeline.
                 -- Since we're entering inject mode, invalidate next operation,
                 -- but save the current IM flag.
@@ -733,7 +718,7 @@ begin
           -- NOTE: disable ROM
           rom_wb_cyc_o <= '0';
 
-          if dbg_injectmode='0' then
+          if dbg_in.injectmode='0' then
             w.im := decr.im_emu;
             w.fetchpc := decr.pcint;
             w.state := State_Run;
@@ -753,9 +738,9 @@ begin
                 w.im := '0';
                 w.state := State_InjectJump;
               else
-                w.valid := dbg_inject;
+                w.valid := dbg_in.inject;
 
-                if dbg_inject='1' then
+                if dbg_in.inject='1' then
                   w.im := sampledOpcode(7);
                   --w.break := '0';
                   --w.pcint := decr.fetchpc;
@@ -788,7 +773,7 @@ begin
   sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed one clock cycle
 
   process(wb_clk_i, wb_rst_i, decr, prefr, exu_busy, decode_jump, sp_load,
-          decode_load_sp, dbg_flush)
+          decode_load_sp, dbg_in.flush)
     variable w: prefetchregs_type;
   begin
 
@@ -849,7 +834,7 @@ begin
       if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
         w.valid := '0';
       else
-        if dbg_flush='1' then
+        if dbg_in.flush='1' then
           w.valid := '0';
         else
           w.valid := decr.valid;
@@ -894,11 +879,11 @@ begin
   wb_we_o     <= exr.wb_we;
   wb_dat_o    <= std_logic_vector( exr.nos_save );
 
-  freeze_all  <= dbg_freeze;
+  freeze_all  <= dbg_in.freeze;
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
           wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos,
-          single_step, freeze_all, dbg_step, wroteback_q,lshifter_done,lshifter_output,
+          single_step, freeze_all, dbg_in.step, wroteback_q,lshifter_done,lshifter_output,
           multiplier_done,multiplier_output)
 
     variable spOffset: unsigned(4 downto 0);
@@ -1436,12 +1421,12 @@ begin
 
   end process;
 
-  single_step <= dbg_step;
-  dbg_valid <= '1' when prefr.valid='1' else '0';
+  single_step <= dbg_in.step;
+  dbg_out.valid <= '1' when prefr.valid='1' else '0';
 
   -- Let pipeline finish
 
-  dbg_ready <= '1' when exr.state=state_execute
+  dbg_out.ready <= '1' when exr.state=state_execute
     and decode_load_sp='0'
     and decode_jump='0'
     and decr.state = State_Inject
