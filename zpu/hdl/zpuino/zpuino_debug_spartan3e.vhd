@@ -48,4 +48,7 @@ BSCAN_SPARTAN3_inst: BSCAN_SPARTAN3
 			TDO2 => TDO2
       );
 
+  CAPTUREIR <= CAPTURE and SEL1;
+  CAPTUREDR <= CAPTURE and SEL2;
+
 end behave;

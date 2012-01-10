@@ -304,20 +304,60 @@ architecture behave of papilio_plus_top is
   signal sram_stb_o: std_logic;
   signal sram_ack_i: std_logic;
 
-  signal jtag_data_chain_out: std_logic_vector(97 downto 0);
-  signal jtag_ctrl_chain_in:  std_logic_vector(9 downto 0);
+  signal jtag_data_chain_out: std_logic_vector(98 downto 0);
+  signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
+
+  component zpuino_debug_jtag is
+  port (
+    -- Connections to JTAG stuff
+
+    TCKIR: in std_logic;
+    TCKDR: in std_logic;
+    TDI: in std_logic;
+    CAPTUREIR: in std_logic;
+    UPDATEIR:  in std_logic;
+    SHIFTIR:  in std_logic;
+    CAPTUREDR: in std_logic;
+    UPDATEDR:  in std_logic;
+    SHIFTDR:  in std_logic;
+    TLR:  in std_logic;
+
+    TDO_IR:   out std_logic;
+    TDO_DR:   out std_logic;
+
+    jtag_data_chain_in: in std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
+  );
+  end component;
 
   component zpuino_debug_spartan6 is
   port (
-    jtag_data_chain_in: in std_logic_vector(97 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(9 downto 0)
+    TCKIR: out std_logic;
+    TCKDR: out std_logic;
+    TDI: out std_logic;
+    CAPTUREIR: out std_logic;
+    UPDATEIR:  out std_logic;
+    SHIFTIR:  out std_logic;
+    CAPTUREDR: out std_logic;
+    UPDATEDR:  out std_logic;
+    SHIFTDR:  out std_logic;
+    TLR:  out std_logic;
+    TDO_IR:   in std_logic;
+    TDO_DR:   in std_logic
   );
   end component;
+
+  signal TCKIR,TCKDR,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
+
+  signal dbg_reset: std_logic;
+  signal softreset: std_logic;
 
 begin
 
   wb_clk_i <= sysclk;
   wb_rst_i <= sysrst;
+
+  softreset <= clkgen_rst or dbg_reset;
 
   rstgen: zpuino_serialreset
     generic map (
@@ -326,7 +366,7 @@ begin
     port map (
       clk       => sysclk,
       rx        => rx,
-      rstin     => clkgen_rst,
+      rstin     => softreset,
       rstout    => sysrst
     );
     --sysrst <= clkgen_rst;
@@ -452,14 +492,45 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
+      dbg_reset     => dbg_reset,
+
       jtag_data_chain_out => jtag_data_chain_out,
       jtag_ctrl_chain_in  => jtag_ctrl_chain_in
     );
 
-  dbgport: zpuino_debug_spartan6
+  dbg: zpuino_debug_jtag
     port map (
       jtag_data_chain_in => jtag_data_chain_out,
-      jtag_ctrl_chain_out => jtag_ctrl_chain_in
+      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
+
+      TCKIR         => TCKIR,
+      TCKDR         => TCKDR,
+      TDI         => TDI,
+      CAPTUREIR   => CAPTUREIR,
+      UPDATEIR    => UPDATEIR,
+      SHIFTIR     => SHIFTIR,
+      CAPTUREDR   => CAPTUREDR,
+      UPDATEDR    => UPDATEDR,
+      SHIFTDR     => SHIFTDR,
+      TLR         => TLR,
+      TDO_IR      => TDO_IR,
+      TDO_DR      => TDO_DR
+    );
+
+  dbgport: zpuino_debug_spartan6
+    port map (
+      TCKIR       => TCKIR,
+      TCKDR       => TCKDR,
+      TDI         => TDI,
+      CAPTUREIR   => CAPTUREIR,
+      UPDATEIR    => UPDATEIR,
+      SHIFTIR     => SHIFTIR,
+      CAPTUREDR   => CAPTUREDR,
+      UPDATEDR    => UPDATEDR,
+      SHIFTDR     => SHIFTDR,
+      TLR         => TLR,
+      TDO_IR      => TDO_IR,
+      TDO_DR      => TDO_DR
     );
 
   --

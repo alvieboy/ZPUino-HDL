@@ -136,6 +136,7 @@ begin
       when CONTROLCHAIN =>
         TDO_DR <= controlchain_s(0);
       when others =>
+        TDO_DR <= DontCareValue;
     end case;
   end process;
 

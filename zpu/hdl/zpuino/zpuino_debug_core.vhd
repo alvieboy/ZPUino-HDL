@@ -210,7 +210,7 @@ begin
 
   -- Synchronization stuff
 
-  process(jtag_inject, clk, injected)
+  process(jtag_inject, clk, injected, inject_q_in)
   begin
     if injected='1' then
       inject_q <= '0';
