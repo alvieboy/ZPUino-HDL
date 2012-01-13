@@ -313,6 +313,12 @@ architecture behave of tb_zpuino is
   signal wb_rst_i: std_logic;
 
   signal dbg_reset: std_logic;
+
+  signal spi2_miso,spi2_mosi,spi2_sck: std_logic;
+
+  signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
+  signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
+
 begin
 
   mysram: sram
@@ -550,8 +556,8 @@ begin
     wb_ack_o      => slot_ack(2),
     wb_inta_o => slot_interrupt(2),
 
-    spp_data  => (others => '0'),
-    spp_read  => open,
+    spp_data  => gpio_spp_data,
+    spp_read  => gpio_spp_read,
 
     gpio_i      => gpio_i,
     gpio_t      => gpio_t,
@@ -627,9 +633,9 @@ begin
     wb_ack_o      => slot_ack(6),
     wb_inta_o => slot_interrupt(6),
 
-    mosi      => open,
-    miso      => '1',
-    sck       => open,
+    mosi      => spi2_mosi,
+    miso      => spi2_miso,
+    sck       => spi2_sck,
     enabled   => open
   );
 
@@ -796,6 +802,14 @@ begin
     wb_ack_o      => slot_ack(15),
     wb_inta_o => slot_interrupt(15)
   );
+
+   -- gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
+  --  gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
+    --gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
+    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
+    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
+    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
+  --  gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
 
 
 end behave;
