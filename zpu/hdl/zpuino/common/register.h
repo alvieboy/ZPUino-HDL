@@ -88,6 +88,12 @@ typedef volatile unsigned int* register_t;
 #define TCTLCP2 6 /* Clock prescaler bit 2 */
 #define TCTLIF  7 /* Interrupt flag */
 #define TCTLOCE 8 /* Output compare enable */
+#define TCTUPDP0 9 /* Update policy */
+#define TCTUPDP1 10 /* Update policy */
+
+#define TCTL_UPDATE_NOW (0)
+#define TCTL_UPDATE_ZERO_SYNC (1)
+#define TCTL_UPDATE_NONE (2)
 
 /* SPI bits */
 #define SPIREADY 0 /* SPI ready */
