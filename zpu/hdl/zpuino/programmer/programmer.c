@@ -573,6 +573,7 @@ int main(int argc, char **argv)
 	unsigned char buffer[8192];
 	uint32_t extrasize = 0;
 	unsigned char *buf=NULL;
+	int success=1;
 
 	uint32_t freq;
 	struct timeval start,end,delta;
@@ -696,10 +697,10 @@ int main(int argc, char **argv)
 
 	buffer_free(b);
 
+	gettimeofday(&start,NULL);
+
 	/* Upload only does not care about flash chips */
 	if (!upload_only) {
-
-		gettimeofday(&start,NULL);
 
 		if (user_offset>=0) {
 			printf("Using user-specified offset 0x%08x\n",user_offset);
@@ -773,7 +774,10 @@ int main(int argc, char **argv)
 	if (upload_only) {
 		int r = do_upload(conn, buf);
 		conn_close(conn);
-		return r;
+		// make this better
+		if (r!=0)
+			success=0;
+		goto report_out;
 	}
 
 	// compute sector erase
@@ -888,7 +892,7 @@ int main(int argc, char **argv)
 				// Dump
 				dump_buffer(&b->buf[3], flash->pagesize);
 				dump_buffer(sptr, flash->pagesize);
-
+				success=0;
 				pages=0;
 			}
 
@@ -910,6 +914,7 @@ int main(int argc, char **argv)
 	}
 	conn_close(conn);
 
+report_out:
 	gettimeofday(&end,NULL);
 #ifdef __linux__
 	timersub(&end,&start,&delta);
@@ -922,7 +927,11 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	printf("Programming completed successfully in %.02f seconds.\n", (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
+	printf("%s completed %s in %.02f seconds.\n",
+
+		   upload_only?"Upload":"Programming",
+		   success?"successfully":"WITH ERRORS",
+		   (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
 
 #ifdef WIN32
 	freemakeargv(argv);
