@@ -294,7 +294,7 @@ begin
             w.pwmr(i) := tmrr.pwmrb(i);
           end if;
         when others =>
-          w.pwmr(i) := tmrr.pwmrb(i);
+          --w.pwmr(i) := tmrr.pwmrb(i);
       end case;
     end loop;
 
