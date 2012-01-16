@@ -170,31 +170,31 @@ architecture behave of papilio_one_top is
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
 
-  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
+--  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
 
 
-  component zpuino_debug_jtag is
-  port (
+--  component zpuino_debug_jtag is
+--  port (
     -- Connections to JTAG stuff
 
-    TCK: in std_logic;
-    TDI: in std_logic;
-    CAPTUREIR: in std_logic;
-    UPDATEIR:  in std_logic;
-    SHIFTIR:  in std_logic;
-    CAPTUREDR: in std_logic;
-    UPDATEDR:  in std_logic;
-    SHIFTDR:  in std_logic;
-    TLR:  in std_logic;
+--    TCK: in std_logic;
+--    TDI: in std_logic;
+--    CAPTUREIR: in std_logic;
+--    UPDATEIR:  in std_logic;
+--    SHIFTIR:  in std_logic;
+--    CAPTUREDR: in std_logic;
+--    UPDATEDR:  in std_logic;
+--    SHIFTDR:  in std_logic;
+--    TLR:  in std_logic;
 
-    TDO_IR:   out std_logic;
-    TDO_DR:   out std_logic;
+--    TDO_IR:   out std_logic;
+--    TDO_DR:   out std_logic;
 
 
-    jtag_data_chain_in: in std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
-  );
-  end component;
+--    jtag_data_chain_in: in std_logic_vector(98 downto 0);
+ --   jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
+--  );
+--  end component;
 
   component zpuino_debug_spartan3e is
   port (
@@ -254,48 +254,48 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
-      jtag_data_chain_out => jtag_data_chain_out,
-      jtag_ctrl_chain_in  => jtag_ctrl_chain_in
+      jtag_data_chain_out => open,--jtag_data_chain_out,
+      jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
 
     );
 
-  dbgport: zpuino_debug_jtag
-    port map (
-      jtag_data_chain_in => jtag_data_chain_out,
-      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
+--  dbgport: zpuino_debug_jtag
+--    port map (
+--      jtag_data_chain_in => jtag_data_chain_out,
+--      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
 
-      TCK         => TCK,
-      TDI         => TDI,
-      CAPTUREIR   => CAPTUREIR,
-      UPDATEIR    => UPDATEIR,
-      SHIFTIR     => SHIFTIR,
-      CAPTUREDR   => CAPTUREDR,
-      UPDATEDR    => UPDATEDR,
-      SHIFTDR     => SHIFTDR,
-      TLR         => TLR,
+--      TCK         => TCK,
+--      TDI         => TDI,
+--      CAPTUREIR   => CAPTUREIR,
+--      UPDATEIR    => UPDATEIR,
+--      SHIFTIR     => SHIFTIR,
+--      CAPTUREDR   => CAPTUREDR,
+--      UPDATEDR    => UPDATEDR,
+--      SHIFTDR     => SHIFTDR,
+--      TLR         => TLR,
 
-      TDO_IR      => TDO_IR,
-      TDO_DR      => TDO_DR
-    );
+--      TDO_IR      => TDO_IR,
+--      TDO_DR      => TDO_DR
+ --   );
 
 
-  dbgport_s3e: zpuino_debug_spartan3e
-    port map (
-
-      TCK         => TCK,
-      TDI         => TDI,
-      CAPTUREIR   => CAPTUREIR,
-      UPDATEIR    => UPDATEIR,
-      SHIFTIR     => SHIFTIR,
-      CAPTUREDR   => CAPTUREDR,
-      UPDATEDR    => UPDATEDR,
-      SHIFTDR     => SHIFTDR,
-      TLR         => TLR,
-
-      TDO_IR      => TDO_IR,
-      TDO_DR      => TDO_DR
-      
-    );
+--  dbgport_s3e: zpuino_debug_spartan3e
+--    port map (
+--
+--      TCK         => TCK,
+--      TDI         => TDI,
+--      CAPTUREIR   => CAPTUREIR,
+--      UPDATEIR    => UPDATEIR,
+--      SHIFTIR     => SHIFTIR,
+ --     CAPTUREDR   => CAPTUREDR,
+  --    UPDATEDR    => UPDATEDR,
+ --     SHIFTDR     => SHIFTDR,
+--      TLR         => TLR,
+--
+--      TDO_IR      => TDO_IR,
+--      TDO_DR      => TDO_DR
+--
+ --   );
 
 
 

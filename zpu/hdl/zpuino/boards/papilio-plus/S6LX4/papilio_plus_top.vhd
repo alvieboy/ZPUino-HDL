@@ -352,8 +352,6 @@ architecture behave of papilio_plus_top is
   signal dbg_reset: std_logic;
   signal softreset: std_logic;
 
-  signal TEST: std_logic;
-
 begin
 
   wb_clk_i <= sysclk;
@@ -431,10 +429,7 @@ begin
   pin28: IOPAD port map(I => gpio_o(28),O => gpio_i(28),T => gpio_t(28),C => sysclk,PAD => WING_B(12) );
   pin29: IOPAD port map(I => gpio_o(29),O => gpio_i(29),T => gpio_t(29),C => sysclk,PAD => WING_B(13) );
   pin30: IOPAD port map(I => gpio_o(30),O => gpio_i(30),T => gpio_t(30),C => sysclk,PAD => WING_B(14) );
-  -- pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
-
-  pin31: IPAD port map(O => TEST,C => sysclk,PAD => WING_B(15) );
-
+  pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
   pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
 
@@ -476,8 +471,7 @@ begin
   ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
-  -- oled:     OPAD port map ( I => gpio_o(54),   PAD => LED );
-  oled:     OPAD port map ( I => TEST,   PAD => LED );
+  oled:     OPAD port map ( I => gpio_o(54),   PAD => LED );
 
   VGA_RED <= vga_r_i;--(0) or vga_r_i(1) or vga_r_i(2);
   VGA_GREEN <= vga_g_i;--(0) or vga_g_i(1) or vga_g_i(2);

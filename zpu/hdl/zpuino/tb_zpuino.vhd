@@ -63,6 +63,10 @@ architecture behave of tb_zpuino is
   signal spi_pf_nsel:  std_logic;
 
 
+  signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
+  signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
+  signal timers_spp_data: std_logic_vector(1 downto 0);
+
   component M25P16 IS
   GENERIC (	init_file: string := string'("initM25P16.txt");         -- Init file name
 		SIZE : positive := 1048576*16;                          -- 16Mbit
@@ -585,7 +589,7 @@ begin
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
 
-    spp_data  => open,
+    spp_data  => timers_spp_data,
     spp_en    => open,
     comp      => open
     );
@@ -803,9 +807,10 @@ begin
     wb_inta_o => slot_interrupt(15)
   );
 
-   -- gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
-  --  gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
-    --gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
+    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
+    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
+    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
+
     spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
     gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
     gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
