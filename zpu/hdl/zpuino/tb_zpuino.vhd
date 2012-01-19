@@ -447,6 +447,10 @@ begin
   uart_tx <= gpio_o(1);
   gpio_i(48) <= uart_rx;
 
+  gp: for i in 0 to 47 generate
+    gpio_i(i) <= gpio_o(i) when gpio_t(i)='0' else 'Z';
+  end generate;
+
   rxs: uart_pty_tx
    port map(
       clk => w_clk,
