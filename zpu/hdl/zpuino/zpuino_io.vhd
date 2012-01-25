@@ -57,13 +57,32 @@ entity zpuino_io is
 
     intready:   in std_logic;
 
-    slot_cyc:   out slot_std_logic_type;
-    slot_we:    out slot_std_logic_type;
-    slot_stb:   out slot_std_logic_type;
-    slot_read:  in slot_cpuword_type := (others => (others => DontCareValue) );
-    slot_write: out slot_cpuword_type;
-    slot_address:  out slot_address_type;
-    slot_ack:   in slot_std_logic_type := (others => '1');
+    slot_cyc:       out slot_std_logic_type;
+    slot_we:        out std_logic;
+    slot_stb:       out std_logic;
+
+    -- Be nice with schematic editors
+
+    slot_0_read:      in cpuword_type := (others => DontCareValue);
+    slot_1_read:      in cpuword_type := (others => DontCareValue);
+    slot_2_read:      in cpuword_type := (others => DontCareValue);
+    slot_3_read:      in cpuword_type := (others => DontCareValue);
+    slot_4_read:      in cpuword_type := (others => DontCareValue);
+    slot_5_read:      in cpuword_type := (others => DontCareValue);
+    slot_6_read:      in cpuword_type := (others => DontCareValue);
+    slot_7_read:      in cpuword_type := (others => DontCareValue);
+    slot_8_read:      in cpuword_type := (others => DontCareValue);
+    slot_9_read:      in cpuword_type := (others => DontCareValue);
+    slot_10_read:      in cpuword_type := (others => DontCareValue);
+    slot_11_read:      in cpuword_type := (others => DontCareValue);
+    slot_12_read:      in cpuword_type := (others => DontCareValue);
+    slot_13_read:      in cpuword_type := (others => DontCareValue);
+    slot_14_read:      in cpuword_type := (others => DontCareValue);
+    slot_15_read:      in cpuword_type := (others => DontCareValue);
+
+    slot_write:     out cpuword_type;
+    slot_address:   out address_type;
+    slot_ack:       in slot_std_logic_type := (others => '1');
     slot_interrupt: in slot_std_logic_type := (others => '0' )
 
   );
@@ -93,11 +112,11 @@ architecture behave of zpuino_io is
 
   -- I/O Signals
   signal slot_cyc_i:   slot_std_logic_type;
-  signal slot_we_i:    slot_std_logic_type;
-  signal slot_stb_i:   slot_std_logic_type;
+  signal slot_we_i:    std_logic;
+  signal slot_stb_i:   std_logic;
   signal slot_read_i:  slot_cpuword_type;
-  signal slot_write_i: slot_cpuword_type;
-  signal slot_address_i:  slot_address_type;
+  signal slot_write_i: cpuword_type;
+  signal slot_address_i:  address_type;
   signal slot_ack_i:   slot_std_logic_type;
   signal slot_interrupt_i: slot_std_logic_type;
 
@@ -110,7 +129,24 @@ begin
   slot_cyc      <= slot_cyc_i;
   slot_we       <= slot_we_i;
   slot_stb      <= slot_stb_i;
-  slot_read_i   <= slot_read;
+  slot_read_i(0)   <=  slot_0_read;
+  slot_read_i(1)   <=  slot_1_read;
+  slot_read_i(2)   <=  slot_2_read;
+  slot_read_i(3)   <=  slot_3_read;
+  slot_read_i(4)   <=  slot_4_read;
+  slot_read_i(5)   <=  slot_5_read;
+  slot_read_i(6)   <=  slot_6_read;
+  slot_read_i(7)   <=  slot_7_read;
+  slot_read_i(8)   <=  slot_8_read;
+  slot_read_i(9)   <=  slot_9_read;
+  slot_read_i(10)   <=  slot_10_read;
+  slot_read_i(11)   <=  slot_11_read;
+  slot_read_i(12)   <=  slot_12_read;
+  slot_read_i(13)   <=  slot_13_read;
+  slot_read_i(14)   <=  slot_14_read;
+  slot_read_i(15)   <=  slot_15_read;
+
+
   slot_write    <= slot_write_i;
   slot_address  <= slot_address_i;
   slot_ack_i      <= slot_ack;
@@ -251,6 +287,9 @@ begin
 
   -- Enable signals
 
+  slot_stb_i <= io_stb;
+  slot_we_i <= io_we;
+
   process(io_address,wb_stb_i,wb_cyc_i,wb_we_i,io_stb,io_cyc,io_we)
     variable slotNumber: integer range 0 to num_devices-1;
   begin
@@ -283,11 +322,11 @@ begin
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
     wb_dat_o     => timer_read,
-    wb_dat_i    => slot_write_i(4),
-    wb_adr_i   => slot_address_i(4),
-    wb_we_i        => slot_we_i(4),
+    wb_dat_i    => slot_write_i,
+    wb_adr_i   => slot_address_i,
+    wb_we_i        => slot_we_i,
     wb_cyc_i        => slot_cyc_i(4),
-    wb_stb_i        => slot_stb_i(4),
+    wb_stb_i        => slot_stb_i,
     wb_ack_o      => timer_ack,--slot_ack_i(4),
     wb_inta_o => wb_inta_o, -- Interrupt signal to core
 
