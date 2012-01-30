@@ -54,12 +54,15 @@ entity nexys2_zpuino is
     UART_TX     : out   std_logic;
     GPIO        : inout std_logic_vector(zpuino_gpio_count-1 downto 0);
     FPGA_INIT_B : out   std_logic;
+    LEDS        : out   std_logic_vector(7 downto 0);
+
     -- VGA interface
     VGA_RED     : out   std_logic_vector(2 downto 0);
     VGA_GRN     : out   std_logic_vector(2 downto 0);
     VGA_BLU     : out   std_logic_vector(2 downto 1);
     VGA_HS      : out   std_logic;
     VGA_VS      : out   std_logic
+
   );
 end entity nexys2_zpuino;
 
@@ -264,7 +267,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      jtag_ctrl_chain_in => (others => '0')
     );
 
   --

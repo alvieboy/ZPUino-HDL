@@ -42,8 +42,8 @@ use work.zpu_config.all;
 use work.zpupkg.all;
 use work.wishbonepkg.all;
 
-library UNISIM;
-use UNISIM.vcomponents.all;
+--library UNISIM;
+--use UNISIM.vcomponents.all;
 
 entity zpu_core_extreme is
   port (

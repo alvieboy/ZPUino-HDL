@@ -131,11 +131,11 @@ architecture behave of papilio_plus_top is
   signal slot_cyc:   slot_std_logic_type;
   signal slot_we:    slot_std_logic_type;
   signal slot_stb:   slot_std_logic_type;
-  signal slot_read:  slot_cpuword_type := (others => (others =>DontCareValue) );
+  signal slot_read:  slot_cpuword_type;
   signal slot_write: slot_cpuword_type;
   signal slot_address:  slot_address_type;
-  signal slot_ack:   slot_std_logic_type := (others => '1');
-  signal slot_interrupt: slot_std_logic_type := (others => '0');
+  signal slot_ack:   slot_std_logic_type;
+  signal slot_interrupt: slot_std_logic_type;
 
   signal spi_enabled:  std_logic;
 

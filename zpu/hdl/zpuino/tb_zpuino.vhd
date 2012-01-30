@@ -299,27 +299,11 @@ architecture behave of tb_zpuino is
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
-  signal slot_we:    std_logic;
-  signal slot_stb:   std_logic;
-  signal slot_0_read:      cpuword_type;
-  signal slot_1_read:      cpuword_type;
-  signal slot_2_read:      cpuword_type;
-  signal slot_3_read:       cpuword_type;
-  signal slot_4_read:      cpuword_type;
-  signal    slot_5_read:      cpuword_type;
-   signal    slot_6_read:     cpuword_type;
-   signal    slot_7_read:     cpuword_type;
-   signal    slot_8_read:     cpuword_type;
-   signal    slot_9_read:     cpuword_type;
-   signal    slot_10_read:    cpuword_type;
-   signal  slot_11_read:      cpuword_type;
-   signal    slot_12_read:    cpuword_type;
-  signal     slot_13_read:    cpuword_type;
-  signal     slot_14_read:    cpuword_type;
-  signal     slot_15_read:    cpuword_type;
-
-  signal slot_write: std_logic_vector(wordSize-1 downto 0);
-  signal slot_address:  address_type;
+  signal slot_we:    slot_std_logic_type;
+  signal slot_stb:   slot_std_logic_type;
+  signal slot_read:  slot_cpuword_type;
+  signal slot_write: slot_cpuword_type;
+  signal slot_address:  slot_address_type;
   signal slot_ack:   slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
 
@@ -394,22 +378,7 @@ begin
       slot_cyc      => slot_cyc,
       slot_we       => slot_we,
       slot_stb      => slot_stb,
-      slot_0_read     => slot_0_read,
-      slot_1_read     => slot_1_read,
-      slot_2_read     => slot_2_read,
-      slot_3_read     => slot_3_read,
-      slot_4_read     => slot_4_read,
-      slot_5_read     => slot_5_read,
-      slot_6_read     => slot_6_read,
-      slot_7_read     => slot_7_read,
-      slot_8_read     => slot_8_read,
-      slot_9_read     => slot_9_read,
-      slot_10_read     => slot_10_read,
-      slot_11_read     => slot_11_read,
-      slot_12_read     => slot_12_read,
-      slot_13_read     => slot_13_read,
-      slot_14_read     => slot_14_read,
-      slot_15_read     => slot_15_read,
+      slot_read     => slot_read,
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
@@ -537,12 +506,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_0_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i        => slot_we,
+    wb_dat_o      => slot_read(0),
+    wb_dat_i     => slot_write(0),
+    wb_adr_i   => slot_address(0),
+    wb_we_i        => slot_we(0),
     wb_cyc_i      => slot_cyc(0),
-    wb_stb_i      => slot_stb,
+    wb_stb_i      => slot_stb(0),
     wb_ack_o      => slot_ack(0),
     wb_inta_o => slot_interrupt(0),
 
@@ -560,12 +529,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_1_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i      => slot_we,
+    wb_dat_o      => slot_read(1),
+    wb_dat_i     => slot_write(1),
+    wb_adr_i   => slot_address(1),
+    wb_we_i      => slot_we(1),
     wb_cyc_i       => slot_cyc(1),
-    wb_stb_i       => slot_stb,
+    wb_stb_i       => slot_stb(1),
     wb_ack_o      => slot_ack(1),
 
     wb_inta_o => slot_interrupt(1),
@@ -586,12 +555,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_2_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i        => slot_we,
+    wb_dat_o      => slot_read(2),
+    wb_dat_i     => slot_write(2),
+    wb_adr_i   => slot_address(2),
+    wb_we_i        => slot_we(2),
     wb_cyc_i       => slot_cyc(2),
-    wb_stb_i       => slot_stb,
+    wb_stb_i       => slot_stb(2),
     wb_ack_o      => slot_ack(2),
     wb_inta_o => slot_interrupt(2),
 
@@ -613,12 +582,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_3_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i        => slot_we,
+    wb_dat_o      => slot_read(3),
+    wb_dat_i     => slot_write(3),
+    wb_adr_i   => slot_address(3),
+    wb_we_i        => slot_we(3),
     wb_cyc_i        => slot_cyc(3),
-    wb_stb_i        => slot_stb,
+    wb_stb_i        => slot_stb(3),
     wb_ack_o      => slot_ack(3),
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
@@ -641,12 +610,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_5_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i        => slot_we,
+    wb_dat_o      => slot_read(5),
+    wb_dat_i     => slot_write(5),
+    wb_adr_i   => slot_address(5),
+    wb_we_i        => slot_we(5),
     wb_cyc_i        => slot_cyc(5),
-    wb_stb_i        => slot_stb,
+    wb_stb_i        => slot_stb(5),
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5),
 
@@ -663,12 +632,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_6_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i        => slot_we,
+    wb_dat_o      => slot_read(6),
+    wb_dat_i     => slot_write(6),
+    wb_adr_i   => slot_address(6),
+    wb_we_i        => slot_we(6),
     wb_cyc_i        => slot_cyc(6),
-    wb_stb_i        => slot_stb,
+    wb_stb_i        => slot_stb(6),
     wb_ack_o      => slot_ack(6),
     wb_inta_o => slot_interrupt(6),
 
@@ -688,12 +657,12 @@ begin
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o     => slot_7_read,
-    wb_dat_i     => slot_write,
-    wb_adr_i   => slot_address,
-    wb_we_i     => slot_we,
+    wb_dat_o     => slot_read(7),
+    wb_dat_i     => slot_write(7),
+    wb_adr_i   => slot_address(7),
+    wb_we_i     => slot_we(7),
     wb_cyc_i        => slot_cyc(7),
-    wb_stb_i        => slot_stb,
+    wb_stb_i        => slot_stb(7),
     wb_ack_o      => slot_ack(7),
     wb_inta_o => slot_interrupt(7)
   );

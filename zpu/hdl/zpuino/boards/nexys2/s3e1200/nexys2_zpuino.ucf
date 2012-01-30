@@ -59,14 +59,14 @@ NET "GPIO<30>" LOC = "E18"; # Bank = 1 , Pin name = IP , Type = INPUT , Sch name
 NET "GPIO<31>" LOC = "B16" | DRIVE = 2 | PULLUP ; # Bank = 0 , Pin name = IO_L01P_0 , Type = I/O , Sch name = FX2-IO40
 
 # LEDs LD0-LD7
-NET "GPIO<32>" LOC = "J14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD0
-NET "GPIO<33>" LOC = "J15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD1
-NET "GPIO<34>" LOC = "K15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD2
-NET "GPIO<35>" LOC = "K14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD3
-NET "GPIO<36>" LOC = "E16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD4
-NET "GPIO<37>" LOC = "P16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD5
-NET "GPIO<38>" LOC = "E4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD6
-NET "GPIO<39>" LOC = "P4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD7
+NET "LED<0>" LOC = "J14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD0
+NET "LED<1>" LOC = "J15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD1
+NET "LED<2>" LOC = "K15" | DRIVE = 8 | SLEW = SLOW ;   # LED LD2
+NET "LED<3>" LOC = "K14" | DRIVE = 8 | SLEW = SLOW ;   # LED LD3
+NET "LED<4>" LOC = "E16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD4
+NET "LED<5>" LOC = "P16" | DRIVE = 8 | SLEW = SLOW ;   # LED LD5
+NET "LED<6>" LOC = "E4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD6
+NET "LED<7>" LOC = "P4"  | DRIVE = 8 | SLEW = SLOW ;   # LED LD7
 
 # Connected to Nexys 2 onBoard 7seg display 
 NET "GPIO<40>" LOC = "L18"; # Bank = 1 , Pin name = IO_L10P_1 , Type = I/O , Sch name = CA

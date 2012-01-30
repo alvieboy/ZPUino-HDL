@@ -39,8 +39,8 @@ use IEEE.std_logic_unsigned.all;
 library work;
 use work.zpupkg.all;
 
-library UNISIM;
-use UNISIM.VCOMPONENTS.all;
+--library UNISIM;
+--use UNISIM.VCOMPONENTS.all;
 
 entity dualport_ram is
   port (
@@ -63,19 +63,21 @@ end entity dualport_ram;
 
 architecture behave of dualport_ram is
 
-component dp_rom_32_32 is
-port (ADDRA: in std_logic_vector(13 downto 2);
+component prom_generic_dualport is
+port (ADDRA: in std_logic_vector(maxAddrBit downto 2);
       CLK : in std_logic;
       ENA:   in std_logic;
+      MASKA: in std_logic_vector(3 downto 0);
       WEA: in std_logic; -- to avoid a bug in Xilinx ISE
       DOA: out STD_LOGIC_VECTOR (31 downto 0);
-      ADDRB: in std_logic_vector(13 downto 2);
+      ADDRB: in std_logic_vector(maxAddrBit downto 2);
       DIA: in STD_LOGIC_VECTOR (31 downto 0); -- to avoid a bug in Xilinx ISE
       WEB: in std_logic;
+      MASKB: in std_logic_vector(3 downto 0);
       ENB:   in std_logic;
       DOB: out STD_LOGIC_VECTOR (31 downto 0);
       DIB: in STD_LOGIC_VECTOR (31 downto 0));
-end component dp_rom_32_32;
+end component;
 
 
   signal memAWriteEnable_i:   std_logic;
@@ -122,17 +124,19 @@ begin
     end if;
   end process;
 
-ram:  dp_rom_32_32
+ram:  prom_generic_dualport
    port map (
 					   DOA => memARead,
 					   ADDRA => memAAddr,
              CLK => clk,
 					   DIA => memAWrite,
 					   ENA => memAEnable,
+             MASKA => "1111",
 					   WEA => memAWriteEnable,
 					   DOB => memBRead,
 					   ADDRB => memBAddr,
 					   DIB => memBWrite,
+             MASKB => "1111",
 					   ENB => memBEnable,
 					   WEB => memBWriteEnable
              );

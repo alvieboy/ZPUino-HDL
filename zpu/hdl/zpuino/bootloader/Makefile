@@ -40,7 +40,7 @@ $(TARGET).S: boot.cpp
 	$(CXX) $(CXXFLAGS) -S $+ -o $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin
-	../gen-prom-virtex-dualport_32_32 $(TARGET).bin $(SIZE) > prom-generic-dp-32.vhd || rm -f prom-generic-dp-32.vhd	
+	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin $(SIZE) > prom-generic-dp-32.vhd || rm -f prom-generic-dp-32.vhd	
 
 clean:	
 	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).s $(TARGET).S prom-virtex-dp-8-32.vhd
