@@ -110,6 +110,39 @@ architecture behave of zpuino_top is
   );
   end component;
 
+  component vga_text is
+  port(
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+
+    -- Wishbone MASTER interface
+    mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    mi_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxAddrBit downto 0);
+    mi_wb_sel_o: out std_logic_vector(3 downto 0);
+    mi_wb_cti_o: out std_logic_vector(2 downto 0);
+    mi_wb_we_o:  out std_logic;
+    mi_wb_cyc_o: out std_logic;
+    mi_wb_stb_o: out std_logic;
+    mi_wb_ack_i: in std_logic;
+
+    -- Char RAM interface
+    wb_char_ram_dat_i: in std_logic_vector(7 downto 0);
+    wb_char_ram_adr_o: out std_logic_vector(7 downto 0);
+    wb_char_ram_cyc_o: out std_logic;
+    wb_char_ram_stb_o: out std_logic;
+    wb_char_ram_ack_i: in std_logic
+   );
+  end component;
+
+
   component wb_rom_ram is
   port (
     ram_wb_clk_i:       in std_logic;
@@ -117,7 +150,7 @@ architecture behave of zpuino_top is
     ram_wb_ack_o:       out std_logic;
     ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
     ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    ram_wb_adr_i:       in std_logic_vector(maxAddrBit downto 0);
     ram_wb_cyc_i:       in std_logic;
     ram_wb_stb_i:       in std_logic;
     ram_wb_we_i:        in std_logic;
@@ -126,12 +159,60 @@ architecture behave of zpuino_top is
     rom_wb_rst_i:       in std_logic;
     rom_wb_ack_o:       out std_logic;
     rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_adr_i:       in std_logic_vector(maxAddrBit downto 0);
     rom_wb_cyc_i:       in std_logic;
     rom_wb_stb_i:       in std_logic;
     rom_wb_cti_i:       in std_logic_vector(2 downto 0)
   );
   end component wb_rom_ram;
+
+  component wbarb2_1 is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic
+  );
+  end component;
+
 
   component wbmux2 is
   generic (
@@ -228,16 +309,36 @@ architecture behave of zpuino_top is
   signal ram_wb_ack_o:       std_logic;
   signal ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
   signal ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal ram_wb_adr_i:       std_logic_vector(maxAddrBit downto 0);
   signal ram_wb_cyc_i:       std_logic;
   signal ram_wb_stb_i:       std_logic;
   signal ram_wb_we_i:        std_logic;
+
+  signal vga_wb_clk_i:       std_logic;
+  signal vga_wb_rst_i:       std_logic;
+  signal vga_wb_ack_o:       std_logic;
+  signal vga_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal vga_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal vga_wb_adr_i:       std_logic_vector(maxAddrBit downto 0);
+  signal vga_wb_cyc_i:       std_logic;
+  signal vga_wb_stb_i:       std_logic;
+  signal vga_wb_we_i:        std_logic;
+
+  signal cpu_ram_wb_clk_i:       std_logic;
+  signal cpu_ram_wb_rst_i:       std_logic;
+  signal cpu_ram_wb_ack_o:       std_logic;
+  signal cpu_ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal cpu_ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal cpu_ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal cpu_ram_wb_cyc_i:       std_logic;
+  signal cpu_ram_wb_stb_i:       std_logic;
+  signal cpu_ram_wb_we_i:        std_logic;
 
   signal rom_wb_clk_i:       std_logic;
   signal rom_wb_rst_i:       std_logic;
   signal rom_wb_ack_o:       std_logic;
   signal rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal rom_wb_adr_i:       std_logic_vector(maxAddrBit downto 0);
   signal rom_wb_cyc_i:       std_logic;
   signal rom_wb_stb_i:       std_logic;
   signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
@@ -388,15 +489,15 @@ begin
 
     -- Slave 0 signals
 
-    s0_wb_dat_i   => ram_wb_dat_o,
-    s0_wb_dat_o   => ram_wb_dat_i,
-    s0_wb_adr_o   => ram_wb_adr_i,
+    s0_wb_dat_i   => cpu_ram_wb_dat_o,
+    s0_wb_dat_o   => cpu_ram_wb_dat_i,
+    s0_wb_adr_o   => cpu_ram_wb_adr_i,
     s0_wb_sel_o   => open, --ram_wb_sel_i,
     s0_wb_cti_o   => open, --ram_wb_cti_i,
-    s0_wb_we_o    => ram_wb_we_i,
-    s0_wb_cyc_o   => ram_wb_cyc_i,
-    s0_wb_stb_o   => ram_wb_stb_i,
-    s0_wb_ack_i   => ram_wb_ack_o,
+    s0_wb_we_o    => cpu_ram_wb_we_i,
+    s0_wb_cyc_o   => cpu_ram_wb_cyc_i,
+    s0_wb_stb_o   => cpu_ram_wb_stb_i,
+    s0_wb_ack_i   => cpu_ram_wb_ack_o,
 
     -- Slave 1 signals
 
@@ -410,5 +511,86 @@ begin
     s1_wb_stb_o   => io_stb,
     s1_wb_ack_i   => io_ack
   );
+
+
+  vgamemarb: wbarb2_1
+  generic map (
+    ADDRESS_HIGH => maxAddrBit,
+    ADDRESS_LOW => 0
+  )
+  port map (
+    wb_clk_i      => clk,
+	 	wb_rst_i      => rst,
+
+    -- Master 0 signals (CPU)
+
+    m0_wb_dat_o   => cpu_ram_wb_dat_o,
+    m0_wb_dat_i   => cpu_ram_wb_dat_i,
+    m0_wb_adr_i   => cpu_ram_wb_adr_i(maxAddrBit downto 0),
+    m0_wb_sel_i   => (others => '1'),
+    m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m0_wb_we_i    => cpu_ram_wb_we_i,
+    m0_wb_cyc_i   => cpu_ram_wb_cyc_i,
+    m0_wb_stb_i   => cpu_ram_wb_stb_i,
+    m0_wb_ack_o   => cpu_ram_wb_ack_o,
+
+    -- Master 1 signals (VGA)
+
+    m1_wb_dat_o   => vga_wb_dat_o,
+    m1_wb_dat_i   => vga_wb_dat_i,
+    m1_wb_adr_i   => vga_wb_adr_i,
+    m1_wb_sel_i   => (others => '1'),--vga_wb_sel_i,
+    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,--vga_wb_cti_i
+    m1_wb_we_i    => vga_wb_we_i,
+    m1_wb_cyc_i   => vga_wb_cyc_i,
+    m1_wb_stb_i   => vga_wb_stb_i,
+    m1_wb_ack_o   => vga_wb_ack_o,
+
+    -- Slave signals
+
+    s0_wb_dat_i   => ram_wb_dat_o,
+    s0_wb_dat_o   => ram_wb_dat_i,
+    s0_wb_adr_o   => ram_wb_adr_i,
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => ram_wb_we_i,
+    s0_wb_cyc_o   => ram_wb_cyc_i,
+    s0_wb_stb_o   => ram_wb_stb_i,
+    s0_wb_ack_i   => ram_wb_ack_o
+  );
+
+
+
+  vgat: vga_text
+    port map (
+    wb_clk_i    => clk,
+	 	wb_rst_i    => rst,
+    wb_dat_o    => open,
+    wb_dat_i    => (others => DontCareValue),
+    wb_adr_i    => (others => DontCareValue),
+    wb_we_i     => '0',
+    wb_cyc_i    => '0',
+    wb_stb_i    => '0',
+    wb_ack_o    => open,
+
+    -- Wishbone MASTER interface
+    mi_wb_dat_i   => vga_wb_dat_o,
+    mi_wb_dat_o   => vga_wb_dat_i,
+    mi_wb_adr_o   => vga_wb_adr_i,
+    mi_wb_sel_o   => open,
+    mi_wb_cti_o   => open,
+    mi_wb_we_o    => vga_wb_we_i,
+    mi_wb_cyc_o   => vga_wb_cyc_i,
+    mi_wb_stb_o   => vga_wb_stb_i,
+    mi_wb_ack_i   => vga_wb_ack_o,
+
+    -- Char RAM interface
+    wb_char_ram_dat_i => (others => DontCareValue),
+    wb_char_ram_adr_o => open,
+    wb_char_ram_cyc_o => open,
+    wb_char_ram_stb_o => open,
+    wb_char_ram_ack_i => '1'
+  );
+
 
 end behave;
