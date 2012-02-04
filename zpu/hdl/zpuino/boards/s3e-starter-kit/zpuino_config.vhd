@@ -51,7 +51,7 @@ package zpuino_config is
   constant zpuinocore: zpu_core_type := small;
 
   -- Number of GPIO to map (number of FPGA pins)
-  constant zpuino_gpio_count: integer := 56;
+  constant zpuino_gpio_count: integer := 54;
 
   -- Peripheral Pin Select
   constant zpuino_pps_enabled: boolean := true;
