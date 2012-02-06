@@ -56,17 +56,19 @@ use ieee.numeric_std.all;
 
 entity prom_generic_dualport is
   port (
-    clk:              in std_logic;
-    memAWriteEnable:  in std_logic;
-    memAWriteMask:    in std_logic_vector(3 downto 0);
-    memAAddr:         in std_logic_vector($bitsminusone downto 2);
-    memAWrite:        in std_logic_vector(31 downto 0);
-    memARead:         out std_logic_vector(31 downto 0);
-    memBWriteEnable:  in std_logic;
-    memBAddr:         in std_logic_vector($bitsminusone downto 2);
-    memBWrite:        in std_logic_vector(31 downto 0);
-    memBWriteMask:    in std_logic_vector(3 downto 0);
-    memBRead:         out std_logic_vector(31 downto 0)
+    CLK:              in std_logic;
+    WEA:  in std_logic;
+    ENA:  in std_logic;
+    MASKA:    in std_logic_vector(3 downto 0);
+    ADDRA:         in std_logic_vector($bitsminusone downto 2);
+    DIA:        in std_logic_vector(31 downto 0);
+    DOA:         out std_logic_vector(31 downto 0);
+    WEB:  in std_logic;
+    ENB:  in std_logic;
+    ADDRB:         in std_logic_vector($bitsminusone downto 2);
+    DIB:        in std_logic_vector(31 downto 0);
+    MASKB:    in std_logic_vector(3 downto 0);
+    DOB:         out std_logic_vector(31 downto 0)
   );
 end entity prom_generic_dualport;
 
@@ -114,8 +116,8 @@ foreach my $ram (@rams)
     print ");\n";
     $index++;
 }
-print "signal wea: std_logic_vector(3 downto 0);\n";
-print "signal web: std_logic_vector(3 downto 0);\n";
+print "signal rwea: std_logic_vector(3 downto 0);\n";
+print "signal rweb: std_logic_vector(3 downto 0);\n";
 
 # XST bug. We need to perform read decomposition.
 
@@ -130,15 +132,15 @@ for ($index=0;$index<4;$index++) {
 print "\nbegin\n";
 
 for ($index=0;$index<4;$index++) {
-    print "  wea(${index}) <= memAWriteEnable and memAWriteMask(${index});\n";
-    print "  web(${index}) <= memBWriteEnable and memBWriteMask(${index});\n";
+    print "  rwea(${index}) <= WEA and MASKA(${index});\n";
+    print "  rweb(${index}) <= WEB and MASKB(${index});\n";
 }
 
 for ($index=0;$index<4;$index++) {
     my $start = (($index+1)*8)-1;
     my $end = $index*8;
-    print "memARead($start downto $end) <= memaread${index};\n";
-    print "memBRead($start downto $end) <= membread${index};\n";
+    print "DOA($start downto $end) <= memaread${index};\n";
+    print "DOB($start downto $end) <= membread${index};\n";
 }
 
 
@@ -153,20 +155,24 @@ foreach my $ram (@rams)
   process (clk)
   begin
     if rising_edge(clk) then
-    if wea(${index})='1' then
-      RAM${index}( conv_integer(memAAddr) ) := memAWrite($start downto $end);
+    if ENA='1' then
+    if rwea(${index})='1' then
+      RAM${index}( conv_integer(ADDRA) ) := DIA($start downto $end);
       end if;
-    memaread${index} <= RAM${index}(conv_integer(memAAddr)) ;
+    memaread${index} <= RAM${index}(conv_integer(ADDRA)) ;
+    end if;
     end if;
   end process;  
 
   process (clk)
   begin
     if rising_edge(clk) then
-      if web(${index})='1' then
-         RAM${index}( conv_integer(memBAddr) ) := memBWrite($start downto $end);
+    if ENB='1' then
+      if rweb(${index})='1' then
+         RAM${index}( conv_integer(ADDRB) ) := DIB($start downto $end);
       end if;
-      membread${index} <= RAM${index}(conv_integer(memBAddr)) ;
+      membread${index} <= RAM${index}(conv_integer(ADDRB)) ;
+    end if;
     end if;
   end process;  
 EOM

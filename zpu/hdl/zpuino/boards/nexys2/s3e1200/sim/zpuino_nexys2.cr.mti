@@ -1,0 +1,461 @@
+C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart_rx.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart_rx.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_uart_rx
+-- Compiling architecture behave of zpuino_uart_rx
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_intr.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_intr.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_intr
+-- Compiling architecture behave of zpuino_intr
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/uart_brgen.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/uart_brgen.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Compiling entity uart_brgen
+-- Compiling architecture behave of uart_brgen
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpupkg.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpupkg.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Compiling package zpupkg
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/prescaler.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/prescaler.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package numeric_std
+-- Compiling entity prescaler
+-- Compiling architecture behave of prescaler
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/tb_uart.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/tb_uart.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpuino_config
+-- Compiling entity tb_uart
+-- Compiling architecture behave of tb_uart
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_empty_device.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_empty_device.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpuino_config
+-- Loading package zpupkg
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_empty_device
+-- Compiling architecture behave of zpuino_empty_device
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/zpuino_config.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/zpuino_config.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Compiling package zpuino_config
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/dualport_ram.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/dualport_ram.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Compiling entity dualport_ram
+-- Compiling architecture behave of dualport_ram
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd {2 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package numeric_std
+-- Compiling entity prom_generic_dualport
+-- Compiling architecture behave of prom_generic_dualport
+** Warning: C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd(27): (vcom-1236) Shared variables must be of a protected type.
+** Warning: C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd(29): (vcom-1236) Shared variables must be of a protected type.
+** Warning: C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd(31): (vcom-1236) Shared variables must be of a protected type.
+** Warning: C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/prom-generic-dp-32.vhd(33): (vcom-1236) Shared variables must be of a protected type.
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/tx_unit.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/tx_unit.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Compiling entity txunit
+-- Compiling architecture behaviour of txunit
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/spi.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/spi.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Compiling entity spi
+-- Compiling architecture behave of spi
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/fifo.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/fifo.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Compiling entity fifo
+-- Compiling architecture behave of fifo
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/mem_util_pkg.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/mem_util_pkg.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Compiling package mem_util_pkg
+-- Compiling package body mem_util_pkg
+-- Loading package mem_util_pkg
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/pad.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/pad.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Compiling package pad
+-- Loading package vcomponents
+-- Compiling entity isync
+-- Compiling architecture behave of isync
+-- Loading package pad
+-- Compiling entity iopad
+-- Compiling architecture behave of iopad
+-- Compiling entity ipad
+-- Compiling architecture behave of ipad
+-- Compiling entity opad
+-- Compiling architecture behave of opad
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/tb/tb_zpuino_nexys2.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/tb/tb_zpuino_nexys2.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpuino_config
+-- Compiling entity tb_zpuino
+-- Compiling architecture behave of tb_zpuino
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuinopkg.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuinopkg.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Compiling package zpuinopkg
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_serialreset.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_serialreset.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_serialreset
+-- Compiling architecture behave of zpuino_serialreset
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_sigmadelta.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_sigmadelta.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_sigmadelta
+-- Compiling architecture behave of zpuino_sigmadelta
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart_mv_filter.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart_mv_filter.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_uart_mv_filter
+-- Compiling architecture behave of zpuino_uart_mv_filter
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/ACDC_check.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/ACDC_check.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package textio
+-- Compiling entity acdc_check
+-- Compiling architecture spy of acdc_check
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_timers.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_timers.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package numeric_std
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_timers
+-- Compiling architecture behave of zpuino_timers
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/timer.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/timer.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package numeric_std
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity timer
+-- Compiling architecture behave of timer
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/Memory_Access.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/Memory_Access.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package textio
+-- Loading package mem_util_pkg
+-- Compiling entity memory_access
+-- Compiling architecture static_alloc of memory_access
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/Internal_Logic.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/Internal_Logic.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package textio
+-- Loading package mem_util_pkg
+-- Compiling entity internal_logic
+-- Compiling architecture behavioral of internal_logic
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_crc16.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_crc16.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_crc16
+-- Compiling architecture behave of zpuino_crc16
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_gpio.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_gpio.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_gpio
+-- Compiling architecture behave of zpuino_gpio
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/M25P16.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/sim/M25P16.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package textio
+-- Loading package mem_util_pkg
+-- Compiling entity m25p16
+-- Compiling architecture structure of m25p16
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/tb/serial_sim.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/tb/serial_sim.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpuino_config
+-- Compiling entity serial_sim
+-- Compiling architecture behave of serial_sim
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/clkgen.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/clkgen.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package numeric_std
+-- Loading package vcomponents
+-- Compiling entity clkgen
+-- Compiling architecture behave of clkgen
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/zpu_config.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/zpu_config.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Compiling package zpu_config
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_adc.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_adc.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpuino_config
+-- Loading package zpupkg
+-- Loading package zpuinopkg
+-- Loading package vcomponents
+-- Compiling entity zpuino_adc
+-- Compiling architecture behave of zpuino_adc
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_io.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_io.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpuino_config
+-- Loading package zpupkg
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_io
+-- Compiling architecture behave of zpuino_io
+** Warning: C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_io.vhd(633): Duplicate signals in sensitivity list.
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpu_core_small.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpu_core_small.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Compiling entity zpu_core_small
+-- Compiling architecture behave of zpu_core_small
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_top.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_top.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_top
+-- Compiling architecture behave of zpuino_top
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/nexys2_zpuino_top.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/boards/nexys2/s3e1200/rtl/nexys2_zpuino_top.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Loading package pad
+-- Loading package vcomponents
+-- Compiling entity nexys2_zpuino
+-- Compiling architecture behave of nexys2_zpuino
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/spiclkgen.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/spiclkgen.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Compiling entity spiclkgen
+-- Compiling architecture behave of spiclkgen
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_spi.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_spi.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpuino_config
+-- Loading package zpupkg
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_spi
+-- Compiling architecture behave of zpuino_spi
+
+} {} {}} C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart.vhd {1 {vcom -work work -2002 -explicit C:/projects/ZPUino/HDL/snapshots/zpuino/zpu/hdl/zpuino/zpuino_uart.vhd
+Model Technology ModelSim PE vcom 6.5d Compiler 2009.11 Nov 18 2009
+-- Loading package standard
+-- Loading package std_logic_1164
+-- Loading package numeric_std
+-- Loading package std_logic_arith
+-- Loading package std_logic_unsigned
+-- Loading package zpu_config
+-- Loading package zpupkg
+-- Loading package zpuino_config
+-- Loading package zpuinopkg
+-- Compiling entity zpuino_uart
+-- Compiling architecture behave of zpuino_uart
+
+} {} {}}

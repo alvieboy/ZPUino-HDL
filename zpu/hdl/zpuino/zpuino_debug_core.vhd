@@ -218,8 +218,8 @@ begin
     else
       if rising_edge(jtag_inject) then
         inject_q_in <= '1';
-      else
-        inject_q_in <= inject_q_in;
+      --else
+      --  inject_q_in <= inject_q_in;
       end if;
 
       if rising_edge(clk) then

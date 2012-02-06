@@ -1,25 +1,31 @@
-PROJECT=papilio_one
-PART=xc3s500e-vq100-4
+PROJECT=nexys2_zpuino
+PART=xc3s1200e-fg320-4
 
+# When running on Win platforms, add path to unix/cygwin utils basic script works in unix or win
+#CYGWINPATH:=C:/CYGWIN/BIN/
+# When running on linux, this variable is blank
+#CYGWINPATH:=
+RTLPATH:=./rtl/
 # For bootloader
-BOARD=PAPILIO_ONE
+BOARD=NEXYS2
 SIZE=32768
-DEFINES="-D__S3E_500__ -DBOARD_ID=0xA4010F00 -DBOARD_MEMORYSIZE=0x8000"
+DEFINES="-DBOARD_ID=0x84010F00 -DBOARD_MEMORYSIZE=0x8000"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
-prom-generic-dp-32.vhd:
+$(RTLPATH)prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp ../../../bootloader/prom-generic-dp-32.vhd .
+	$(CYGWINPATH)cp ../../../bootloader/prom-generic-dp-32.vhd $(RTLPATH)
 	
-${PROJECT}.ngc: prom-generic-dp-32.vhd
-	mkdir -p xst/projnav.tmp/
+${PROJECT}.ngc: $(RTLPATH)prom-generic-dp-32.vhd
+	$(CYGWINPATH)mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
 ${PROJECT}.ngd: ${PROJECT}.ngc
-	ngdbuild -intstyle ise -dd _ngo -nt timestamp \
+	ngdbuild -intstyle ise -aul -dd _ngo -nt timestamp \
 	-uc ${PROJECT}.ucf -p ${PART} ${PROJECT}.ngc ${PROJECT}.ngd
 
+# When running ISE 9.2.04i, the -ir switch has no parameters, so the '-ir off' has been changed to '-ir'
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -p ${PART} \
 	-cm speed -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
@@ -35,5 +41,5 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 
 clean:
-	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
+	@$(CYGWINPATH)rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} $(RTLPATH)prom-generic-dp-32.vhd
 	$(MAKE) -C ../../../bootloader clean

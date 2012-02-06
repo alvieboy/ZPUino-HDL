@@ -47,7 +47,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 	port->dcb.ByteSize        = 8;
 	port->dcb.Parity          = NOPARITY;
 	port->dcb.StopBits        = ONESTOPBIT;
-	port->dcb.fDtrControl     = DTR_CONTROL_DISABLE;
+	port->dcb.fDtrControl     = DTR_CONTROL_ENABLE;
 	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
 	port->dcb.fOutxCtsFlow    = FALSE;
 	port->dcb.fOutxDsrFlow    = FALSE;
@@ -77,6 +77,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	char rportname[128];
 
 	struct win32_port *port =  (struct win32_port*)calloc(1,sizeof(struct win32_port));
+	COMMTIMEOUTS ctimeout;
 
 
 	debug("Opening port %s\n",device);
@@ -99,6 +100,17 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	if(conn_set_speed(port, CBR_115200)<0) {
 		fprintf(stderr,"Cannot set port flags: %ld\n",GetLastError());
+		return -1;
+	}
+
+	ctimeout.ReadIntervalTimeout = MAXDWORD;
+	ctimeout.ReadTotalTimeoutMultiplier = 0;
+	ctimeout.ReadTotalTimeoutConstant = 0;
+	ctimeout.WriteTotalTimeoutMultiplier = 0;
+	ctimeout.WriteTotalTimeoutConstant = 10000;
+
+	if (!SetCommTimeouts(port->hcomm, &ctimeout)){
+		fprintf(stderr,"Cannot set port timeouts: %ld\n", GetLastError());
 		return -1;
 	}
 

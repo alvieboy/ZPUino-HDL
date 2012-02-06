@@ -1,8 +1,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-//#define CLK_FREQ 78000000UL
-#define CLK_FREQ 96000000UL
+#define CLK_FREQ 85000000UL
 #define BOARD_MEMORYSIZE 0x8000
 #define SPIOFFSET 0x00000000
 

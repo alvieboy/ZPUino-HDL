@@ -52,8 +52,41 @@ entity s3e_eval_zpuino is
     RST:          in std_logic;
     UART_RX:      in std_logic;
     UART_TX:      out std_logic;
-    GPIO:         inout std_logic_vector(zpuino_gpio_count-1 downto 0);
+
+    SPI_MISO:     in std_logic;
+    SPI_MOSI:     out std_logic;
+    SPI_SCK:      out std_logic;
+    SPI_CS:       out std_logic;
+
+    J1:           inout std_logic_vector(3 downto 0);
+    J2:           inout std_logic_vector(3 downto 0);
+    J4:           inout std_logic_vector(3 downto 0);
+
+    SW:           in std_logic_vector(3 downto 0);
+
+    FX2_IO:       inout std_logic_vector(39 downto 21);
+
+    LED:          out std_logic_vector(7 downto 0);
+
+    AMP_SHDN:     out std_logic;
+    AD_CONV:      out std_logic;
+    DAC_CS:       out std_logic;
+    AMP_CS:       out std_logic;
+
+    LCD_RS:       out std_logic;
+    LCD_RW:       out std_logic;
+    LCD_DB:       inout std_logic_vector(7 downto 4);
+    LCD_E:        out std_logic;
+
+    VGA_BLUE:     out std_logic;
+    VGA_GREEN:    out std_logic;
+    VGA_HSYNC:    out std_logic;
+    VGA_RED:      out std_logic;
+    VGA_VSYNC:    out std_logic;
+
+
     FPGA_INIT_B:  out std_logic;
+    SF_CE0:       out std_logic;
     -- Rotary signals
     ROT_A:        in std_logic;
     ROT_B:        in std_logic;
@@ -98,9 +131,22 @@ architecture behave of s3e_eval_zpuino is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00000000001111000001111100000000111111111111111111111111";
+    "0000000000000000000000" &
+    "111111111111111" & -- FXIO
+    "0" & -- SPI_CS
+    "0000" & -- SW
+    "1111" & -- JA4
+    "1111" & -- JA2
+    "1111" ; -- JA1
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00000000001111000001111100000000111111111111111111111111";
+    "0000000000000000000000" &
+    "111111111111111" & -- FXIO
+    "0" & -- SPI_CS
+    "0000" & -- SW
+    "1111" & -- JA4
+    "1111" & -- JA2
+    "1111" ; -- JA1
+ 
 
 
   -- I/O Signals
@@ -189,27 +235,85 @@ begin
   );
 
   FPGA_INIT_B<='0';
+  SF_CE0<='0';
 
+  VGA_BLUE  <= '0';
+  VGA_GREEN <= '0';
+  VGA_HSYNC <= '0';
+  VGA_RED   <= '0';
+  VGA_VSYNC <= '0';
 
-  bufgen: for i in 0 to zpuino_gpio_count-1-3 generate
-    iop: IOPAD
-      port map(
-        I => gpio_o(i),
-        O => gpio_i(i),
-        T => gpio_t(i),
-        C => sysclk,
-        PAD => gpio(i)
-      );
-  end generate;
+  pin00:  IOPAD port map ( I => gpio_o(0),  O => gpio_i(0),  T => gpio_t(0),  C => sysclk, PAD => J1(0) );
+  pin01:  IOPAD port map ( I => gpio_o(1),  O => gpio_i(1),  T => gpio_t(1),  C => sysclk, PAD => J1(1) );
+  pin02:  IOPAD port map ( I => gpio_o(2),  O => gpio_i(2),  T => gpio_t(2),  C => sysclk, PAD => J1(2) );
+  pin03:  IOPAD port map ( I => gpio_o(3),  O => gpio_i(3),  T => gpio_t(3),  C => sysclk, PAD => J1(3) );
 
-  ibufrx: IPAD port map ( PAD => UART_RX,  O => rx,  C => sysclk );
-  obuftx: OPAD port map ( I => tx,   PAD => UART_TX );
+  pin04:  IOPAD port map ( I => gpio_o(4),  O => gpio_i(4),  T => gpio_t(4),  C => sysclk, PAD => J2(0) );
+  pin05:  IOPAD port map ( I => gpio_o(5),  O => gpio_i(5),  T => gpio_t(5),  C => sysclk, PAD => J2(1) );
+  pin06:  IOPAD port map ( I => gpio_o(6),  O => gpio_i(6),  T => gpio_t(6),  C => sysclk, PAD => J2(2) );
+  pin07:  IOPAD port map ( I => gpio_o(7),  O => gpio_i(7),  T => gpio_t(7),  C => sysclk, PAD => J2(3) );
 
-  -- Rotary encoder
-  rotapad: IPAD port map ( PAD => ROT_A,  O => gpio_i(53),  C => sysclk );
-  rotbpad: IPAD port map ( PAD => ROT_B,  O => gpio_i(54),  C => sysclk );
-  rotcpad: IPAD port map ( PAD => ROT_CENTER,  O => gpio_i(55),  C => sysclk );
-  
+  pin08:  IOPAD port map ( I => gpio_o(8),  O => gpio_i(8),  T => gpio_t(8),  C => sysclk, PAD => J4(0) );
+  pin09:  IOPAD port map ( I => gpio_o(9),  O => gpio_i(9),  T => gpio_t(9),  C => sysclk, PAD => J4(1) );
+  pin10:  IOPAD port map ( I => gpio_o(10), O => gpio_i(10), T => gpio_t(10), C => sysclk, PAD => J4(2) );
+  pin11:  IOPAD port map ( I => gpio_o(11), O => gpio_i(11), T => gpio_t(11), C => sysclk, PAD => J4(3) );
+
+  pin12:  IPAD port map ( O => gpio_i(12),  C => sysclk, PAD => SW(0) );
+  pin13:  IPAD port map ( O => gpio_i(13),  C => sysclk, PAD => SW(1) );
+  pin14:  IPAD port map ( O => gpio_i(14),  C => sysclk, PAD => SW(2) );
+  pin15:  IPAD port map ( O => gpio_i(15),  C => sysclk, PAD => SW(3) );
+
+  pin16:  OPAD port map ( I => gpio_o(16), PAD => SPI_CS );
+
+  pin17:  IOPAD port map ( I => gpio_o(17), O => gpio_i(17), T => gpio_t(17), C => sysclk, PAD => FX2_IO(21) );
+  pin18:  IOPAD port map ( I => gpio_o(18), O => gpio_i(18), T => gpio_t(18), C => sysclk, PAD => FX2_IO(22) );
+  pin19:  IOPAD port map ( I => gpio_o(19), O => gpio_i(19), T => gpio_t(19), C => sysclk, PAD => FX2_IO(23) );
+
+  pin20:  IOPAD port map ( I => gpio_o(20), O => gpio_i(20), T => gpio_t(20), C => sysclk, PAD => FX2_IO(24) );
+  pin21:  IOPAD port map ( I => gpio_o(21), O => gpio_i(21), T => gpio_t(21), C => sysclk, PAD => FX2_IO(25) );
+  pin22:  IOPAD port map ( I => gpio_o(22), O => gpio_i(22), T => gpio_t(22), C => sysclk, PAD => FX2_IO(26) );
+  pin23:  IOPAD port map ( I => gpio_o(23), O => gpio_i(23), T => gpio_t(23), C => sysclk, PAD => FX2_IO(27) );
+  pin24:  IOPAD port map ( I => gpio_o(24), O => gpio_i(24), T => gpio_t(24), C => sysclk, PAD => FX2_IO(28) );
+  pin25:  IOPAD port map ( I => gpio_o(25), O => gpio_i(25), T => gpio_t(25), C => sysclk, PAD => FX2_IO(29) );
+  pin26:  IOPAD port map ( I => gpio_o(26), O => gpio_i(26), T => gpio_t(26), C => sysclk, PAD => FX2_IO(30) );
+  pin27:  IOPAD port map ( I => gpio_o(27), O => gpio_i(27), T => gpio_t(27), C => sysclk, PAD => FX2_IO(31) );
+  pin28:  IOPAD port map ( I => gpio_o(28), O => gpio_i(28), T => gpio_t(28), C => sysclk, PAD => FX2_IO(32) );
+  pin29:  IOPAD port map ( I => gpio_o(29), O => gpio_i(29), T => gpio_t(29), C => sysclk, PAD => FX2_IO(33) );
+  pin30:  IOPAD port map ( I => gpio_o(30), O => gpio_i(30), T => gpio_t(30), C => sysclk, PAD => FX2_IO(34) );
+  pin31:  IOPAD port map ( I => gpio_o(31), O => gpio_i(31), T => gpio_t(31), C => sysclk, PAD => FX2_IO(35) );
+
+  pin32:  OPAD  port map ( I => gpio_o(32), PAD => LED(0) );
+  pin33:  OPAD  port map ( I => gpio_o(33), PAD => LED(1) );
+  pin34:  OPAD  port map ( I => gpio_o(34), PAD => LED(2) );
+  pin35:  OPAD  port map ( I => gpio_o(35), PAD => LED(3) );
+  pin36:  OPAD  port map ( I => gpio_o(36), PAD => LED(4) );
+  pin37:  OPAD  port map ( I => gpio_o(37), PAD => LED(5) );
+  pin38:  OPAD  port map ( I => gpio_o(38), PAD => LED(6) );
+  pin39:  OPAD  port map ( I => gpio_o(39), PAD => LED(7) );
+
+  pin40:  IOPAD port map ( I => gpio_o(40), O => gpio_i(40), T => gpio_t(40), C => sysclk, PAD => LCD_DB(4) );
+  pin41:  IOPAD port map ( I => gpio_o(41), O => gpio_i(41), T => gpio_t(41), C => sysclk, PAD => LCD_DB(5) );
+  pin42:  IOPAD port map ( I => gpio_o(42), O => gpio_i(42), T => gpio_t(42), C => sysclk, PAD => LCD_DB(6) );
+  pin43:  IOPAD port map ( I => gpio_o(43), O => gpio_i(43), T => gpio_t(43), C => sysclk, PAD => LCD_DB(7) );
+  pin44:  OPAD  port map ( I => gpio_o(44), PAD => LCD_RS );
+  pin45:  OPAD  port map ( I => gpio_o(45), PAD => LCD_RW );
+  pin46:  OPAD  port map ( I => gpio_o(46), PAD => LCD_E );
+  pin47:  OPAD  port map ( I => gpio_o(47), PAD => AMP_SHDN );
+
+  pin48:  IPAD  port map ( O => gpio_i(48),  C => sysclk, PAD => ROT_A );
+  pin49:  IPAD  port map ( O => gpio_i(49),  C => sysclk, PAD => ROT_B );
+  pin50:  IPAD  port map ( O => gpio_i(50),  C => sysclk, PAD => ROT_CENTER );
+
+  pin51:  OPAD  port map ( I => gpio_o(51), PAD => AD_CONV );
+  pin52:  OPAD  port map ( I => gpio_o(52), PAD => DAC_CS );
+  pin53:  OPAD  port map ( I => gpio_o(53), PAD => AMP_CS );
+
+  ibufrx: IPAD  port map ( O => rx, C => sysclk, PAD => UART_RX );
+  obuftx: OPAD  port map ( I => tx, PAD => UART_TX );
+  sckpad: OPAD  port map ( I => spi_pf_sck,   PAD => SPI_SCK );
+  mosipad:OPAD  port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
+  misopad:IPAD  port map ( spi_pf_miso,  C => sysclk, PAD => SPI_MISO );
+
   zpuino:zpuino_top
     port map (
       clk           => sysclk,
@@ -221,7 +325,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      jtag_ctrl_chain_in => (others => '0')
     );
 
   --
@@ -553,9 +658,6 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
-    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
-    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
     gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
     gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
     gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1

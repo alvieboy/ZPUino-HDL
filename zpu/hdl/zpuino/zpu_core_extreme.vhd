@@ -42,8 +42,8 @@ use work.zpu_config.all;
 use work.zpupkg.all;
 use work.wishbonepkg.all;
 
-library UNISIM;
-use UNISIM.vcomponents.all;
+--library UNISIM;
+--use UNISIM.vcomponents.all;
 
 entity zpu_core_extreme is
   port (
@@ -82,7 +82,7 @@ entity zpu_core_extreme is
 
     rom_wb_ack_i:       in std_logic;
     rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
-    rom_wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     rom_wb_cyc_o:       out std_logic;
     rom_wb_stb_o:       out std_logic;
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);
@@ -217,7 +217,7 @@ begin
 end pc_to_cpuword;
 
 function pc_to_memaddr(pc: unsigned) return unsigned is
-  variable r: unsigned(maxAddrBitIncIO downto 0);
+  variable r: unsigned(maxAddrBit downto 0);
 begin
   r := (others => '0');
   r(maxAddrBit downto minAddrBit) := pc(maxAddrBit downto minAddrBit);

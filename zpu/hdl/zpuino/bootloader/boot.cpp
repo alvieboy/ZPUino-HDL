@@ -171,6 +171,10 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
+#ifdef __ZPUINO_NEXYS2__
+			digitalWrite(FPGA_LED_2,HIGH);
+#endif
+
 			spi_copy();
 		}
 #endif
@@ -380,6 +384,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
+#ifdef __ZPUINO_NEXYS2__
+		digitalWrite(FPGA_LED_4,!!milisseconds>>8);
+#endif
+
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -707,38 +715,19 @@ void processCommand()
 
 void configure_pins()
 {
-	// For S3E Eval
-/*	GPIOTRIS(0) = pmode[0];
-	GPIOTRIS(1) = pmode[1];
-	GPIOTRIS(2) = pmode[2];
-	GPIOTRIS(3) = pmode[3];
-  */
-
 	digitalWrite(FPGA_AD_CONV,LOW);
 	digitalWrite(FPGA_DAC_CS,HIGH);
 	digitalWrite(FPGA_AMP_CS,HIGH);
-	digitalWrite(FPGA_SF_CE0,HIGH);
-	digitalWrite(FPGA_SS_B,HIGH);
+	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
 
-	outputPinForFunction( FPGA_PIN_T4, IOPIN_SPI_MOSI);
-	outputPinForFunction( FPGA_PIN_U16, IOPIN_SPI_SCK);
-	inputPinForFunction( FPGA_PIN_N10, IOPIN_SPI_MISO);
-
-	pinModePPS( FPGA_PIN_T4, HIGH );
-	pinModePPS( FPGA_PIN_U16, HIGH );
-
-	pinMode(FPGA_PIN_T4, OUTPUT);
-	pinMode(FPGA_PIN_U16, OUTPUT);
-	pinMode(FPGA_PIN_U3, OUTPUT);
-	pinMode(FPGA_PIN_P11, OUTPUT);
-	pinMode(FPGA_PIN_N8, OUTPUT);
-	pinMode(FPGA_PIN_N7, OUTPUT);
-	pinMode(FPGA_PIN_D16, OUTPUT);
+	pinMode(SPI_FLASH_SEL_PIN, OUTPUT);
+	pinMode(FPGA_AD_CONV, OUTPUT);
+	pinMode(FPGA_DAC_CS, OUTPUT);
+	pinMode(FPGA_AMP_CS, OUTPUT);
 
 	pinMode(FPGA_LED_0, OUTPUT);
 
 	digitalWrite(FPGA_LED_0, HIGH);
-
 }
 #endif
 
@@ -802,6 +791,16 @@ void configure_pins()
 	pinMode(FPGA_PMOD_JA_2, OUTPUT);
 	
 	digitalWrite(FPGA_PMOD_JA_2,HIGH);
+	// Set up leds for debugging
+	pinMode(FPGA_LED_0,OUTPUT);
+	pinMode(FPGA_LED_1,OUTPUT);
+	pinMode(FPGA_LED_2,OUTPUT);
+	pinMode(FPGA_LED_3,OUTPUT);
+	digitalWrite(FPGA_LED_0,HIGH);
+	digitalWrite(FPGA_LED_1,LOW);
+	digitalWrite(FPGA_LED_2,LOW);
+	digitalWrite(FPGA_LED_3,LOW);
+
 }
 #endif
 
@@ -852,6 +851,9 @@ extern "C" int main(int argc,char**argv)
 		// DEBUG ONLY
 		//TMR1CNT=i;
 		//outbyte(i);
+#ifdef __ZPUINO_NEXYS2__
+		digitalWrite(FPGA_LED_1,HIGH);
+#endif
 		if (syncSeen) {
 			if (i==HDLC_frameFlag) {
 				if (bufferpos>0) {
