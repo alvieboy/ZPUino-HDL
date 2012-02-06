@@ -47,7 +47,8 @@ entity timer is
   generic (
     TSCENABLED: boolean := false;
     PWMCOUNT: integer range 1 to 8 := 2;
-    WIDTH: integer range 1 to 32 := 16
+    WIDTH: integer range 1 to 32 := 16;
+    PRESCALER_ENABLED: boolean := true
   );
   port (
     wb_clk_i:   in std_logic;
@@ -103,6 +104,7 @@ end record;
 
 constant UPDATE_NOW: std_logic_vector(1 downto 0) := "00";
 constant UPDATE_ZERO_SYNC: std_logic_vector(1 downto 0) := "01";
+constant UPDATE_LATER: std_logic_vector(1 downto 0) := "10";
 
 
 signal tmr0_prescale_rst: std_logic;
@@ -131,6 +133,7 @@ begin
 
   wb_ack_o <= wb_cyc_i and wb_stb_i;
 
+pr: if PRESCALER_ENABLED generate
   tmr0prescale_inst: prescaler
     port map (
       clk     => wb_clk_i,
@@ -138,6 +141,11 @@ begin
       prescale=> tmrr.pres,
       event   => tmr0_prescale_event
     );
+end generate;
+
+npr: if not PRESCALER_ENABLED generate
+  tmr0_prescale_event<='1';
+end generate;
 
   tsc_process: if TSCENABLED generate
   TSCgen: process(wb_clk_i)
@@ -279,6 +287,7 @@ begin
             when "10" =>
               w.pwmrb(i).en := wb_dat_i(0);
             when "11" =>
+              -- This is sync pulse for UPDATE_LATER
             when others =>
           end case;
         end if;
@@ -293,6 +302,13 @@ begin
           if ovf='1' then
             w.pwmr(i) := tmrr.pwmrb(i);
           end if;
+        when UPDATE_LATER =>
+          if wb_adr_i(3 downto 2) = std_logic_vector(to_unsigned(i,2)) then
+            if wb_adr_i(1 downto 0)="11" then
+              w.pwmr(i) := tmrr.pwmrb(i);
+            end if;
+          end if;
+
         when others =>
           --w.pwmr(i) := tmrr.pwmrb(i);
       end case;
