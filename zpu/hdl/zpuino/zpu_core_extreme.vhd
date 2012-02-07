@@ -609,7 +609,8 @@ begin
           exu_busy, pfu_busy,
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
-          dbg_in.flush, dbg_in.inject,dbg_in.injectmode
+          dbg_in.flush, dbg_in.inject,dbg_in.injectmode,
+          prefr.valid, prefr.break
           )
     variable w: decoderegs_type;
   begin
