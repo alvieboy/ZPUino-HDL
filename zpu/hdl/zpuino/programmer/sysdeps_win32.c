@@ -47,7 +47,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 	port->dcb.ByteSize        = 8;
 	port->dcb.Parity          = NOPARITY;
 	port->dcb.StopBits        = ONESTOPBIT;
-	port->dcb.fDtrControl     = DTR_CONTROL_DISABLE;
+	port->dcb.fDtrControl     = DTR_CONTROL_ENABLE;
 	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
 	port->dcb.fOutxCtsFlow    = FALSE;
 	port->dcb.fOutxDsrFlow    = FALSE;

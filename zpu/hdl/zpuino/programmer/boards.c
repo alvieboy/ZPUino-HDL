@@ -13,6 +13,7 @@ static struct board_type boards[] = {
 	{ 0xA4030E00, "GadgetFactory Papilio Plus LX4" },
 	{ 0x83010F00, "Spartan 3E Starter Kit S3E500" },
 	{ 0x83010E01, "Spartan 3E Starter Kit S3E500 w/ 8-bit HQVGA" },
+	{ 0x84010F00, "Nexys2 board with S3E1200" }
 	{ 0x0, NULL }
 };
 

@@ -410,7 +410,7 @@ begin
     ram_wb_ack_o      => ram_wb_ack_o,
     ram_wb_dat_i      => ram_wb_dat_i,
     ram_wb_dat_o      => ram_wb_dat_o,
-    ram_wb_adr_i      => ram_wb_adr_i,
+    ram_wb_adr_i      => ram_wb_adr_i(maxAddrBit downto 0),
     ram_wb_cyc_i      => ram_wb_cyc_i,
     ram_wb_stb_i      => ram_wb_stb_i,
     ram_wb_we_i       => ram_wb_we_i,

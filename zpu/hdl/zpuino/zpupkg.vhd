@@ -127,7 +127,7 @@ package zpupkg is
 
     rom_wb_ack_i:       in std_logic;
     rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
-    rom_wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     rom_wb_cyc_o:       out std_logic;
     rom_wb_stb_o:       out std_logic;
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);

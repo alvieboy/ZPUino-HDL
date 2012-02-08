@@ -6,6 +6,10 @@ library work;
 use work.zpu_config.all;
 
 entity wbarb2_1 is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -14,7 +18,7 @@ entity wbarb2_1 is
 
     m0_wb_dat_o: out std_logic_vector(31 downto 0);
     m0_wb_dat_i: in std_logic_vector(31 downto 0);
-    m0_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
     m0_wb_sel_i: in std_logic_vector(3 downto 0);
     m0_wb_cti_i: in std_logic_vector(2 downto 0);
     m0_wb_we_i:  in std_logic;
@@ -26,7 +30,7 @@ entity wbarb2_1 is
 
     m1_wb_dat_o: out std_logic_vector(31 downto 0);
     m1_wb_dat_i: in std_logic_vector(31 downto 0);
-    m1_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
     m1_wb_sel_i: in std_logic_vector(3 downto 0);
     m1_wb_cti_i: in std_logic_vector(2 downto 0);
     m1_wb_we_i:  in std_logic;
@@ -38,7 +42,7 @@ entity wbarb2_1 is
 
     s0_wb_dat_i: in std_logic_vector(31 downto 0);
     s0_wb_dat_o: out std_logic_vector(31 downto 0);
-    s0_wb_adr_o: out std_logic_vector(maxIObit downto minIObit);
+    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
     s0_wb_sel_o: out std_logic_vector(3 downto 0);
     s0_wb_cti_o: out std_logic_vector(2 downto 0);
     s0_wb_we_o:  out std_logic;
