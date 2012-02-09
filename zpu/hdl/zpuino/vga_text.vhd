@@ -33,11 +33,13 @@ entity vga_text is
     mi_wb_ack_i: in std_logic;
 
     -- Char RAM interface
-    wb_char_ram_dat_i: in std_logic_vector(7 downto 0);
-    wb_char_ram_adr_o: out std_logic_vector(7 downto 0);
-    wb_char_ram_cyc_o: out std_logic;
-    wb_char_ram_stb_o: out std_logic;
-    wb_char_ram_ack_i: in std_logic;
+    char_ram_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    char_ram_wb_we_i:  in std_logic;
+    char_ram_wb_cyc_i: in std_logic;
+    char_ram_wb_stb_i: in std_logic;
+    char_ram_wb_ack_o: out std_logic;
 
     -- VGA signals
     vgaclk:     in std_logic;
@@ -73,17 +75,30 @@ architecture behave of vga_text is
 
   component wb_char_ram_8x8 is
   port (
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
-    wb_we_i:  in std_logic;
-    wb_cyc_i: in std_logic;
-    wb_stb_i: in std_logic;
-    wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
+    a_wb_clk_i: in std_logic;
+	 	a_wb_rst_i: in std_logic;
+    a_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    a_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    a_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    a_wb_we_i:  in std_logic;
+    a_wb_cyc_i: in std_logic;
+    a_wb_stb_i: in std_logic;
+    a_wb_ack_o: out std_logic;
+    a_wb_inta_o:out std_logic;
+
+    b_wb_clk_i: in std_logic;
+	 	b_wb_rst_i: in std_logic;
+    b_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    b_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    b_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    b_wb_we_i:  in std_logic;
+    b_wb_cyc_i: in std_logic;
+    b_wb_stb_i: in std_logic;
+    b_wb_ack_o: out std_logic;
+    b_wb_inta_o:out std_logic
   );
+
+
   end component wb_char_ram_8x8;
 
   signal fifo_full: std_logic;
@@ -589,16 +604,28 @@ begin
 
   charram: wb_char_ram_8x8
   port map (
-    wb_clk_i    => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o    => char_wb_dat_o,
-    wb_dat_i    => char_wb_dat_i,
-    wb_adr_i    => char_wb_adr_i,
-    wb_we_i     => '0',
-    wb_cyc_i    => char_wb_cyc_i,
-    wb_stb_i    => char_wb_stb_i,
-    wb_ack_o    => char_wb_ack_o,
-    wb_inta_o   => open
+    a_wb_clk_i    => wb_clk_i,
+	 	a_wb_rst_i    => wb_rst_i,
+    a_wb_dat_o    => char_wb_dat_o,
+    a_wb_dat_i    => char_wb_dat_i,
+    a_wb_adr_i    => char_wb_adr_i,
+    a_wb_we_i     => '0',
+    a_wb_cyc_i    => char_wb_cyc_i,
+    a_wb_stb_i    => char_wb_stb_i,
+    a_wb_ack_o    => char_wb_ack_o,
+    a_wb_inta_o   => open,
+
+    b_wb_clk_i    => wb_clk_i,
+	 	b_wb_rst_i    => wb_rst_i,
+    b_wb_dat_o    => char_ram_wb_dat_o,
+    b_wb_dat_i    => char_ram_wb_dat_i,
+    b_wb_adr_i    => char_ram_wb_adr_i,
+    b_wb_we_i     => char_ram_wb_we_i,
+    b_wb_cyc_i    => char_ram_wb_cyc_i,
+    b_wb_stb_i    => char_ram_wb_stb_i,
+    b_wb_ack_o    => char_ram_wb_ack_o,
+    b_wb_inta_o   => open
+
   );
 
 

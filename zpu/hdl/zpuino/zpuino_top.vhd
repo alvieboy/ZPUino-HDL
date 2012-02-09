@@ -77,10 +77,16 @@ entity zpuino_top is
     v_wb_we_i:  in std_logic;
     v_wb_cyc_i: in std_logic;
     v_wb_stb_i: in std_logic;
-    v_wb_ack_o: out std_logic
+    v_wb_ack_o: out std_logic;
 
-
-
+    -- Char RAM interface
+    char_ram_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    char_ram_wb_we_i:  in std_logic;
+    char_ram_wb_cyc_i: in std_logic;
+    char_ram_wb_stb_i: in std_logic;
+    char_ram_wb_ack_o: out std_logic
   );
 end entity zpuino_top;
 
@@ -151,11 +157,13 @@ architecture behave of zpuino_top is
     mi_wb_ack_i: in std_logic;
 
     -- Char RAM interface
-    wb_char_ram_dat_i: in std_logic_vector(7 downto 0);
-    wb_char_ram_adr_o: out std_logic_vector(7 downto 0);
-    wb_char_ram_cyc_o: out std_logic;
-    wb_char_ram_stb_o: out std_logic;
-    wb_char_ram_ack_i: in std_logic;
+    char_ram_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    char_ram_wb_we_i:  in std_logic;
+    char_ram_wb_cyc_i: in std_logic;
+    char_ram_wb_stb_i: in std_logic;
+    char_ram_wb_ack_o: out std_logic;
 
     vgaclk:     in std_logic;
     vga_hsync:  out std_logic;
@@ -612,11 +620,14 @@ begin
     mi_wb_ack_i   => vga_wb_ack_o,
 
     -- Char RAM interface
-    wb_char_ram_dat_i => (others => DontCareValue),
-    wb_char_ram_adr_o => open,
-    wb_char_ram_cyc_o => open,
-    wb_char_ram_stb_o => open,
-    wb_char_ram_ack_i => '1',
+    char_ram_wb_dat_o => char_ram_wb_dat_o,
+    char_ram_wb_dat_i => char_ram_wb_dat_i,
+    char_ram_wb_adr_i => char_ram_wb_adr_i,
+    char_ram_wb_we_i  => char_ram_wb_we_i,
+    char_ram_wb_cyc_i => char_ram_wb_cyc_i,
+    char_ram_wb_stb_i => char_ram_wb_stb_i,
+    char_ram_wb_ack_o => char_ram_wb_ack_o,
+
 
     vgaclk          => vgaclk,
     vga_hsync       => vga_hsync,

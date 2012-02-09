@@ -228,6 +228,14 @@ architecture behave of papilio_one_top is
   signal v_wb_stb_i: std_logic;
   signal v_wb_ack_o: std_logic;
 
+  signal char_ram_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
+  signal char_ram_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
+  signal char_ram_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
+  signal char_ram_wb_we_i:  std_logic;
+  signal char_ram_wb_cyc_i: std_logic;
+  signal char_ram_wb_stb_i: std_logic;
+  signal char_ram_wb_ack_o: std_logic;
+
 
 begin
 
@@ -287,6 +295,15 @@ begin
       v_wb_cyc_i    => v_wb_cyc_i,
       v_wb_stb_i    => v_wb_stb_i,
       v_wb_ack_o    => v_wb_ack_o,
+
+    -- Char RAM interface
+      char_ram_wb_dat_o => char_ram_wb_dat_o,
+      char_ram_wb_dat_i => char_ram_wb_dat_i,
+      char_ram_wb_adr_i => char_ram_wb_adr_i,
+      char_ram_wb_we_i  => char_ram_wb_we_i,
+      char_ram_wb_cyc_i => char_ram_wb_cyc_i,
+      char_ram_wb_stb_i => char_ram_wb_stb_i,
+      char_ram_wb_ack_o => char_ram_wb_ack_o,
 
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
@@ -510,11 +527,10 @@ begin
   );
 
   --
-  -- IO SLOT 8 (optional)
+  -- IO SLOT 8
   --
   slot_read(8) <= v_wb_dat_o;
   v_wb_dat_i <= slot_write(8);
-
   v_wb_adr_i <= slot_address(8);
   v_wb_we_i  <= slot_we(8);
   v_wb_cyc_i <= slot_cyc(8);
@@ -526,19 +542,14 @@ begin
   -- IO SLOT 9
   --
 
-  slot9: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(9),
-    wb_dat_i     => slot_write(9),
-    wb_adr_i   => slot_address(9),
-    wb_we_i        => slot_we(9),
-    wb_cyc_i        => slot_cyc(9),
-    wb_stb_i        => slot_stb(9),
-    wb_ack_o      => slot_ack(9),
-    wb_inta_o => slot_interrupt(9)
-  );
+  slot_read(9) <= char_ram_wb_dat_o;
+  char_ram_wb_dat_i <= slot_write(9);
+  char_ram_wb_adr_i <= slot_address(9);
+  char_ram_wb_we_i <= slot_we(9);
+  char_ram_wb_cyc_i <= slot_cyc(9);
+  char_ram_wb_stb_i <= slot_stb(9);
+  slot_ack(9) <= char_ram_wb_ack_o;
+  slot_interrupt(9) <='0';
 
   --
   -- IO SLOT 10

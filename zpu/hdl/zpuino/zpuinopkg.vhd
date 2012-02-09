@@ -84,7 +84,15 @@ package zpuinopkg is
     v_wb_we_i:  in std_logic;
     v_wb_cyc_i: in std_logic;
     v_wb_stb_i: in std_logic;
-    v_wb_ack_o: out std_logic
+    v_wb_ack_o: out std_logic;
+
+    char_ram_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    char_ram_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    char_ram_wb_we_i:  in std_logic;
+    char_ram_wb_cyc_i: in std_logic;
+    char_ram_wb_stb_i: in std_logic;
+    char_ram_wb_ack_o: out std_logic
 
 
   );
