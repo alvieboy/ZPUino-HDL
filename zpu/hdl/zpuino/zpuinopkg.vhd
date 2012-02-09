@@ -76,7 +76,15 @@ package zpuinopkg is
     vga_vsync:  out std_logic;
     vga_b:      out std_logic;
     vga_r:      out std_logic;
-    vga_g:      out std_logic
+    vga_g:      out std_logic;
+
+    v_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    v_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    v_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    v_wb_we_i:  in std_logic;
+    v_wb_cyc_i: in std_logic;
+    v_wb_stb_i: in std_logic;
+    v_wb_ack_o: out std_logic
 
 
   );

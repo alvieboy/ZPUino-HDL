@@ -220,6 +220,15 @@ architecture behave of papilio_one_top is
   signal vga_r:       std_logic;
   signal vga_g:       std_logic;
 
+  signal v_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
+  signal v_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
+  signal v_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
+  signal v_wb_we_i:  std_logic;
+  signal v_wb_cyc_i: std_logic;
+  signal v_wb_stb_i: std_logic;
+  signal v_wb_ack_o: std_logic;
+
+
 begin
 
   wb_clk_i <= sysclk;
@@ -270,6 +279,14 @@ begin
       vga_b         => vga_b,
       vga_r         => vga_r,
       vga_g         => vga_g,
+
+      v_wb_dat_o    => v_wb_dat_o,
+      v_wb_dat_i    => v_wb_dat_i,
+      v_wb_adr_i    => v_wb_adr_i,
+      v_wb_we_i     => v_wb_we_i,
+      v_wb_cyc_i    => v_wb_cyc_i,
+      v_wb_stb_i    => v_wb_stb_i,
+      v_wb_ack_o    => v_wb_ack_o,
 
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
@@ -495,20 +512,15 @@ begin
   --
   -- IO SLOT 8 (optional)
   --
+  slot_read(8) <= v_wb_dat_o;
+  v_wb_dat_i <= slot_write(8);
 
-  adc_inst: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(8),
-    wb_dat_i     => slot_write(8),
-    wb_adr_i   => slot_address(8),
-    wb_we_i    => slot_we(8),
-    wb_cyc_i      => slot_cyc(8),
-    wb_stb_i      => slot_stb(8),
-    wb_ack_o      => slot_ack(8),
-    wb_inta_o =>  slot_interrupt(8)
-  );
+  v_wb_adr_i <= slot_address(8);
+  v_wb_we_i  <= slot_we(8);
+  v_wb_cyc_i <= slot_cyc(8);
+  v_wb_stb_i <= slot_stb(8);
+  slot_ack(8) <= v_wb_ack_o;
+  slot_interrupt(8) <= '0';
 
   --
   -- IO SLOT 9

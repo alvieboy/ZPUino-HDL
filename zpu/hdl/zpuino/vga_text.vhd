@@ -128,9 +128,6 @@ architecture behave of vga_text is
     charline: std_logic_vector(7 downto 0); -- The 8 pixels of a char row
     charpal:  std_logic_vector(7 downto 0); -- Pallete for this char
 
-    --charoff:  unsigned(1 downto 0); -- byte offset
-    --palloff:  unsigned(1 downto 0); -- byte offset
-
     hptr:     integer range 0 to 79; -- horizontal counter
   
     hoff:     unsigned(2 downto 0); -- Offset (column) of current char
@@ -199,7 +196,41 @@ architecture behave of vga_text is
 
   signal vga_reset_q1, vga_reset_q2: std_logic;
 
+  signal rdly: std_logic;
 begin
+
+      -- Wishbone register access
+
+  wb_dat_o<=(others => DontCareValue);
+
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+     if wb_rst_i='1' then
+      rdly<='0';
+      wb_ack_o<='0';
+     else
+      if rdly='0' then
+      if wb_stb_i='1' and wb_cyc_i='1' then
+        if wb_we_i='1' then
+          case wb_adr_i(3 downto 2) is
+            when "00" =>
+              membase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
+            when "01" =>
+              palletebase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
+            when others =>
+          end case;
+        end if;
+        wb_ack_o<='1';
+      end if;
+      else
+        wb_ack_o<='0';
+      end if;
+     end if;
+    end if;
+  end process;
+
+
 
   process(wb_clk_i, wb_rst_i, r, mi_wb_ack_i, mi_wb_dat_i,membase,palletebase)
     variable w: vgaregs_type;
@@ -234,11 +265,11 @@ begin
       w.hptr := 0;
       w.hoff := (others =>'0');
       w.voff := (others =>'0');
-      w.memptr := (others => '0');
-      w.palleteptr := (others => '0');
+      w.memptr := unsigned(membase);
+      w.palleteptr := unsigned(palletebase);
 
-      w.ls_memptr := (others => '0');
-      w.ls_palleteptr := (others => '0');
+      w.ls_memptr := unsigned(membase);
+      w.ls_palleteptr := unsigned(palletebase);
 
     else
       fifo_clear<='0';
@@ -271,18 +302,18 @@ begin
         when load_char =>
 
           case r.memptr(1 downto 0) is
-            when "00" => current_char := r.chars(7 downto 0);
-            when "01" => current_char := r.chars(15 downto 8);
-            when "10" => current_char := r.chars(23 downto 16);
-            when "11" => current_char := r.chars(31 downto 24);
+            when "11" => current_char := r.chars(7 downto 0);
+            when "10" => current_char := r.chars(15 downto 8);
+            when "01" => current_char := r.chars(23 downto 16);
+            when "00" => current_char := r.chars(31 downto 24);
             when others =>
           end case;
 
           case r.palleteptr(1 downto 0) is
-            when "00" => current_pallete := r.pallete(7 downto 0);
-            when "01" => current_pallete := r.pallete(15 downto 8);
-            when "10" => current_pallete := r.pallete(23 downto 16);
-            when "11" => current_pallete := r.pallete(31 downto 24);
+            when "11" => current_pallete := r.pallete(7 downto 0);
+            when "10" => current_pallete := r.pallete(15 downto 8);
+            when "01" => current_pallete := r.pallete(23 downto 16);
+            when "00" => current_pallete := r.pallete(31 downto 24);
             when others =>
           end case;
 
@@ -418,16 +449,8 @@ begin
       else
         if hcount_q = VGA_HCOUNT then
           hcount_q <= 0;
-          --hoff <= (others =>'0');
-          --hdisp <= (others => '0');
         else
           hcount_q <= hcount_q + 1;
-          --if hoff="100" then
-           -- hoff <= (others => '0');
-          --  hdisp <= hdisp + 1;
-          --else
-          --  hoff <= hoff + 1;
-          --end if;
         end if;
       end if;
     end if;
@@ -457,10 +480,10 @@ begin
         vga_hsync<=h_polarity;
       else
         h_sync_tick <= '0';
-        if hcount_q = (VGA_H_DISPLAY + VGA_H_BACKPORCH) then
+        if hcount_q = (VGA_H_DISPLAY + VGA_H_FRONTPORCH) then
           h_sync_tick <= '1';
           vga_hsync <= not h_polarity;
-        elsif hcount_q = (VGA_HCOUNT - VGA_H_FRONTPORCH) then
+        elsif hcount_q = (VGA_HCOUNT - VGA_H_BACKPORCH) then
           vga_hsync <= h_polarity;
         end if;
       end if;
@@ -472,23 +495,13 @@ begin
     if rising_edge(vgaclk) then
       if vgarst='1' then
         vcount_q <= VGA_V_DISPLAY + VGA_V_BACKPORCH - 1;
-        --vga_v_offset <= (others => '0'); -- Reset VGA vertical offset
-        --voff<=(others => '0');
       else
-
        if vcount_q = VGA_VCOUNT then
           vcount_q <= 0;
-          --voff <= (others => '0');
-
           report "V finished" severity note;
        else
           if h_sync_tick='1' then
             vcount_q <= vcount_q + 1;
-            --if voff="100" then
-            --  voff <= (others => '0');
-            --else
-            --  voff <= voff + 1;
-            --end if;
           end if;
         end if;
       end if;
@@ -505,9 +518,9 @@ begin
         cache_clear <= '1';
       else
         cache_clear <= '0';
-        if vcount_q = (VGA_V_DISPLAY + VGA_V_BACKPORCH) then
+        if vcount_q = (VGA_V_DISPLAY + VGA_V_FRONTPORCH) then
           vga_vsync <= not v_polarity;
-        elsif vcount_q = (VGA_VCOUNT - VGA_V_FRONTPORCH) then
+        elsif vcount_q = (VGA_VCOUNT - VGA_V_BACKPORCH) then
           vga_vsync <= v_polarity;
           cache_clear <= '1';
         end if;

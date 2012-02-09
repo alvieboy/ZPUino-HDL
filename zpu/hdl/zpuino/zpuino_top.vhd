@@ -69,7 +69,18 @@ entity zpuino_top is
     vga_vsync:  out std_logic;
     vga_b:      out std_logic;
     vga_r:      out std_logic;
-    vga_g:      out std_logic
+    vga_g:      out std_logic;
+
+    v_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    v_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    v_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    v_wb_we_i:  in std_logic;
+    v_wb_cyc_i: in std_logic;
+    v_wb_stb_i: in std_logic;
+    v_wb_ack_o: out std_logic
+
+
+
   );
 end entity zpuino_top;
 
@@ -581,13 +592,13 @@ begin
     port map (
     wb_clk_i    => clk,
 	 	wb_rst_i    => rst,
-    wb_dat_o    => open,
-    wb_dat_i    => (others => DontCareValue),
-    wb_adr_i    => (others => DontCareValue),
-    wb_we_i     => '0',
-    wb_cyc_i    => '0',
-    wb_stb_i    => '0',
-    wb_ack_o    => open,
+    wb_dat_o    => v_wb_dat_o,
+    wb_dat_i    => v_wb_dat_i,
+    wb_adr_i    => v_wb_adr_i,
+    wb_we_i     => v_wb_we_i,
+    wb_cyc_i    => v_wb_cyc_i,
+    wb_stb_i    => v_wb_stb_i,
+    wb_ack_o    => v_wb_ack_o,
 
     -- Wishbone MASTER interface
     mi_wb_dat_i   => vga_wb_dat_o,
