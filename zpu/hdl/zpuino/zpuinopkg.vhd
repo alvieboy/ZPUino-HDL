@@ -69,7 +69,14 @@ package zpuinopkg is
     slot_interrupt: in slot_std_logic_type;
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0);
+
+    vgaclk:     in std_logic;
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_b:      out std_logic;
+    vga_r:      out std_logic;
+    vga_g:      out std_logic
 
 
   );

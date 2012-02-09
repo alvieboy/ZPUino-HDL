@@ -48,7 +48,7 @@ end entity;
 architecture behave of tb_zpuino is
 
   constant period : time := 10.4166666667 ns;
-  constant vgaperiod : time := 40 ns;
+  constant vgaperiod : time := 31.25 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
   signal w_vgaclk : std_logic := '0';
@@ -385,7 +385,8 @@ begin
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
       jtag_ctrl_chain_in => jtag_ctrl_chain_in,
-      jtag_data_chain_out => jtag_data_chain_out
+      jtag_data_chain_out => jtag_data_chain_out,
+      vgaclk => w_vgaclk
     );
 
   dbgport: zpuino_debug_jtag

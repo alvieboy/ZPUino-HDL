@@ -73,6 +73,7 @@ architecture behave of papilio_one_top is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
+    vgaclkout: out std_logic;
     rstout: out std_logic
   );
   end component clkgen;
@@ -212,6 +213,13 @@ architecture behave of papilio_one_top is
   );
   end component;
 
+  signal vgaclk: std_logic;
+  signal vga_hsync:   std_logic;
+  signal vga_vsync:   std_logic;
+  signal vga_b:       std_logic;
+  signal vga_r:       std_logic;
+  signal vga_g:       std_logic;
+
 begin
 
   wb_clk_i <= sysclk;
@@ -235,6 +243,7 @@ begin
     clkin   => clk,
     rstin   => dbg_reset,
     clkout  => sysclk,
+    vgaclkout => vgaclk,
     rstout  => clkgen_rst
   );
 
@@ -254,6 +263,14 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
+      vgaclk        => vgaclk,
+
+      vga_hsync     => vga_hsync,
+      vga_vsync     => vga_vsync,
+      vga_b         => vga_b,
+      vga_r         => vga_r,
+      vga_g         => vga_g,
+
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
 
@@ -620,14 +637,23 @@ begin
   );
 
 
-  pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
-  pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
-  pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
-  pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
-  pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
-  pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
-  pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
-  pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
+  --pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
+  pin00: OPAD port map ( I => vga_vsync, PAD => WING_A(0) );
+  --pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
+  pin01: OPAD port map ( I => vga_hsync, PAD => WING_A(1) );
+  --pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
+  pin02: OPAD port map ( I => vga_b, PAD => WING_A(2) );
+  --pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
+  WING_A(3) <= 'Z';
+  --pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
+  WING_A(4) <= 'Z';
+  --pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
+  WING_A(5) <= 'Z';
+  --pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
+  pin06: OPAD port map ( I => vga_g, PAD => WING_A(6) );
+  --pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
+  pin07: OPAD port map ( I => vga_r, PAD => WING_A(7) );
+
   pin08: IOPAD port map(I => gpio_o(8), O => gpio_i(8), T => gpio_t(8), C => sysclk,PAD => WING_A(8) );
   pin09: IOPAD port map(I => gpio_o(9), O => gpio_i(9), T => gpio_t(9), C => sysclk,PAD => WING_A(9) );
   pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );

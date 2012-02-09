@@ -62,8 +62,14 @@ entity zpuino_top is
     dbg_reset:  out std_logic;
 
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0);
 
+    vgaclk:     in std_logic;
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_b:      out std_logic;
+    vga_r:      out std_logic;
+    vga_g:      out std_logic
   );
 end entity zpuino_top;
 
@@ -138,7 +144,14 @@ architecture behave of zpuino_top is
     wb_char_ram_adr_o: out std_logic_vector(7 downto 0);
     wb_char_ram_cyc_o: out std_logic;
     wb_char_ram_stb_o: out std_logic;
-    wb_char_ram_ack_i: in std_logic
+    wb_char_ram_ack_i: in std_logic;
+
+    vgaclk:     in std_logic;
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_b:      out std_logic;
+    vga_r:      out std_logic;
+    vga_g:      out std_logic
    );
   end component;
 
@@ -345,6 +358,9 @@ architecture behave of zpuino_top is
 
   signal dbg_to_zpu:         zpu_dbg_in_type;
   signal dbg_from_zpu:       zpu_dbg_out_type;
+
+  signal vga_reset:         std_logic;
+  signal vga_reset_q1:      std_logic;
 
 begin
 
@@ -589,7 +605,15 @@ begin
     wb_char_ram_adr_o => open,
     wb_char_ram_cyc_o => open,
     wb_char_ram_stb_o => open,
-    wb_char_ram_ack_i => '1'
+    wb_char_ram_ack_i => '1',
+
+    vgaclk          => vgaclk,
+    vga_hsync       => vga_hsync,
+    vga_vsync       => vga_vsync,
+    vga_b           => vga_b,
+    vga_r           => vga_r,
+    vga_g           => vga_g
+
   );
 
 
