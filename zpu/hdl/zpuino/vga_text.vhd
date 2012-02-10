@@ -168,29 +168,29 @@ architecture behave of vga_text is
 --ModeLine "640x480"    36.0  640  696  752  832    480  481  484  509 -hsync -vsync
 
 
---  constant VGA_H_BORDER: integer := 0;
---  constant VGA_H_SYNC: integer := 40;
---  constant VGA_H_FRONTPORCH: integer := 24+VGA_H_BORDER;
---  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
---  constant VGA_H_BACKPORCH: integer := 128+VGA_H_BORDER;
---
---  constant VGA_V_BORDER: integer := 0;
---  constant VGA_V_FRONTPORCH: integer := 29+VGA_V_BORDER;
---  constant VGA_V_SYNC: integer := 2;
---  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
---  constant VGA_V_BACKPORCH: integer := 9+VGA_V_BORDER;
-
   constant VGA_H_BORDER: integer := 0;
-  constant VGA_H_SYNC: integer := 1;
-  constant VGA_H_FRONTPORCH: integer := 1;
-  constant VGA_H_DISPLAY: integer := 640;
-  constant VGA_H_BACKPORCH: integer := 1;
+  constant VGA_H_SYNC: integer := 40;
+  constant VGA_H_FRONTPORCH: integer := 24+VGA_H_BORDER;
+  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
+  constant VGA_H_BACKPORCH: integer := 128+VGA_H_BORDER;
 
   constant VGA_V_BORDER: integer := 0;
-  constant VGA_V_FRONTPORCH: integer := 1;
-  constant VGA_V_SYNC: integer := 1;
-  constant VGA_V_DISPLAY: integer := 480;
-  constant VGA_V_BACKPORCH: integer := 1;
+  constant VGA_V_FRONTPORCH: integer := 29+VGA_V_BORDER;
+  constant VGA_V_SYNC: integer := 2;
+  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
+  constant VGA_V_BACKPORCH: integer := 9+VGA_V_BORDER;
+
+--  constant VGA_H_BORDER: integer := 0;
+--  constant VGA_H_SYNC: integer := 1;
+--  constant VGA_H_FRONTPORCH: integer := 1;
+--  constant VGA_H_DISPLAY: integer := 640;
+--  constant VGA_H_BACKPORCH: integer := 1;
+
+--  constant VGA_V_BORDER: integer := 0;
+--  constant VGA_V_FRONTPORCH: integer := 1;
+--  constant VGA_V_SYNC: integer := 1;
+--  constant VGA_V_DISPLAY: integer := 480;
+--  constant VGA_V_BACKPORCH: integer := 1;
 
 
 
