@@ -39,6 +39,9 @@ use IEEE.std_logic_unsigned.all;
 
 
 entity fifo is
+  generic (
+    bits: integer := 11
+  );
   port (
     clk:      in std_logic;
     rst:      in std_logic;
@@ -53,12 +56,12 @@ end entity fifo;
 
 architecture behave of fifo is
 
-  type mem_t is array (0 to 2047) of std_logic_vector(7 downto 0);
+  type mem_t is array (0 to ((2**bits)-1)) of std_logic_vector(7 downto 0);
 
   signal memory:  mem_t;
 
-  signal wraddr: unsigned(10 downto 0);
-  signal rdaddr: unsigned(10 downto 0);
+  signal wraddr: unsigned(bits-1 downto 0);
+  signal rdaddr: unsigned(bits-1 downto 0);
 
 begin
 
