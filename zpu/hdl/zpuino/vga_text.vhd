@@ -146,7 +146,7 @@ architecture behave of vga_text is
     hptr:     integer range 0 to 79; -- horizontal counter
   
     hoff:     unsigned(2 downto 0); -- Offset (column) of current char
-    voff:     unsigned(2 downto 0); -- Offset (row) of current char
+    voff:     unsigned(3 downto 0); -- Offset (row) of current char, added bit for duplication
 
     memptr:        unsigned(wordSize-1 downto 0);
     palleteptr:    unsigned(wordSize-1 downto 0);
@@ -180,6 +180,18 @@ architecture behave of vga_text is
   constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
   constant VGA_V_BACKPORCH: integer := 9+VGA_V_BORDER;
 
+--  constant VGA_H_BORDER: integer := 0;
+--  constant VGA_H_SYNC: integer := 1;
+--  constant VGA_H_FRONTPORCH: integer := 1;
+--  constant VGA_H_DISPLAY: integer := 640;
+--  constant VGA_H_BACKPORCH: integer := 1;
+
+--  constant VGA_V_BORDER: integer := 0;
+--  constant VGA_V_FRONTPORCH: integer := 1;
+--  constant VGA_V_SYNC: integer := 1;
+--  constant VGA_V_DISPLAY: integer := 480;
+--  constant VGA_V_BACKPORCH: integer := 1;
+
 
 
   constant VGA_HCOUNT: integer :=
@@ -212,6 +224,10 @@ architecture behave of vga_text is
   signal vga_reset_q1, vga_reset_q2: std_logic;
 
   signal rdly: std_logic;
+  signal hdup: std_logic;
+
+  signal hflip: std_logic;
+
 begin
 
       -- Wishbone register access
@@ -224,6 +240,8 @@ begin
      if wb_rst_i='1' then
       rdly<='0';
       wb_ack_o<='0';
+      hdup <= '1'; -- Start with 40 columns
+
      else
       if rdly='0' then
       if wb_stb_i='1' and wb_cyc_i='1' then
@@ -233,6 +251,8 @@ begin
               membase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
             when "01" =>
               palletebase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
+            when "11" =>
+              hdup <= wb_dat_i(0);
             when others =>
           end case;
         end if;
@@ -256,6 +276,7 @@ begin
     variable vdisp_char:  std_logic_vector(2 downto 0); -- Vertical offset in char (0 to 7)
 
     variable pixel: std_logic_vector(2 downto 0);
+    variable hmax: integer range 39 to 79;
 
   begin
     mi_wb_stb_o <= '0';
@@ -269,7 +290,13 @@ begin
     char_wb_adr_i <= (others => DontCareValue);
     pixel := (others => DontCareValue);
 
-    vdisp_char := std_logic_vector(r.voff);
+--    vdisp_char := std_logic_vector(r.voff(3 downto 1)); -- Ignore last bit - will duplicate vertical line
+    if hdup='1' then
+      hmax := 39;
+    else
+      hmax := 79;
+    end if;
+
 
     w := r;
     
@@ -335,7 +362,7 @@ begin
           char_wb_cyc_i<='1';
           char_wb_stb_i<='1';
           char_wb_adr_i(12 downto 5) <= current_char;
-          char_wb_adr_i(4 downto 2) <= vdisp_char;
+          char_wb_adr_i(4 downto 2) <= std_logic_vector(r.voff(3 downto 1)); -- Ignore last bit - will duplicate vertical line;
 
           w.charpal := current_pallete;
           w.charline := char_wb_dat_o(7 downto 0); -- No need for ack_i
@@ -359,29 +386,17 @@ begin
 
 
           if fifo_almost_full='0' then
+
             fifo_write_enable<='1';
 
-            --if (r.hptr=79) then
-            --  w.hptr := 0;
-            --  if r.voff="111" then
-                -- Finished, need to increase pointer
-            --  end if;
-            --  w.voff := r.voff + 1;
-            --  w.state := next_line;
-            --else
+            w.hoff := r.hoff + 1;
 
-
-              w.hoff := r.hoff + 1;
-
-              if r.hoff="111" then
-              -- Finished a single row.
-              --w.palloff := r.palloff + 1;
-              --w.charoff := r.charoff + 1;
-              if r.hptr=79 then
+            if r.hoff="111" then
+              if r.hptr=hmax then
                 w.hptr := 0;
                 w.voff := r.voff + 1;
-                if r.voff="111" then
-                  -- Finished a whole line
+                if r.voff="1111" then
+                  -- Finished a whole character line
                   w.memptr := r.memptr + 1;
                   w.palleteptr := r.palleteptr + 1;
                   w.state := next_line;
@@ -397,23 +412,18 @@ begin
                 w.memptr := r.memptr + 1;
                 w.palleteptr := r.palleteptr + 1;
 
-              if r.palleteptr(1 downto 0)="11" then
-                -- Increase pointer
-                w.state := fetch_pallete;
-              elsif r.memptr(1 downto 0)="11" then
-                -- Increase pointer
-                w.state := fetch_char;
-              else
-                w.state := load_char;
-              end if;
-
+                if r.palleteptr(1 downto 0)="11" then
+                  -- Increase pointer
+                  w.state := fetch_pallete;
+                elsif r.memptr(1 downto 0)="11" then
+                  -- Increase pointer
+                  w.state := fetch_char;
+                else
+                  w.state := load_char;
+                end if;
               end if;
             end if;
-           -- end if;
-
           end if;
-
-
 
         when sleep =>
           w.state := fetch_pallete;
@@ -571,12 +581,21 @@ begin
     end if;
   end process;
 
+  -- In order to perform H duplication, we use a trick here
 
+  process(vgaclk,v_display,v_display_q)
+  begin
+    if rising_edge(vgaclk) then
+      if v_display='1' and v_display_q='0' then
+        -- Starting an horizontal line display, reset hflip if needed
+        hflip <= '0';
+      else
+        hflip <= hflip xor hdup;
+      end if;                     
+    end if;
+  end process;
 
-
-  read_enable <= v_display;
-
-
+  read_enable <= v_display and not hflip;
 
 
 

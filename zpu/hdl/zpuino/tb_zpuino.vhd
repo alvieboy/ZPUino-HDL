@@ -386,7 +386,20 @@ begin
       dbg_reset     => dbg_reset,
       jtag_ctrl_chain_in => jtag_ctrl_chain_in,
       jtag_data_chain_out => jtag_data_chain_out,
-      vgaclk => w_vgaclk
+      vgaclk => w_vgaclk,
+
+      v_wb_dat_i    => (others => '0'),
+      v_wb_adr_i    => (others => '0'),
+      v_wb_we_i     => '0',
+      v_wb_cyc_i    => '0',
+      v_wb_stb_i    => '0',
+
+      char_ram_wb_dat_i => (others => '0'),
+      char_ram_wb_adr_i => (others => '0'),
+      char_ram_wb_we_i  => '0',
+      char_ram_wb_cyc_i => '0',
+      char_ram_wb_stb_i => '0'
+
     );
 
   dbgport: zpuino_debug_jtag
