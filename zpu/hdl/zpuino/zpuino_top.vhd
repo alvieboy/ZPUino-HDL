@@ -133,7 +133,7 @@ architecture behave of zpuino_top is
   );
   end component;
 
-  component vga_text is
+  component vga_zxspectrum is
   port(
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -596,7 +596,7 @@ begin
 
 
 
-  vgat: vga_text
+  vgat: vga_zxspectrum
     port map (
     wb_clk_i    => clk,
 	 	wb_rst_i    => rst,

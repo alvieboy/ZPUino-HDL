@@ -465,7 +465,7 @@ begin
   -- IO SLOT 5
   --
 
-  sigmadelta_inst: zpuino_sigmadelta
+  sigmadelta_inst: zpuino_empty_device--zpuino_sigmadelta
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -476,11 +476,11 @@ begin
     wb_cyc_i        => slot_cyc(5),
     wb_stb_i        => slot_stb(5),
     wb_ack_o      => slot_ack(5),
-    wb_inta_o => slot_interrupt(5),
+    wb_inta_o => slot_interrupt(5)--,
 
-    spp_data  => sigmadelta_spp_data,
-    spp_en    => sigmadelta_spp_en,
-    sync_in   => timers_comp
+--    spp_data  => sigmadelta_spp_data,
+--    spp_en    => sigmadelta_spp_en,
+--    sync_in   => timers_comp
   );
 
   --
@@ -542,14 +542,28 @@ begin
   -- IO SLOT 9
   --
 
-  slot_read(9) <= char_ram_wb_dat_o;
-  char_ram_wb_dat_i <= slot_write(9);
-  char_ram_wb_adr_i <= slot_address(9);
-  char_ram_wb_we_i <= slot_we(9);
-  char_ram_wb_cyc_i <= slot_cyc(9);
-  char_ram_wb_stb_i <= slot_stb(9);
-  slot_ack(9) <= char_ram_wb_ack_o;
-  slot_interrupt(9) <='0';
+--  slot_read(9) <= char_ram_wb_dat_o;
+--  char_ram_wb_dat_i <= slot_write(9);
+--  char_ram_wb_adr_i <= slot_address(9);
+--  char_ram_wb_we_i <= slot_we(9);
+--  char_ram_wb_cyc_i <= slot_cyc(9);
+--  char_ram_wb_stb_i <= slot_stb(9);
+--  slot_ack(9) <= char_ram_wb_ack_o;
+--  slot_interrupt(9) <='0';
+
+  slot9: zpuino_empty_device
+  port map (
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
+    wb_dat_o      => slot_read(9),
+    wb_dat_i     => slot_write(9),
+    wb_adr_i   => slot_address(9),
+    wb_we_i        => slot_we(9),
+    wb_cyc_i        => slot_cyc(9),
+    wb_stb_i        => slot_stb(9),
+    wb_ack_o      => slot_ack(9),
+    wb_inta_o => slot_interrupt(9)
+  );
 
   --
   -- IO SLOT 10
