@@ -253,8 +253,10 @@ begin
           end case;
         end if;
         wb_ack_o<='1';
+        rdly <= '1';
       end if;
       else
+        rdly <= '0';
         wb_ack_o<='0';
       end if;
      end if;
