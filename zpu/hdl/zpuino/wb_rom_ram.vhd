@@ -36,17 +36,20 @@ end entity wb_rom_ram;
 architecture behave of wb_rom_ram is
 
   component dualport_ram is
+  generic (
+    maxbit: integer
+  );
   port (
     clk:              in std_logic;
     memAWriteEnable:  in std_logic;
     memAWriteMask:    in std_logic_vector(3 downto 0);
-    memAAddr:         in std_logic_vector(maxAddrBit downto 2);
+    memAAddr:         in std_logic_vector(maxbit downto 2);
     memAWrite:        in std_logic_vector(31 downto 0);
     memARead:         out std_logic_vector(31 downto 0);
     memAEnable:       in std_logic;
     memBWriteEnable:  in std_logic;
     memBWriteMask:    in std_logic_vector(3 downto 0);
-    memBAddr:         in std_logic_vector(maxAddrBit downto 2);
+    memBAddr:         in std_logic_vector(maxbit downto 2);
     memBWrite:        in std_logic_vector(31 downto 0);
     memBRead:         out std_logic_vector(31 downto 0);
     memBEnable:       in std_logic;

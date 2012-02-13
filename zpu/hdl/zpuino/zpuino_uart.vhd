@@ -207,6 +207,9 @@ begin
   end process;
 
   fifo_instance: fifo
+    generic map (
+      bits => 4
+    )
     port map (
       clk   => wb_clk_i,
       rst   => wb_rst_i,
