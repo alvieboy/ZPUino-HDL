@@ -316,7 +316,7 @@ architecture behave of tb_zpuino is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
-  signal dbg_reset: std_logic;
+  signal dbg_reset: std_logic := '0';
 
   signal spi2_miso,spi2_mosi,spi2_sck: std_logic;
 
@@ -383,9 +383,9 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      dbg_reset     => dbg_reset,
-      jtag_ctrl_chain_in => jtag_ctrl_chain_in,
-      jtag_data_chain_out => jtag_data_chain_out,
+      --dbg_reset     => dbg_reset,
+      jtag_ctrl_chain_in => (others => '0'),
+      --jtag_data_chain_out => jtag_data_chain_out,
       vgaclk => w_vgaclk,
 
       v_wb_dat_i    => (others => '0'),
