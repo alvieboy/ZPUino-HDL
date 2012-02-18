@@ -356,9 +356,9 @@ begin
           --w.charpal := current_pallete;
 
           case r.chars(31) is
-            when '0' =>
-              pixel := current_pallete(2 downto 0);
             when '1' =>
+              pixel := current_pallete(2 downto 0);
+            when '0' =>
               pixel := current_pallete(5 downto 3);
             when others =>
           end case;
@@ -582,9 +582,9 @@ begin
           vga_r <= '0';
           vga_g <= '0';
       else
-          vga_r <= read(0);
-          vga_g <= read(1);
-          vga_b <= read(2);
+          vga_b <= read(0);
+          vga_r <= read(1);
+          vga_g <= read(2);
       end if;
     end if;
   end process;
