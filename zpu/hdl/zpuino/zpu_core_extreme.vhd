@@ -625,6 +625,7 @@ begin
 
     if wb_rst_i='1' then
       w.pc     := (others => '0');
+      w.pcint  := (others => '0');
       w.valid  := '0';
       w.fetchpc := (others => '0');
       w.im:='0';

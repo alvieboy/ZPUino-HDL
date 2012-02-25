@@ -384,7 +384,7 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
-      jtag_ctrl_chain_in => jtag_ctrl_chain_in,
+      jtag_ctrl_chain_in => (others => '0'),--jtag_ctrl_chain_in,
       jtag_data_chain_out => jtag_data_chain_out
     );
 
