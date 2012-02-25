@@ -214,6 +214,7 @@ architecture behave of vga_zxspectrum is
   signal rstq2: std_logic;
 
   signal v_display: std_logic;
+  signal v_display_in_wbclk: std_logic;
   signal v_display_q: std_logic;
 
   signal v_border: std_logic;
@@ -231,7 +232,8 @@ begin
 
       -- Wishbone register access
 
-  wb_dat_o<=(others => DontCareValue);
+  wb_dat_o(31 downto 1) <= (others => DontCareValue);
+  wb_dat_o(0) <= v_display_in_wbclk;
 
   process(wb_clk_i)
   begin
@@ -264,6 +266,16 @@ begin
   end process;
 
 
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+      if (vcount_q < VGA_V_DISPLAY) then
+        v_display_in_wbclk <= '1';
+      else
+        v_display_in_wbclk <= '0';
+      end if;
+    end if;
+  end process;
 
   process(wb_clk_i, wb_rst_i, r, mi_wb_ack_i, mi_wb_dat_i,membase,palletebase)
     variable w: vgaregs_type;
@@ -548,8 +560,11 @@ begin
         cache_clear <= '1';
       else
         cache_clear<='0';
-        if  vcount_q = VGA_V_DISPLAY and h_sync_tick='1' then
-          cache_clear<='1';
+        --if  vcount_q = VGA_V_DISPLAY and h_sync_tick='1' then
+        --  cache_clear<='1';
+        --end if;
+        if not (vcount_q < VGA_V_DISPLAY) then
+          cache_clear <='1';
         end if;
       end if;
     end if;

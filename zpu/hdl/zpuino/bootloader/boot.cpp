@@ -277,6 +277,21 @@ extern "C" void __attribute__((noreturn)) start()
 	while(1) {}
 }
 
+unsigned start_read_size()
+{
+	spiwrite(0x0B);
+	spiwrite(SPIOFFSET >> 16);
+	spiwrite(SPIOFFSET >> 8);
+	spiwrite(SPIOFFSET);
+	spiwrite(0);
+
+	// Read size.
+
+	spiwrite(0);
+	spiwrite(0);
+	return spiread() & 0xffff;
+}
+
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
@@ -291,18 +306,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #endif
 
 	spi_enable();
-
-	spiwrite(0x0B);
-	spiwrite(SPIOFFSET >> 16);
-	spiwrite(SPIOFFSET >> 8);
-	spiwrite(SPIOFFSET);
-	spiwrite(0);
-
-	// Read size.
-
-	spiwrite(0);
-	spiwrite(0);
-	sketchsize = spiread() & 0xffff;
+	sketchsize=start_read_size();
+	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
 
 	spiwrite(0);
 	spiwrite(0);
@@ -320,7 +325,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	CRC16ACC=0xFFFF;
 
-	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
 #ifdef VERBOSE_LOADER
 	//printstring("Filling\n");
 #endif
@@ -666,6 +670,13 @@ static void cmd_leavepgm()
 void cmd_start()
 {
 	simpleReply(BOOTLOADER_CMD_START);
+
+	// Make sure we keep at least smallFS data
+
+	spi_enable();
+	bdata.spiend = (start_read_size()<<2) + SPIOFFSET + 4;
+	spi_disable();
+
 	start();
 }
 

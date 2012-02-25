@@ -141,9 +141,17 @@ unsigned int inbyte()
 	}
 }
 
+#define COLUMNS 32
+
+// Fast version we hope
+unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 
 extern "C" int main(int argc,char**argv)
 {
+	// Test
+	while (1) {
+		PRMATRIX( (unsigned char*)0x0, (unsigned char*)0x4000 );
+	}
 	ivector = &_zpu_interrupt;
 //    asm("breakpoint\n");
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);

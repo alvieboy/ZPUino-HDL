@@ -18,9 +18,14 @@
 #include <ctype.h>
 
 #define MEMSIZE 32768
+#define STACK_SIZE 2048
 
-unsigned int _usp=MEMSIZE - 8;
+unsigned _usp=0;
+
 unsigned char _memory[MEMSIZE];
+unsigned char _stack[STACK_SIZE];
+
+
 unsigned _tickgranularity=32;
 unsigned _currenttickgranularity;
 
@@ -71,11 +76,16 @@ void tick(unsigned int delta)
 
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
-//	if (pc < 0x40 || pc >=0x400) {
-		printf("0x%04X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
+		//	if (pc < 0x40 || pc >=0x400) {
+		if (sp > sizeof(_stack)) {
+				printf("Access beyond end of stack 0x%08x\n",sp);
+				fflush(stdout);
+				abort();
+		}
+		printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
 			   _memory[pc], sp,
 			   top,
-			   bswap_32(*(unsigned int*)&_memory[sp+4]),
+			   bswap_32(*(unsigned int*)&_stack[sp+4]),
 			   zpuino_get_tick_count()
 			  );
 		fflush(stdout);
@@ -155,7 +165,7 @@ void zpu_resume()
 
 unsigned get_initial_stack_location()
 {
-	return 0x7FF8;
+	return STACK_SIZE - 8;//0x7FF8;
 }
 
 void zpu_reset()
@@ -332,6 +342,8 @@ int main(int argc,char **argv)
 		return -1;
   */
 	signal(SIGINT,&sign);
+
+	_usp=get_initial_stack_location();
 
 	zpuino_clock_start();
 

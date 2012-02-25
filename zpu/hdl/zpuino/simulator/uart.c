@@ -18,6 +18,7 @@
 #include "vte/vte.h"
 GtkWidget *vte=NULL;
 
+FILE *logfd;
 
 #define FIFO_SIZE 8192
 
@@ -82,6 +83,14 @@ int pty_transmit(int t)
 }
 */
 
+void uart_log(unsigned int i)
+{
+	if (logfd!=NULL) {
+		fputc(i,logfd);
+		fflush(logfd);
+	}
+}
+
 inline int is_fifo_empty()
 {
 	int empty;
@@ -129,10 +138,10 @@ void uart_write_data(unsigned int address,unsigned int val)
 	if (clientsockfd>0) {
 		//write(clientsockfd, &c, 1);
 		send(clientsockfd, &c, 1, 0);
-	} else
-		//write(fd,&c,1);
-		//write(ptymaster,&c,1);
+	} else {
+		uart_log(c);
 		vte_terminal_feed(VTE_TERMINAL(vte),(char*)&c,1);
+	}
 }
 
 void handle_escape(unsigned char v)
@@ -200,6 +209,7 @@ int uart_incoming_data(short revents)
 		}
 	} else {
 		poll_remove(clientsockfd);
+		printf("Disconnected\n");
 		clientsockfd=-1;
 	}
 	pthread_mutex_unlock(&fifo_lock);
@@ -308,6 +318,8 @@ int uart_post_init()
 	/*
 	 return socket_initialize();
 	 */
+	logfd = fopen("uart.log","a");
+
 	return 0;
 }
 
