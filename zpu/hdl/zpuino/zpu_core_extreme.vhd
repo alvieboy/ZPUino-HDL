@@ -147,6 +147,7 @@ type State_Type is
 State_Execute,
 State_Store,
 State_StoreB,
+State_StoreB2,
 State_Load,
 State_LoadMemory,
 State_LoadStack,
@@ -520,10 +521,10 @@ begin
           sampledStackOperation<=Stack_Pop;
           sampledTosSource<=Tos_Source_Lessthan;
 
---        elsif (tOpcode(5 downto 0)=OpCode_StoreB) then
---          sampledDecodedOpcode<=Decoded_StoreB;
---          sampledStackOperation<=Stack_DualPop;
---          sampledOpWillFreeze<='1';
+        elsif (tOpcode(5 downto 0)=OpCode_StoreB) then
+          sampledDecodedOpcode<=Decoded_StoreB;
+          sampledStackOperation<=Stack_DualPop;
+          sampledOpWillFreeze<='1';
         elsif (tOpcode(5 downto 0)=OpCode_Mult) then
           sampledDecodedOpcode<=Decoded_Mult;
           sampledStackOperation<=Stack_Pop;
@@ -1381,6 +1382,39 @@ begin
           when others =>
             null;
         end case;
+
+        w.tos := exr.tos_save;
+        --w.nos := exr.tos_save;
+
+        w.state := State_StoreB2;
+
+      when State_StoreB2 =>
+
+            exu_busy <= '1';
+
+            if exr.tos(31)='1' then
+              stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
+              stack_a_write <= std_logic_vector(exr.nos_save); -- hmm I don't like this
+              stack_a_writeenable<='1';
+              w.state := State_ResyncFromStoreStack;
+            else
+
+              w.wb_we  := '1';
+              w.wb_cyc := '1';
+              w.wb_stb := '1';
+
+              wroteback := wroteback_q; -- Keep WB
+              stack_a_enable<='0';
+              stack_a_addr  <= (others => DontCareValue);
+              stack_a_write <= (others => DontCareValue);
+
+              stack_b_enable<='0';
+
+              instruction_executed := '0';
+              w.state := State_Store;
+
+            end if;
+
 
 
       when others =>
