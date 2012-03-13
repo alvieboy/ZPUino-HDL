@@ -76,21 +76,11 @@
 #define FPGA_PIN_P17 47
 
 // Other pins
-#define FPGA_PIN_P88 48
-#define FPGA_PIN_P44 49
-#define FPGA_PIN_P90 50
-#define FPGA_PIN_P50 51
-#define FPGA_PIN_P24 52
-#define FPGA_PIN_P27 53
+#define FPGA_PIN_P24 48
 
-#define FPGA_PIN_UART_RX     FPGA_PIN_P88
-#define FPGA_PIN_UART_TX     FPGA_PIN_P90
-#define FPGA_PIN_SPI_MISO    FPGA_PIN_P44
-#define FPGA_PIN_SPI_MOSI    FPGA_PIN_P27
-#define FPGA_PIN_SPI_SCK     FPGA_PIN_P50
 #define FPGA_PIN_FLASHCS     FPGA_PIN_P24
 
-#define SPI_FLASH_SEL_PIN FPGA_PIN_FLASHCS
+#define SPI_FLASH_SEL_PIN    FPGA_PIN_FLASHCS
 
 /* WING configuration */
 

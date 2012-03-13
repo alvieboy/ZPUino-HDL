@@ -116,18 +116,17 @@ typedef volatile unsigned int* register_t;
 #define HIGH 1
 #define LOW 0
 
-/* PPS configuration */
+/* PPS configuration - output */
 
-#define IOPIN_SPI_MISO    0
-#define IOPIN_SPI_MOSI    1
-#define IOPIN_SPI_SCK     2
-#define IOPIN_SIGMADELTA0 3
-#define IOPIN_TIMER0_OC   4
-#define IOPIN_TIMER1_OC   5
-#define IOPIN_USPI_MISO   6
-#define IOPIN_USPI_MOSI   7
-#define IOPIN_USPI_SCK    8
-#define IOPIN_SIGMADELTA1 13
+#define IOPIN_SIGMADELTA0 0
+#define IOPIN_TIMER0_OC   1
+#define IOPIN_TIMER1_OC   2
+#define IOPIN_USPI_MOSI   3
+#define IOPIN_USPI_SCK    4
+#define IOPIN_SIGMADELTA1 5
+
+/* PPS configuration - input */
+#define IOPIN_USPI_MISO   0
 
 /* Current interrupts (might not be implemented) */
 
