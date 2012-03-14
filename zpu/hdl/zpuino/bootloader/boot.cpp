@@ -70,12 +70,12 @@ struct bootloader_data_t bdata BDATA;
 void outbyte(int);
 
 extern "C" {
-	void udivmodsi4(){
-	}
-	void __divsi3() {
-	}
-	void __modsi3() {
-	}
+	//void udivmodsi4(){
+	//}
+	//void __divsi3() {
+	//}
+	//void __modsi3() {
+	//}
 };
 
 extern "C" void printnibble(unsigned int c)
@@ -262,14 +262,10 @@ static inline unsigned int spiread(register_t base)
 void spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
-#ifdef VERBOSE_LOADER
-	printstring("SS\r\n");
-#endif
-
 	__asm__("im %0\n"
 			"popsp\n"
 			"im spi_copy_impl\n"
-			""
+			"" // poppc will be provided by func
 			:
 			:"i"(STACKTOP)
 		   );
@@ -280,7 +276,7 @@ extern "C" void start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
-	__asm__("im %0\n"
+	__asm__("nop\nim %0\n"
 			"popsp\n"
 			"im __sketch_start\n"
 			""
@@ -389,8 +385,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
 	
-	//start();
-	asm ("im _start\npoppc\n");
+	start();
+	//asm ("im _start\npoppc\nnop\n");
 	while (1) {}
 }
 
@@ -826,6 +822,8 @@ void configure_pins()
 #endif
 
 extern "C" int _syscall(int *foo, int ID, ...);
+extern "C" unsigned _bfunctions[];
+extern "C" void udivmodsi4(); /* Just need it's address */
 
 
 extern "C" int main(int argc,char**argv)
@@ -839,6 +837,7 @@ extern "C" int main(int argc,char**argv)
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 
 	configure_pins();
+	_bfunctions[0] = (unsigned)&udivmodsi4;
 
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
