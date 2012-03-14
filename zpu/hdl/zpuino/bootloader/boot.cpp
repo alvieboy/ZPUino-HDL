@@ -46,7 +46,7 @@
 #define HDLC_escapeFlag 0x7D
 #define HDLC_escapeXOR 0x20
 
-#define BDATA __attribute__((section(".bdata")))
+#define BDATA /*__attribute__((section(".bdata")))*/
 
 //unsigned int ZPU_ID;
 
@@ -107,7 +107,7 @@ extern "C" void printhex(unsigned int c)
 	printhexbyte(c);
 }
 
-void __attribute__((noreturn)) spi_copy();
+void spi_copy();
 
 #ifdef DEBUG_SERIAL
 const unsigned char serialbuffer[] = {
@@ -247,7 +247,19 @@ static inline unsigned int spiread()
 	return SPIDATA;
 }
 
-void __attribute__((noreturn)) spi_copy()
+static inline void spiwrite(register_t base, unsigned int i)
+{
+	waitspiready();
+	*base=i;
+}
+
+static inline unsigned int spiread(register_t base)
+{
+	waitspiready();
+	return *base;
+}
+
+void spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
 #ifdef VERBOSE_LOADER
@@ -257,24 +269,23 @@ void __attribute__((noreturn)) spi_copy()
 	__asm__("im %0\n"
 			"popsp\n"
 			"im spi_copy_impl\n"
-			"poppc\n"
+			""
 			:
 			:"i"(STACKTOP)
 		   );
-	while (1) {}
+	//while (1) {}
 }
 
-extern "C" void __attribute__((noreturn)) start()
+extern "C" void start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
 	__asm__("im %0\n"
 			"popsp\n"
 			"im __sketch_start\n"
-			"poppc\n"
+			""
 			:
 			: "i" (STACKTOP));
-	while(1) {}
 }
 
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
@@ -283,6 +294,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	//unsigned int count = SPICODESIZE >> 2; // 0x7000
 	volatile unsigned int *board = (volatile unsigned int*)0x1004;
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	unsigned int sketchsize;
 	unsigned int sketchcrc;
 
@@ -292,21 +304,21 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 	spi_enable();
 
-	spiwrite(0x0B);
-	spiwrite(SPIOFFSET >> 16);
-	spiwrite(SPIOFFSET >> 8);
-	spiwrite(SPIOFFSET);
-	spiwrite(0);
+	spiwrite(spidata,0x0B);
+	spiwrite(spidata,SPIOFFSET >> 16);
+	spiwrite(spidata,SPIOFFSET >> 8);
+	spiwrite(spidata,SPIOFFSET);
+	spiwrite(spidata,0);
 
 	// Read size.
 
-	spiwrite(0);
-	spiwrite(0);
-	sketchsize = spiread() & 0xffff;
+	spiwrite(spidata,0);
+	spiwrite(spidata,0);
+	sketchsize = spiread(spidata) & 0xffff;
 
-	spiwrite(0);
-	spiwrite(0);
-	sketchcrc= spiread() & 0xffff;
+	spiwrite(spidata,0);
+	spiwrite(spidata,0);
+	sketchcrc= spiread(spidata) & 0xffff;
 
 	if (sketchsize>SPICODESIZE) {
 #ifdef VERBOSE_LOADER
@@ -326,8 +338,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #endif
 	while (sketchsize--) {
 		for (int i=4;i!=0;i--) {
-			spiwrite(0);
-			CRC16APP=spiread();
+			spiwrite(spidata,0);
+			CRC16APP=spiread(spidata);
 		}
         /*
 		spiwrite(0);
@@ -336,7 +348,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		CRC16APP=spiread();
 		spiwrite(0);
 		CRC16APP=spiread();*/
-		*target++ = spiread();
+		*target++ = spiread(spidata);
 	}
 #ifdef VERBOSE_LOADER
    // printstring("Filled\n");
@@ -377,7 +389,9 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
 	
-	start();
+	//start();
+	asm ("im _start\npoppc\n");
+	while (1) {}
 }
 
 
@@ -406,15 +420,17 @@ static void simpleReply(unsigned int r)
 static int spi_read_status()
 {
 	unsigned int status;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+
 	spi_enable();
 
 	if (is_atmel_flash())
-		spiwrite(0x57);
+		spiwrite(spidata,0x57);
 	else
-		spiwrite(0x05);
+		spiwrite(spidata,0x05);
 
-	spiwrite(0x00);
-	status =  spiread() & 0xff;
+	spiwrite(spidata,0x00);
+	status =  spiread(spidata) & 0xff;
 	spi_disable();
 	return status;
 }
@@ -422,12 +438,14 @@ static int spi_read_status()
 static unsigned int spi_read_id()
 {
 	unsigned int ret;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+
 	spi_enable();
-	spiwrite(0x9F);
-	spiwrite(0x00);
-	spiwrite(0x00);
-	spiwrite(0x00);
-	ret = spiread();
+	spiwrite(spidata,0x9F);
+	spiwrite(spidata,0x00);
+	spiwrite(spidata,0x00);
+	spiwrite(spidata,0x00);
+	ret = spiread(spidata);
 	spi_disable();
 	return ret;
 }
@@ -469,6 +487,7 @@ static void cmd_raw_send_receive()
 	unsigned int count;
 	unsigned int rxcount;
     unsigned int txcount;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	// buffer[1-2] is number of TX bytes
 	// buffer[3-4] is number of RX bytes
@@ -482,7 +501,7 @@ static void cmd_raw_send_receive()
 	txcount += buffer[2];
 
 	for (count=0; count<txcount; count++) {
-		spiwrite(buffer[5+count]);
+		spiwrite(spidata,buffer[5+count]);
 	}
 	rxcount = buffer[3];
 	rxcount<<=8;
@@ -490,8 +509,8 @@ static void cmd_raw_send_receive()
 	// Now, receive and write buffer
 	for(count=0;count <rxcount;count++) {
 
-		spiwrite(0x00);
-		buffer[count] = spiread();
+		spiwrite(spidata,0x00);
+		buffer[count] = spiread(spidata);
 	}
 	spi_disable();
 
@@ -499,7 +518,7 @@ static void cmd_raw_send_receive()
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_RAWREADWRITE));
 	sendByte(rxcount>>8);
-    sendByte(rxcount);
+	sendByte(rxcount);
 	for(count=0;count<rxcount;count++) {
 		sendByte(buffer[count]);
 	}
@@ -511,6 +530,8 @@ static void cmd_sst_aai_program()
 {
 	unsigned int count;
 	unsigned int txcount;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+
 
 #ifndef __ZPUINO_S3E_EVAL__
 
@@ -520,27 +541,27 @@ static void cmd_sst_aai_program()
 
 	// Enable writes
 	spi_enable();
-	spiwrite(0x06);
+	spiwrite(spidata,0x06);
 	spi_disable();
 
 	spi_enable();
-	spiwrite(0xAD);
+	spiwrite(spidata,0xAD);
 
 	txcount = buffer[1];
 	txcount<<=8;
 	txcount += buffer[2];
 
-	spiwrite(buffer[3]);
-	spiwrite(buffer[4]);
-	spiwrite(buffer[5]);
+	spiwrite(spidata,buffer[3]);
+	spiwrite(spidata,buffer[4]);
+	spiwrite(spidata,buffer[5]);
 
 	for (count=0; count<txcount; count+=2) {
 		if (count>0) {
 			spi_enable();
-			spiwrite(0xAD);
+			spiwrite(spidata,0xAD);
 		}
-		spiwrite(buffer[6+count]);
-		spiwrite(buffer[6+count+1]);
+		spiwrite(spidata,buffer[6+count]);
+		spiwrite(spidata,buffer[6+count+1]);
 		spi_disable();
 		// Read back status, wait for completion
 		while (spi_read_status() & 1);
@@ -549,7 +570,7 @@ static void cmd_sst_aai_program()
 	// Disable write enable
 
 	spi_enable();
-	spiwrite(0x04);
+	spiwrite(spidata,0x04);
 	spi_disable();
 	// Send back
 	prepareSend();
