@@ -16,7 +16,7 @@ entity wb_rom_ram is
     ram_wb_ack_o:       out std_logic;
     ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
     ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    ram_wb_adr_i:       in std_logic_vector(maxAddrBit downto 0);
+    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
     ram_wb_cyc_i:       in std_logic;
     ram_wb_stb_i:       in std_logic;
     ram_wb_we_i:        in std_logic;
@@ -25,7 +25,7 @@ entity wb_rom_ram is
     rom_wb_rst_i:       in std_logic;
     rom_wb_ack_o:       out std_logic;
     rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    rom_wb_adr_i:       in std_logic_vector(maxAddrBit downto 0);
+    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
     rom_wb_cyc_i:       in std_logic;
     rom_wb_cti_i:       in std_logic_vector(2 downto 0);
     rom_wb_stb_i:       in std_logic

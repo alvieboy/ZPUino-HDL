@@ -7,11 +7,6 @@ AC_PROG_CXX
 
 ftdi=false
 
-PKG_CHECK_MODULES(libftdi,libftdi,
-	ftdi=true
-        AC_CONFIG_FILES([butterfly/Makefile])
-)
- 
 AM_CONDITIONAL(HAVE_FTDI, test "x$ftdi" = "xtrue")
  
 AC_CONFIG_FILES([Makefile])

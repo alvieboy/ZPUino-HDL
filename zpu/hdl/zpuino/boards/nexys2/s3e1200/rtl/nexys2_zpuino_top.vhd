@@ -707,20 +707,14 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
-    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
-    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
-    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
-    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
-    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
-    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
-    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
-    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
-    gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
+    gpio_spp_data(0) <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(1) <= timers_spp_data(0);     -- PPS1 : TIMER0
+    gpio_spp_data(2) <= timers_spp_data(1);     -- PPS2 : TIMER1
+    gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
+    gpio_spp_data(4) <= spi2_sck;               -- PPS4: USPI SCK
+    gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
 
-    -- External interrupt lines
-    --ivecs(16) <= gpio_spp_read(1);
-    --ivecs(17) <= gpio_spp_read(2);
+    spi2_miso <= gpio_spp_read(0);              -- PPS7 : USPI MISO
 
   end process;
   

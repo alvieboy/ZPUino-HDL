@@ -89,16 +89,6 @@ void configure_pins()
 	GPIOTRIS(2)=0xFFFFFFFF; // All inputs
 	GPIOTRIS(3)=0xFFFFFFFF; // All inputs
 
-	GPIOPPSOUT( 4 ) = IOPIN_SPI_SCK;
-	GPIOPPSOUT( 3 ) = IOPIN_SPI_MOSI;
-	GPIOPPSIN( IOPIN_SPI_MISO ) = 2;
-
-	GPIOPPSMODE(0) = BIT(4)|BIT(3);
-
-	pinMode(IOPIN_SPI_MOSI,OUTPUT);
-	pinMode(IOPIN_SPI_SCK,OUTPUT);
-	pinMode(IOPIN_SPI_MISO,INPUT);
-
 	pinMode(SPI_FLASH_SEL_PIN,OUTPUT);
 
 	spi_disable();
@@ -145,7 +135,7 @@ unsigned int inbyte()
 extern "C" int main(int argc,char**argv)
 {
 	ivector = &_zpu_interrupt;
-//    asm("breakpoint\n");
+
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
 	configure_pins();

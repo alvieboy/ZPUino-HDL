@@ -111,22 +111,40 @@ SECTIONS
   .fini_array     : { *(.fini_array) }
   PROVIDE (__fini_array_end = .);
   
-  __ram_start = .;
   .bdata : {
       KEEP(.bdata.*)
   } > ROM
-  
-  .boots : {
-      KEEP(.boots.*)
-  } > RAM
+
   .data :
   {
     __data_start = . ;
     *(.data .data.* .gnu.linkonce.d.*)
     SORT(CONSTRUCTORS)
     __data_end = .;
+  } > ROM
+
+  __bss_start = .;
+  __bss_start__ = .;
+  .bss            :
+  {
+   *(.dynbss)
+   *(.bss .bss.* .gnu.linkonce.b.*)
+   *(COMMON)
+   /* Align here to ensure that the .bss section occupies space up to
+      _end.  Align after .bss to ensure correct alignment even if the
+      .bss section disappears because there are no input sections.  */
+   . = ALIGN(32 / 8);
+  } > ROM
+  . = ALIGN(32 / 8);
+  _end = .;
+  _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
+
+
+__ram_start = .;
+
+  .boots : {
+      KEEP(.boots.*)
   } > RAM
-  AT >ROM
   
   .data1          : { *(.data1) } > RAM
   .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) } > RAM
@@ -178,21 +196,6 @@ SECTIONS
   .got            : { *(.got.plt) *(.got) }
   _edata = .;
   PROVIDE (edata = .);
-  __bss_start = .;
-  __bss_start__ = .;
-  .bss            :
-  {
-   *(.dynbss)
-   *(.bss .bss.* .gnu.linkonce.b.*)
-   *(COMMON)
-   /* Align here to ensure that the .bss section occupies space up to
-      _end.  Align after .bss to ensure correct alignment even if the
-      .bss section disappears because there are no input sections.  */
-   . = ALIGN(32 / 8);
-  } > RAM
-  . = ALIGN(32 / 8);
-  _end = .;
-  _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
   PROVIDE (end = .);
   /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }

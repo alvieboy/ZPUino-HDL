@@ -97,6 +97,9 @@ architecture behave of zpuino_uart is
   end component uart_brgen;
 
   component fifo is
+  generic (
+    bits: integer := 11
+  );
   port (
     clk:      in std_logic;
     rst:      in std_logic;
