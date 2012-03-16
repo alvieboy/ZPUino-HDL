@@ -172,10 +172,6 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
-#ifdef __ZPUINO_NEXYS2__
-			digitalWrite(FPGA_LED_2,HIGH);
-#endif
-
 			spi_copy();
 		}
 #endif
@@ -397,10 +393,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
-#ifdef __ZPUINO_NEXYS2__
-		digitalWrite(FPGA_LED_4,!!milisseconds>>8);
-#endif
-
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -797,20 +789,8 @@ inline void configure_pins()
 inline void configure_pins()
 {
 	pinModePPS(FPGA_PMOD_JA_2,LOW);
-
 	pinMode(FPGA_PMOD_JA_2, OUTPUT);
-	
 	digitalWrite(FPGA_PMOD_JA_2,HIGH);
-	// Set up leds for debugging
-	pinMode(FPGA_LED_0,OUTPUT);
-	pinMode(FPGA_LED_1,OUTPUT);
-	pinMode(FPGA_LED_2,OUTPUT);
-	pinMode(FPGA_LED_3,OUTPUT);
-	digitalWrite(FPGA_LED_0,HIGH);
-	digitalWrite(FPGA_LED_1,LOW);
-	digitalWrite(FPGA_LED_2,LOW);
-	digitalWrite(FPGA_LED_3,LOW);
-
 }
 #endif
 
@@ -871,9 +851,6 @@ extern "C" int main(int argc,char**argv)
 		// DEBUG ONLY
 		//TMR1CNT=i;
 		//outbyte(i);
-#ifdef __ZPUINO_NEXYS2__
-		digitalWrite(FPGA_LED_1,HIGH);
-#endif
 		if (syncSeen) {
 			if (i==HDLC_frameFlag) {
 				if (bufferpos>0) {
