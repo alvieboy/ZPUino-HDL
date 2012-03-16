@@ -48,14 +48,15 @@ entity timer is
     TSCENABLED: boolean := false;
     PWMCOUNT: integer range 1 to 8 := 2;
     WIDTH: integer range 1 to 32 := 16;
-    PRESCALER_ENABLED: boolean := true
+    PRESCALER_ENABLED: boolean := true;
+    BUFFERS: boolean := true
   );
   port (
     wb_clk_i:   in std_logic;
 	 	wb_rst_i:   in std_logic;
     wb_dat_o:   out std_logic_vector(wordSize-1 downto 0);
     wb_dat_i:   in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i:   in std_logic_vector(4 downto 0);
+    wb_adr_i:   in std_logic_vector(5 downto 0);
     wb_we_i:    in std_logic;
     wb_cyc_i:   in std_logic;
     wb_stb_i:   in std_logic;
@@ -93,7 +94,6 @@ type timerregs is record
   en:   std_logic; -- enable
   dir:  std_logic; -- direction
   ien:  std_logic; -- interrupt enable
-  oce:  std_logic; -- output compare enable
   intr: std_logic; -- interrupt
   pres: std_logic_vector(2 downto 0); -- Prescaler
   updp: std_logic_vector(1 downto 0);
@@ -164,21 +164,20 @@ end generate;
   process(wb_adr_i, tmrr,TSC_q)
   begin
     wb_dat_o <= (others => '0');
-    case wb_adr_i is
-      when "00000" =>
+    case wb_adr_i(1 downto 0) is
+      when "00" =>
         wb_dat_o(0) <= tmrr.en;
         wb_dat_o(1) <= tmrr.ccm;
         wb_dat_o(2) <= tmrr.dir;
         wb_dat_o(3) <= tmrr.ien;
         wb_dat_o(6 downto 4) <= tmrr.pres;
         wb_dat_o(7) <= tmrr.intr;
-        wb_dat_o(8) <= tmrr.oce;
         wb_dat_o(10 downto 9) <= tmrr.updp;
 
-      when "00001" =>
-        wb_dat_o(15 downto 0) <= std_logic_vector(tmrr.cnt);
-      when "00010" =>
-        wb_dat_o(15 downto 0) <= std_logic_vector(tmrr.cmp);
+      when "01" =>
+        wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cnt);
+      when "10" =>
+        wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cmp);
       when others =>
         if TSCENABLED then
           wb_dat_o <= std_logic_vector(TSC_q);
@@ -188,7 +187,7 @@ end generate;
     end case;
   end process;
 
-  process(wb_clk_i, tmrr, wb_rst_i,wb_cyc_i,wb_stb_i,wb_we_i,wb_adr_i,wb_dat_i)
+  process(wb_clk_i, tmrr, wb_rst_i,wb_cyc_i,wb_stb_i,wb_we_i,wb_adr_i,wb_dat_i,tmrr)
     variable w: timerregs;
     variable write_ctrl: std_logic;
     variable write_cmp: std_logic;
@@ -199,10 +198,10 @@ end generate;
   begin
     w := tmrr;
     -- These are just helpers
-    write_ctrl := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00000");
-    write_cnt  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00001");
-    write_cmp  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"00010");
-    write_pwm  := wb_cyc_i and wb_stb_i and wb_we_i and wb_adr_i(4);
+    write_ctrl := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"000000");
+    write_cnt  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"000001");
+    write_cmp  := wb_cyc_i and wb_stb_i and wb_we_i and eq(wb_adr_i,"000010");
+    write_pwm  := wb_cyc_i and wb_stb_i and wb_we_i and wb_adr_i(5);
 
     ovf:='0';
     if tmrr.cnt = tmrr.cmp then
@@ -216,10 +215,13 @@ end generate;
         w.ccm := '0';
         w.dir := '0';
         w.ien := '0';
-        w.oce := '0';
         w.pres := (others => '0');
         w.presrst := '1';
         w.updp := UPDATE_ZERO_SYNC;
+        for i in 0 to PWMCOUNT-1 loop
+          w.pwmrb(i).en :='0';
+          w.pwmr(i).en :='0';
+        end loop;
 
     else
       if do_interrupt='1' then
@@ -235,7 +237,6 @@ end generate;
         w.dir := wb_dat_i(2);
         w.ien := wb_dat_i(3);
         w.pres:= wb_dat_i(6 downto 4);
-        w.oce := wb_dat_i(8);
         w.updp := wb_dat_i(10 downto 9);
 
         if wb_dat_i(7)='0' then
@@ -277,7 +278,8 @@ end generate;
 
     if write_pwm='1' then
       for i in 0 to PWMCOUNT-1 loop
-        if wb_adr_i(3 downto 2) = std_logic_vector(to_unsigned(i,2)) then
+        if wb_adr_i(4 downto 2) = std_logic_vector(to_unsigned(i,3)) then
+         if BUFFERS then
           -- Write values to this PWM
           case wb_adr_i(1 downto 0) is
             when "00" =>
@@ -290,10 +292,26 @@ end generate;
               -- This is sync pulse for UPDATE_LATER
             when others =>
           end case;
+         else
+          -- Write values to this PWM
+          case wb_adr_i(1 downto 0) is
+            when "00" =>
+              w.pwmr(i).cmplow := unsigned(wb_dat_i(WIDTH-1 downto 0));
+            when "01" =>
+              w.pwmr(i).cmphigh := unsigned(wb_dat_i(WIDTH-1 downto 0));
+            when "10" =>
+              w.pwmr(i).en := wb_dat_i(0);
+            when "11" =>
+              -- This is sync pulse for UPDATE_LATER
+            when others =>
+          end case;
+
+         end if;
         end if;
       end loop;
     end if;
 
+    if BUFFERS then
     for i in 0 to PWMCOUNT-1 loop
       case tmrr.updp is
         when UPDATE_NOW =>
@@ -303,16 +321,17 @@ end generate;
             w.pwmr(i) := tmrr.pwmrb(i);
           end if;
         when UPDATE_LATER =>
-          if wb_adr_i(3 downto 2) = std_logic_vector(to_unsigned(i,2)) then
-            if wb_adr_i(1 downto 0)="11" then
-              w.pwmr(i) := tmrr.pwmrb(i);
-            end if;
-          end if;
+          --if wb_adr_i(3 downto 2) = std_logic_vector(to_unsigned(i,2)) then
+          --  if wb_adr_i(1 downto 0)="11" then
+          --    w.pwmr(i) := tmrr.pwmrb(i);
+          --  end if;
+         -- end if;
 
         when others =>
           --w.pwmr(i) := tmrr.pwmrb(i);
       end case;
     end loop;
+    end if;
 
 
     if rising_edge(wb_clk_i) then

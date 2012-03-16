@@ -44,6 +44,19 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_timers is
+  generic (
+    A_TSCENABLED: boolean := false;
+    A_PWMCOUNT: integer range 1 to 8 := 2;
+    A_WIDTH: integer range 1 to 32 := 16;
+    A_PRESCALER_ENABLED: boolean := true;
+    A_BUFFERS: boolean :=true;
+    B_TSCENABLED: boolean := false;
+    B_PWMCOUNT: integer range 1 to 8 := 2;
+    B_WIDTH: integer range 1 to 32 := 16;
+    B_PRESCALER_ENABLED: boolean := false;
+    B_BUFFERS: boolean := false
+  );
+
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -57,10 +70,8 @@ entity zpuino_timers is
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
     
-
-    spp_data: out std_logic_vector(1 downto 0);
-    spp_en:   out std_logic_vector(1 downto 0);
-    comp:     out std_logic
+    pwm_A_out: out std_logic_vector(A_PWMCOUNT-1 downto 0);
+    pwm_B_out: out std_logic_vector(B_PWMCOUNT-1 downto 0)
   );
 end entity zpuino_timers;
 
@@ -71,14 +82,16 @@ architecture behave of zpuino_timers is
   generic (
     TSCENABLED: boolean := false;
     PWMCOUNT: integer range 1 to 8 := 2;
-    WIDTH: integer range 1 to 32 := 16
+    WIDTH: integer range 1 to 32 := 16;
+    PRESCALER_ENABLED: boolean := true;
+    BUFFERS: boolean := true
   );
   port (
     wb_clk_i:      in std_logic;
 	 	wb_rst_i:   in std_logic;
     wb_dat_o:     out std_logic_vector(wordSize-1 downto 0);
     wb_dat_i:    in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i:  in std_logic_vector(4 downto 0);
+    wb_adr_i:  in std_logic_vector(5 downto 0);
     wb_we_i:       in std_logic;
     wb_cyc_i:       in std_logic;
     wb_stb_i:       in std_logic;
@@ -95,9 +108,6 @@ architecture behave of zpuino_timers is
   signal timer0_we:         std_logic;
   signal timer0_interrupt:  std_logic;
   signal timer0_ack:       std_logic;
-  signal timer0_comp:       std_logic;
-  signal timer0_spp_data:   std_logic;
-  signal timer0_spp_en  :   std_logic;
 
   signal timer1_read:       std_logic_vector(wordSize-1 downto 0);
   signal timer1_stb:         std_logic;
@@ -105,59 +115,63 @@ architecture behave of zpuino_timers is
   signal timer1_we:         std_logic;
   signal timer1_interrupt:  std_logic;
   signal timer1_ack:       std_logic;
-  signal timer1_spp_data:   std_logic;
-  signal timer1_spp_en  :   std_logic;
 
 begin
 
   wb_inta_o <= timer0_interrupt;
   wb_intb_o <= timer1_interrupt;
 
-  comp <= timer0_comp;
+  --comp <= timer0_comp;
 
   timer0_inst: timer
     generic map (
-      TSCENABLED => true
+      TSCENABLED         => A_TSCENABLED,
+      PWMCOUNT           => A_PWMCOUNT,
+      WIDTH              => A_WIDTH,
+      PRESCALER_ENABLED  => A_PRESCALER_ENABLED,
+      BUFFERS            => A_BUFFERS
     )
     port map (
-      wb_clk_i     => wb_clk_i,
+      wb_clk_i  => wb_clk_i,
       wb_rst_i  => wb_rst_i,
-      wb_dat_o    => timer0_read,
-      wb_dat_i   => wb_dat_i,
-      wb_adr_i => wb_adr_i(6 downto 2),
-      wb_cyc_i      => timer0_cyc,
-      wb_stb_i      => timer0_stb,
-      wb_we_i      => timer0_we,
-      wb_ack_o     => timer0_ack,
-      wb_inta_o   => timer0_interrupt
-
-      --spp_data=> timer0_spp_data,
-      --spp_en  => timer0_spp_en,
-      --comp    => timer0_comp
+      wb_dat_o  => timer0_read,
+      wb_dat_i  => wb_dat_i,
+      wb_adr_i  => wb_adr_i(7 downto 2),
+      wb_cyc_i  => timer0_cyc,
+      wb_stb_i  => timer0_stb,
+      wb_we_i   => timer0_we,
+      wb_ack_o  => timer0_ack,
+      wb_inta_o => timer0_interrupt,
+      pwm_out   => pwm_A_out
     );
 
   timer1_inst: timer
+    generic map (
+      TSCENABLED         => B_TSCENABLED,
+      PWMCOUNT           => B_PWMCOUNT,
+      WIDTH              => B_WIDTH,
+      PRESCALER_ENABLED  => B_PRESCALER_ENABLED,
+      BUFFERS            => B_BUFFERS
+    )
     port map (
-      wb_clk_i     => wb_clk_i,
+      wb_clk_i  => wb_clk_i,
       wb_rst_i  => wb_rst_i,
-      wb_dat_o    => timer1_read,
-      wb_dat_i   => wb_dat_i,
-      wb_adr_i => wb_adr_i(6 downto 2),
-      wb_cyc_i      => timer1_cyc,
-      wb_stb_i      => timer1_stb,
-      wb_we_i      => timer1_we,
-      wb_ack_o     => timer1_ack,
-      wb_inta_o   => timer1_interrupt
-
-      --spp_data=> timer1_spp_data,
-      --spp_en  => timer1_spp_en
+      wb_dat_o  => timer1_read,
+      wb_dat_i  => wb_dat_i,
+      wb_adr_i  => wb_adr_i(7 downto 2),
+      wb_cyc_i  => timer1_cyc,
+      wb_stb_i  => timer1_stb,
+      wb_we_i   => timer1_we,
+      wb_ack_o  => timer1_ack,
+      wb_inta_o => timer1_interrupt,
+      pwm_out   => pwm_B_out
     );
 
 
   process(wb_adr_i,timer0_read,timer1_read)
   begin
     wb_dat_o <= (others => '0');
-    case wb_adr_i(7) is
+    case wb_adr_i(8) is
       when '0' =>
         wb_dat_o <= timer0_read;
       when '1' =>
@@ -167,20 +181,20 @@ begin
     end case;
   end process;
 
-  timer0_cyc <= wb_cyc_i when wb_adr_i(7)='0' else '0';
-  timer1_cyc <= wb_cyc_i when wb_adr_i(7)='1' else '0';
-  timer0_stb <= wb_stb_i when wb_adr_i(7)='0' else '0';
-  timer1_stb <= wb_stb_i when wb_adr_i(7)='1' else '0';
-  timer0_we <= wb_we_i when wb_adr_i(7)='0' else '0';
-  timer1_we <= wb_we_i when wb_adr_i(7)='1' else '0';
+  timer0_cyc <= wb_cyc_i when wb_adr_i(8)='0' else '0';
+  timer1_cyc <= wb_cyc_i when wb_adr_i(8)='1' else '0';
+  timer0_stb <= wb_stb_i when wb_adr_i(8)='0' else '0';
+  timer1_stb <= wb_stb_i when wb_adr_i(8)='1' else '0';
+  timer0_we <= wb_we_i when wb_adr_i(8)='0' else '0';
+  timer1_we <= wb_we_i when wb_adr_i(8)='1' else '0';
 
 
   wb_ack_o <= timer0_ack or timer1_ack;
   
-  spp_data(0) <= timer0_spp_data;
-  spp_data(1) <= timer1_spp_data;
+  --spp_data(0) <= timer0_spp_data;
+  --spp_data(1) <= timer1_spp_data;
 
-  spp_en(0) <= timer0_spp_en;
-  spp_en(1) <= timer1_spp_en;
+  --spp_en(0) <= timer0_spp_en;
+  --spp_en(1) <= timer1_spp_en;
 
 end behave;

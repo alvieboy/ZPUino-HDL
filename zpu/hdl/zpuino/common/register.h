@@ -59,11 +59,11 @@ typedef volatile unsigned int* register_t;
 #define ROFF_TMR0CNT  1
 #define ROFF_TMR0CMP  2
 #define ROFF_TIMERTSC 3
-#define ROFF_TMR0OCR  3
-#define ROFF_TMR1CTL  4
-#define ROFF_TMR1CNT  5
-#define ROFF_TMR1CMP  6
-#define ROFF_TMR1OCR  7
+//#define ROFF_TMR0OCR  3
+#define ROFF_TMR1CTL  64
+#define ROFF_TMR1CNT  65
+#define ROFF_TMR1CMP  66
+//#define ROFF_TMR1OCR  67
 
 
 
@@ -71,11 +71,20 @@ typedef volatile unsigned int* register_t;
 #define TMR0CNT  REGISTER(TIMERSBASE,1)
 #define TMR0CMP  REGISTER(TIMERSBASE,2)
 #define TIMERTSC REGISTER(TIMERSBASE,3)
-#define TMR0OCR  REGISTER(TIMERSBASE,3) /* Same as TSC */
-#define TMR1CTL  REGISTER(TIMERSBASE,4)
-#define TMR1CNT  REGISTER(TIMERSBASE,5)
-#define TMR1CMP  REGISTER(TIMERSBASE,6)
-#define TMR1OCR  REGISTER(TIMERSBASE,7)
+
+// PWM for timer 0
+#define TMR0PWMLOW(x) REGISTER(TIMERSBASE, 32+(4*x))
+#define TMR0PWMHIGH(x) REGISTER(TIMERSBASE, 33+(4*x))
+#define TMR0PWMCTL(x) REGISTER(TIMERSBASE, 34+(4*x))
+
+#define TMR1CTL  REGISTER(TIMERSBASE,64)
+#define TMR1CNT  REGISTER(TIMERSBASE,65)
+#define TMR1CMP  REGISTER(TIMERSBASE,66)
+
+// PWM for timer 1
+#define TMR1PWMLOW(x) REGISTER(TIMERSBASE, 96+(4*x))
+#define TMR1PWMHIGH(x) REGISTER(TIMERSBASE, 97+(4*x))
+#define TMR1PWMCTL(x) REGISTER(TIMERSBASE, 98+(4*x))
 
 #define INTRCTL  REGISTER(INTRBASE,0)
 #define INTRMASK  REGISTER(INTRBASE,1)
@@ -111,13 +120,14 @@ typedef volatile unsigned int* register_t;
 #define TCTLCP1 5 /* Clock prescaler bit 1 */
 #define TCTLCP2 6 /* Clock prescaler bit 2 */
 #define TCTLIF  7 /* Interrupt flag */
-#define TCTLOCE 8 /* Output compare enable */
 #define TCTUPDP0 9 /* Update policy */
 #define TCTUPDP1 10 /* Update policy */
 
-#define TCTL_UPDATE_NOW (0)
-#define TCTL_UPDATE_ZERO_SYNC (1)
-#define TCTL_UPDATE_NONE (2)
+#define TPWMEN 0 /* PWM enabled */
+
+#define TCTL_UPDATE_NOW (0<<TCTUPDP0)
+#define TCTL_UPDATE_ZERO_SYNC (1<<TCTUPDP0)
+#define TCTL_UPDATE_LATER (2<<TCTUPDP0)
 
 /* SPI bits */
 #define SPIREADY 0 /* SPI ready */

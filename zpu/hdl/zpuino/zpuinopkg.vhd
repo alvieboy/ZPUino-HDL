@@ -187,6 +187,19 @@ package zpuinopkg is
   end component zpuino_gpio;
 
   component zpuino_timers is
+  generic (
+    A_TSCENABLED: boolean := false;
+    A_PWMCOUNT: integer range 1 to 8 := 2;
+    A_WIDTH: integer range 1 to 32 := 16;
+    A_PRESCALER_ENABLED: boolean := true;
+    A_BUFFERS: boolean := true;
+    B_TSCENABLED: boolean := false;
+    B_PWMCOUNT: integer range 1 to 8 := 2;
+    B_WIDTH: integer range 1 to 32 := 16;
+    B_PRESCALER_ENABLED: boolean := false;
+    B_BUFFERS: boolean := false
+  );
+
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -199,12 +212,12 @@ package zpuinopkg is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
-
-    spp_data: out std_logic_vector(1 downto 0);
-    spp_en:   out std_logic_vector(1 downto 0);
-    comp:     out std_logic
+    
+    pwm_A_out: out std_logic_vector(A_PWMCOUNT-1 downto 0);
+    pwm_B_out: out std_logic_vector(B_PWMCOUNT-1 downto 0)
   );
   end component zpuino_timers;
+
 
   component zpuino_intr is
   generic (

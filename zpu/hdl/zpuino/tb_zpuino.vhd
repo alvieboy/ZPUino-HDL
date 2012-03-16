@@ -591,11 +591,11 @@ begin
     wb_ack_o      => slot_ack(3),
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
-    wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+    wb_intb_o => slot_interrupt(4) -- so we borrow intr line from slot 4
 
-    spp_data  => timers_spp_data,
-    spp_en    => open,
-    comp      => open
+    --spp_data  => timers_spp_data,
+    --spp_en    => open,
+    --comp      => open
     );
 
   --
