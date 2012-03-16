@@ -143,8 +143,7 @@ architecture behave of papilio_plus_top is
 
   -- Timer connections
   signal timers_interrupt:  std_logic_vector(1 downto 0);
-  signal timers_spp_data:   std_logic_vector(1 downto 0);
-  signal timers_comp:       std_logic;
+  signal timers_pwm:        std_logic_vector(1 downto 0);
 
   -- Sigmadelta output
   signal sigmadelta_spp_data: std_logic_vector(1 downto 0);
@@ -344,6 +343,18 @@ begin
   --
 
   timers_inst: zpuino_timers
+  generic map (
+    A_TSCENABLED        => true,
+    A_PWMCOUNT          => 1,
+    A_WIDTH             => 16,
+    A_PRESCALER_ENABLED => true,
+    A_BUFFERS           => true,
+    B_TSCENABLED        => false,
+    B_PWMCOUNT          => 1,
+    B_WIDTH             => 24,
+    B_PRESCALER_ENABLED => false,
+    B_BUFFERS           => false
+  )
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -358,9 +369,8 @@ begin
     wb_inta_o     => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o     => slot_interrupt(4), -- so we borrow intr line from slot 4
 
-    spp_data      => timers_spp_data,
-    spp_en        => open,
-    comp          => timers_comp
+    pwm_a_out   => timers_pwm(0 downto 0),
+    pwm_b_out   => timers_pwm(1 downto 1)
   );
 
   --
@@ -386,7 +396,7 @@ begin
 
     spp_data      => sigmadelta_spp_data,
     spp_en        => open,
-    sync_in       => timers_comp
+    sync_in       => '1'
   );
 
   --
@@ -587,7 +597,7 @@ slot9: zpuino_empty_device
 
 
   process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
-          sigmadelta_spp_data,timers_spp_data,
+          sigmadelta_spp_data,timers_pwm,
           spi2_mosi,spi2_sck)
   begin
 
@@ -595,8 +605,8 @@ slot9: zpuino_empty_device
 
     -- PPS Outputs
     gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
-    gpio_spp_data(1)  <= timers_spp_data(0);       -- PPS1 : TIMER0
-    gpio_spp_data(2)  <= timers_spp_data(1);       -- PPS2 : TIMER1
+    gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
     gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
     gpio_spp_data(5)  <= sigmadelta_spp_data(1);   -- PPS5 : SIGMADELTA1 DATA
