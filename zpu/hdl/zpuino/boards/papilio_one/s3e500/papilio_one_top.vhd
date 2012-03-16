@@ -101,9 +101,15 @@ architecture behave of papilio_one_top is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "111111111111111111111111111111111111111111111111111000";
+    "0" &
+    "1111111111111111" &
+    "1111111111111111" &
+    "1111111111111111";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "111111111111111111111111111111111111111111111111101111";
+    "0" &
+    "1111111111111111" &
+    "1111111111111111" &
+    "1111111111111111";
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
@@ -155,8 +161,6 @@ architecture behave of papilio_one_top is
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
   signal spi_pf_sck: std_logic;
-  signal uart_tx: std_logic;
-  signal uart_rx: std_logic;
 
   signal adc_mosi:  std_logic;
   signal adc_miso:  std_logic;
@@ -348,8 +352,8 @@ begin
     wb_inta_o => slot_interrupt(1),
 
     enabled   => uart_enabled,
-    tx        => uart_tx,
-    rx        => uart_rx
+    tx        => tx,
+    rx        => rx
   );
 
   --
@@ -402,8 +406,8 @@ begin
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
 
     spp_data  => timers_spp_data,
-    spp_en    => timers_spp_en,
-    comp      => timers_comp
+    spp_en    => open,
+    comp      => open
   );
 
   --
@@ -452,7 +456,7 @@ begin
     mosi      => spi2_mosi,
     miso      => spi2_miso,
     sck       => spi2_sck,
-    enabled   => spi2_enabled
+    enabled   => open
   );
 
 
@@ -672,49 +676,32 @@ begin
   pin47: IOPAD port map(I => gpio_o(47),O => gpio_i(47),T => gpio_t(47),C => sysclk,PAD => WING_C(15) );
 
 
-  uart_rx <= rx;
-  tx <= uart_tx;
-
-
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
   ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
   ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
+  ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 
-  process(spi_enabled,spi2_enabled,spi_enabled,
-          uart_enabled,sigmadelta_spp_en, uart_tx,
-          gpio_spp_read, spi_pf_mosi, spi_pf_sck,
-          sigmadelta_spp_data,timers_spp_data,
-          spi2_mosi,spi2_sck,timers_spp_en)
+  process(gpio_spp_read,
+          sigmadelta_spp_data,
+          timers_spp_data,
+          spi2_mosi,spi2_sck)
   begin
 
     gpio_spp_data <= (others => DontCareValue);
 
---    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
---    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
---    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
-    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
-    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
-    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
-    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
-    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
-    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
-    --if zpuino_adc_enabled then
-    --  gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
-    --  adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
-    --  gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
-    --  gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
-    --end if;
-    gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
-
-    -- External interrupt lines
-    ivecs(16) <= gpio_spp_read(1);
-    ivecs(17) <= gpio_spp_read(2);
+    gpio_spp_data(0) <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(1) <= timers_spp_data(0);     -- PPS1 : TIMER0
+    gpio_spp_data(2) <= timers_spp_data(1);     -- PPS2 : TIMER1
+    gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
+    gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
+    gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
+  
+    spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
 
   end process;
 
