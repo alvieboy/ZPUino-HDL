@@ -384,6 +384,16 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
+
+      m_wb_dat_o    => open,
+      m_wb_dat_i    => (others => 'X'),
+      m_wb_adr_i    => (others => 'X'),
+      m_wb_we_i     => '0',
+      m_wb_cyc_i    => '0',
+      m_wb_stb_i    => '0',
+      m_wb_ack_o    => open,
+
+
       jtag_ctrl_chain_in => (others => '0'),--jtag_ctrl_chain_in,
       jtag_data_chain_out => jtag_data_chain_out
     );

@@ -61,6 +61,17 @@ entity zpuino_top is
 
     dbg_reset:  out std_logic;
 
+    -- Memory accesses (for DMA)
+    -- This is a master interface
+
+    m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
 
@@ -85,15 +96,52 @@ architecture behave of zpuino_top is
   );
   end component zpuino_stack;
 
-
-  component clkgen is
-  port (
-    clkin:  in std_logic;
-    rstin:  in std_logic;
-    clkout: out std_logic;
-    rstout: out std_logic
+  component wbarb2_1 is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
   );
-  end component clkgen;
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic
+  );
+  end component;
 
   component zpuino_debug_core is
   port (
@@ -233,6 +281,16 @@ architecture behave of zpuino_top is
   signal ram_wb_stb_i:       std_logic;
   signal ram_wb_we_i:        std_logic;
 
+  signal cpu_ram_wb_clk_i:       std_logic;
+  signal cpu_ram_wb_rst_i:       std_logic;
+  signal cpu_ram_wb_ack_o:       std_logic;
+  signal cpu_ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal cpu_ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal cpu_ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal cpu_ram_wb_cyc_i:       std_logic;
+  signal cpu_ram_wb_stb_i:       std_logic;
+  signal cpu_ram_wb_we_i:        std_logic;
+
   signal rom_wb_clk_i:       std_logic;
   signal rom_wb_rst_i:       std_logic;
   signal rom_wb_ack_o:       std_logic;
@@ -318,7 +376,7 @@ begin
     rom_wb_rst_i      => rst,
     rom_wb_ack_o      => rom_wb_ack_o,
     rom_wb_dat_o      => rom_wb_dat_o,
-    rom_wb_adr_i      => rom_wb_adr_i(maxAddrBitIncIO downto 0),
+    rom_wb_adr_i      => rom_wb_adr_i,
     rom_wb_cyc_i      => rom_wb_cyc_i,
     rom_wb_stb_i      => rom_wb_stb_i,
     rom_wb_cti_i      => rom_wb_cti_i
@@ -388,15 +446,15 @@ begin
 
     -- Slave 0 signals
 
-    s0_wb_dat_i   => ram_wb_dat_o,
-    s0_wb_dat_o   => ram_wb_dat_i,
-    s0_wb_adr_o   => ram_wb_adr_i,
+    s0_wb_dat_i   => cpu_ram_wb_dat_o,
+    s0_wb_dat_o   => cpu_ram_wb_dat_i,
+    s0_wb_adr_o   => cpu_ram_wb_adr_i,
     s0_wb_sel_o   => open, --ram_wb_sel_i,
     s0_wb_cti_o   => open, --ram_wb_cti_i,
-    s0_wb_we_o    => ram_wb_we_i,
-    s0_wb_cyc_o   => ram_wb_cyc_i,
-    s0_wb_stb_o   => ram_wb_stb_i,
-    s0_wb_ack_i   => ram_wb_ack_o,
+    s0_wb_we_o    => cpu_ram_wb_we_i,
+    s0_wb_cyc_o   => cpu_ram_wb_cyc_i,
+    s0_wb_stb_o   => cpu_ram_wb_stb_i,
+    s0_wb_ack_i   => cpu_ram_wb_ack_o,
 
     -- Slave 1 signals
 
@@ -410,5 +468,52 @@ begin
     s1_wb_stb_o   => io_stb,
     s1_wb_ack_i   => io_ack
   );
+
+  memarb: wbarb2_1
+  generic map (
+    ADDRESS_HIGH => maxAddrBitIncIO,
+    ADDRESS_LOW => 0
+  )
+  port map (
+    wb_clk_i      => clk,
+	 	wb_rst_i      => rst,
+
+    -- Master 0 signals (CPU)
+
+    m0_wb_dat_o   => cpu_ram_wb_dat_o,
+    m0_wb_dat_i   => cpu_ram_wb_dat_i,
+    m0_wb_adr_i   => cpu_ram_wb_adr_i,
+    m0_wb_sel_i   => (others => '1'),
+    m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m0_wb_we_i    => cpu_ram_wb_we_i,
+    m0_wb_cyc_i   => cpu_ram_wb_cyc_i,
+    m0_wb_stb_i   => cpu_ram_wb_stb_i,
+    m0_wb_ack_o   => cpu_ram_wb_ack_o,
+
+    -- Master 1 signals
+
+    m1_wb_dat_o   => m_wb_dat_o,
+    m1_wb_dat_i   => m_wb_dat_i,
+    m1_wb_adr_i   => m_wb_adr_i,
+    m1_wb_sel_i   => (others => '1'),
+    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m1_wb_we_i    => m_wb_we_i,
+    m1_wb_cyc_i   => m_wb_cyc_i,
+    m1_wb_stb_i   => m_wb_stb_i,
+    m1_wb_ack_o   => m_wb_ack_o,
+
+    -- Slave signals
+
+    s0_wb_dat_i   => ram_wb_dat_o,
+    s0_wb_dat_o   => ram_wb_dat_i,
+    s0_wb_adr_o   => ram_wb_adr_i,
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => ram_wb_we_i,
+    s0_wb_cyc_o   => ram_wb_cyc_i,
+    s0_wb_stb_o   => ram_wb_stb_i,
+    s0_wb_ack_i   => ram_wb_ack_o
+  );
+
 
 end behave;

@@ -67,6 +67,16 @@ package zpuinopkg is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
+
+    -- Wishbone MASTER interface (for DMA)
+    m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)

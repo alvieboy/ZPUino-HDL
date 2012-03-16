@@ -255,6 +255,15 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
+
+      m_wb_dat_o    => open,
+      m_wb_dat_i    => (others => 'X'),
+      m_wb_adr_i    => (others => 'X'),
+      m_wb_we_i     => '0',
+      m_wb_cyc_i    => '0',
+      m_wb_stb_i    => '0',
+      m_wb_ack_o    => open,
+
       dbg_reset     => dbg_reset,
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
