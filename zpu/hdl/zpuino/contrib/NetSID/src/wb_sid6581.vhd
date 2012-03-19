@@ -47,7 +47,7 @@ use work.zpupkg.all;
 entity wb_sid6581 is
   port (
     wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
+    wb_rst_i: in std_logic;
     wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
     wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
     wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
@@ -66,30 +66,30 @@ end entity wb_sid6581;
 architecture rtl of wb_sid6581 is
 
   component sid6581 is
-	port (
-		clk_1MHz		: in std_logic;		-- main SID clock signal
-		clk32				: in std_logic;		-- main clock signal
-		clk_DAC			: in std_logic;		-- DAC clock signal, must be as high as possible for the best results
-		reset				: in std_logic;		-- high active signal (reset when reset = '1')
-		cs					: in std_logic;		-- "chip select", when this signal is '1' this model can be accessed
-		we					: in std_logic;		-- when '1' this model can be written to, otherwise access is considered as read
+  port (
+    clk_1MHz    : in std_logic;    -- main SID clock signal
+    clk32        : in std_logic;    -- main clock signal
+    clk_DAC      : in std_logic;    -- DAC clock signal, must be as high as possible for the best results
+    reset        : in std_logic;    -- high active signal (reset when reset = '1')
+    cs          : in std_logic;    -- "chip select", when this signal is '1' this model can be accessed
+    we          : in std_logic;    -- when '1' this model can be written to, otherwise access is considered as read
 
-		addr				: in std_logic_vector(4 downto 0);	-- address lines
-		di					: in std_logic_vector(7 downto 0);	-- data in (to chip)
-		do					: out std_logic_vector(7 downto 0);	-- data out	(from chip)
+    addr        : in std_logic_vector(4 downto 0);  -- address lines
+    di          : in std_logic_vector(7 downto 0);  -- data in (to chip)
+    do          : out std_logic_vector(7 downto 0);  -- data out  (from chip)
 
-		pot_x				: inout std_logic;	-- paddle input-X
-		pot_y				: inout std_logic;	-- paddle input-Y
-		audio_out		: out std_logic;		-- this line holds the audio-signal in PWM format
-		audio_data	: out std_logic_vector(17 downto 0)
-	);
+    pot_x        : inout std_logic;  -- paddle input-X
+    pot_y        : inout std_logic;  -- paddle input-Y
+    audio_out    : out std_logic;    -- this line holds the audio-signal in PWM format
+    audio_data  : out std_logic_vector(17 downto 0)
+  );
   end component;
 
 
-	signal cs:    std_logic;	
+  signal cs:    std_logic;  
   signal addr:  std_logic_vector(4 downto 0);
-	signal di:    std_logic_vector(7 downto 0);
-	signal do:    std_logic_vector(7 downto 0);
+  signal di:    std_logic_vector(7 downto 0);
+  signal do:    std_logic_vector(7 downto 0);
   signal ack_i: std_logic;
 
 begin
@@ -120,22 +120,22 @@ begin
 
 
   sid: sid6581
-	port map (
-		clk_1MHz		=> clk_1MHz,
-		clk32				=> wb_clk_i,
-		clk_DAC			=> '0',
-		reset				=> wb_rst_i,
-		cs					=> cs,
-		we					=> wb_we_i,
+  port map (
+    clk_1MHz    => clk_1MHz,
+    clk32        => wb_clk_i,
+    clk_DAC      => '0',
+    reset        => wb_rst_i,
+    cs          => cs,
+    we          => wb_we_i,
 
-		addr				=> addr,
-		di					=> di,
-		do					=> do,
+    addr        => addr,
+    di          => di,
+    do          => do,
 
-		pot_x				=> open,
-		pot_y				=> open,
-		audio_out		=> open,
-		audio_data  => audio_data
-	);
+    pot_x        => open,
+    pot_y        => open,
+    audio_out    => open,
+    audio_data  => audio_data
+  );
 
 end rtl;
