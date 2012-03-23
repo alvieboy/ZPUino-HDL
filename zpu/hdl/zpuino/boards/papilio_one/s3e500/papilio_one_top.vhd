@@ -169,6 +169,8 @@ architecture behave of papilio_one_top is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
+  signal uart2_tx, uart2_rx: std_logic;
+
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
 
@@ -555,18 +557,25 @@ begin
   -- IO SLOT 11
   --
 
-  slot11: zpuino_empty_device
+  slot11: zpuino_uart
+  generic map (
+    bits => 4
+  )
   port map (
     wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+	 	wb_rst_i    => wb_rst_i,
     wb_dat_o      => slot_read(11),
     wb_dat_i     => slot_write(11),
     wb_adr_i   => slot_address(11),
-    wb_we_i        => slot_we(11),
-    wb_cyc_i        => slot_cyc(11),
-    wb_stb_i        => slot_stb(11),
+    wb_we_i      => slot_we(11),
+    wb_cyc_i       => slot_cyc(11),
+    wb_stb_i       => slot_stb(11),
     wb_ack_o      => slot_ack(11),
-    wb_inta_o => slot_interrupt(11)
+
+    wb_inta_o => slot_interrupt(11),
+
+    tx        => uart2_tx,
+    rx        => uart2_rx
   );
 
   --
@@ -718,8 +727,9 @@ begin
     gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
     gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
     gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
-  
+    gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
     spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
+    uart2_rx <= gpio_spp_read(1);              -- PPS0 : USPI MISO
 
   end process;
 

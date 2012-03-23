@@ -150,6 +150,9 @@ package zpuinopkg is
   end component zpuino_spi;
 
   component zpuino_uart is
+  generic (
+    bits: integer := 11
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
