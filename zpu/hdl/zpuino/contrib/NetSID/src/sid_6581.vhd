@@ -51,8 +51,8 @@ entity sid6581 is
 		di					: in std_logic_vector(7 downto 0);	-- data in (to chip)
 		do					: out std_logic_vector(7 downto 0);	-- data out	(from chip)
 
-		pot_x				: inout std_logic;	-- paddle input-X
-		pot_y				: inout std_logic;	-- paddle input-Y
+		pot_x				: in std_logic;	-- paddle input-X
+		pot_y				: in std_logic;	-- paddle input-Y
 		audio_out		: out std_logic;		-- this line holds the audio-signal in PWM format
 		audio_data	: out std_logic_vector(17 downto 0)
 	);
@@ -75,7 +75,7 @@ architecture Behavioral of sid6581 is
  			clk			: in std_logic;											-- main clock signal (actually the higher the better)
 			reset		: in std_logic;											--
 			ADC_out : out std_logic_vector(7 downto 0);	-- binary input of signal to be converted
-			ADC_in 	: inout std_logic										-- "analog" paddle input pin
+			ADC_in 	: in std_logic										-- "analog" paddle input pin
 		);
 	end component;
 
