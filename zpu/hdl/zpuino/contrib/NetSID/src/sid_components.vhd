@@ -70,7 +70,7 @@ entity pwm_sdadc is
 		clk			: in		std_logic;	-- main clock signal (the higher the better)
 		reset		: in		std_logic;	--
 		ADC_out	: out		std_logic_vector(7 downto 0);		-- binary input of signal to be converted
-		ADC_in	: inout	std_logic		-- "analog" paddle input pin
+		ADC_in	: in	std_logic		-- "analog" paddle input pin
 	);
 end pwm_sdadc;
 
