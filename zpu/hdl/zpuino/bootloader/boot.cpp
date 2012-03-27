@@ -281,7 +281,7 @@ extern "C" void start()
 			: "i" (STACKTOP));
 }
 
-unsigned start_read_size(unsigned spidata)
+unsigned start_read_size(register_t spidata)
 {
 	spiwrite(spidata,0x0B);
 	spiwrite(spidata,SPIOFFSET >> 16);
@@ -312,7 +312,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #endif
 
 	spi_enable();
-	sketchsize=start_read_size();
+	sketchsize=start_read_size(spidata);
 	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
 
 	spiwrite(spidata,0);
