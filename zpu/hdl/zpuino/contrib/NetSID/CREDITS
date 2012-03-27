@@ -1,0 +1,13 @@
+
+ CREDITS
+ 
+ Credits for SID implementation go to Jan Derogee, who did the VHDL implementation,
+ and to Robert Yannes, who did the original SID chip.
+ 
+ License for the VHDL code, unless otherwise stated is (according to an email from Jan):
+ 
+	"everyone may use it, when changes are made make them public 
+         for the benefit of all, keeping it open source" 
+
+
+https://en.wikipedia.org/wiki/Robert_Yannes

@@ -102,9 +102,15 @@ architecture behave of papilio_one_top is
   signal tx: std_logic;
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "111111111111111111111111111111111111111111111111111000";
+    "0" &
+    "1111111111111111" &
+    "1111111111111111" &
+    "1111111111111111";
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "111111111111111111111111111111111111111111111111101111";
+    "0" &
+    "1111111111111111" &
+    "1111111111111111" &
+    "1111111111111111";
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
@@ -132,26 +138,12 @@ architecture behave of papilio_one_top is
   --signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 1);
 
   signal timers_interrupt:  std_logic_vector(1 downto 0);
-  signal timers_spp_data: std_logic_vector(1 downto 0);
-  signal timers_spp_en: std_logic_vector(1 downto 0);
-  signal timers_comp: std_logic;
+  signal timers_pwm:        std_logic_vector(1 downto 0);
 
   signal ivecs: std_logic_vector(17 downto 0);
 
   signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
-
-  -- For busy-implementation
-  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
-
---  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
---  signal io_write: std_logic_vector(wordSize-1 downto 0);
---  signal io_cyc: std_logic;
---  signal io_stb: std_logic;
---  signal io_we: std_logic;
-
---  signal io_device_ack: std_logic;
 
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
@@ -159,18 +151,13 @@ architecture behave of papilio_one_top is
   signal uart_tx: std_logic;
   signal uart_rx: std_logic;
 
-  signal adc_mosi:  std_logic;
-  signal adc_miso:  std_logic;
-  signal adc_sck:   std_logic;
-  signal adc_seln:  std_logic;
-  signal adc_enabled: std_logic;
-
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
 
+<<<<<<< HEAD
 --  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
 
 
@@ -237,6 +224,8 @@ architecture behave of papilio_one_top is
   signal char_ram_wb_ack_o: std_logic;
 
 
+=======
+>>>>>>> extreme
 begin
 
   wb_clk_i <= sysclk;
@@ -279,6 +268,7 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
+<<<<<<< HEAD
       dbg_reset     => dbg_reset,
       vgaclk        => vgaclk,
 
@@ -305,51 +295,22 @@ begin
       char_ram_wb_stb_i => char_ram_wb_stb_i,
       char_ram_wb_ack_o => char_ram_wb_ack_o,
 
+=======
+
+      m_wb_dat_o    => open,
+      m_wb_dat_i    => (others => 'X'),
+      m_wb_adr_i    => (others => 'X'),
+      m_wb_we_i     => '0',
+      m_wb_cyc_i    => '0',
+      m_wb_stb_i    => '0',
+      m_wb_ack_o    => open,
+
+      dbg_reset     => open,
+>>>>>>> extreme
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
 
     );
-
---  dbgport: zpuino_debug_jtag
---    port map (
---      jtag_data_chain_in => jtag_data_chain_out,
---      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
-
---      TCK         => TCK,
---      TDI         => TDI,
---      CAPTUREIR   => CAPTUREIR,
---      UPDATEIR    => UPDATEIR,
---      SHIFTIR     => SHIFTIR,
---      CAPTUREDR   => CAPTUREDR,
---      UPDATEDR    => UPDATEDR,
---      SHIFTDR     => SHIFTDR,
---      TLR         => TLR,
-
---      TDO_IR      => TDO_IR,
---      TDO_DR      => TDO_DR
- --   );
-
-
---  dbgport_s3e: zpuino_debug_spartan3e
---    port map (
---
---      TCK         => TCK,
---      TDI         => TDI,
---      CAPTUREIR   => CAPTUREIR,
---      UPDATEIR    => UPDATEIR,
---      SHIFTIR     => SHIFTIR,
- --     CAPTUREDR   => CAPTUREDR,
-  --    UPDATEDR    => UPDATEDR,
- --     SHIFTDR     => SHIFTDR,
---      TLR         => TLR,
---
---      TDO_IR      => TDO_IR,
---      TDO_DR      => TDO_DR
---
- --   );
-
-
-
 
   --
   --
@@ -438,6 +399,18 @@ begin
   --
 
   timers_inst: zpuino_timers
+  generic map (
+    A_TSCENABLED        => true,
+    A_PWMCOUNT          => 1,
+    A_WIDTH             => 16,
+    A_PRESCALER_ENABLED => true,
+    A_BUFFERS           => true,
+    B_TSCENABLED        => false,
+    B_PWMCOUNT          => 1,
+    B_WIDTH             => 24,
+    B_PRESCALER_ENABLED => false,
+    B_BUFFERS           => false
+  )
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -452,9 +425,8 @@ begin
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
 
-    spp_data  => timers_spp_data,
-    spp_en    => timers_spp_en,
-    comp      => timers_comp
+    pwm_a_out   => timers_pwm(0 downto 0),
+    pwm_b_out   => timers_pwm(1 downto 1)
   );
 
   --
@@ -478,9 +450,15 @@ begin
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5)--,
 
+<<<<<<< HEAD
 --    spp_data  => sigmadelta_spp_data,
 --    spp_en    => sigmadelta_spp_en,
 --    sync_in   => timers_comp
+=======
+    spp_data  => sigmadelta_spp_data,
+    spp_en    => sigmadelta_spp_en,
+    sync_in   => '1'
+>>>>>>> extreme
   );
 
   --
@@ -745,40 +723,26 @@ begin
   ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
   ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(52),   PAD => SPI_CS );
+  ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 
-  process(spi_enabled,spi2_enabled,spi_enabled,
-          uart_enabled,sigmadelta_spp_en, uart_tx,
-          gpio_spp_read, spi_pf_mosi, spi_pf_sck,
-          sigmadelta_spp_data,timers_spp_data,
-          spi2_mosi,spi2_sck,timers_spp_en)
+  process(gpio_spp_read, 
+          sigmadelta_spp_data,
+          timers_pwm,
+          spi2_mosi,spi2_sck)
   begin
 
     gpio_spp_data <= (others => DontCareValue);
 
---    spi_pf_miso <= gpio_spp_read(0);            -- PPS1 : SPI MISO
---    gpio_spp_data(1) <= spi_pf_mosi;            -- PPS2 : SPI MOSI
---    gpio_spp_data(2) <= spi_pf_sck;             -- PPS3 : SPI SCK
-    gpio_spp_data(3) <= sigmadelta_spp_data(0); -- PPS4 : SIGMADELTA DATA
-    gpio_spp_data(4) <= timers_spp_data(0);     -- PPS5 : TIMER0
-    gpio_spp_data(5) <= timers_spp_data(1);     -- PPS6 : TIMER1
-    spi2_miso <= gpio_spp_read(6);              -- PPS7 : USPI MISO
-    gpio_spp_data(7) <= spi2_mosi;              -- PPS8 : USPI MOSI
-    gpio_spp_data(8) <= spi2_sck;               -- PPS9: USPI SCK
-    --if zpuino_adc_enabled then
-    --  gpio_spp_data(9) <= adc_sck;           -- PPS10: ADC SCK
-    --  adc_miso <= gpio_spp_read(10);          -- PPS11 : ADC MISO
-    --  gpio_spp_data(11) <= adc_mosi;          -- PPS12 : ADC MOSI
-    --  gpio_spp_data(12) <= adc_seln;          -- PPS13 : ADC SELN
-    --end if;
-    gpio_spp_data(13) <= sigmadelta_spp_data(1); -- PPS14 : SIGMADELTA1 DATA
+    gpio_spp_data(0)  <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(1)  <= timers_pwm(0);          -- PPS1 : TIMER0
+    gpio_spp_data(2)  <= timers_pwm(1);          -- PPS2 : TIMER1
+    gpio_spp_data(3)  <= spi2_mosi;              -- PPS3 : USPI MOSI
+    gpio_spp_data(4)  <= spi2_sck;               -- PPS4 : USPI SCK
+    gpio_spp_data(5)  <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
 
-    -- External interrupt lines
-    ivecs(16) <= gpio_spp_read(1);
-    ivecs(17) <= gpio_spp_read(2);
-
+    spi2_miso         <= gpio_spp_read(0);       -- PPS7 : USPI MISO
   end process;
 
 

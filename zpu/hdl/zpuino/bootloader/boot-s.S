@@ -21,3 +21,13 @@ __sketch_start:
 	.org 0x0008
         .globl _memreg
 _memreg:
+        .org 0x0028
+        .globl _bfunctions
+_bfunctions:
+  /*
+  	0x28
+        0x2C
+        0x30
+        0x34
+        0x38
+  */

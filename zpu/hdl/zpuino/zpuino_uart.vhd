@@ -42,6 +42,9 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_uart is
+  generic (
+    bits: integer := 11
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -208,7 +211,7 @@ begin
 
   fifo_instance: fifo
     generic map (
-      bits => 4
+      bits => bits
     )
     port map (
       clk   => wb_clk_i,

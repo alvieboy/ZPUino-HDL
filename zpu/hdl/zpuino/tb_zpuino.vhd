@@ -47,8 +47,8 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10.4166666667 ns;
-  constant vgaperiod : time := 31.25 ns;
+  constant period : time := 10 ns;
+  constant vgaperiod : time := 40 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
   signal w_vgaclk : std_logic := '0';
@@ -383,23 +383,19 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      --dbg_reset     => dbg_reset,
-      jtag_ctrl_chain_in => (others => '0'),
-      --jtag_data_chain_out => jtag_data_chain_out,
-      vgaclk => w_vgaclk,
+      dbg_reset     => dbg_reset,
 
-      v_wb_dat_i    => (others => '0'),
-      v_wb_adr_i    => (others => '0'),
-      v_wb_we_i     => '0',
-      v_wb_cyc_i    => '0',
-      v_wb_stb_i    => '0',
+      m_wb_dat_o    => open,
+      m_wb_dat_i    => (others => 'X'),
+      m_wb_adr_i    => (others => 'X'),
+      m_wb_we_i     => '0',
+      m_wb_cyc_i    => '0',
+      m_wb_stb_i    => '0',
+      m_wb_ack_o    => open,
 
-      char_ram_wb_dat_i => (others => '0'),
-      char_ram_wb_adr_i => (others => '0'),
-      char_ram_wb_we_i  => '0',
-      char_ram_wb_cyc_i => '0',
-      char_ram_wb_stb_i => '0'
 
+      jtag_ctrl_chain_in => (others => '0'),--jtag_ctrl_chain_in,
+      jtag_data_chain_out => jtag_data_chain_out
     );
 
   dbgport: zpuino_debug_jtag
@@ -605,11 +601,11 @@ begin
     wb_ack_o      => slot_ack(3),
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
-    wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+    wb_intb_o => slot_interrupt(4) -- so we borrow intr line from slot 4
 
-    spp_data  => timers_spp_data,
-    spp_en    => open,
-    comp      => open
+    --spp_data  => timers_spp_data,
+    --spp_en    => open,
+    --comp      => open
     );
 
   --
