@@ -83,6 +83,9 @@ begin
   -- System ROM/RAM
 
   ramrom: dualport_ram
+  generic map (
+    maxbit => maxAddrBit
+  )
   port map (
     clk               => ram_wb_clk_i,
     memAWriteEnable   => memAWriteEnable,
