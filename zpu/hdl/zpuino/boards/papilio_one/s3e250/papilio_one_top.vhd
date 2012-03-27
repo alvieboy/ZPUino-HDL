@@ -157,48 +157,6 @@ architecture behave of papilio_one_top is
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
 
-<<<<<<< HEAD
---  signal TCK,TDI,CAPTUREIR,UPDATEIR,SHIFTIR,CAPTUREDR,UPDATEDR,SHIFTDR,TLR,TDO_IR,TDO_DR: std_logic;
-
-
---  component zpuino_debug_jtag is
---  port (
-    -- Connections to JTAG stuff
-
---    TCK: in std_logic;
---    TDI: in std_logic;
---    CAPTUREIR: in std_logic;
---    UPDATEIR:  in std_logic;
---    SHIFTIR:  in std_logic;
---    CAPTUREDR: in std_logic;
---    UPDATEDR:  in std_logic;
---    SHIFTDR:  in std_logic;
---    TLR:  in std_logic;
-
---    TDO_IR:   out std_logic;
---    TDO_DR:   out std_logic;
-
-
---    jtag_data_chain_in: in std_logic_vector(98 downto 0);
- --   jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
---  );
---  end component;
-
-  component zpuino_debug_spartan3e is
-  port (
-    TCK: out std_logic;
-    TDI: out std_logic;
-    CAPTUREIR: out std_logic;
-    UPDATEIR:  out std_logic;
-    SHIFTIR:  out std_logic;
-    CAPTUREDR: out std_logic;
-    UPDATEDR:  out std_logic;
-    SHIFTDR:  out std_logic;
-    TLR:  out std_logic;
-    TDO_IR:   in std_logic;
-    TDO_DR:   in std_logic
-  );
-  end component;
 
   signal vgaclk: std_logic;
   signal vga_hsync:   std_logic;
@@ -223,9 +181,6 @@ architecture behave of papilio_one_top is
   signal char_ram_wb_stb_i: std_logic;
   signal char_ram_wb_ack_o: std_logic;
 
-
-=======
->>>>>>> extreme
 begin
 
   wb_clk_i <= sysclk;
@@ -268,45 +223,16 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-<<<<<<< HEAD
-      dbg_reset     => dbg_reset,
-      vgaclk        => vgaclk,
 
-      vga_hsync     => vga_hsync,
-      vga_vsync     => vga_vsync,
-      vga_b         => vga_b,
-      vga_r         => vga_r,
-      vga_g         => vga_g,
-
-      v_wb_dat_o    => v_wb_dat_o,
-      v_wb_dat_i    => v_wb_dat_i,
-      v_wb_adr_i    => v_wb_adr_i,
-      v_wb_we_i     => v_wb_we_i,
-      v_wb_cyc_i    => v_wb_cyc_i,
-      v_wb_stb_i    => v_wb_stb_i,
-      v_wb_ack_o    => v_wb_ack_o,
-
-    -- Char RAM interface
-      char_ram_wb_dat_o => char_ram_wb_dat_o,
-      char_ram_wb_dat_i => char_ram_wb_dat_i,
-      char_ram_wb_adr_i => char_ram_wb_adr_i,
-      char_ram_wb_we_i  => char_ram_wb_we_i,
-      char_ram_wb_cyc_i => char_ram_wb_cyc_i,
-      char_ram_wb_stb_i => char_ram_wb_stb_i,
-      char_ram_wb_ack_o => char_ram_wb_ack_o,
-
-=======
-
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
-      m_wb_ack_o    => open,
+      m_wb_dat_o    => v_wb_dat_o,
+      m_wb_dat_i    => v_wb_dat_i,
+      m_wb_adr_i    => v_wb_adr_i,
+      m_wb_we_i     => v_wb_we_i,
+      m_wb_cyc_i    => v_wb_cyc_i,
+      m_wb_stb_i    => v_wb_stb_i,
+      m_wb_ack_o    => v_wb_ack_o,
 
       dbg_reset     => open,
->>>>>>> extreme
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
 
@@ -450,15 +376,9 @@ begin
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5)--,
 
-<<<<<<< HEAD
---    spp_data  => sigmadelta_spp_data,
---    spp_en    => sigmadelta_spp_en,
---    sync_in   => timers_comp
-=======
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
     sync_in   => '1'
->>>>>>> extreme
   );
 
   --
