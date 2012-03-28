@@ -246,9 +246,6 @@ begin
   --
 
   uart_inst: zpuino_uart
-  generic map (
-    bits => 4
-  )
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
