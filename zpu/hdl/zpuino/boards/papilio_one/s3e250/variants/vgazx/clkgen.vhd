@@ -46,6 +46,7 @@ entity clkgen is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
+    vgaclkout: out std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -87,6 +88,12 @@ begin
     port map (
       I =>  dcmclock,
       O =>  clkout_i
+    );
+
+  vgainst: BUFG
+    port map (
+      I =>  clkin_i,
+      O =>  vgaclkout
     );
    
   clkin_inst: IBUFG

@@ -24,7 +24,7 @@ entity vga_zxspectrum is
     -- Wishbone MASTER interface
     mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
     mi_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    mi_wb_adr_o: out std_logic_vector(maxAddrBit downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxAddrBitIncIO downto 0);
     mi_wb_sel_o: out std_logic_vector(3 downto 0);
     mi_wb_cti_o: out std_logic_vector(2 downto 0);
     mi_wb_we_o:  out std_logic;
@@ -32,22 +32,14 @@ entity vga_zxspectrum is
     mi_wb_stb_o: out std_logic;
     mi_wb_ack_i: in std_logic;
 
-    -- Char RAM interface
-    char_ram_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    char_ram_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    char_ram_wb_adr_i: in std_logic_vector(maxIOBit downto minIObit);
-    char_ram_wb_we_i:  in std_logic;
-    char_ram_wb_cyc_i: in std_logic;
-    char_ram_wb_stb_i: in std_logic;
-    char_ram_wb_ack_o: out std_logic;
-
     -- VGA signals
     vgaclk:     in std_logic;
     vga_hsync:  out std_logic;
     vga_vsync:  out std_logic;
     vga_b:      out std_logic;
     vga_r:      out std_logic;
-    vga_g:      out std_logic
+    vga_g:      out std_logic;
+    vga_bright: out std_logic
   );
 end entity;
 
@@ -73,41 +65,13 @@ architecture behave of vga_zxspectrum is
 		full    : out STD_LOGIC);
   end component;
 
-  component wb_char_ram_8x8 is
-  port (
-    a_wb_clk_i: in std_logic;
-	 	a_wb_rst_i: in std_logic;
-    a_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    a_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    a_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
-    a_wb_we_i:  in std_logic;
-    a_wb_cyc_i: in std_logic;
-    a_wb_stb_i: in std_logic;
-    a_wb_ack_o: out std_logic;
-    a_wb_inta_o:out std_logic;
-
-    b_wb_clk_i: in std_logic;
-	 	b_wb_rst_i: in std_logic;
-    b_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    b_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    b_wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
-    b_wb_we_i:  in std_logic;
-    b_wb_cyc_i: in std_logic;
-    b_wb_stb_i: in std_logic;
-    b_wb_ack_o: out std_logic;
-    b_wb_inta_o:out std_logic
-  );
-
-
-  end component wb_char_ram_8x8;
-
   signal fifo_full: std_logic;
   signal fifo_almost_full: std_logic;
   signal fifo_write_enable: std_logic;
   signal fifo_quad_full: std_logic;
   signal fifo_half_full: std_logic;
 
-  signal readclk: std_logic:='0';
+--  signal readclk: std_logic:='0';
   signal fifo_clear: std_logic:='0';
   signal read_enable: std_logic:='0';
   signal fifo_write, read: std_logic_vector(2 downto 0);
@@ -140,8 +104,8 @@ architecture behave of vga_zxspectrum is
     chars:    std_logic_vector(wordSize-1 downto 0);
     pallete:  std_logic_vector(wordSize-1 downto 0);
 
-    charline: std_logic_vector(7 downto 0); -- The 8 pixels of a char row
-    charpal:  std_logic_vector(7 downto 0); -- Pallete for this char
+    --charline: std_logic_vector(7 downto 0); -- The 8 pixels of a char row
+    --charpal:  std_logic_vector(7 downto 0); -- Pallete for this char
 
     hptr:     integer range 0 to 79; -- horizontal counter
   
@@ -217,7 +181,7 @@ architecture behave of vga_zxspectrum is
   signal v_display_in_wbclk: std_logic;
   signal v_display_q: std_logic;
 
-  signal v_border: std_logic;
+  --signal v_border: std_logic;
 
   signal cache_clear: std_logic;
 
@@ -321,7 +285,7 @@ begin
       w.voff := (others =>'0');
       w.memptr := unsigned(membase);
       w.palleteptr := unsigned(palletebase);
-
+      mi_wb_adr_o <= (others => DontCareValue);
       w.ls_memptr := unsigned(membase);
       w.ls_palleteptr := unsigned(palletebase);
 
@@ -333,7 +297,7 @@ begin
 
           mi_wb_stb_o <= '1';
           mi_wb_cyc_o <= '1';
-          mi_wb_adr_o <= std_logic_vector( r.memptr(maxAddrBit downto 0) );
+          mi_wb_adr_o <= std_logic_vector( r.memptr(maxAddrBitIncIO downto 0) );
 
           --w.charoff := (others => '0');
           w.chars := mi_wb_dat_i;
@@ -347,7 +311,7 @@ begin
 
           mi_wb_stb_o <= '1';
           mi_wb_cyc_o <= '1';
-          mi_wb_adr_o <= std_logic_vector( r.palleteptr(maxAddrBit downto 0) );
+          mi_wb_adr_o <= std_logic_vector( r.palleteptr(maxAddrBitIncIO downto 0) );
           w.pallete := mi_wb_dat_i;
 
           if mi_wb_ack_i='1' then
@@ -658,33 +622,5 @@ begin
 		qqqfull => fifo_almost_full,
 		full    => fifo_full
   );
-
-
---  charram: wb_char_ram_8x8
---  port map (
---    a_wb_clk_i    => wb_clk_i,
---	 	a_wb_rst_i    => wb_rst_i,
---    a_wb_dat_o    => char_wb_dat_o,
---    a_wb_dat_i    => char_wb_dat_i,
---    a_wb_adr_i    => char_wb_adr_i,
---    a_wb_we_i     => '0',
---    a_wb_cyc_i    => char_wb_cyc_i,
---    a_wb_stb_i    => char_wb_stb_i,
---    a_wb_ack_o    => char_wb_ack_o,
---   a_wb_inta_o   => open,
---
---   b_wb_clk_i    => wb_clk_i,
---  	b_wb_rst_i    => wb_rst_i,
---    b_wb_dat_o    => char_ram_wb_dat_o,
---    b_wb_dat_i    => char_ram_wb_dat_i,
---    b_wb_adr_i    => char_ram_wb_adr_i,
---    b_wb_we_i     => char_ram_wb_we_i,
---    b_wb_cyc_i    => char_ram_wb_cyc_i,
---    b_wb_stb_i    => char_ram_wb_stb_i,
---    b_wb_ack_o    => char_ram_wb_ack_o,
---    b_wb_inta_o   => open
---
---  );
-
 
 end behave;

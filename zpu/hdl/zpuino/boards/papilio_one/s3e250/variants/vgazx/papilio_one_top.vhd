@@ -90,6 +90,41 @@ architecture behave of papilio_one_top is
   );
   end component zpuino_serialreset;
 
+  component vga_zxspectrum is
+  port(
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+
+    -- Wishbone MASTER interface
+    mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    mi_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxAddrBitIncIO downto 0);
+    mi_wb_sel_o: out std_logic_vector(3 downto 0);
+    mi_wb_cti_o: out std_logic_vector(2 downto 0);
+    mi_wb_we_o:  out std_logic;
+    mi_wb_cyc_o: out std_logic;
+    mi_wb_stb_o: out std_logic;
+    mi_wb_ack_i: in std_logic;
+
+    -- VGA signals
+    vgaclk:     in std_logic;
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_b:      out std_logic;
+    vga_r:      out std_logic;
+    vga_g:      out std_logic;
+    vga_bright: out std_logic
+  );
+  end component;
+
+
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
   signal dbg_reset:   std_logic;
@@ -167,19 +202,11 @@ architecture behave of papilio_one_top is
 
   signal v_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
   signal v_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
-  signal v_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
+  signal v_wb_adr_i: std_logic_vector(maxAddrBitIncIO downto 0);
   signal v_wb_we_i:  std_logic;
   signal v_wb_cyc_i: std_logic;
   signal v_wb_stb_i: std_logic;
   signal v_wb_ack_o: std_logic;
-
-  signal char_ram_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
-  signal char_ram_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
-  signal char_ram_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
-  signal char_ram_wb_we_i:  std_logic;
-  signal char_ram_wb_cyc_i: std_logic;
-  signal char_ram_wb_stb_i: std_logic;
-  signal char_ram_wb_ack_o: std_logic;
 
 begin
 
@@ -376,9 +403,9 @@ begin
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5)--,
 
-    spp_data  => sigmadelta_spp_data,
-    spp_en    => sigmadelta_spp_en,
-    sync_in   => '1'
+    --spp_data  => sigmadelta_spp_data,
+    --spp_en    => sigmadelta_spp_en,
+    --sync_in   => '1'
   );
 
   --
@@ -427,27 +454,41 @@ begin
   --
   -- IO SLOT 8
   --
-  slot_read(8) <= v_wb_dat_o;
-  v_wb_dat_i <= slot_write(8);
-  v_wb_adr_i <= slot_address(8);
-  v_wb_we_i  <= slot_we(8);
-  v_wb_cyc_i <= slot_cyc(8);
-  v_wb_stb_i <= slot_stb(8);
-  slot_ack(8) <= v_wb_ack_o;
-  slot_interrupt(8) <= '0';
+
+  vgat: vga_zxspectrum
+    port map (
+    wb_clk_i    => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+    wb_dat_o    => slot_read(8),
+    wb_dat_i    => slot_write(8),
+    wb_adr_i    => slot_address(8),
+    wb_we_i     => slot_we(8),
+    wb_cyc_i    => slot_cyc(8),
+    wb_stb_i    => slot_stb(8),
+    wb_ack_o    => slot_ack(8),
+
+    -- Wishbone MASTER interface
+    mi_wb_dat_i   => v_wb_dat_o,
+    mi_wb_dat_o   => v_wb_dat_i,
+    mi_wb_adr_o   => v_wb_adr_i,
+    mi_wb_sel_o   => open,
+    mi_wb_cti_o   => open,
+    mi_wb_we_o    => v_wb_we_i,
+    mi_wb_cyc_o   => v_wb_cyc_i,
+    mi_wb_stb_o   => v_wb_stb_i,
+    mi_wb_ack_i   => v_wb_ack_o,
+
+    vgaclk          => vgaclk,
+    vga_hsync       => vga_hsync,
+    vga_vsync       => vga_vsync,
+    vga_b           => vga_b,
+    vga_r           => vga_r,
+    vga_g           => vga_g
+  );
 
   --
   -- IO SLOT 9
   --
-
---  slot_read(9) <= char_ram_wb_dat_o;
---  char_ram_wb_dat_i <= slot_write(9);
---  char_ram_wb_adr_i <= slot_address(9);
---  char_ram_wb_we_i <= slot_we(9);
---  char_ram_wb_cyc_i <= slot_cyc(9);
---  char_ram_wb_stb_i <= slot_stb(9);
---  slot_ack(9) <= char_ram_wb_ack_o;
---  slot_interrupt(9) <='0';
 
   slot9: zpuino_empty_device
   port map (
