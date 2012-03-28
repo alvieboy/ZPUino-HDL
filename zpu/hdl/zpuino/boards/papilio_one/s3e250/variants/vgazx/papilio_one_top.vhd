@@ -73,6 +73,7 @@ architecture behave of papilio_one_top is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
+    vgaclkout: out std_logic;
     rstout: out std_logic
   );
   end component clkgen;
@@ -156,6 +157,30 @@ architecture behave of papilio_one_top is
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
 
+
+  signal vgaclk: std_logic;
+  signal vga_hsync:   std_logic;
+  signal vga_vsync:   std_logic;
+  signal vga_b:       std_logic;
+  signal vga_r:       std_logic;
+  signal vga_g:       std_logic;
+
+  signal v_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
+  signal v_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
+  signal v_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
+  signal v_wb_we_i:  std_logic;
+  signal v_wb_cyc_i: std_logic;
+  signal v_wb_stb_i: std_logic;
+  signal v_wb_ack_o: std_logic;
+
+  signal char_ram_wb_dat_o: std_logic_vector(wordSize-1 downto 0);
+  signal char_ram_wb_dat_i: std_logic_vector(wordSize-1 downto 0);
+  signal char_ram_wb_adr_i: std_logic_vector(maxIObit downto minIObit);
+  signal char_ram_wb_we_i:  std_logic;
+  signal char_ram_wb_cyc_i: std_logic;
+  signal char_ram_wb_stb_i: std_logic;
+  signal char_ram_wb_ack_o: std_logic;
+
 begin
 
   wb_clk_i <= sysclk;
@@ -179,6 +204,7 @@ begin
     clkin   => clk,
     rstin   => dbg_reset,
     clkout  => sysclk,
+    vgaclkout => vgaclk,
     rstout  => clkgen_rst
   );
 
@@ -198,13 +224,13 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
 
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
-      m_wb_ack_o    => open,
+      m_wb_dat_o    => v_wb_dat_o,
+      m_wb_dat_i    => v_wb_dat_i,
+      m_wb_adr_i    => v_wb_adr_i,
+      m_wb_we_i     => v_wb_we_i,
+      m_wb_cyc_i    => v_wb_cyc_i,
+      m_wb_stb_i    => v_wb_stb_i,
+      m_wb_ack_o    => v_wb_ack_o,
 
       dbg_reset     => open,
       jtag_data_chain_out => open,--jtag_data_chain_out,
@@ -337,7 +363,7 @@ begin
   -- IO SLOT 5
   --
 
-  sigmadelta_inst: zpuino_sigmadelta
+  sigmadelta_inst: zpuino_empty_device--zpuino_sigmadelta
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -348,7 +374,7 @@ begin
     wb_cyc_i        => slot_cyc(5),
     wb_stb_i        => slot_stb(5),
     wb_ack_o      => slot_ack(5),
-    wb_inta_o => slot_interrupt(5),
+    wb_inta_o => slot_interrupt(5)--,
 
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
@@ -399,26 +425,29 @@ begin
   );
 
   --
-  -- IO SLOT 8 (optional)
+  -- IO SLOT 8
   --
-
-  adc_inst: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(8),
-    wb_dat_i     => slot_write(8),
-    wb_adr_i   => slot_address(8),
-    wb_we_i    => slot_we(8),
-    wb_cyc_i      => slot_cyc(8),
-    wb_stb_i      => slot_stb(8),
-    wb_ack_o      => slot_ack(8),
-    wb_inta_o =>  slot_interrupt(8)
-  );
+  slot_read(8) <= v_wb_dat_o;
+  v_wb_dat_i <= slot_write(8);
+  v_wb_adr_i <= slot_address(8);
+  v_wb_we_i  <= slot_we(8);
+  v_wb_cyc_i <= slot_cyc(8);
+  v_wb_stb_i <= slot_stb(8);
+  slot_ack(8) <= v_wb_ack_o;
+  slot_interrupt(8) <= '0';
 
   --
   -- IO SLOT 9
   --
+
+--  slot_read(9) <= char_ram_wb_dat_o;
+--  char_ram_wb_dat_i <= slot_write(9);
+--  char_ram_wb_adr_i <= slot_address(9);
+--  char_ram_wb_we_i <= slot_we(9);
+--  char_ram_wb_cyc_i <= slot_cyc(9);
+--  char_ram_wb_stb_i <= slot_stb(9);
+--  slot_ack(9) <= char_ram_wb_ack_o;
+--  slot_interrupt(9) <='0';
 
   slot9: zpuino_empty_device
   port map (
@@ -543,14 +572,23 @@ begin
   );
 
 
-  pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
-  pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
-  pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
-  pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
-  pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
-  pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
-  pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
-  pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
+  --pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
+  pin00: OPAD port map ( I => vga_vsync, PAD => WING_A(0) );
+  --pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
+  pin01: OPAD port map ( I => vga_hsync, PAD => WING_A(1) );
+  --pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
+  pin02: OPAD port map ( I => vga_b, PAD => WING_A(2) );
+  --pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
+  WING_A(3) <= 'Z';
+  --pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
+  WING_A(4) <= 'Z';
+  --pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
+  WING_A(5) <= 'Z';
+  --pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
+  pin06: OPAD port map ( I => vga_g, PAD => WING_A(6) );
+  --pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
+  pin07: OPAD port map ( I => vga_r, PAD => WING_A(7) );
+
   pin08: IOPAD port map(I => gpio_o(8), O => gpio_i(8), T => gpio_t(8), C => sysclk,PAD => WING_A(8) );
   pin09: IOPAD port map(I => gpio_o(9), O => gpio_i(9), T => gpio_t(9), C => sysclk,PAD => WING_A(9) );
   pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
