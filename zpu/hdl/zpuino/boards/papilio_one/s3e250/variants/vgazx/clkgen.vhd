@@ -54,7 +54,7 @@ end entity clkgen;
 architecture behave of clkgen is
 
 signal dcmlocked: std_logic;
-signal dcmclock: std_logic;
+signal dcmclock: std_ulogic;
 
 signal rst1_q: std_logic;
 signal rst2_q: std_logic;
@@ -102,11 +102,11 @@ begin
       O =>  clkin_i
     );
    
-  clkfb_inst: BUFG
-    port map (
-      I=> clk0,
-      O=> clkfb
-    );
+--  clkfb_inst: BUFG
+--    port map (
+--      I=> clk0,
+--      O=> clkfb
+--    );
 
 
 DCM_inst : DCM
@@ -117,7 +117,7 @@ DCM_inst : DCM
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
     CLKIN_PERIOD => 31.25,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
-    CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
+    CLK_FEEDBACK => "NONE",       -- Specify clock feedback of NONE, 1X or 2X
     DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
     DFS_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for frequency synthesis
     DLL_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for DLL
@@ -127,7 +127,7 @@ DCM_inst : DCM
     STARTUP_WAIT => FALSE                   -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
     ) 
   port map (
-    CLK0 => clk0, -- 0 degree DCM CLK ouptput
+    CLK0 => open,--clk0, -- 0 degree DCM CLK ouptput
     CLK180 => open, -- 180 degree DCM CLK output
     CLK270 => open, -- 270 degree DCM CLK output
     CLK2X => open, -- 2X DCM CLK output
@@ -139,7 +139,7 @@ DCM_inst : DCM
     LOCKED => dcmlocked, -- DCM LOCK status output
     PSDONE => open, -- Dynamic phase adjust done output
     STATUS => open, -- 8-bit DCM status bits output
-    CLKFB => clkfb, -- DCM clock feedback
+    CLKFB => '0',--clkfb, -- DCM clock feedback
     CLKIN => clkin_i, -- Clock input (from IBUFG, BUFG or DCM)
     PSCLK => '0', -- Dynamic phase adjust clock input
     PSEN => '0', -- Dynamic phase adjust enable input
