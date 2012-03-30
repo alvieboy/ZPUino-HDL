@@ -900,6 +900,10 @@ begin
 
     instruction_executed := '0'; -- used for single stepping
 
+    stack_b_writeenable <= '0';
+    stack_a_enable <= '1';
+    stack_b_enable <= '1';
+
     exu_busy <= '0';
     decode_jump <= '0';
 
@@ -916,16 +920,13 @@ begin
     poppc_inst <= '0';
     begin_inst<='0';
 
+    stack_a_addr <= std_logic_vector( prefr.sp );
+
+    stack_a_writeenable <= '0';
     wroteback := wroteback_q;
 
-    stack_a_addr <= std_logic_vector( prefr.sp );
-    stack_a_writeenable <= '0';
-    stack_a_enable <= '1';
-    stack_a_write <= std_logic_vector(exr.tos);
-
-    stack_b_enable <= '1';
     stack_b_writeenable <= '0';
-    stack_b_write<=(others => DontCareValue);
+    stack_a_write <= std_logic_vector(exr.tos);
 
     spOffset(4):=not prefr.opcode(4);
     spOffset(3 downto 0) := unsigned(prefr.opcode(3 downto 0));
@@ -933,6 +934,8 @@ begin
     if wb_inta_i='0' then
       w.inInterrupt := '0';
     end if;
+
+    stack_b_write<=(others => DontCareValue);
 
     if wroteback_q='1' then
       nos <= unsigned(stack_a_read);
@@ -948,9 +951,8 @@ begin
         exu_busy <= '1';
 
         stack_a_enable<='1';
-        w.tos := (others => DontCareValue);
         w.state := State_Resync2;
-        --wroteback := '0';
+        wroteback := '0';
 
       when State_ResyncFromStoreStack =>
         exu_busy <= '1';
@@ -1186,9 +1188,6 @@ begin
             instruction_executed := '0';
             wroteback := wroteback_q; -- Keep WB
 
-            -- Test.
-            w.tos := (others => DontCareValue);
-
             if exr.tos(wordSize-1)='1' then
               stack_a_addr<=std_logic_vector(exr.tos(10 downto 2));
               stack_a_enable<='1';
@@ -1209,9 +1208,6 @@ begin
             decode_load_sp <= '1';
             instruction_executed := '0';
             stack_a_addr <= std_logic_vector(exr.tos(10 downto 2));
-
-            w.tos := (others => DontCareValue);
-
             w.state := State_Resync2;
 
           --when Decoded_Break =>
@@ -1242,21 +1238,20 @@ begin
       when State_Ashiftleft =>
         exu_busy <= '1';
         lshifter_enable <= '1';
-        w.tos := (others => DontCareValue);
 
         if lshifter_done='1' then
-          w.tos := unsigned(lshifter_output);
           exu_busy<='0';
+          w.tos := unsigned(lshifter_output);
           w.state := State_Execute;
         end if;
 
       when State_Mult =>
         exu_busy <= '1';
         multiplier_enable <= '1';
-        w.tos := (others => DontCareValue);
+
         if multiplier_done='1' then
-          w.tos := unsigned(multiplier_output);
           exu_busy<='0';
+          w.tos := unsigned(multiplier_output);
           w.state := State_Execute;
         end if;
 
@@ -1274,9 +1269,9 @@ begin
         
         -- Keep writeback flag
         wroteback := wroteback_q;
-        stack_a_addr <= std_logic_vector(prefr.spnext);
 
         if wb_ack_i='1' then
+          stack_a_addr <= std_logic_vector(prefr.spnext);
           stack_a_enable<='1';
           stack_b_enable<='1';
           wroteback := '0';
@@ -1284,7 +1279,7 @@ begin
           w.wb_cyc := '0';
           w.state := State_Resync2;
         else
-          --stack_a_addr  <= (others => DontCareValue);
+          stack_a_addr  <= (others => DontCareValue);
           stack_a_write <= (others => DontCareValue);
           stack_a_enable<='0';
           stack_b_enable<='0';
@@ -1310,12 +1305,11 @@ begin
 
       when State_Load =>
 
-          w.tos := (others => DontCareValue);
           if wb_ack_i='0' then
             exu_busy<='1';
           else
-            w.wb_cyc := '0';
             w.tos := unsigned(wb_dat_i);
+            w.wb_cyc := '0';
 
             if prefr.decodedOpcode=Decoded_Loadb then
               exu_busy<='1';
@@ -1348,9 +1342,9 @@ begin
 
       when State_NeqBranch =>
         if exr.nos_save/=0 then
-          jump_address <= exr.tos(maxAddrBit downto 0) + prefr.pc;
           decode_jump <= '1';
-          --poppc_inst <= '1';
+          jump_address <= exr.tos(maxAddrBit downto 0) + prefr.pc;
+          poppc_inst <= '1';
           exu_busy <= '0';
         else
           exu_busy <='1';
@@ -1371,6 +1365,8 @@ begin
         --
         -- So we mangle the write value, and update save_NOS, and restore
         -- the IO address to TOS
+        --
+        -- This is still buggy - don't use. Problems arise when writing to stack.
         --
 
         w.nos_save := exr.tos;
