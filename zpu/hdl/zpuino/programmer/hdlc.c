@@ -30,15 +30,6 @@ static size_t packetoffset;
 
 extern unsigned int verbose;
 
-void crc16_update(uint16_t *crc, uint8_t data)
-{
-	data ^= *crc&0xff;
-	data ^= data << 4;
-	*crc = ((((uint16_t)data << 8) | ((*crc>>8)&0xff)) ^ (uint8_t)(data >> 4)
-		   ^ ((uint16_t)data << 3));
-}
-
-
 buffer_t *handle()
 {
 	buffer_t*ret = NULL;
