@@ -8,6 +8,8 @@
 #include "io_exception.h"
 #include "programmer.h"
 
+#define ISBITFILE 1
+
 extern "C" void crc16_update(uint16_t *crc, uint8_t data);
 
 char *outfilename = NULL;
@@ -164,6 +166,7 @@ int handleargv(char *arg)
 	}
     return 0;
 }
+
 void pad(FILE *out, unsigned size)
 {
 	unsigned char pad = 0xff;
@@ -173,10 +176,54 @@ void pad(FILE *out, unsigned size)
 	}
 }
 
+const unsigned char bitfile_dummy[] = {
+0x00,0x09,0x0f,0xf0,0x0f,0xf0,0x0f,0xf0,0x0f,0xf0,0x00,0x00,0x01,0x61,0x00,0x0a,
+0x78,0x66,0x6f,0x72,0x6d,0x2e,0x6e,0x63,0x64,0x00,0x62,0x00,0x0c,0x76,0x31,0x30,
+0x30,0x30,0x65,0x66,0x67,0x38,0x36,0x30,0x00,0x63,0x00,0x0b,0x32,0x30,0x30,0x31,
+0x2f,0x30,0x38,0x2f,0x31,0x30,0x00,0x64,0x00,0x09,0x30,0x36,0x3a,0x35,0x35,0x3a,
+0x30,0x34,0x00,0x65/*,0x00,0x0c,0x28,0x18*/};
+
+
+unsigned precomputesize()
+{
+	plisttype::const_iterator i;
+	unsigned current_offset = 0;
+
+	for (i=plist.begin();i!=plist.end();i++) {
+		if (i->start>0) {
+			if (i->start<current_offset) {
+				fprintf(stderr,"Overlap of two files! Cannot continue\n");
+				return -1;
+			}
+
+			/* Set current offset */
+			unsigned delta = i->start-current_offset;
+            current_offset+=delta;
+		}
+		current_offset+=i->content.length();
+	}
+	return current_offset;
+}
+
 int dump(FILE *outfile)
 {
 	plisttype::const_iterator i;
 	unsigned current_offset = 0;
+
+	if (ISBITFILE) { // BIT
+		fwrite(bitfile_dummy, sizeof(bitfile_dummy),1,outfile);
+		unsigned length = precomputesize();
+
+		fprintf(stderr,"Size is %lu (full size be %lu)\n", length, length + sizeof(bitfile_dummy));
+		unsigned char lenbuf[4];
+		lenbuf[0] = (length>>24) & 0xff;
+		lenbuf[1] = (length>>16) & 0xff;
+		lenbuf[2] = (length>>8) & 0xff;
+		lenbuf[3] = (length>>0) & 0xff;
+        fwrite(lenbuf,4,1,outfile);
+        // length=(t[0]<<24)+(t[1]<<16)+(t[2]<<8)+t[3];
+
+	}
 
 	for (i=plist.begin();i!=plist.end();i++) {
 		printf("Offset %ld, size %lu\n",i->start, i->content.length());
@@ -194,8 +241,24 @@ int dump(FILE *outfile)
             current_offset+=delta;
 		}
 		/* Write contents */
-		fwrite( i->content.c_str(), i->content.length(), 1, outfile);
-        current_offset+=i->content.length();
+
+		if (0) { //  BIT
+
+            unsigned size = i->content.length();
+			unsigned char *temp = (unsigned char*)malloc(size);
+            const unsigned char *src = (const unsigned char*)i->content.c_str();
+			// Reverse bits
+			int zi;
+			for (zi=0; zi<size; zi++)
+				temp[zi] = bitRevTable[ src[zi] ];
+
+			fwrite( temp, size, 1, outfile);
+
+		} else {
+			fwrite( i->content.c_str(), i->content.length(), 1, outfile);
+		}
+
+		current_offset+=i->content.length();
 	}
 }
 
