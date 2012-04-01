@@ -279,7 +279,7 @@ type decoderegs_type is record
   stackOperation: stackChangeType;
   spOffset:       unsigned(4 downto 0);
   im_emu:         std_logic;
-  emumode:        std_logic;
+  --emumode:        std_logic;
   break:          std_logic;
   state:          decoderstate_type;
 end record;
