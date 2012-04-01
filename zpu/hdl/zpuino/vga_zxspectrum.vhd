@@ -199,6 +199,8 @@ begin
   wb_dat_o(31 downto 1) <= (others => DontCareValue);
   wb_dat_o(0) <= v_display_in_wbclk;
 
+  mi_wb_dat_o <= (others => DontCareValue);
+
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
