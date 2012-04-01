@@ -119,8 +119,8 @@ package zpupkg is
     stack_b_writeenable: out std_logic;
     stack_a_enable: out std_logic;
     stack_b_enable: out std_logic;
-    stack_a_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
-    stack_b_addr:   out std_logic_vector(stackSize_bits-1 downto 0);
+    stack_a_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
+    stack_b_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
     stack_clk:      out std_logic;
 
     -- ROM wb interface

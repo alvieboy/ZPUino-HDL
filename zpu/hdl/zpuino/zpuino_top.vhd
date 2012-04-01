@@ -265,7 +265,7 @@ architecture behave of zpuino_top is
   signal dbg_injectmode: std_logic;
   signal dbg_idim:      std_logic;
 
-  signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 0);
+  signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits+1 downto 2);
   signal stack_a_writeenable, stack_b_writeenable, stack_a_enable,stack_b_enable: std_logic;
   signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
   signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
