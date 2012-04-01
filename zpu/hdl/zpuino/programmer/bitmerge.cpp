@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <vector>
 #include "io_exception.h"
 #include "programmer.h"
+#include "makeargv.h"
 
 #define ISBITFILE 1
 
@@ -242,9 +244,9 @@ int dump(FILE *outfile)
 		}
 		/* Write contents */
 
-		if (0) { //  BIT
+		if (ISBITFILE) { //  BIT
 
-            unsigned size = i->content.length();
+			unsigned size = i->content.length();
 			unsigned char *temp = (unsigned char*)malloc(size);
             const unsigned char *src = (const unsigned char*)i->content.c_str();
 			// Reverse bits
@@ -262,10 +264,17 @@ int dump(FILE *outfile)
 	}
 }
 
-int main(int argc,char **argv)
-{
+#ifdef WIN32
+int main(int t_argc, char **t_argv) {
+	char **argv;
+	char *win_command_line = GetCommandLine();
+	int argc = makeargv(win_command_line,&argv);
+#else
+int main(int argc,char **argv) {
+#endif
+
 	int p;
-    bool again = true;
+	bool again = true;
 	while (again) {
 		switch ((p=getopt(argc,argv,"o:f:"))) {
 		case '?':
@@ -292,7 +301,7 @@ int main(int argc,char **argv)
 
 	if (outfilename==NULL) {
 		fprintf(stderr,"No output filename specified.\n");
-        return -1;
+		return -1;
 	}
 
 	FILE  *binout = fopen(outfilename,"wb");
@@ -301,6 +310,11 @@ int main(int argc,char **argv)
 		return -1;
 	}
 	dump(binout);
-    fclose(binout);
+	fclose(binout);
+
+#ifdef WIN32
+	freemakeargv(argv);
+#endif
+
 	return 0;
 }

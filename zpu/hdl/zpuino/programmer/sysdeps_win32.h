@@ -20,6 +20,8 @@
 #define __SYSDEPS_WIN32_H__
 
 #include <windows.h>
+#include "makeargv.h"
+#include <string.h>
 
 struct win32_port {
 	DCB dcb;
@@ -43,10 +45,5 @@ typedef struct win32_port *connection_t;
 #define cpu_to_le16(x) ((((x)&0x00ff)<<8)|((x)&0x00ff))
 
 #define be32toh(x) ((((x)&0x000000ff)<<24)|(((x)&0x000000ff)<<16)|(((x)&0x000000ff)<<8)|((x)&0x000000ff))
-
-/* ARGV helpers */
-
-int makeargv( char *string, char ***argv );
-void freemakeargv(char **argv);
 
 #endif

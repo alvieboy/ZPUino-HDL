@@ -11,5 +11,9 @@ AM_CONDITIONAL(HAVE_FTDI, test "x$ftdi" = "xtrue")
  
 AC_CONFIG_FILES([Makefile])
 
+#CXXFLAGS="$CXXFLAGS -fdata-sections -ffunction-sections"
+#CFLAGS="$CFLAGS -fdata-sections -ffunction-sections"
+#LDFLAGS="$LDFLAGS -Wl,--as-needed"
+
 AC_OUTPUT
 
