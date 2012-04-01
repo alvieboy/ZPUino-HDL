@@ -49,17 +49,11 @@
 
 #define BDATA /*__attribute__((section(".bdata")))*/
 
-//unsigned int ZPU_ID;
-
 extern "C" void (*ivector)(void);
 extern "C" void *bootloaderdata;
 
 static BDATA int inprogrammode;
 static BDATA volatile unsigned int milisseconds;
-//static BDATA unsigned char buffer[256 + 32];
-//static BDATA int syncSeen;
-//static BDATA int unescaping;
-//static BDATA unsigned int bufferpos;
 static BDATA unsigned int flash_id;
 
 struct bootloader_data_t {
@@ -69,16 +63,7 @@ struct bootloader_data_t {
 struct bootloader_data_t bdata BDATA;
 
 static void outbyte(int);
-/*
-extern "C" {
-	void udivmodsi4(){
-	}
-	void __divsi3() {
-	}
-	void __modsi3() {
-	}
-};
-*/
+
 extern "C" void printnibble(unsigned int c)
 {
 	c&=0xf;
@@ -459,8 +444,6 @@ static void cmd_progmem(unsigned char *buffer)
 	volatile unsigned char *mem;
 	unsigned char *source;
 
-	simpleReply(BOOTLOADER_CMD_PROGMEM);
-
 	address=(buffer[1]<<24);
 	address+=(buffer[2]<<16);
 	address+=(buffer[3]<<8);
@@ -473,7 +456,8 @@ static void cmd_progmem(unsigned char *buffer)
 	while (size--) {
 		*mem++=*source++;
 	}
-	//memcpy( mem, &buffer[6], size );
+	simpleReply(BOOTLOADER_CMD_PROGMEM);
+
 }
 
 
@@ -481,7 +465,7 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 {
 	unsigned int count;
 	unsigned int rxcount;
-    unsigned int txcount;
+	unsigned int txcount;
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	// buffer[1-2] is number of TX bytes
@@ -500,10 +484,9 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 	}
 	rxcount = buffer[3];
 	rxcount<<=8;
-    rxcount += buffer[4];
+	rxcount += buffer[4];
 	// Now, receive and write buffer
 	for(count=0;count <rxcount;count++) {
-
 		spiwrite(spidata,0x00);
 		buffer[count] = spiread(spidata);
 	}
@@ -517,7 +500,7 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 	for(count=0;count<rxcount;count++) {
 		sendByte(buffer[count]);
 	}
-    finishSend();
+	finishSend();
 }
 
 
@@ -758,43 +741,16 @@ inline void configure_pins()
 #ifdef __ZPUINO_PAPILIO_ONE__
 inline void configure_pins()
 {
- /*   outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
-	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
-	inputPinForFunction( FPGA_PIN_SPI_MISO, IOPIN_SPI_MISO);
-   */
-/*	pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
-	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);
-*/  pinModePPS(FPGA_PIN_FLASHCS,LOW);
-/*	pinModePPS(WING_C_0,LOW);*/
-
-	//pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
-	//pinMode(FPGA_PIN_SPI_SCK, OUTPUT);
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
-	//pinMode(WING_C_0, OUTPUT);
-	
-/*   digitalWrite(WING_C_0,HIGH);*/
-
 }
 #endif
+
 #ifdef __ZPUINO_PAPILIO_PLUS__
 inline void configure_pins()
 {
-	/*outputPinForFunction( FPGA_PIN_SPI_MOSI, IOPIN_SPI_MOSI);
-	outputPinForFunction( FPGA_PIN_SPI_SCK, IOPIN_SPI_SCK);
-	inputPinForFunction( FPGA_PIN_SPI_MISO, IOPIN_SPI_MISO);
-    */
-  /*  pinModePPS(FPGA_PIN_SPI_MOSI,HIGH);
-	pinModePPS(FPGA_PIN_SPI_SCK,HIGH);*/
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
-/*	pinModePPS(WING_C_0,LOW);*/
-
-/*	pinMode(FPGA_PIN_SPI_MOSI,OUTPUT);
-	pinMode(FPGA_PIN_SPI_SCK, OUTPUT);*/
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
-/*	pinMode(WING_C_0, OUTPUT);
-	
-	digitalWrite(WING_C_0,HIGH);*/
-
 }
 #endif
 #ifdef __ZPUINO_NEXYS2__
@@ -808,6 +764,7 @@ inline void configure_pins()
 
 extern "C" int _syscall(int *foo, int ID, ...);
 extern "C" unsigned _bfunctions[];
+
 extern "C" void udivmodsi4(); /* Just need it's address */
 
 
@@ -850,10 +807,6 @@ extern "C" int main(int argc,char**argv)
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable();
 #endif
-
-//#ifdef SIMULATION
-//	spi_copy();
-//#endif
 
 	syncSeen = 0;
 	unescaping = 0;

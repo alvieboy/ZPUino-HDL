@@ -1,5 +1,6 @@
 #include "zpuino.h"
 #include <stdarg.h>
+#include <string.h>
 
 #define BOOTLOADER_SIZE 0x1000
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
@@ -136,13 +137,16 @@ unsigned int inbyte()
 // Fast version we hope
 unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 
+extern "C" unsigned _bfunctions[];
+extern "C" void udivmodsi4(); /* Just need it's address */
+
 extern "C" int main(int argc,char**argv)
 {
-	// Test
-	while (1) {
-		PRMATRIX( (unsigned char*)0x0, (unsigned char*)0x4000 );
-	}
 	ivector = &_zpu_interrupt;
+	_bfunctions[0] = (unsigned)&udivmodsi4;
+	_bfunctions[1] = (unsigned)&memcpy;
+	_bfunctions[2] = (unsigned)&memset;
+	_bfunctions[3] = (unsigned)&strcmp;
 
 	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 
