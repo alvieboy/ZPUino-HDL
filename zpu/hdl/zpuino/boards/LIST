@@ -8,4 +8,5 @@ Current board listing
 | 0x83010F00 | S3ESK         | S3E500   | 32Kb                                |
 | 0x83010E01 | S3ESK         | S3E500   | 16Kb + 8 bit HQVGA                  |
 | 0xA4030E00 | GF Papilioplus| S6 LX4   | 16Kb                                |
-
+| 0xA4040F00 | GF Papilioplus| S6 LX9   | 32Kb                                |
+| 0x84010F00 | Nexys2        | S3E1200  | 32Kb                                |
