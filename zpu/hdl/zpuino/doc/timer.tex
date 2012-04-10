@@ -1,0 +1,316 @@
+\section{Timers}
+ZPUino includes two generic timers, which are able to generate PWM signals. 
+The default implementation includes a 16-bit timer with prescaler and TSC, and a second 24-bit timer with no prescaler nor TSC.
+The PWM controls of the 2nd timer are double buffered.
+
+\subsection{HDL sources and modules}
+
+\subsubsection{HDL instantiation template}
+\begin{lstlisting}[language=VHDL]
+component zpuino_timers is
+  generic (
+    A_TSCENABLED: boolean := false;
+    A_PWMCOUNT: integer range 1 to 8 := 2;
+    A_WIDTH: integer range 1 to 32 := 16;
+    A_PRESCALER_ENABLED: boolean := true;
+    A_BUFFERS: boolean :=true;
+    B_TSCENABLED: boolean := false;
+    B_PWMCOUNT: integer range 1 to 8 := 2;
+    B_WIDTH: integer range 1 to 32 := 16;
+    B_PRESCALER_ENABLED: boolean := false;
+    B_BUFFERS: boolean := false
+  );
+
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+    
+    pwm_A_out: out std_logic_vector(A_PWMCOUNT-1 downto 0);
+    pwm_B_out: out std_logic_vector(B_PWMCOUNT-1 downto 0)
+  );
+end component;
+\end{lstlisting}
+
+\subsubsection{Compliance}
+The Timer module is wishbone compatible, in non-pipelined mode.
+
+\subsubsection{Generics}
+
+There are two sets of generics, one for each timer (timer A and B)
+
+\begin{description}
+\item{TSCENABLED} \hfill \\ Set if TSC (TimeStamp Counter) is enabled on timer A/B(default: false)
+\item{PWMCOUNT} \hfill \\ Number of PWM outputs for timer A/B (default: 2)
+\item{WIDTH} \hfill \\ Timer A/B width, in bits (default: 16)
+\item{PRESCALER\_ENABLED} \hfill \\ Set if prescaler is enabled for timer A/B (default: true for timer A, false for timer B)
+\item{BUFFERS} \hfill \\ Set if double-buffering of PWM registers is enabled on this timer (default: false for timer A, true for timer B)
+\end{description}
+
+
+\subsubsection{Source files}
+
+ZPUino Timers are composed of the following source modules:
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabularx}{10cm}{ll}
+
+zpuino\_timers.vhd & Top level Timers module \\
+timer.vhd & Timer module \\
+prescaler.vhd & Prescaler module
+\end{tabularx}
+\end{center}
+\caption{Timer source files}
+\end{table}
+
+\subsection{Location}
+
+Timer registers are usualy located in IOSLOT 3.
+
+\subsection{Registers}
+
+\subsubsection{TMRxCTL register}
+
+TMRxCTL is located at offset $0$ for the first timer, and offset $64$ for the second timer.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xcccccccc}
+31 \hfill 11 & 10 \hfill 9 & 8 & 7 & 6  \hfill 4 & 3 & 2 & 1 & 0  \\
+\hline
+\multicolumn{1}{|c|}{\tiny rsvd} & 
+\multicolumn{1}{|c|}{\tiny TMRUPDP} &
+\multicolumn{1}{|c|}{\tiny rsvd\footnote{On pre-1.0 release, this used to be a OCREN register, but it's no longer used}} &
+\multicolumn{1}{|c|}{\tiny TMRINTR} &
+\multicolumn{1}{|c|}{\tiny TMRPRES} &
+\multicolumn{1}{|c|}{\tiny TMRIEN} &
+\multicolumn{1}{|c|}{\tiny TMRDIR} &
+\multicolumn{1}{|c|}{\tiny TMRCCM} &
+\multicolumn{1}{|c|}{\tiny TMREN}  \\
+\hline
+\end{tabularx}
+\caption{TMRxCTL register}
+\end{center}
+\end{table}
+
+
+\begin{description}
+
+\item{0 - TMREN [RW]} \hfill \\
+Timer Enable. When set to '1', timer will count either up or down, depending on $TMRDIR$ value.
+
+\item{1 - TMRCCM [RW]} \hfill \\
+Timer Clear on Compare Match. If this bit is set, whenever $TMRCNT$ matches $TMRCMP$ the current
+value of $TMRCNT$ will be set to zero.
+
+\item{2 - TMRDIR [RW]}\hfill \\
+Timer count direction. If this bit is set, then at every timer tick the value of $TMRCNT$ will be incremented. If this
+bit is not set, then $TMRCNT$ value will be decremented instead.
+
+\item{3 - TMRIEN [RW]} \hfill \\
+Timer Interrupt Enable. When this bit is set and $TMRINTR$ is not set, an interrupt is generated whenever 
+$TMRCNT$ matches $TMRCMP$.
+To rearm interrupt $TMRINTR$ must be cleared before exiting the ISR routine.
+
+\item{[6-4] TMRPRES [RW]} \hfill \\
+Timer prescaler. The timer prescale has 3 bits. See table \ref{timerprescaler} for more details on the prescaler value.
+                 
+\item{7 - TMRINTR [RW]} \hfill \\
+Timer Interrupt. This bit is set whenever an interrupt occurs. It needs to be cleared in software to re-enable this interrupt
+source.
+
+\item{8 - Reserved} \hfill \\
+Reserved.
+
+\item{[10:9] - TMRUPDP [RW]} \hfill \\
+Timer PWM update policy. See table \ref{updatepolicy} for details.
+
+\end{description}
+
+
+\subsubsection{TMRxCNT}
+TMRxCNT is located at offset $1$ for the first timer, and offset $65$ for the second timer. \\
+Current timer counter value. This is a read/write register.
+
+\subsubsection{TMRxCMP}
+
+TMRxCMP is located at offset $2$ for the first timer, and offset $66$ for the second timer. \\
+Current timer compare value. This is a read-write register.
+
+\subsubsection{TMRxTSC}
+
+TMRxCMP is located at offset $3$ for the first timer, and offset $67$ for the second timer. \\
+Timestamp Counter. This register is only available in the first timer (by omission). It's also known as $TIMERTSC$.
+This register is incremented at each clock cycle, and is 32-bit wide. It's a read-only register.
+
+\subsection{PWM registers}
+
+The PWM output, is, unlike common PWM implementations, controlled by a LOW and a HIGH register. This allows for 
+more precise operation. \\
+The exact location of PWM registers are a bit complex, since each timer might have zero or more PWM outputs.
+The address for PWM output $Y$ of timer $X$ can be computed by the following equation:
+
+\begin{displaymath}
+TMRxPWMBASE = ( 64 \times X) + 32 + ( 4 \times Y )
+\end{displaymath}
+
+Use the provided "C" macros whenever possible. See section \ref{timersoftware} for more details.
+
+\subsubsection{TMRxPWMLOW}
+TMPxPWMLOW is located at offset $0$ from TMRxPWMBASE.\\
+Low PWM compare value. If $TMRxCNT$ is higher or equal this value, the PWM will output 0. It's a write-only register.
+\subsubsection{TMRxPWMHIGH}
+TMPxPWMLOW is located at offset $1$ from TMRxPWMBASE.\\
+High PWM compare value. If $TMRxCNT$ is lower than this value, the PWM will output 1. It's a write-only register.
+\subsubsection{TMRxPWMCTL}
+TMPxPWMLOW is located at offset $2$ from TMRxPWMBASE.\\
+PWM control bits. It's a write-only register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xc}
+31 \hfill 1 & 0  \\
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{PWMxEN}  \\
+\hline
+\end{tabularx}
+\caption{TMRxPWMCTL register}
+\end{center}
+\end{table}
+
+\begin{description}
+
+\item{0 - PWMxEN} \hfill \\
+PWM enable
+\end{description}
+
+
+
+
+
+\subsection{Timer prescaler}
+When enabled, the timer prescaler divides the main clock according to table \ref{timerprescaler}.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{6cm}{|c|c|}
+\hline
+Prescaler value & Clock divider \\
+\hline
+000 & 1 \\
+\hline
+001 & 2 \\
+\hline
+010 & 4 \\
+\hline
+011 & 8 \\
+\hline  
+100 & 16  \\
+\hline
+101 & 64  \\
+\hline
+110 & 256 \\
+\hline
+111 & 1024 \\
+\hline
+\end{tabularx}
+\caption{Timer prescaler values}\label{timerprescaler}
+\end{center}
+\end{table}
+
+\subsection{Timer PWM update policy}
+Sometimes is desirable to use a double-buffering technique when manipulating PWM parameters, to avoid 
+them changing at unwanted time.
+
+\begin{table}[H]
+\begin{center}    
+\begin{tabular}{|c|c|}
+\hline
+UPDP value & Update Policy \\
+\hline
+00 & UPDATE NOW \\
+\hline
+01 & UPDATE ON ZERO SYNC \\
+\hline
+10 & UPDATE LATER \\
+\hline
+11 & Reserved \\
+\hline
+\end{tabular}
+\caption{PWM update policy}\label{updatepolicy}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{UPDATE NOW} \hfill \\
+Update PWM values as you write them.
+\item{UPDATE ON ZERO SYNC} \hfill \\
+Update PWM values when the timer counter reaches 0. Until then the new PWM values will stay on the double buffer.
+\item{UPDATE LATER} \hfill \\
+Don't update PWM values, just update the double buffer.
+\end{description}
+
+For precise PWM synchronization, do:
+\begin{itemize}
+\item Set update policy to UPDATE LATER. 
+\item Change the PWM parameters at will.
+\item Set update policy to UPDATE ON ZERO SYNC. When timer counter reaches 0 (or overflows), all PWM will be set synchronously.
+\end{itemize}
+
+\subsection{Software}\label{timersoftware}
+As of ZPUino 1.0, no software classes are implemented to manipulate the timer, meaning you have to write directly to its registers. \\
+\subsubsection{Setting up a timer interrupt}
+
+The following example shows how to use interrupts with Timer 0. 
+Timer is set up for a 100KHz operation with interrupts enabled.
+\begin{lstlisting}[language=C++]
+void _zpu_interrupt()
+{
+  if (TMR0CRL & _BV(TCTLIF)) { /* Interrupt comes from timer 0 */
+                
+    /* do something here... */
+                
+    /* Clear the interrupt flag on timer register */
+    TMR0CTL &= ~_BV(TCTLIF);
+  }
+}
+
+void setup()
+{
+  unsigned frequency = 100000;
+        
+  TMR0CNT = 0;  /* Clear timer counter */
+  TMR0CMP = (CLK_FREQ / frequency) - 1; /* Set up timer, no prescaler */
+  TMR0CTL = _BV(TCTLENA)|_BV(TCTLCCM)|_BV(TCTLDIR)|_BV(TCTLIEN);
+
+  INTRMASK = _BV(INTRLINE_TIMER0); /* Enable timer 0 interrupt on mask */
+  INTRCTL = _BV(INTREN); /* Globally enable interrupts */
+}
+\end{lstlisting}
+
+
+
+
+\subsubsection{PWM}
+A few macros are provided to ease PWM register access: \\
+
+\begin{description}
+\item{TMR0PWMLOW(x)} \hfill \\ PWMLOW register on timer 0, for PWM output x
+\item{TMR0PWMHIGH(x)}\hfill \\ PWMHIGH register on timer 0, for PWM output x
+\item{TMR0PWMCTL(x)} \hfill \\ PWMCTL register on timer 0, for PWM output x
+
+\item{TMR1PWMLOW(x)} \hfill \\ PWMLOW register on timer 1, for PWM output x
+\item{TMR1PWMHIGH(x)}\hfill \\ PWMHIGH register on timer 1, for PWM output x
+\item{TMR1PWMCTL(x)} \hfill \\ PWMCTL register on timer 1, for PWM output x
+
+\end{description}

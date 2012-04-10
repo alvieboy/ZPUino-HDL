@@ -1,0 +1,81 @@
+\section{Interrupt Controller}
+\subsection{HDL sources and modules}
+\subsubsection{HDL instantiation template}
+The interrupt controller is internal to ZPUino, and should not be directly instantiated.
+\subsection{Location}
+The interrupt controller is located in IOSLOT 4. This slot cannot be used on top-level module.
+\subsection{Registers}
+
+\subsubsection{INTRCTL}
+Interrupt control register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xc}
+31 \hfill 1 & 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} &
+\multicolumn{1}{|c|}{INTREN}  \\
+
+\hline
+\end{tabularx}
+\caption{INTRCTL register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{INTREN} \hfill \\ Interrupt Enable bit
+\end{description}
+
+\subsubsection{INTRMASK}
+Interrupt mask register. Set to '1' to enable a specific interrupt line.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{X}
+31 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{IMASK} \\
+\hline
+\end{tabularx}
+\caption{INTRMASK register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{IMASK} \hfill \\ Interrupt Mask. See board-specific design for detail on the interrupt lines.
+\end{description}
+
+
+
+\subsection{Software}
+
+The following example shows how to use interrupts with Timer 0. 
+Timer is set up for a 10KHz operation with interrupts enabled.
+\begin{lstlisting}[language=C++]
+void _zpu_interrupt()
+{
+  if (TMR0CRL & _BV(TCTLIF)) { /* Interrupt comes from timer 0 */
+                
+    /* do something here... */
+                
+    /* Clear the interrupt flag on timer register */
+    TMR0CTL &= ~_BV(TCTLIF);
+  }
+}
+
+void setup()
+{
+  unsigned frequency = 10000;
+        
+  TMR0CNT = 0;  /* Clear timer counter */
+  TMR0CMP = ((CLK_FREQ/2) / frequency) - 1; /* Set up timer, prescaler 2 */
+  TMR0CTL = _BV(TCTLENA)|_BV(TCTLCCM)|_BV(TCTLDIR)|
+    _BV(TCTLCP0) | _BV(TCTLIEN);
+
+  INTRMASK = _BV(INTRLINE_TIMER0); /* Enable timer 0 interrupt on mask */
+  INTRCTL = _BV(INTREN); /* Globally enable interrupts */
+}
+\end{lstlisting}

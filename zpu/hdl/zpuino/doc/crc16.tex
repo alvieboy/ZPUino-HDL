@@ -1,0 +1,172 @@
+\section{CRC16}
+The CRC16 module implements a CRC16 engine with configurable polynomial.\\
+This module is required. It's used by the bootloader code.
+\subsection{HDL sources and modules}
+\subsubsection{HDL instantiation template}
+
+
+
+\begin{lstlisting}[language=VHDL]
+component zpuino_crc16 is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIOBit downto minIOBit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
+  );
+end component;
+\end{lstlisting}
+
+
+
+\subsubsection{Compliance}
+The CRC16 is wishbone compatible, in non-pipelined mode.
+
+
+\subsubsection{Source files}
+All CRC16 system is implemented in \emph{zpuino\_crc16.vhd}.
+
+\subsection{Location}
+
+\subsection{Registers}
+
+\subsubsection{CRCACC}
+The $CRCACC$ register contains the accumulated CRC16 value. It's a read-write register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 16 & 15 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{CRC16ACC}  \\
+
+\hline
+\end{tabularx}
+\caption{CRC16ACC register}
+\end{center}
+\end{table}
+
+\subsubsection{CRCPOLY}
+The $CRCAPP$ register contains the polynomial for the CRC16 operation. It's a read-write register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 16 & 15 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{CRC16POLY}  \\
+
+\hline
+\end{tabularx}
+\caption{CRC16POLY register}
+\end{center}
+\end{table}
+
+\subsubsection{CRCAPP}
+The $CRCAPP$ register, when written, appends the value to the current CRC16 engine. It's a write-only register.
+Note that CRC16 computation takes 8 clock cycles. Note that the append register is 8-bit wide.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 8 & 7 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{CRC16APP}  \\
+
+\hline
+\end{tabularx}
+\caption{CRC16APP register}
+\end{center}
+\end{table}
+
+
+\subsubsection{CRCAM1}
+The $CRCAM1$ register is a read-only register, and depicts the previous value of $CRCACC$ when $CRC16APP$ register is written.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 16 & 15 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{CRC16AM1}  \\
+
+\hline
+\end{tabularx}
+\caption{CRC16AM1 register}
+\end{center}
+\end{table}
+
+\subsubsection{CRCAM2}
+The $CRCAM2$ register is a read-only register, and depicts the previous value of $CRCAM1$ when $CRC16APP$ register is written.
+This register is of great importance, because if you're processing a stream and the last two bytes of that stream are the CRC value, 
+the 2-value-old CRC value can be compared without need for software intervention.
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 16 & 15 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{CRC16AM2}  \\
+
+\hline
+\end{tabularx}
+\caption{CRC16AM2 register}
+\end{center}
+\end{table}
+
+
+
+\subsection{Software}
+
+There are no classes provided to interact with the CRC16 engine. However it's rather easy to use the
+registers directly, as in the following examples.
+
+\begin{lstlisting}[language=C++]
+
+void crc16_init(void)
+{
+   CRC16POLY = 0x8408; /* Set polynomial to CRC16-CCITT */
+}
+
+void crc16_reset(void)
+{
+    CRC16ACC=0xFFFF; /* Reset CRC16 to all ones */
+}
+
+void crc16_append(unsigned char c)
+{
+    CRC16APP = c; /* Append a byte to CRC16 stream */
+}
+
+unsigned crc16_get(void)
+{
+    return CRC16ACC; /* Return the current accumulated CRC16 */
+}
+
+unsigned crc16_get_previous(void)
+{                    
+    return CRC16AM1; /* Return the previous accumulated CRC16 */
+}
+
+unsigned crc16_get_preprevious(void)
+{
+    return CRC16AM2; /* Return the pre-previous accumulated CRC16 */
+}
+
+\end{lstlisting}        
+        

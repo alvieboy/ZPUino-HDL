@@ -1,0 +1,161 @@
+\section{Spartan3E Starter Kit (S3E500)}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rX}
+FPGA: & Xilinx Spartan 3E 500, FG320 (xc3s500e-4-fg320)\\
+Frequency: & 96MHz (from on-board 50MHz oscillator)\\
+Memory size: & 32KiB \\
+Bootloader size: & 4KiB \\
+Stack size: & 2KiB \\
+SPI flash: & Any supported (usually M25P16) \\
+Reset type: & UART Serial reset and reset (SOUTH) button \\
+GPIO count: &  54 \\
+UART: & 1 (connected to RS232 interface) \\
+SPI: & 2 (one connected to board SPI bus, other PPS) \\
+SigmaDelta & 1 2-channel 16-bit (PPS) \\
+Timers: & 2 (one 16-bit, one 24-bit) \\
+PWM outputs: & 2     \\
+SPI sketch offset: & 0x00000000
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{lllX}
+
+IO & Index & Mapping & Alias \\
+\hline
+I & 0 & USPI MISO & IOPIN\_USPI\_MISO \\
+O & 0 & SigmaDelta channel 0 & IOPIN\_SIGMADELTA0 \\
+O & 1 & Timer 0 PWM 0 &  IOPIN\_TIMER0\_OC \\
+O & 2 & Timer 1 PWM 0 & IOPIN\_TIMER1\_OC \\
+O & 3 & USPI MOSI & IOPIN\_USPI\_MOSI \\
+O & 4 & USPI SCK & IOPIN\_USPI\_SCK \\
+O & 5 & SigmaDelta channel 1 & IOPIN\_SIGMADELTA1 \\
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) PPS mappings}
+\end{center}
+\end{table}
+
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+0 & FPGA\_PIN\_B4 & GPIO & I/O & FPGA\_J1\_0 \\
+1 & FPGA\_PIN\_A4 & GPIO & I/O & FPGA\_J1\_1 \\
+2 & FPGA\_PIN\_D5 & GPIO & I/O & FPGA\_J1\_2 \\
+3 & FPGA\_PIN\_C5 & GPIO & I/O & FPGA\_J1\_3 \\
+4 & FPGA\_PIN\_A6   & GPIO & I/O & FPGA\_J2\_0 \\
+5 & FPGA\_PIN\_B6   & GPIO & I/O & FPGA\_J2\_1 \\
+6 & FPGA\_PIN\_E7   & GPIO & I/O & FPGA\_J2\_2 \\
+7 & FPGA\_PIN\_F7   & GPIO & I/O & FPGA\_J2\_3 \\
+8 & FPGA\_PIN\_D7   & GPIO & I/O & FPGA\_J4\_0 \\
+9 & FPGA\_PIN\_C7   & GPIO & I/O & FPGA\_J4\_1 \\
+10 & FPGA\_PIN\_F8  & GPIO & I/O & FPGA\_J4\_2 \\
+11 & FPGA\_PIN\_E8  & GPIO & I/O & FPGA\_J4\_3 \\
+12 & FPGA\_PIN\_L13 & GPI & N/A & FPGA\_SW\_0 \\
+13 & FPGA\_PIN\_L14 & GPI & N/A & FPGA\_SW\_1 \\
+14 & FPGA\_PIN\_H18 & GPI & N/A & FPGA\_SW\_2 \\
+15 & FPGA\_PIN\_N17 & GPI & N/A & FPGA\_SW\_3 
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) pin mappings}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+
+16 & FPGA\_PIN\_U3  & GPO & N/A & SPI\_FLASH\_SEL\_PIN \\
+17 & FPGA\_PIN\_A13 & GPIO & I/O & FPGA\_FXIO\_21 \\
+18 & FPGA\_PIN\_B13 & GPIO & I/O & FPGA\_FXIO\_22 \\
+19 & FPGA\_PIN\_A14 & GPIO & I/O & FPGA\_FXIO\_23 \\
+20 & FPGA\_PIN\_B14 & GPIO & I/O & FPGA\_FXIO\_24 \\
+21 & FPGA\_PIN\_C14 & GPIO & I/O & FPGA\_FXIO\_25 \\
+22 & FPGA\_PIN\_D14 & GPIO & I/O & FPGA\_FXIO\_26 \\
+23 & FPGA\_PIN\_A16 & GPIO & I/O & FPGA\_FXIO\_27 \\
+24 & FPGA\_PIN\_B16 & GPIO & I/O & FPGA\_FXIO\_28 \\
+25 & FPGA\_PIN\_E13 & GPIO & I/O & FPGA\_FXIO\_29 \\
+26 & FPGA\_PIN\_C4  & GPIO & I/O & FPGA\_FXIO\_30 \\
+27 & FPGA\_PIN\_B11 & GPIO & I/O & FPGA\_FXIO\_31 \\
+28 & FPGA\_PIN\_A11 & GPIO & I/O & FPGA\_FXIO\_32 \\
+29 & FPGA\_PIN\_A8  & GPIO & I/O & FPGA\_FXIO\_33 \\
+30 & FPGA\_PIN\_G9  & GPIO & I/O & FPGA\_FXIO\_34 \\
+31 & FPGA\_PIN\_C3  & GPIO & I/O & FPGA\_FXIO\_35 \\
+
+
+
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline 
+32 & FPGA\_PIN\_F12 & GPO & N/A & FPGA\_LED\_0 \\
+33 & FPGA\_PIN\_E12 & GPO & N/A & FPGA\_LED\_1 \\
+34 & FPGA\_PIN\_E11 & GPO & N/A & FPGA\_LED\_2 \\
+35 & FPGA\_PIN\_F11 & GPO & N/A & FPGA\_LED\_3 \\
+36 & FPGA\_PIN\_C11 & GPO & N/A & FPGA\_LED\_4 \\
+37 & FPGA\_PIN\_D11 & GPO & N/A & FPGA\_LED\_5 \\
+38 & FPGA\_PIN\_E9  & GPO & N/A & FPGA\_LED\_6 \\
+39 & FPGA\_PIN\_F9  & GPO & N/A & FPGA\_LED\_7 \\
+40 & FPGA\_PIN\_R15 & GPIO & N/A & FPGA\_LCD\_D4 \\
+41 & FPGA\_PIN\_R16 & GPIO & N/A & FPGA\_LCD\_D5 \\
+42 & FPGA\_PIN\_P17 & GPIO & N/A & FPGA\_LCD\_D6 \\
+43 & FPGA\_PIN\_M15 & GPIO & N/A & FPGA\_LCD\_D7 \\
+44 & FPGA\_PIN\_L18 & GPO & N/A & FPGA\_LCD\_RS \\
+45 & FPGA\_PIN\_L17 & GPO & N/A & FPGA\_LCD\_RW \\
+46 & FPGA\_PIN\_M18 & GPO & N/A & FPGA\_LCD\_E \\
+47 & FPGA\_PIN\_P7  & GPO & N/A & FPGA\_AMP\_SHDN
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+48 & FPGA\_PIN\_K18 & GPO & N/A & FPGA\_ROT\_A \\
+49 & FPGA\_PIN\_G18 & GPO & N/A & FPGA\_ROT\_B \\
+50 & FPGA\_PIN\_V16 & GPO & N/A & FPGA\_ROT\_C \\
+51 & FPGA\_PIN\_P11 & GPO & N/A & FPGA\_AD\_CONV \\
+52 & FPGA\_PIN\_N8 & GPO & N/A & FPGA\_DAC\_CS \\
+53 & FPGA\_PIN\_N7 & GPO & N/A & FPGA\_AMP\_CS
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{llX}
+IO Slot & Device & Notes \\
+\hline
+0 & SPI & Connected to board SPI bus \\
+1 & UART & Connected to RS232 \\
+2 & GPIO & \\
+3 & Timers & 1$\times$16 bit (one PWM), 1$\times$24 bit (one PWM) \\
+4 & Interrupt & Hardcoded \\
+5 & SigmaDelta & Mapped to PPS \\
+6 & SPI & Mapped to PPS \\
+7 & CRC16 & \\
+8-15 & $empty$ &
+\end{tabularx}
+\caption{Spartan3E Starter Kit (S3E500) IO slot usage}
+\end{center}
+\end{table}

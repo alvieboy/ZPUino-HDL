@@ -1,0 +1,108 @@
+\documentclass[12pt,a4paper,openany,smallheadings,headinclude,headsepline,final]{scrreprt}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[pdftex]{graphicx}
+\usepackage{makeidx}
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{color}
+\usepackage[bookmarks,colorlinks=true]{hyperref}
+
+\begin{document}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{ 
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{blue},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+}
+\parindent 0cm
+\parskip 0.2cm
+
+\title{ZPUino User Manual}
+\author{Alvaro Lopes}
+\maketitle
+
+\tableofcontents
+\clearpage
+
+\chapter{Version}
+This is version 0.9 of the document.
+\include{about}
+%\include{ack}
+\section{Overview}
+\includegraphics[width=16cm]{zpuino-overview2.pdf}
+
+\include{pps}
+
+\chapter{IO Modules}
+ZPUino comes with a few IO modules you can use. You can also add other modules, since ZPUino is Wishbone compliant.\\
+IO accesses in ZPUino are done using MMIO (Memory Mapped IO).\\
+In ZPUino IO devices are connected to the IO module in slots, and can be accessed using the "C" macro $IO\_SLOT(x)$, where $x$
+depicts the slot ID for the module.\\
+
+
+Registers in each IO slot can be accessed using the "C" $REGISTER(base,x)$ macro, 
+where $base$ depicts the MMIO address, and $x$ depicts the register index.\\
+
+For example, to write to the 3rd register of IO slot 9, you can do it the following way:
+\begin{lstlisting}[language=C++]
+void writetodevice(unsigned int value) {
+  // Write to 3rd register on IO slot 9 
+  REGISTER(IO_SLOT(9),3) = value;
+}
+\end{lstlisting}
+
+See the board specific documentation for current allocation of IO modules.
+
+\include{gpio}
+\include{timer}
+\include{uart}
+
+\include{crc16}
+\include{intr}
+\include{sigmadelta}
+\include{spi}
+
+\chapter{Libraries}
+\include{smallfs}
+
+\chapter{Boards}
+On this chapter we decribe the current boards officially supported. \\
+In addition to the baseline board configuration some variants are offered.
+\section{Interpreting board information}
+For each board a few information is shown. The overall features and configuration are shown first, followed by the PPS (Peripheral 
+Pin Select) interconnections, the board pinout information, and the IO slot mappings.\\
+\subsection{Pin mappings and PPS}
+Three types of pins are described on the pin mapping tables for each individual board:
+\begin{description}
+\item{GPIO} \hfill \\ The pin is available as a generic input and output pin.
+\item{GPI} \hfill \\ The pin is available only as a generic input pin.
+\item{GPO} \hfill \\ The pin is available only as a generic output pin.
+\end{description}
+Some pins can be used for both input and output PPS (meaning you can attach to it any PPS, such as SPI MISO (input) or SigmaDelta OUT (output)).
+However, due to board interconnections and/or to simplify the overall design complexity (PPS is very resource hungry) some pins
+have limited PPS capabilities (meaning you can only attach an output device, an input device, or no
+device at all. The PPS configuration is shown for each pin, with the following values:
+\begin{description}
+\item{I/O} \hfill \\ The pin can be mapped to a PPS input or a PPS output.
+\item{I} \hfill \\ The pin can be mapped to a input PPS only.
+\item{O} \hfill \\ The pin can be mapped to an output PPS only.
+\item{N/A} \hfill \\ The pin cannot be used for PPS.
+\end{description}
+
+\include{p1250}
+\include{p1500}
+\include{s3esk}
+
+\include{legal}
+
+
+
+\end{document}

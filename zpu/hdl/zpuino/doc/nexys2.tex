@@ -1,0 +1,177 @@
+\section{Digilent Nexys2 (S3E1200)}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rX}
+FPGA: & Xilinx Spartan 3E 1200, FG320 (xc3s1200e-4-fg320)\\
+Frequency: & 85MHz (from on-board 50MHz oscillator) \footnote{This design was contributed by Paul Urbanus.}
+\\
+Memory size: & 32KiB \\
+Bootloader size: & 4KiB \\
+Stack size: & 2KiB \\
+SPI flash: & Any supported \\
+Reset type: & UART Serial reset \\
+GPIO count: &  93 \\
+UART: & 1 (connected to RS232 interface) \\
+SPI: & 2 (one connected to board SPI bus, other PPS) \\
+SigmaDelta & 1 2-channel 16-bit (PPS) \\
+Timers: & 2 (one 16-bit, one 24-bit) \\
+PWM outputs: & 2     \\
+SPI sketch offset: & 0x00000000
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{lllX}
+
+IO & Index & Mapping & Alias \\
+\hline
+I & 0 & USPI MISO & IOPIN\_USPI\_MISO \\
+O & 0 & SigmaDelta channel 0 & IOPIN\_SIGMADELTA0 \\
+O & 1 & Timer 0 PWM 0 &  IOPIN\_TIMER0\_OC \\
+O & 2 & Timer 1 PWM 0 & IOPIN\_TIMER1\_OC \\
+O & 3 & USPI MOSI & IOPIN\_USPI\_MOSI \\
+O & 4 & USPI SCK & IOPIN\_USPI\_SCK \\
+O & 5 & SigmaDelta channel 1 & IOPIN\_SIGMADELTA1 \\
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) PPS mappings}
+\end{center}
+\end{table}
+
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+
+
+0  & FPGA\_PIN\_L15 & GPIO & I/O & FPGA\_PMOD\_JA\_1 \\
+1  & FPGA\_PIN\_K12 & GPIO & I/O & FPGA\_PMOD\_JA\_2 \\
+2  & FPGA\_PIN\_L17 & GPIO & I/O & FPGA\_PMOD\_JA\_3 \\
+3  & FPGA\_PIN\_M15 & GPIO & I/O & FPGA\_PMOD\_JA\_4 \\
+4  & FPGA\_PIN\_K13 & GPIO & I/O & FPGA\_PMOD\_JA\_7 \\
+5  & FPGA\_PIN\_L16 & GPIO & I/O & FPGA\_PMOD\_JA\_8 \\
+6  & FPGA\_PIN\_M14 & GPIO & I/O & FPGA\_PMOD\_JA\_9 \\
+7  & FPGA\_PIN\_M16 & GPIO & I/O & FPGA\_PMOD\_JA\_10 \\
+8  & FPGA\_PIN\_M13 & GPIO & I/O & FPGA\_PMOD\_JB\_1 \\
+9  & FPGA\_PIN\_R18 & GPIO & I/O & FPGA\_PMOD\_JB\_2 \\
+10 & FPGA\_PIN\_R15 & GPIO & I/O & FPGA\_PMOD\_JB\_3 \\
+11 & FPGA\_PIN\_T17 & GPIO & I/O & FPGA\_PMOD\_JB\_4 \\
+12 & FPGA\_PIN\_P17 & GPIO & I/O & FPGA\_PMOD\_JB\_7 \\
+13 & FPGA\_PIN\_R16 & GPIO & I/O & FPGA\_PMOD\_JB\_8 \\
+14 & FPGA\_PIN\_T18 & GPIO & I/O & FPGA\_PMOD\_JB\_9 \\
+15 & FPGA\_PIN\_U18 & GPIO & I/O & FPGA\_PMOD\_JB\_10
+
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) pin mappings}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+
+16 & FPGA\_PIN\_G15  & GPIO & I/O & FPGA\_PMOD\_JC\_1 \\
+17 & FPGA\_PIN\_J16  & GPIO & I/O & FPGA\_PMOD\_JC\_2 \\
+18 & FPGA\_PIN\_G13  & GPIO & I/O & FPGA\_PMOD\_JC\_3 \\
+19 & FPGA\_PIN\_H16  & GPIO & I/O & FPGA\_PMOD\_JC\_4 \\
+
+20 & FPGA\_PIN\_H15  & GPIO & I/O & FPGA\_PMOD\_JC\_7 \\
+21 & FPGA\_PIN\_F14  & GPIO & I/O & FPGA\_PMOD\_JC\_8 \\
+22 & FPGA\_PIN\_G16  & GPIO & I/O & FPGA\_PMOD\_JC\_9 \\
+23 & FPGA\_PIN\_J12  & GPIO & I/O & FPGA\_PMOD\_JC\_10 \\
+
+24 & FPGA\_PIN\_J13  & GPIO & I/O & FPGA\_PMOD\_JD\_1 \\
+25 & FPGA\_PIN\_M18  & GPIO & I/O & FPGA\_PMOD\_JD\_2 \\
+26 & FPGA\_PIN\_N18  & GPIO & I/O & FPGA\_PMOD\_JD\_3 \\
+27 & FPGA\_PIN\_P18  & GPIO & I/O & FPGA\_PMOD\_JD\_4 \\
+
+28 & FPGA\_PIN\_B18  & GPI & N/A & FPGA\_BTN\_0 \\
+29 & FPGA\_PIN\_D18  & GPI & N/A & FPGA\_BTN\_1 \\
+30 & FPGA\_PIN\_E18  & GPI & N/A & FPGA\_BTN\_2 \\
+31 & FPGA\_PIN\_B16  & GPIO & I/O & FPGA\_FXIO\_40 \\
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline 
+
+
+// LEDs LD0-LD7
+#define FPGA_PIN_J14 32
+#define FPGA_PIN_J15 33
+#define FPGA_PIN_K15 34
+#define FPGA_PIN_K14 35
+#define FPGA_PIN_E16 36
+#define FPGA_PIN_P16 37
+#define FPGA_PIN_E4 38
+#define FPGA_PIN_P4 39
+
+32 & FPGA\_PIN\_F12 & GPO & N/A & FPGA\_LED\_0 \\
+33 & FPGA\_PIN\_E12 & GPO & N/A & FPGA\_LED\_1 \\
+34 & FPGA\_PIN\_E11 & GPO & N/A & FPGA\_LED\_2 \\
+35 & FPGA\_PIN\_F11 & GPO & N/A & FPGA\_LED\_3 \\
+36 & FPGA\_PIN\_C11 & GPO & N/A & FPGA\_LED\_4 \\
+37 & FPGA\_PIN\_D11 & GPO & N/A & FPGA\_LED\_5 \\
+38 & FPGA\_PIN\_E9  & GPO & N/A & FPGA\_LED\_6 \\
+39 & FPGA\_PIN\_F9  & GPO & N/A & FPGA\_LED\_7 \\
+40 & FPGA\_PIN\_R15 & GPIO & N/A & FPGA\_LCD\_D4 \\
+41 & FPGA\_PIN\_R16 & GPIO & N/A & FPGA\_LCD\_D5 \\
+42 & FPGA\_PIN\_P17 & GPIO & N/A & FPGA\_LCD\_D6 \\
+43 & FPGA\_PIN\_M15 & GPIO & N/A & FPGA\_LCD\_D7 \\
+44 & FPGA\_PIN\_L18 & GPO & N/A & FPGA\_LCD\_RS \\
+45 & FPGA\_PIN\_L17 & GPO & N/A & FPGA\_LCD\_RW \\
+46 & FPGA\_PIN\_M18 & GPO & N/A & FPGA\_LCD\_E \\
+47 & FPGA\_PIN\_P7  & GPO & N/A & FPGA\_AMP\_SHDN
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+48 & FPGA\_PIN\_K18 & GPO & N/A & FPGA\_ROT\_A \\
+49 & FPGA\_PIN\_G18 & GPO & N/A & FPGA\_ROT\_B \\
+50 & FPGA\_PIN\_V16 & GPO & N/A & FPGA\_ROT\_C \\
+51 & FPGA\_PIN\_P11 & GPO & N/A & FPGA\_AD\_CONV \\
+52 & FPGA\_PIN\_N8 & GPO & N/A & FPGA\_DAC\_CS \\
+53 & FPGA\_PIN\_N7 & GPO & N/A & FPGA\_AMP\_CS
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) pin mappings (cont.)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{llX}
+IO Slot & Device & Notes \\
+\hline
+0 & SPI & Connected to board SPI bus \\
+1 & UART & Connected to RS232 \\
+2 & GPIO & \\
+3 & Timers & 1$\times$16 bit (one PWM), 1$\times$24 bit (one PWM) \\
+4 & Interrupt & Hardcoded \\
+5 & SigmaDelta & Mapped to PPS \\
+6 & SPI & Mapped to PPS \\
+7 & CRC16 & \\
+8-15 & $empty$ &
+\end{tabularx}
+\caption{Digilent Nexys2 (S3E1200) IO slot usage}
+\end{center}
+\end{table}

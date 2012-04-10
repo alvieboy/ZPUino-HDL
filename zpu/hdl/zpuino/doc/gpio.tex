@@ -1,0 +1,128 @@
+\section{GPIO}
+\subsection{HDL sources and modules}
+
+\subsubsection{HDL instantiation template}
+\begin{lstlisting}[language=VHDL]
+component zpuino_gpio is
+  generic (
+    gpio_count: integer := 32
+  );
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    spp_data: in std_logic_vector(gpio_count-1 downto 0);
+    spp_read: out std_logic_vector(gpio_count-1 downto 0);
+
+    gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
+    gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
+    gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
+
+    spp_cap_in:  in std_logic_vector(gpio_count-1 downto 0);
+    spp_cap_out:  in std_logic_vector(gpio_count-1 downto 0)
+  );
+end component;
+\end{lstlisting}
+\subsubsection{Compliance}
+The GPIO module is wishbone compatible, in non-pipelined mode.
+\subsubsection{Generics}
+
+\begin{description}
+\item{gpio\_count} \hfill \\ 
+Number of GPIO (1 to 128)
+\end{description}
+
+\subsubsection{Source files}
+
+All GPIO system is implemented in \emph{zpuino\_gpio.vhd}.
+
+\subsubsection{PPS capability}
+
+Some pins can have their PPS capability disabled in order to reduce complexity in some designs. The two inputs $spp\_cap\_in$ and
+$spp\_cap\_out$ can be manipulated so that some pins have or not in/out PPS capabilities.
+
+\subsection{Location}
+GPIO are located in IOSLOT 2.
+
+\subsection{Registers}
+
+Two bits can be manipulated for each GPIO pin, a tristate bit and an output bit. GPIO uses up to 4 32-bit individual
+registers in order to map all 128-bits. Note that the actual number of GPIO available is board dependant.
+
+\subsubsection{GPIODATA register}
+GPIODATA is actually a 4-word register. Each bit maps a single GPIO input/output. If the GPIO is configured as an output (see 
+$GPIOTRIS$ register for input/output selection) writing a 0 or 1 to a specific bit will cause the underlying pin to become 0 or 1 
+(except if pin is currently mapped to a peripheral - see PPS for more details). When read it will depict the values at an input (if
+the pin is configured as an input) or the current output value if it's configured as an output.
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{X}
+31 \hfill 0 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIODATA [31:0]} \\
+\hline
+63 \hfill 32 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIODATA [63:32]} \\
+\hline
+95 \hfill 64 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIODATA [95:64]} \\
+\hline
+127 \hfill 96 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIODATA [127:96]} \\
+\hline
+\end{tabularx}
+\caption{GPIODATA register}
+\end{center}
+\end{table}
+
+\subsubsection{GPIOTRIS register}
+$GPIOTRIS$ is actually a 4-word register. When a bit is set to one, the GPIO becomes an input (it will be tristated).
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{X}
+31 \hfill 0 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIOTRIS [31:0]} \\
+\hline
+63 \hfill 32 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIOTRIS [63:32]} \\
+\hline
+95 \hfill 64 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIOTRIS [95:64]} \\
+\hline
+127 \hfill 96 \\
+\hline
+\multicolumn{1}{|c|}{\tiny GPIOTRIS [127:96]} \\
+\hline
+\end{tabularx}
+\caption{GPIOTRIS register}
+\end{center}
+\end{table}
+
+
+
+\subsection{Software}
+
+GPIO pins should be manipulated using the Arduino-like functions $digitalWrite()$, $digitalRead()$ and $pinMode()$.
+Additionaly GPIO can be bound to devices using PPS (Peripheral Pin Select).
+                                   
+You can also use the following "C" macros if needed. Each pin block is 32-bit wide:
+
+\begin{description}
+\item{GPIODATA(x)} \hfill \\ GPIODATA for pin block x
+\item{GPIOTRIS(x)} \hfill \\ GPIOTRIS for pin block x
+\end{description}

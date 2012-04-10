@@ -1,0 +1,108 @@
+\chapter{ZPUino}
+ZPUino is a SoC (System-on-a-Chip) based on Zylin's ZPU 32-bit processor core.
+
+\subsection{What is inside ZPUino}
+
+Hardware-wise, ZPUino currently integrates the following devices:
+
+\begin{itemize}
+\item ZPU Extreme Core, a modified ZPU core
+\item One or two UART
+\item Two SPI interfaces
+\item A 16-bit and a 24-bit timer.
+\item One TSC (Time Stamp Counter)
+\item 128-bit GPIO interface
+\item Interrupt Controller
+\item Two SigmaDelta outputs
+\item Peripheral Pin Select
+\item VGA (optional)
+\end{itemize}
+
+Software-wise, it supports the following features:
+
+\begin{itemize}
+\item 4Kb Bootloader, which includes required emulation code for ZPU.
+\item Bootstraps code from program flash (shadows into FPGA blockram)
+\item Serial programming of program flash.
+\end{itemize}
+
+\subsection{Where does it run}
+First implementation was done on Spartan3E 500 (-4), on a S3E Starter Kit, with a M25P16 SPI flash ROM and 32Kbytes RAM.\\
+Right now it runs on other many boards, see chapter \ref{boards} for more information. \\
+unning speed: up to 100MHz, 96MHz recommended.
+
+\subsection{IO Device features}
+
+UART features:
+\begin{itemize}
+\item 16-bit prescaler
+\item 2048-byte deep receive FIFO. (16 byte in reduced implementations)
+\end{itemize}
+
+SPI features:
+\begin{itemize}
+\item Two independent SPI master controllers
+\item Programmable prescaler
+\item Configurable CPOL
+\item Configurable SRE (Sample on Rising Edge)
+\item 8, 16, 24 and 32-bit transmission modes, 4 byte (32 bit) receive register.
+\item Configurable blocking operation
+\end{itemize}
+
+Timer features:
+\begin{itemize}
+\item Two independent timers
+\item 10-bit prescaler
+\item 16-bit and 24-bit counter
+\item Count-up and Count-down mode
+\item 16-bit Compare register
+\item Clear on Compare match support
+\item Interrupt support on Compare Match
+\item Output compare Registers to GPIO pin (allows PWM)
+\end{itemize}
+
+GPIO features:
+\begin{itemize}
+\item Up to 128 GPIO entries
+\item Bi-directional (tristate) configuration
+\end{itemize}
+
+SigmaDelta features:
+\begin{itemize}
+\item Two 16-bit channel
+\item Runs at system clock speed
+\item Configurable endianness
+\end{itemize}
+
+PPS (Peripheral pin select) features:
+\begin{itemize}
+\item Map every device pin to any GPIO pin
+\item Fully configurable in run-time
+\end{itemize}
+
+VGA features:
+\begin{itemize}
+\item HQVGA (160x120), using 800x600@75Hz output.
+\item 8-bit color (3 bits red, 3 bits green, 2 bits blue).
+\item Integrated programable character ram (8x8)
+\end{itemize}
+
+ZPUino programmer:
+\begin{itemize}
+\item 1Mbps programming speed
+\item Supports programming both sketches and FPGA bitfile [if ZPUino bootloader already loaded]
+\item Support for upload-to-ram
+\end{itemize}
+
+\subsection{Hardware support}
+
+Currently ZPUino should run on any Spartan3E FPGA (from 250 and beyond), and Spartan6 FPGA (LX4 and beyond). \\
+List of flash devices currently supported by programmer:
+\begin{itemize}
+\item ST M25P16
+\item SST SST25VF040B
+\item ATMEL AT45DB081D
+\end{itemize}
+Other flash might be supported. Specifically flash from same series, but with different capacities, can be easily added to programmer.
+For other flash vendors or models contact us by e-mail.
+

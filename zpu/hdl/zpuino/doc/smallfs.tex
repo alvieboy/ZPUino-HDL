@@ -1,0 +1,126 @@
+\section{SmallFS library}
+
+\subsection{What is SmallFS ?}
+SmallFS is a read-only, small overhead filesystem intented for
+embedded systems, and suitable for use on SPI flash devices.\\
+The basic code size is around 900 bytes on ZPUino.
+
+
+\subsection{Advantages and disadvantages}
+
+Advantages:
+\begin{itemize}
+\item Position-independent location. Can be put on any stream-capable device,
+at any position. Can also be used with memory-mapped systems.
+
+\item Very low overhead, compared to other filesystems like FAT16.
+\item Very easy to use.
+\item Optionally aligned to any size.
+
+\end{itemize}
+
+Disadvantages:
+
+\begin{itemize}
+\item Read-only. You need to regenerate filesystem and fully reprogram it (like 
+you do with CDROM filesystems.
+\item No directory support, only plain files.
+\item 2GiB limit on file size, and on filesystem size.
+\item 256-char limit on file names.
+\end{itemize}
+
+\subsection{Technical details}
+
+SmallFS uses a very simple layout. The filesystem is composed of an header,
+a central directory, and the files themselves. \\
+All fields on SmallFS are big-endian. \\
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{cXX}
+\hline
+\multicolumn{1}{|c|}{Header} &
+\multicolumn{1}{|X|}{Directory entries} &
+\multicolumn{1}{|X|}{Files} \\
+\hline
+\end{tabularx}
+\caption{SmallFS structure}
+\end{center}
+\end{table}
+
+\subsubsection{SmallFS header}
+
+\begin{lstlisting}[language=C++]
+#define SMALLFS_MAGIC 0x50411F50
+struct smallfs_header {
+  uint32_t magic;
+  uint32_t numfiles;
+};
+\end{lstlisting}
+
+SmallFS header is 8-bytes long and includes the filesystem magic and the number of
+files packed in the filesystem.
+
+\subsubsection{The directory}
+
+Each directory entry is variable sized, and includes the header plus the file name. The file name is not
+NULL terminated.
+
+\begin{lstlisting}[language=C++]
+struct smallfs_entry {
+  uint32_t offset;
+  uint32_t size;
+  uint8_t namesize;
+  char name[0];
+};
+\end{lstlisting}
+
+The $offset$ field depicts the file contents offset relative to the start of the filesystem.
+Following the header, the file name will be stored, with size given by the $namesize$ field.
+
+\subsubsection{The file contents}
+
+All files will be appended after the directory entries. You should use $offset$ field (and add it to 
+filesystem offset) to find out where files are stored.
+
+\subsection{The library}
+
+A ready-to-use library is provided to integrate SmallFS in ZPUino.
+
+\begin{lstlisting}[language=C++]
+int SmallFS::begin();
+SmallFSFile SmallFS::open(const char *name);
+\end{lstlisting}
+
+These two methods are the only one you need to use on the base class.\\
+The $SmallFS.begin()$ method returns 0 on success, or
+-1 otherwise. It only fails if no filesystem is found.\\
+
+In order to open a file, just call the $open()$ method.
+
+\begin{lstlisting}[language=C++]
+if (SmallFS.begin()==0) {
+  SmallFSFile myfile = SmallFS.open("myfilename.ext");
+}
+\end{lstlisting}
+The $SmallFSFile$ class interface is described below:
+
+
+\begin{lstlisting}[language=C++]
+bool SmallFSFile::valid();
+int  SmallFSFile::read(void *buf, int size);
+void SmallFSFile::seek(int pos, int whence);
+int  SmallFSFile::size() const;
+int  SmallFSFile::readCallback(int s,void(*callback)(unsigned char,void*),void *data);
+\end{lstlisting}
+
+\subsection{Tools}
+A set of tools are provided to create the filesystem, and to extract and/or dump its contents.
+
+\subsection{Integration}
+The current IDE (Alpha5+ and beyond) can detect SmallFS and generate automatically its contents and program it after
+the sketch binary.\\
+All you have to do is to create a directory in your sketch folder with name $smallfs$, put your files
+in it, and the IDE will recognise it and program the flash accordingly.
+
+

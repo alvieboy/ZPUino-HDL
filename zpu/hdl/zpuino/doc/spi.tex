@@ -1,0 +1,131 @@
+\section{SPI}
+\subsection{HDL sources and modules}
+\subsubsection{HDL instantiation template}
+\begin{lstlisting}[language=VHDL]
+component zpuino_spi is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    mosi:     out std_logic;
+    miso:     in std_logic;
+    sck:      out std_logic;
+    enabled:  out std_logic
+  );
+end component;
+\end{lstlisting}
+
+\subsubsection{Compliance}
+The SPI module is wishbone compatible, in non-pipelined mode.
+
+\subsubsection{Source files}
+
+\subsection{Location}
+
+\subsection{Registers}
+
+\subsubsection{SPICTL}
+SPI control register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XXccccXc}
+31 \hfill 10 & 9 \hfill 8 & 7 & 6 & 5 & 4 & 3 \hfill 1 & 0 \\
+
+\hline
+\multicolumn{1}{|c|}{\tiny Reserved} &
+\multicolumn{1}{|c|}{\tiny SPITS \footnote{don't use}} &
+\multicolumn{1}{|c|}{\tiny SPIBLOCK} &
+\multicolumn{1}{|c|}{\tiny SPIEN}  &
+\multicolumn{1}{|c|}{\tiny SPISRE}  &
+\multicolumn{1}{|c|}{\tiny SPICPOL}  &
+\multicolumn{1}{|c|}{\tiny SPICP}  &
+\multicolumn{1}{|c|}{\tiny SPIREADY}  \\
+
+\hline
+\end{tabularx}
+\caption{SPICTL register}
+\end{center}
+\end{table}
+
+
+\begin{description}
+\item{0 - SPIREADY [RW]} \hfill \\ SPI Ready bit. Reads as 1 when transfer has been completed or module is idle, 0 otherwise. If you use blocking operation
+then you don't have to check this bit.
+\item{[3:1] - SPICP [RW]}\hfill \\  SPI clock prescaler. The prescaler has 3 bits.
+\item{4 - SPICPOL [RW]}\hfill \\  SPI clock polarity.
+\item{5 - SPISRE [RW]}\hfill \\  SPI capture edge. If set to 1, then input is latched on rising clock edge, otherwise it's latched on falling edge.
+\item{6 - SPIEN [RW]}\hfill \\  SPI enable bit. Must be set to 1 for SPI operation.
+\item{7 - SPIBLOCK [RW]}\hfill \\  SPI blocking operation. If this bit is set to 1, all reads and writes to SPI module will cause CPU to wait if transmission is
+still in progress. This allows for fast transfers because you don't have to check for SPIREADY bit.\footnote{Note: interrupts are disabled when CPU is waiting for transmission to complete. This might cause interrupt jitter.}
+\item{[9:8] - SPITS [RW]}\hfill \\  SPI Transfer size. Will be deprecated in a next release.
+\end{description}
+
+
+\subsubsection{SPIDATA}
+SPI data register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{X}
+31 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{SPIDATA} \\
+
+\hline
+\end{tabularx}
+\caption{SPIDATA register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{[31:0] - SPIDATA [RW]} \hfill \\ SPIDATA holds the transmission values. A write to this register will cause SPI to transmit the relevant bits, according to transfer size value.
+The internal receive register is shifted left by the transfer size bits.
+\end{description}
+
+
+
+
+
+\subsection{SPI clock prescaler}
+When enabled, the SPI clock prescaler divides the main clock according to table \ref{spiprescaler}.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{6cm}{|c|c|}
+\hline
+Prescaler value & Clock divider \\
+\hline
+000 & 1 \\
+\hline
+001 & 2 \\
+\hline
+010 & 4 \\
+\hline
+011 & 8 \\
+\hline  
+100 & 16  \\
+\hline
+101 & 64  \\
+\hline
+110 & 256 \\
+\hline
+111 & 1024 \\
+\hline
+\end{tabularx}
+\caption{SPI prescaler values}\label{spiprescaler}
+\end{center}
+\end{table}
+
+
+
+\subsection{Software}

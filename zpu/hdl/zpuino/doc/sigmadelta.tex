@@ -1,0 +1,97 @@
+\section{SigmaDelta DAC}
+ZPUino SigmaDelta DAC is a two-channel 16-bit DAC with configurable endianess.
+\subsection{HDL sources and modules}
+
+\subsubsection{HDL instantiation template}
+\begin{lstlisting}[language=VHDL]
+component zpuino_sigmadelta is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    sync_in:  in std_logic;
+
+    -- Connection to GPIO pin
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0)
+  );
+end component;
+\end{lstlisting}
+
+\subsubsection{Compliance}
+The Sigma Delta DAC is wishbone compatible, in non-pipelined mode.
+
+\subsubsection{Source files}
+All Sigma Delta system is implemented in \emph{zpuino\_sigmadelta.vhd}.
+
+\subsection{Location}
+The Sigma Delta module is usually located in IOSLOT 5.
+
+\subsection{Registers}
+
+\subsubsection{SIGMADELTACTL}
+Sigma Delta DAC control register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xcccc}
+31 \hfill 4 & 3 & 2 & 1 & 0 \\
+
+\hline
+\multicolumn{1}{|c|}{Reserved} &
+\multicolumn{1}{|c|}{SDEXTTRIG}  &
+\multicolumn{1}{|c|}{SDLE}  &
+\multicolumn{1}{|c|}{SDENA1}  &
+\multicolumn{1}{|c|}{SDENA0}  \\
+
+\hline
+\end{tabularx}
+\caption{SIGMADELTACTL register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{SDENA0} \hfill \\ SigmaDelta Channel 0 enable
+\item{SDENA1} \hfill \\ SigmaDelta Channel 1 enable
+\item{SDLE} \hfill \\ Sigma-Delta Little Endian support. If set to 1 input 
+is assumed to be little endian, otherwise the native format (big endian) is used.
+\item{SDEXTTRIG} \hfill \\ Sigma-Delta external trigger support. If set to 1, then an external signal (Timer0 compare match) is used to transfer previously
+written data into the output. This is useful if you require a constant sigma delta update, but you have jitter in the code that do 
+not allow for a precise output timing.
+\end{description}
+
+
+\subsubsection{SIGMADELTADATA}
+Sigma Delta DAC data register.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{XX}
+31 \hfill 16 & 15 \hfill 0 \\
+
+\hline
+\multicolumn{1}{|c|}{SDCH1}  &
+\multicolumn{1}{|c|}{SDCH0}  \\
+
+\hline
+\end{tabularx}
+\caption{SIGMADELTADATA register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{SDCH0} \hfill \\ SigmaDelta Channel 0 data
+\item{SDCH1} \hfill \\ SigmaDelta Channel 1 data
+\end{description}
+
+
+
+\subsection{Software}

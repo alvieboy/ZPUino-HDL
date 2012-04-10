@@ -1,0 +1,66 @@
+
+\chapter{Peripheral Pin Select}
+This information relates to ZPUino 1.0 release. Other releases might have different specs. \\
+
+
+ZPUino includes a feature which is called Peripheral Pin Select (in short, PPS). 
+PPS allows you to map every device input or output pin (such as SPI clock and SPI data lines) to 
+each individual pin (GPIO), thus not requiring you to perform synthesis and P\&R each time you want to use
+a device on a different IO pin. \\
+To simplify things, three methods are supplied to manipulate PPS:
+
+\begin{lstlisting}[language=C++]
+void pinModePPS(int pin, int value);
+void outputPinForFunction(unsigned int pin,unsigned int function);
+void inputPinForFunction(unsigned int pin,unsigned int function);
+\end{lstlisting}
+
+Three register blocks exist to configure how pin selection is done. These are called $GPIOPPSIN$,
+$GPIOPPSOUT$ and $GPIOPPSMAP$. The above functions manipulate these registers.
+
+
+\section{Redirecting output}
+In order to direct any peripheral output to a GPIO pin, you have to:
+
+\begin{itemize}
+\item Configure the GPIO pin as output;
+\item Enable PPS on selected GPIO pin;
+\item Configure $GPIOPPSOUT$ (outputPinForFunction) to the peripheral signal
+\end{itemize}
+
+\subsection{Examples}
+The following example maps Sigma Delta 1st channel into GPIO pin number 30:
+
+\begin{lstlisting}[language=C++]
+void setup(void)
+{
+  // Configure pin as output
+  pinMode(30,OUTPUT); 
+  // enable PPS on this pin
+  pinModePPS(30,HIGH); 
+  // Map SigmaDelta channel 1 to pin 30
+  outputPinForFunction(30, IOPIN_SIGMADELTA1); 
+}
+\end{lstlisting}
+Note that you can use GPIO aliases for your board instead of GPIO number. See your board specific documentation.
+
+\section{Redirecting input}
+In order to direct GPIO input into any peripheral, you have to:
+\begin{itemize}
+\item Configure the GPIO pin as input;
+\item Configure $GPIOPPSIN$ (inputPinForFunction) to the peripheral signal;
+\end{itemize}
+
+Note that for input you don't need to enable PPS on the pin using $pinModePPS$.\\
+
+\subsection{Examples}
+The following example maps USPI MISO signal (Master-In Slave-out) to GPIO pin number 10:
+\begin{lstlisting}[language=C++]
+void setup(void)
+{
+  // Configure pin as input
+  pinMode(10,INPUT); 
+  // Map pin 30 to USPI MISO
+  inputPinForFunction(10, IOPIN_USPI_MISO); 
+}
+\end{lstlisting}

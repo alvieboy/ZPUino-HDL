@@ -1,0 +1,205 @@
+\section{UART}
+
+ZPUino UART is a generic UART implementation, with a 16x oversampling filter. Only $8n1$ 
+data format is supported (1 start bit, 8 data bits, 1 stop bit, no
+parity). With a $96Mhz$ clock, baud rates up to $3Mbit$ can be used with perfect timing alignment.
+\subsection{HDL sources and modules}
+
+\subsubsection{HDL instantiation template}
+
+\begin{lstlisting}[language=VHDL]
+component zpuino_uart is
+  generic (
+    bits: integer := 11
+  );
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    enabled:  out std_logic;
+    tx:       out std_logic;
+    rx:       in std_logic
+  );
+end component;
+\end{lstlisting}
+
+
+
+\subsubsection{Compliance}
+The UART module is wishbone compatible, in non-pipelined mode.
+
+
+
+
+
+\subsubsection{Generics}
+
+\begin{description}
+\item{bits} \hfill \\ Number of RX FIFO address bits
+\end{description}
+UART FIFO size will be $2^{bits}$ bytes wide. Default FIFO address size is 11 bits ($2^{11}=2048$ bytes)
+
+\subsubsection{Source files}
+
+ZPUino UART is composed of the following source modules:
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabularx}{10cm}{ll}
+
+zpuino\_uart.vhd & Top level UART module \\
+zpuino\_uart\_rx.vhd & UART RX module \\
+uart\_brgen.vhd & Baud rate generator \\
+zpuino\_uart\_mv\_filter.vhd & RX Majority voting filter \\
+tx\_unit.vhd & UART TX module \\
+fifo.vhd & UART FIFO module
+
+\end{tabularx}
+\end{center}
+\caption{UART source files}
+\end{table}
+
+
+
+\subsection{Location}
+
+UART registers are usualy located in IOSLOT 1.
+
+\subsection{Registers}
+UART operation is controlled by three registers, $UARTCTL$, $UARTDATA$ and \\
+$UARTSTATUS$.
+
+\subsubsection{UARTCTL register}
+The $UARTCTL$ register controls the transmit and receive operation of the UART.
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabularx}{14cm}{Xcc}
+31 \hfill 17 & 16 & 15 \hfill 0  \\
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{UARTEN} & 
+\multicolumn{1}{|c|}{UARTPRES} \\
+\hline
+\end{tabularx}
+\caption{UARTCTL register}\label{UARTCTL}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{16 - UARTEN} \hfill \\
+UARTEN bit controls whether UART is enabled or not. When set to 1, UART input
+and output will be mapped to appropriate pins. When set to 0 TX and RX will be
+disconnected.
+\item{[15:0] - UARTPRES} \hfill \\
+ UART prescaler (16 bits). See \ref{UART Prescaler} for details.
+\end{description}
+
+
+\subsubsection{UARTDATA register}
+The $UARTDATA$ register is used for tranmission and reception of UART data. Reception includes a configurable (synthesis time) FIFO.
+Only the lower 8 bits of this register are used.
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xc}
+31 \hfill 8 & 7 \hfill 0  \\
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{TXRXD} \\
+\hline
+\end{tabularx}
+\caption{UARTDATA register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{[7:0] - TXRXD} \hfill \\
+ 8-bit UART data transmit and receive register.
+\end{description}
+
+\subsubsection{UARTSTATUS register}
+
+The $UARTSTATUS$ register contains the current status of UART.
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{Xcc}
+31 \hfill 2 & 1 & 0 \\
+\hline
+\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{UARTTXR} &
+\multicolumn{1}{|c|}{UARTRXR} \\
+\hline
+\end{tabularx}
+\caption{UARTSTATUS register}
+\end{center}
+\end{table}
+
+\begin{description}
+\item{1 - UARTTXR} \hfill \\
+UART TX Ready bit. Reads as 1 when there's space in TX FIFO for transmission, 0 otherwise. This bit should be checked before 
+attempting transmission over the UART.
+
+\item{0 - UARTRXR} \hfill \\
+UART RX Ready bit. Reads as 1 when there's received data in FIFO, 0 otherwise.
+
+\end{description}
+
+
+
+\subsection{UART Prescaler}\label{UART Prescaler}
+The UART Prescaler divides system clock and provides baud rate generation for RX and TX. 
+An additional prescaler of 16 is used by the RX module. Prescaler can be configured by
+setting the appropriate bits in the $UARTCTL$ register.
+
+\begin{displaymath}
+Prescale = \frac{f_{OSC}}{baudrate \times 16} - 1
+\end{displaymath}
+
+\subsection{Software}
+Acessing the UART in software can be done using the $HardwareSerial$ class. The default UART module is 
+already instantiated as $Serial$.
+\subsubsection{Examples}
+The following example uses the default $Serial$ object.
+\begin{lstlisting}[language=C++]
+void setup()
+{
+    Serial.begin(115200);              /* Set up serial at 115200 baud */
+    Serial.println("Hello world!");    /* Write Hello World! to serial */
+}
+void loop()
+{
+    if (Serial.available()) {          /* If there is data on the UART... */
+        Serial.write( Serial.read() ); /* ... write it back! */
+    }
+}
+\end{lstlisting}
+
+The follwing example uses a custom UART on IOSLOT 9:
+
+\begin{lstlisting}[language=C++]
+
+HardwareSerial mySerial(9); /* New Serial UART on IO SLOT 9 */
+
+void setup()
+{
+    mySerial.begin(115200);            /* Set up serial at 115200 baud */
+    mySerial.println("Hello world!");  /* Write Hello World! to serial */
+}
+void loop()
+{
+    if (mySerial.available()) {          /* If there is data on the UART... */
+        mySerial.write( Serial.read() ); /* ... write it back! */
+    }
+}
+\end{lstlisting}
