@@ -197,23 +197,26 @@ end process;
 
 -- Divider
 
-process(wb_clk_i)
-begin
-  if rising_edge(wb_clk_i) then
-    if wb_rst_i='1' then
-      sdtick<='0';
-      sdcnt<=3;
-    else
-      if sdcnt/=0 then
-        sdcnt<=sdcnt-1;
-        sdtick<='0';
-      else
-        sdtick<='1';
-        sdcnt<=3;
-      end if;
-    end if;
-  end if;
-end process;
+
+-- process(wb_clk_i)
+-- begin
+--   if rising_edge(wb_clk_i) then
+--     if wb_rst_i='1' then
+--       sdtick<='0';
+--       sdcnt<=3;
+--     else
+--       if sdcnt/=0 then
+--         sdcnt<=sdcnt-1;
+--         sdtick<='0';
+--       else
+--         sdtick<='1';
+--         sdcnt<=3;
+--       end if;
+--     end if;
+--   end if;
+-- end process;
+sdtick <= '1'; -- for now
+
 
 process(wb_clk_i)
 begin
@@ -226,10 +229,14 @@ begin
 		  sigma_latch2(17) <= '1';
 	  else
       if sdtick='1' then
-  		  sigma_latch1 <= sigma_adder1;
-        sigma_latch2 <= sigma_adder2;
-  		  sdout(0) <= sigma_latch1(17);
-        sdout(1) <= sigma_latch2(17);
+        if sd_en_q(0)='1' then
+    		  sigma_latch1 <= sigma_adder1;
+    		  sdout(0) <= sigma_latch1(17);
+        end if;
+        if sd_en_q(1)='1' then
+          sdout(1) <= sigma_latch2(17);
+          sigma_latch2 <= sigma_adder2;
+        end if;
       end if;
   	end if;
   end if;
