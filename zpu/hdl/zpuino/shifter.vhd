@@ -11,10 +11,10 @@ entity lshifter is
     rst: in std_logic;
     enable:  in std_logic;
     done: out std_logic;
-    input:  in std_logic_vector(31 downto 0);
-    amount: in std_logic_vector(4 downto 0);
-    output: out std_logic_vector(31 downto 0)
-
+    inputA:  in std_logic_vector(31 downto 0);
+    inputB: in std_logic_vector(31 downto 0);
+    output: out std_logic_vector(31 downto 0);
+    multorshift: in std_logic
   );
 end lshifter;
 
@@ -29,7 +29,7 @@ architecture behave of lshifter is
 
 begin
 
-  process(clk,input,amount)
+  process(clk,inputA,inputB)
     variable r: unsigned(63 downto 0);
     variable idx: unsigned(31 downto 0);
   begin
@@ -42,7 +42,10 @@ begin
         d <= (others =>'0');
 
         if enable='1' then
-          case amount is
+          if multorshift='1' then
+            idx := unsigned(inputB);
+          else
+          case inputB(4 downto 0) is
             when "00000" => idx := "00000000000000000000000000000001";
             when "00001" => idx := "00000000000000000000000000000010";
             when "00010" => idx := "00000000000000000000000000000100";
@@ -78,8 +81,9 @@ begin
             when others =>
 
           end case;
+          end if;
 
-          r := unsigned(input) * idx;
+          r := unsigned(inputA) * idx;
         
           rq(0) <= r(31 downto 0);
           d(0) <= '1';

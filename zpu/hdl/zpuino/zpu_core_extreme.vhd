@@ -102,36 +102,19 @@ component lshifter is
     rst: in std_logic;
     enable:  in std_logic;
     done: out std_logic;
-    input:  in std_logic_vector(31 downto 0);
-    amount: in std_logic_vector(4 downto 0);
-    output: out std_logic_vector(31 downto 0)
-
-  );
-end component;
-
-component multiplier is
-  port (
-    clk: in std_logic;
-    rst: in std_logic;
-    enable:  in std_logic;
-    done: out std_logic;
     inputA:  in std_logic_vector(31 downto 0);
     inputB: in std_logic_vector(31 downto 0);
-    output: out std_logic_vector(31 downto 0)
+    output: out std_logic_vector(31 downto 0);
+    multorshift: in std_logic
   );
-end component multiplier;
+end component;
 
 signal lshifter_enable: std_logic;
 signal lshifter_done: std_logic;
 signal lshifter_input: std_logic_vector(31 downto 0);
-signal lshifter_amount: std_logic_vector(4 downto 0);
+signal lshifter_amount: std_logic_vector(31 downto 0);
 signal lshifter_output: std_logic_vector(31 downto 0);
-
-signal multiplier_enable: std_logic;
-signal multiplier_done: std_logic;
-signal multiplier_inputA: std_logic_vector(31 downto 0);
-signal multiplier_inputB: std_logic_vector(31 downto 0);
-signal multiplier_output: std_logic_vector(31 downto 0);
+signal lshifter_multorshift: std_logic;
 
 signal begin_inst:          std_logic;
 signal trace_opcode:        std_logic_vector(7 downto 0);
@@ -366,20 +349,10 @@ begin
     rst     => wb_rst_i,
     enable  => lshifter_enable,
     done    => lshifter_done,
-    input   => lshifter_input,
-    amount  => lshifter_amount,
-    output  => lshifter_output
-  );
-
-  mul: multiplier
-  port map (
-    clk     => wb_clk_i,
-    rst     => wb_rst_i,
-    enable  => multiplier_enable,
-    done    => multiplier_done,
-    inputA  => multiplier_inputA,
-    inputB  => multiplier_inputB,
-    output  => multiplier_output
+    inputA   => lshifter_input,
+    inputB  => lshifter_amount,
+    output  => lshifter_output,
+    multorshift => lshifter_multorshift
   );
 
   stack_clk <= wb_clk_i;
@@ -886,8 +859,8 @@ begin
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
           wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos,
-          single_step, freeze_all, dbg_in.step, wroteback_q,lshifter_done,lshifter_output,
-          multiplier_done,multiplier_output)
+          single_step, freeze_all, dbg_in.step, wroteback_q,lshifter_done,lshifter_output
+          )
 
     variable spOffset: unsigned(4 downto 0);
     variable w: exuregs_type;
@@ -910,12 +883,9 @@ begin
     jump_address <= (others => DontCareValue);
 
     lshifter_enable <= '0';
-    lshifter_amount <= std_logic_vector(exr.tos_save(4 downto 0));
+    lshifter_amount <= std_logic_vector(exr.tos_save);
     lshifter_input <= std_logic_vector(exr.nos_save);
-
-    multiplier_enable <= '0';
-    multiplier_inputA <= std_logic_vector(exr.tos_save);
-    multiplier_inputB <= std_logic_vector(exr.nos_save);
+    lshifter_multorshift <= '0';
 
     poppc_inst <= '0';
     begin_inst<='0';
@@ -1238,20 +1208,21 @@ begin
       when State_Ashiftleft =>
         exu_busy <= '1';
         lshifter_enable <= '1';
+        w.tos := unsigned(lshifter_output);
 
         if lshifter_done='1' then
           exu_busy<='0';
-          w.tos := unsigned(lshifter_output);
           w.state := State_Execute;
         end if;
 
       when State_Mult =>
         exu_busy <= '1';
-        multiplier_enable <= '1';
+        lshifter_enable <= '1';
+        lshifter_multorshift <='1';
+        w.tos := unsigned(lshifter_output);
 
-        if multiplier_done='1' then
+        if lshifter_done='1' then
           exu_busy<='0';
-          w.tos := unsigned(multiplier_output);
           w.state := State_Execute;
         end if;
 
