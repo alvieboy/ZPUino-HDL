@@ -104,7 +104,7 @@ component lshifter is
     done: out std_logic;
     inputA:  in std_logic_vector(31 downto 0);
     inputB: in std_logic_vector(31 downto 0);
-    output: out std_logic_vector(31 downto 0);
+    output: out std_logic_vector(63 downto 0);
     multorshift: in std_logic
   );
 end component;
@@ -113,7 +113,7 @@ signal lshifter_enable: std_logic;
 signal lshifter_done: std_logic;
 signal lshifter_input: std_logic_vector(31 downto 0);
 signal lshifter_amount: std_logic_vector(31 downto 0);
-signal lshifter_output: std_logic_vector(31 downto 0);
+signal lshifter_output: std_logic_vector(63 downto 0);
 signal lshifter_multorshift: std_logic;
 
 signal begin_inst:          std_logic;
@@ -142,7 +142,8 @@ State_WaitSPB,
 State_ResyncFromStoreStack,
 State_Neqbranch,
 State_Ashiftleft,
-State_Mult
+State_Mult,
+State_MultF16
 );
 
 type DecodedOpcodeType is
@@ -183,7 +184,8 @@ Decoded_Ashiftleft,
 Decoded_Ashiftright,
 Decoded_Loadb,
 Decoded_Call,
-Decoded_Mult
+Decoded_Mult,
+Decoded_MultF16
 );
 
 constant spMaxBit: integer := 10;
@@ -564,8 +566,14 @@ begin
         when OpCode_PopSP =>
           sampledDecodedOpcode<=Decoded_PopSP;
           sampledOpWillFreeze<='1';
+        when OpCode_NA4 =>
+          sampledDecodedOpcode<=Decoded_MultF16;
+          sampledStackOperation<=Stack_Pop;
+          sampledOpWillFreeze<='1';
         when others =>
           sampledDecodedOpcode<=Decoded_Nop;
+          
+
       end case;
     end if;
 
@@ -1123,8 +1131,11 @@ begin
           when Decoded_Ashiftleft =>
             w.state := State_Ashiftleft;
 
-          when Decoded_Mult =>
+          when Decoded_Mult  =>
             w.state := State_Mult;
+
+          when Decoded_MultF16  =>
+            w.state := State_MultF16;
 
           when Decoded_Store =>
 
@@ -1208,7 +1219,7 @@ begin
       when State_Ashiftleft =>
         exu_busy <= '1';
         lshifter_enable <= '1';
-        w.tos := unsigned(lshifter_output);
+        w.tos := unsigned(lshifter_output(31 downto 0));
 
         if lshifter_done='1' then
           exu_busy<='0';
@@ -1219,7 +1230,18 @@ begin
         exu_busy <= '1';
         lshifter_enable <= '1';
         lshifter_multorshift <='1';
-        w.tos := unsigned(lshifter_output);
+        w.tos := unsigned(lshifter_output(31 downto 0));
+
+        if lshifter_done='1' then
+          exu_busy<='0';
+          w.state := State_Execute;
+        end if;
+
+      when State_MultF16 =>
+        exu_busy <= '1';
+        lshifter_enable <= '1';
+        lshifter_multorshift <='1';
+        w.tos := unsigned(lshifter_output(47 downto 16));
 
         if lshifter_done='1' then
           exu_busy<='0';

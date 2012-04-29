@@ -13,7 +13,7 @@ entity lshifter is
     done: out std_logic;
     inputA:  in std_logic_vector(31 downto 0);
     inputB: in std_logic_vector(31 downto 0);
-    output: out std_logic_vector(31 downto 0);
+    output: out std_logic_vector(63 downto 0);
     multorshift: in std_logic
   );
 end lshifter;
@@ -21,7 +21,7 @@ end lshifter;
 architecture behave of lshifter is
 
 
-  subtype word is unsigned(31 downto 0);
+  subtype word is signed(63 downto 0);
   type mregtype is array(0 to stages-1) of word;
 
   signal rq: mregtype;
@@ -30,8 +30,8 @@ architecture behave of lshifter is
 begin
 
   process(clk,inputA,inputB)
-    variable r: unsigned(63 downto 0);
-    variable idx: unsigned(31 downto 0);
+    variable r: signed(63 downto 0);
+    variable idx: signed(31 downto 0);
   begin
 
 
@@ -43,7 +43,7 @@ begin
 
         if enable='1' then
           if multorshift='1' then
-            idx := unsigned(inputB);
+            idx := signed(inputB);
           else
           case inputB(4 downto 0) is
             when "00000" => idx := "00000000000000000000000000000001";
@@ -83,9 +83,9 @@ begin
           end case;
           end if;
 
-          r := unsigned(inputA) * idx;
+          r := signed(inputA) * idx;
         
-          rq(0) <= r(31 downto 0);
+          rq(0) <= r(63 downto 0);
           d(0) <= '1';
 
           for i in 1 to stages-1 loop
