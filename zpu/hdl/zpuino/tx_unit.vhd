@@ -54,6 +54,7 @@ entity TxUnit is
      load_i   : in  std_logic;  -- Load input
      txd_o    : out std_logic;  -- RS-232 data output
      busy_o   : out std_logic;  -- Tx Busy
+     intx_o   : out std_logic;  -- In transmit
      datai_i  : in  std_logic_vector(7 downto 0)); -- Byte to transmit
 end entity TxUnit;
 
@@ -62,6 +63,7 @@ architecture Behaviour of TxUnit is
    signal t_r      : std_logic_vector(7 downto 0); -- transmit register
    signal loaded_r : std_logic:='0';  -- Buffer loaded
    signal txd_r    : std_logic:='1';  -- Tx buffer ready
+   signal idle  : std_logic;
 begin
   busy_o <= load_i or loaded_r;
   txd_o  <= txd_r;
@@ -76,6 +78,8 @@ begin
            loaded_r <= '0';
            bitpos:=0;
            txd_r <= '1';
+           intx_o <= '0';
+           idle <= '1';
         else -- reset_i='0'
            if load_i='1' then
               tbuff_r  <= datai_i;
@@ -88,7 +92,16 @@ begin
                         if loaded_r='1' then -- start transmit. next is start bit
                            t_r <= tbuff_r;
                            loaded_r <= '0';
+                           intx_o <= '1';
                            bitpos:=1;
+                           idle <= '0';
+                        else
+                          if idle='0' then
+                            idle<='1';
+                          end if;
+                          if idle='1' then
+                            intx_o <= '0';
+                          end if;
                         end if;
                    when 1 => -- Start bit
                         txd_r <= '0';
