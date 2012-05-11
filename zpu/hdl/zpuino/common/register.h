@@ -36,7 +36,7 @@ typedef volatile unsigned int* register_t;
 
 #define ROFF_UARTDATA   0
 #define ROFF_UARTCTL    1
-#define ROFF_UARTSTATUS 2
+#define ROFF_UARTSTATUS 1
 
 #define UARTDATA    REGISTER(UARTBASE,ROFF_UARTDATA)
 #define UARTCTL     REGISTER(UARTBASE,ROFF_UARTCTL)
