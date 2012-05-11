@@ -64,6 +64,12 @@ struct bootloader_data_t bdata BDATA;
 
 static void outbyte(int);
 
+void flush()
+{
+	/* Flush serial line */
+	while (UARTSTATUS & 4);
+}
+
 extern "C" void printnibble(unsigned int c)
 {
 	c&=0xf;
@@ -115,7 +121,7 @@ void sendByte(unsigned int i)
 		outbyte(i);
 }
 
-void sendBuffer(const unsigned char *buf, unsigned int size)
+static void sendBuffer(const unsigned char *buf, unsigned int size)
 {
 	while (size--!=0)
 		sendByte(*buf++);
@@ -372,7 +378,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(2) = 0xffffffff;
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
-	
+	flush();
 	start();
 	//asm ("im _start\npoppc\nnop\n");
 	while (1) {}
@@ -672,7 +678,7 @@ void cmd_start(unsigned char *buffer)
 	spi_enable();
 	bdata.spiend = (start_read_size(spidata)<<2) + SPIOFFSET + 4;
 	spi_disable();
-
+	flush();
 	start();
 }
 
