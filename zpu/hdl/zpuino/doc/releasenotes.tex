@@ -1,0 +1,50 @@
+\chapter{Release Notes}
+
+\section{Version 1.0.1}
+
+\section{Version 1.0.0}
+
+This release is a major release!. Many many changes were done to all components, and not all of them are
+depicted here. Please refer to git changelogs for more detail.
+
+\subsection*{Changes to the HDL Core}
+
+\begin{itemize}
+\item New ZPU core - ZPU Extreme!
+\item Most cores are now Wishbone compatible.
+\item New timer implementation 
+\item All IO devices were pushed to the top level module, to ease customization 
+\end{itemize}
+
+\subsection*{IDE/Code}
+
+\begin{itemize}
+ \item New IDE based on Arduino 1.0
+ \item Upload-to-RAM feature (control-click on Upload button!!!)
+ \item Code is now smaller due to new toolchain features
+ \item Some common functions are now exported by the bootloader, to reduce code size.
+ \item Some functions have now assembly implementations for speed.
+\end{itemize}
+
+\subsection*{Boards}
+\begin{itemize}
+ \item New board: Papilio Plus S6LX4
+ \item New board: Papilio Plus S6LX9
+ \item New board: Nexys2 S3E1200 (thanks to Paul Urbanus)
+ \item New board variants!
+\end{itemize}
+
+\subsection*{Libraries}
+\begin{itemize}
+ \item Small fixes here and then.
+\end{itemize}
+
+\subsection*{Other/Contributed}
+\begin{itemize}
+\item SID HDL implementation
+\item Pokey HDL implementation
+\item YM2149 HDL implementation
+\item Audiomixer and simple sigmadelta
+\item OpenCores I2C
+\end{itemize}
+
