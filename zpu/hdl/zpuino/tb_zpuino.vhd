@@ -234,6 +234,63 @@ architecture behave of tb_zpuino is
   );
   END component sram;
 
+
+  signal   m_wb_dat_i:  std_logic_vector(wordSize-1 downto 0);
+  signal   m_wb_dat_o:  std_logic_vector(wordSize-1 downto 0);
+  signal   m_wb_adr_i:  std_logic_vector(maxAddrBitIncIO downto 0);
+  signal  m_wb_sel_i:  std_logic_vector(3 downto 0);
+  signal   m_wb_cti_i:  std_logic_vector(2 downto 0);
+  signal   m_wb_we_i:   std_logic;
+  signal   m_wb_cyc_i:  std_logic;
+  signal   m_wb_stb_i:  std_logic;
+  signal   m_wb_ack_o:  std_logic;
+
+  signal lmosi: std_logic_vector(7 downto 0);
+  signal lsck: std_logic_vector(7 downto 0);
+
+  component multispi is
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    -- Master interface (for DMA)
+
+    mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    mi_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    mi_wb_adr_o: out std_logic_vector(maxAddrBitIncIO downto 0);
+    mi_wb_sel_o: out std_logic_vector(3 downto 0);
+    mi_wb_cti_o: out std_logic_vector(2 downto 0);
+    mi_wb_we_o:  out std_logic;
+    mi_wb_cyc_o: out std_logic;
+    mi_wb_stb_o: out std_logic;
+    mi_wb_ack_i: in std_logic;
+
+    -- LED array interface (8 controllers)
+    lmosi:     out std_logic_vector(7 downto 0);
+    lsck:      out std_logic_vector(7 downto 0);
+
+    -- SPI flash
+    fmosi:      out std_logic;
+    fmiso:      in std_logic;
+    fsck:       out std_logic;
+    fnsel:      out std_logic
+  );
+  end component;
+
+    -- SPI flash
+  signal extspi_fmosi:      std_logic;
+  signal extspi_fmiso:      std_logic;
+  signal   extspi_fsck:     std_logic;
+  signal extspi_fnsel:      std_logic;
+
 --  component zpuino_debug_sim is
 --  port (
 --    jtag_data_chain_in: in std_logic_vector(97 downto 0);
@@ -385,13 +442,13 @@ begin
       slot_interrupt=> slot_interrupt,
       dbg_reset     => dbg_reset,
 
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
-      m_wb_ack_o    => open,
+      m_wb_dat_o    => m_wb_dat_o,
+      m_wb_dat_i    => m_wb_dat_i,
+      m_wb_adr_i    => m_wb_adr_i,
+      m_wb_we_i     => m_wb_we_i,
+      m_wb_cyc_i    => m_wb_cyc_i,
+      m_wb_stb_i    => m_wb_stb_i,
+      m_wb_ack_o    => m_wb_ack_o,
 
 
       jtag_ctrl_chain_in => (others => '0'),--jtag_ctrl_chain_in,
@@ -478,12 +535,12 @@ begin
   spiflash: M25P16
     port map (
       VCC => vcc,
-		  C   => gpio_o(4),
-      D   => gpio_o(3),
-      S   => gpio_o(40),
+		  C   => extspi_fsck,
+      D   => extspi_fmosi,
+      S   => extspi_fnsel,
       W   => '0',
       HOLD => '1',
-		  Q   => spi_pf_miso_dly
+		  Q   => extspi_fmiso
     );
 
   w_clk <= not w_clk after period/2;
@@ -789,7 +846,7 @@ begin
   -- IO SLOT 14
   --
 
-  slot14: zpuino_empty_device
+  slot14: multispi
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
@@ -800,7 +857,29 @@ begin
     wb_cyc_i        => slot_cyc(14),
     wb_stb_i        => slot_stb(14),
     wb_ack_o      => slot_ack(14),
-    wb_inta_o => slot_interrupt(14)
+    wb_inta_o => slot_interrupt(14),
+
+    -- Master interface (for DMA)
+
+    mi_wb_dat_i => m_wb_dat_o,
+    mi_wb_dat_o => m_wb_dat_i,
+    mi_wb_adr_o => m_wb_adr_i,
+    mi_wb_sel_o => m_wb_sel_i,
+    mi_wb_cti_o => m_wb_cti_i,
+    mi_wb_we_o  => m_wb_we_i,
+    mi_wb_cyc_o => m_wb_cyc_i,
+    mi_wb_stb_o => m_wb_stb_i,
+    mi_wb_ack_i => m_wb_ack_o,
+
+    -- LED array interface (6 controllers)
+    lmosi       => lmosi,
+    lsck        => lsck,
+
+    -- SPI flash
+    fmosi       => extspi_fmosi,
+    fmiso       => extspi_fmiso,
+    fsck        => extspi_fsck,
+    fnsel       => extspi_fnsel
   );
 
   --
