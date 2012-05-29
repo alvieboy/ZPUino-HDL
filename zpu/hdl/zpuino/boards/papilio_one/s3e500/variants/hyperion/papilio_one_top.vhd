@@ -68,6 +68,21 @@ end entity papilio_one_top;
 
 architecture behave of papilio_one_top is
 
+  component wb_char_ram_8x8_sp is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
+  );
+  end component;
+
   component clkgen is
   port (
     clkin:  in std_logic;
@@ -416,6 +431,9 @@ begin
   --
 
   uart_inst: zpuino_uart
+  --generic map (
+  --  bits => 4
+  --  )
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -622,10 +640,10 @@ begin
   -- IO SLOT 10
   --
 
-  slot10: zpuino_empty_device
+  slot10: wb_char_ram_8x8_sp
   port map (
     wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(10),
     wb_dat_i     => slot_write(10),
     wb_adr_i   => slot_address(10),
@@ -701,7 +719,7 @@ begin
   -- IO SLOT 14
   --
 
-  slot14: wb_sid6581
+  slot14: zpuino_empty_device
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
@@ -712,10 +730,11 @@ begin
     wb_cyc_i        => slot_cyc(14),
     wb_stb_i        => slot_stb(14),
     wb_ack_o      => slot_ack(14),
-    wb_inta_o => slot_interrupt(14),
+    wb_inta_o => slot_interrupt(14)
+    --,
 
-    clk_1MHZ    => sysclk_1mhz,
-    audio_data  => sid_audio_data
+    --clk_1MHZ    => sysclk_1mhz,
+    --audio_data  => sid_audio_data
 
   );
 

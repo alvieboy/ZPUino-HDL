@@ -10,8 +10,8 @@
 ##################################################################################
 
 # Crystal Clock - use 32MHz onboard oscillator
-#NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.25ns ;
-NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.00ns ;
+NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.25ns ;
+#NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.00ns ;
 
 # Wing1 Column A
 NET "WING_A<0>" LOC = "P18" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;	#A0
