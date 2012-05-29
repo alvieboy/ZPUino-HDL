@@ -134,6 +134,9 @@ unsigned int inbyte()
 
 #define COLUMNS 32
 
+#define MULTISPI IO_SLOT(14)
+
+
 // Fast version we hope
 unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 
@@ -148,20 +151,30 @@ extern "C" int main(int argc,char**argv)
 	_bfunctions[2] = (unsigned)&memset;
 	_bfunctions[3] = (unsigned)&strcmp;
 
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
+	REGISTER(MULTISPI,1)=0;
+	REGISTER(MULTISPI,2)=0;
+	REGISTER(MULTISPI,3)=17; // 18 leds
+	REGISTER(MULTISPI,0)=1;
 
-	configure_pins();
-    /*
-	TMR0CMP = (CLK_FREQ/100000U)-1;
+	/*
+	TMR0CMP = (CLK_FREQ/500000U)-1;
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
-    */
+	INTRMASK = BIT(INTRLINE_TIMER0);
+	INTRCTL=1;
+                              */
+
+	SPICTL=BIT(SPICPOL)|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
+	//SPIDATA=0xaa;
+	//SPIDATA=0x99;
+	REGISTER(SPIBASE,3)=0x81aa;
+	configure_pins();
 	UARTCTL = BAUDRATEGEN(1000000) | BIT(UARTEN);
 
-	//INTRMASK = BIT(INTRLINE_TIMER0);
-	//INTRCTL=1;
+	REGISTER(SPIBASE,5)=0x0;
+
 	CRC16POLY = 0x8408; // CRC16-CCITT
-	SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
+	//SPICTL=BIT(SPICPOL)|BIT(SPICP0)|BIT(SPISRE)|BIT(SPIEN);
 
 	spi_copy();
 
