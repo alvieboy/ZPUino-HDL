@@ -156,7 +156,7 @@ architecture behave of multispi is
     ledcnt: unsigned(10 downto 0);
 
     ack: std_logic;
-
+    directspi: std_logic; -- Direct access to SPI flash
   end record;
 
   signal r: regstype;
@@ -175,6 +175,10 @@ architecture behave of multispi is
   signal ictrlsel:  std_logic_vector(7 downto 0);
   signal ictrlready:  std_logic_vector(7 downto 0);
   signal ictrldata: std_logic_vector(31 downto 0);
+
+  signal flash_din, df_din: std_logic_vector(31 downto 0);
+  signal flash_tsize, df_tsize: std_logic_vector(1 downto 0);
+  signal flash_en, df_en: std_logic;
 
 begin
 
@@ -218,9 +222,23 @@ begin
   mi_wb_dat_o <= (others =>DontCareValue);
   mi_wb_we_o <= '0';
 
-  wb_dat_o(0) <= '0' when r.state=idle else '1';
-  wb_dat_o(31 downto 1) <= (others => '0');
   wb_ack_o <= r.ack;
+
+  process (wb_adr_i,r,fdout)
+  begin
+    case wb_adr_i(4) is
+      when '0' =>
+        if r.state=idle then
+          wb_dat_o(0) <= '0';
+        else
+          wb_dat_o(0) <= '1';
+        end if;
+        wb_dat_o(31 downto 1) <= (others => '0');
+      when '1' =>
+        wb_dat_o <= fdout;
+      when others =>
+    end case;
+  end process;
 
   process(wb_clk_i,wb_rst_i,r,fready,fdout,mi_wb_ack_i,mi_wb_dat_i,ctrlready, wb_stb_i,wb_cyc_i, wb_dat_i,wb_adr_i,wb_we_i)
     variable w: regstype;
@@ -243,20 +261,28 @@ begin
     w.ack := '0';
 
     if wb_cyc_i='1' and wb_stb_i='1' then
-      w.ack :='1';
-     if wb_we_i='1' then
-      case wb_adr_i(3 downto 2) is
-        when "00" =>
-          do_start := '1';
-        when "01" =>
-          w.spibaseaddr := unsigned(wb_dat_i(23 downto 0));
-        when "10" =>
-          w.membaseaddr := unsigned(wb_dat_i);
-        when "11" =>
-          w.nleds := unsigned(wb_dat_i(10 downto 0));
-        when others =>
-      end case;
-    end if;
+
+      if wb_adr_i(4)='0' then
+          w.ack :='1';
+          if wb_we_i='1' then
+            case wb_adr_i(3 downto 2) is
+            when "00" =>
+              do_start := wb_dat_i(0);
+              w.directspi := wb_dat_i(1);
+            when "01" =>
+              w.spibaseaddr := unsigned(wb_dat_i(23 downto 0));
+            when "10" =>
+              w.membaseaddr := unsigned(wb_dat_i);
+            when "11" =>
+              w.nleds := unsigned(wb_dat_i(10 downto 0));
+            when others =>
+            end case;
+          end if;
+      else
+
+          -- Direct SPI access
+
+      end if;
     end if;
 
 
@@ -360,6 +386,7 @@ begin
       w.spibaseaddr := (others => '0');
       w.membaseaddr := (others => '0');
       w.nleds := "00000001000";
+      w.directspi := '0';
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -369,19 +396,20 @@ begin
   end process;
 
 
-
-
+  flash_din <= r.fdin when r.directspi='0' else df_din;
+  flash_tsize <= r.ftsize when r.directspi='0' else df_tsize;
+  flash_en <= r.fen   when r.directspi='0' else df_en;
 
   -- Flash controller
   fspi: spi
     port map (
       clk   => wb_clk_i,
       rst   => wb_rst_i,
-      din   => r.fdin,
+      din   => flash_din,
       dout  => fdout,
-      en    => r.fen,
+      en    => flash_en,
       ready => fready,
-      transfersize  => r.ftsize,
+      transfersize  => flash_tsize,
       miso  => fmiso,
       mosi  => fmosi,
       clk_en  => fspi_clken,
