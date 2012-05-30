@@ -143,6 +143,15 @@ unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 extern "C" unsigned _bfunctions[];
 extern "C" void udivmodsi4(); /* Just need it's address */
 
+unsigned pattern[] = {
+	0x00000000,
+	0x80808000,
+	0x85858000,
+	0xffffff00,
+	0xfefefe00,
+	0x81818100
+};
+
 extern "C" int main(int argc,char**argv)
 {
 	ivector = &_zpu_interrupt;
@@ -152,8 +161,8 @@ extern "C" int main(int argc,char**argv)
 	_bfunctions[3] = (unsigned)&strcmp;
 
 	REGISTER(MULTISPI,1)=0;
-	REGISTER(MULTISPI,2)=0;
-	REGISTER(MULTISPI,3)=17; // 18 leds
+	REGISTER(MULTISPI,2)=(unsigned)pattern;
+	REGISTER(MULTISPI,3)=7; // 18 leds
 	REGISTER(MULTISPI,0)=1;
 
 	/*

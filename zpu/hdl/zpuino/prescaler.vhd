@@ -85,9 +85,9 @@ ck2 <= counter(0);
 ck4 <= counter(1);
 ck8 <= counter(2);
 ck16 <= counter(3);
-ck64 <= counter(5);
-ck256 <= counter(7);
-ck1024 <= counter(9);
+ck64 <= counter(4);
+ck256 <= counter(5);
+ck1024 <= counter(6);
 
 event <= event_i;
 

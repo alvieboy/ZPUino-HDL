@@ -157,6 +157,10 @@ architecture behave of multispi is
 
     ack: std_logic;
     directspi: std_logic; -- Direct access to SPI flash
+    lpres: std_logic_vector(2 downto 0);
+    fpres: std_logic_vector(2 downto 0);
+    memoryspi: std_logic;
+
   end record;
 
   signal r: regstype;
@@ -262,19 +266,25 @@ begin
 
     if wb_cyc_i='1' and wb_stb_i='1' then
 
-      if wb_adr_i(4)='0' then
+      if wb_adr_i(5)='0' then
           w.ack :='1';
           if wb_we_i='1' then
-            case wb_adr_i(3 downto 2) is
-            when "00" =>
+            case wb_adr_i(4 downto 2) is
+            when "000" =>
               do_start := wb_dat_i(0);
-              w.directspi := wb_dat_i(1);
-            when "01" =>
+            when "001" =>
               w.spibaseaddr := unsigned(wb_dat_i(23 downto 0));
-            when "10" =>
+            when "010" =>
               w.membaseaddr := unsigned(wb_dat_i);
-            when "11" =>
+            when "011" =>
               w.nleds := unsigned(wb_dat_i(10 downto 0));
+
+            when "100" =>
+
+              w.lpres := wb_dat_i(4 downto 2);
+              w.fpres := wb_dat_i(7 downto 5);
+              w.memoryspi := wb_dat_i(8);
+
             when others =>
             end case;
           end if;
@@ -291,10 +301,24 @@ begin
     case r.state is
       when idle =>
         if do_start='1' then
-        w.state := waitsel;
-        w.nsel := '0';
-        w.seldly := "11";
-        w.ledcnt := r.nleds;
+          if r.memoryspi='1' then
+
+            --w.maddr := std_logic_vector(unsigned() + unsigned(r.spibaseaddr));
+            -- Load data from memory, not SPI
+            --mi_wb_cyc_o <= '1';
+            --mi_wb_stb_o <= '1';
+            --w.rgb := mi_wb_dat_i(31 downto 8);
+
+            --if mi_wb_ack_i='1' then
+
+            --end if;
+
+          else
+            w.state := waitsel;
+            w.nsel := '0';
+            w.seldly := "11";
+            w.ledcnt := r.nleds;
+          end if;
         end if;
 
       when waitsel =>
@@ -387,6 +411,9 @@ begin
       w.membaseaddr := (others => '0');
       w.nleds := "00000001000";
       w.directspi := '0';
+      w.lpres := "101";
+      w.fpres := "100";
+      w.memoryspi := '0';
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -424,7 +451,7 @@ begin
       rst   => wb_rst_i,
       en    => fspi_clken,
       cpol  => '1',
-      pres  => "011",
+      pres  => r.fpres,--"011",
     
       clkrise => fspi_clkrise,
       clkfall => fspi_clkfall,
@@ -463,7 +490,7 @@ begin
       rst   => wb_rst_i,
       en    => ispi_clken(i),
       cpol  => '1',
-      pres  => "100",
+      pres  => r.lpres, -- "100"
     
       clkrise => ispi_clkrise(i),
       clkfall => ispi_clkfall(i),

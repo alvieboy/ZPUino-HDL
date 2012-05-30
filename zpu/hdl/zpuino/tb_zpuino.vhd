@@ -47,7 +47,7 @@ end entity;
 
 architecture behave of tb_zpuino is
 
-  constant period : time := 10 ns;
+  constant period : time := 10.416666666 ns;
   constant vgaperiod : time := 40 ns;
   signal w_clk : std_logic := '0';
   signal w_rst : std_logic := '0';
