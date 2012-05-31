@@ -41,6 +41,8 @@ use work.zpu_config.all;
 use work.zpuino_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+library work;
+use work.txt_util.all;
 
 entity multispi is
   port (
@@ -160,6 +162,8 @@ architecture behave of multispi is
     lpres: std_logic_vector(2 downto 0);
     fpres: std_logic_vector(2 downto 0);
     memoryspi: std_logic;
+
+    testcounter: unsigned(31 downto 0);
 
   end record;
 
@@ -318,6 +322,7 @@ begin
             w.nsel := '0';
             w.seldly := "11";
             w.ledcnt := r.nleds;
+            w.testcounter:=(others =>'0');
           end if;
         end if;
 
@@ -359,22 +364,28 @@ begin
         w.fdout := fdout;
                                   -- 15 downto 0 -> offset into memory table
         moff(15 downto 0) := fdout(15 downto 0);
-        moff(31 downto 8) := (others => '0');
+        moff(31 downto 16) := (others => '0');
+        --moff := std_logic_vector(r.testcounter);
+        
 
         w.maddr := std_logic_vector(unsigned(moff) + unsigned(r.membaseaddr));
+
         w.ctrln := fdout(18 downto 16); -- Save controller number
+        --w.ctrln := "000";
 
         if fready='1' then
           w.state := memory;
           w.ftsize := "10";
+          w.testcounter := r.testcounter + 4;
         end if;
 
       when memory =>
         mi_wb_cyc_o <= '1';
         mi_wb_stb_o <= '1';
-        w.rgb := mi_wb_dat_i(31 downto 8);
 
         if mi_wb_ack_i='1' then
+          w.rgb := mi_wb_dat_i(31 downto 8);
+          --w.rgb := "100000010011110010101010";
           w.state := processrgb;
         end if;
 
@@ -417,6 +428,9 @@ begin
     end if;
 
     if rising_edge(wb_clk_i) then
+      if r.state=leave then
+        report "LED " & hstr(std_logic_vector(r.ledcnt)) & " ctrl " & hstr(r.ctrln) & " address 0x" & hstr(r.maddr) & " offset 0x" & hstr(fdout(15 downto 0)) & " data 0x" & hstr(r.rgb);
+      end if;
       r <= w;
     end if;
 

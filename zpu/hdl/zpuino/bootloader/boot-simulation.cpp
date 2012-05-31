@@ -160,11 +160,6 @@ extern "C" int main(int argc,char**argv)
 	_bfunctions[2] = (unsigned)&memset;
 	_bfunctions[3] = (unsigned)&strcmp;
 
-	REGISTER(MULTISPI,1)=0;
-	REGISTER(MULTISPI,2)=(unsigned)pattern;
-	REGISTER(MULTISPI,3)=7; // 18 leds
-	REGISTER(MULTISPI,0)=1;
-
 	/*
 	TMR0CMP = (CLK_FREQ/500000U)-1;
 	TMR0CNT = 0x0;
