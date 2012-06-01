@@ -245,8 +245,8 @@ architecture behave of tb_zpuino is
   signal   m_wb_stb_i:  std_logic;
   signal   m_wb_ack_o:  std_logic;
 
-  signal lmosi: std_logic_vector(7 downto 0);
-  signal lsck: std_logic_vector(7 downto 0);
+  signal lmosi: std_logic_vector(9 downto 0);
+  signal lsck: std_logic_vector(9 downto 0);
 
   component multispi is
   port (
@@ -274,8 +274,8 @@ architecture behave of tb_zpuino is
     mi_wb_ack_i: in std_logic;
 
     -- LED array interface (8 controllers)
-    lmosi:     out std_logic_vector(7 downto 0);
-    lsck:      out std_logic_vector(7 downto 0);
+    lmosi:     out std_logic_vector(9 downto 0);
+    lsck:      out std_logic_vector(9 downto 0);
 
     -- SPI flash
     fmosi:      out std_logic;

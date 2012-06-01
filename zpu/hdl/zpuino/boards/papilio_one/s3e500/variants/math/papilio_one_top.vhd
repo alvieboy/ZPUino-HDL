@@ -316,8 +316,8 @@ architecture behave of papilio_one_top is
     mi_wb_ack_i: in std_logic;
 
     -- LED array interface (8 controllers)
-    lmosi:     out std_logic_vector(7 downto 0);
-    lsck:      out std_logic_vector(7 downto 0);
+    lmosi:     out std_logic_vector(9 downto 0);
+    lsck:      out std_logic_vector(9 downto 0);
 
     -- SPI flash
     fmosi:      out std_logic;
@@ -327,8 +327,8 @@ architecture behave of papilio_one_top is
   );
   end component;
 
-  signal lmosi: std_logic_vector(7 downto 0);
-  signal lsck: std_logic_vector(7 downto 0);
+  signal lmosi: std_logic_vector(9 downto 0);
+  signal lsck: std_logic_vector(9 downto 0);
 
   signal extspi_fmosi:      std_logic;
   signal extspi_fmiso:      std_logic;
@@ -815,10 +815,16 @@ begin
   pin09: IOPAD port map(I => gpio_o(9), O => gpio_i(9), T => gpio_t(9), C => sysclk,PAD => WING_A(9) );
   pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
   pin11: IOPAD port map(I => gpio_o(11),O => gpio_i(11),T => gpio_t(11),C => sysclk,PAD => WING_A(11) );
-  pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
-  pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
-  pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
-  pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
+  --pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
+  --pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
+  --pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
+  --pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
+  -- So A15 = Data9, A14 = Clock9, A13 = Data10, A12 = Clk 10
+
+  pin12: OPAD port map(I => lsck(9), PAD => WING_A(12) );
+  pin13: OPAD port map(I => lmosi(9), PAD => WING_A(13) );
+  pin14: OPAD port map(I => lsck(8), PAD => WING_A(14) );
+  pin15: OPAD port map(I => lmosi(8), PAD => WING_A(15) );
 
   pin16: OPAD port map(I => lmosi(0), PAD => WING_B(0) );
   pin17: OPAD port map(I => lsck(0),  PAD => WING_B(1) );

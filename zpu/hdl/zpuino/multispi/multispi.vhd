@@ -70,8 +70,8 @@ entity multispi is
     mi_wb_ack_i: in std_logic;
 
     -- LED array interface (6 controllers)
-    lmosi:     out std_logic_vector(7 downto 0);
-    lsck:      out std_logic_vector(7 downto 0);
+    lmosi:     out std_logic_vector(9 downto 0);
+    lsck:      out std_logic_vector(9 downto 0);
 
     -- SPI flash
     fmosi:      out std_logic;
@@ -149,7 +149,7 @@ architecture behave of multispi is
     fen: std_logic;
     seldly: unsigned(1 downto 0);
     maddr: std_logic_vector(31 downto 0);
-    ctrln: std_logic_vector(2 downto 0); -- Controller number for this led
+    ctrln: std_logic_vector(3 downto 0); -- Controller number for this led
     rgb: std_logic_vector(23 downto 0);
     rgbseq: unsigned(1 downto 0);
     ctrlen: std_logic;
@@ -176,12 +176,12 @@ architecture behave of multispi is
   signal ctrlready: std_logic;
 
 
-  signal ispi_clken:    std_logic_vector(7 downto 0);
-  signal ispi_clkrise:  std_logic_vector(7 downto 0);
-  signal ispi_clkfall:  std_logic_vector(7 downto 0);
-  signal ictrlen:  std_logic_vector(7 downto 0);
-  signal ictrlsel:  std_logic_vector(7 downto 0);
-  signal ictrlready:  std_logic_vector(7 downto 0);
+  signal ispi_clken:    std_logic_vector(9 downto 0);
+  signal ispi_clkrise:  std_logic_vector(9 downto 0);
+  signal ispi_clkfall:  std_logic_vector(9 downto 0);
+  signal ictrlen:  std_logic_vector(9 downto 0);
+  signal ictrlsel:  std_logic_vector(9 downto 0);
+  signal ictrlready:  std_logic_vector(9 downto 0);
   signal ictrldata: std_logic_vector(31 downto 0);
 
   signal flash_din, df_din: std_logic_vector(31 downto 0);
@@ -193,32 +193,38 @@ begin
   process( r.ctrln, ictrlready )
   begin
     case r.ctrln is
-      when "000" =>
-        ictrlsel <= "00000001";
+      when "0000" =>
+        ictrlsel <= "0000000001";
         ctrlready <= ictrlready(0);
-      when "001" =>
-        ictrlsel <= "00000010";
+      when "0001" =>
+        ictrlsel <= "0000000010";
         ctrlready <= ictrlready(1);
-      when "010" =>
-        ictrlsel <= "00000100";
+      when "0010" =>
+        ictrlsel <= "0000000100";
         ctrlready <= ictrlready(2);
-      when "011" =>
-        ictrlsel <= "00001000";
+      when "0011" =>
+        ictrlsel <= "0000001000";
         ctrlready <= ictrlready(3);
-      when "100" =>
-        ictrlsel <= "00010000";
+      when "0100" =>
+        ictrlsel <= "0000010000";
         ctrlready <= ictrlready(4);
-      when "101" =>
-        ictrlsel <= "00100000";
+      when "0101" =>
+        ictrlsel <= "0000100000";
         ctrlready <= ictrlready(5);
-      when "110" =>
-        ictrlsel <= "01000000";
+      when "0110" =>
+        ictrlsel <= "0001000000";
         ctrlready <= ictrlready(6);
-      when "111" =>
-        ictrlsel <= "10000000";
+      when "0111" =>
+        ictrlsel <= "0010000000";
         ctrlready <= ictrlready(7);
+      when "1000" =>
+        ictrlsel <= "0100000000";
+        ctrlready <= ictrlready(8);
+      when "1001" =>
+        ictrlsel <= "1000000000";
+        ctrlready <= ictrlready(9);
       when others =>
-        ictrlsel <= (others => DontCareValue);
+        ictrlsel <= (others => '0');
         ctrlready <='1';
     end case;
   end process;  
@@ -370,7 +376,7 @@ begin
 
         w.maddr := std_logic_vector(unsigned(moff) + unsigned(r.membaseaddr));
 
-        w.ctrln := fdout(18 downto 16); -- Save controller number
+        w.ctrln := fdout(19 downto 16); -- Save controller number
         --w.ctrln := "000";
 
         if fready='1' then
@@ -477,7 +483,7 @@ begin
 
 
 
-  ictrl: for i in 0 to 7 generate
+  ictrl: for i in 0 to 9 generate
 
     ictrlen(i) <= ictrlsel(i) and r.ctrlen;
 
