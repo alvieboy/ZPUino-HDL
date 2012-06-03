@@ -266,29 +266,29 @@ begin
 
   -- LEDS
 
-  pin32: OPAD port map(I => gpio_o(32), PAD => LED(0) );
-  pin33: OPAD port map(I => gpio_o(33), PAD => LED(1) );
-  pin34: OPAD port map(I => gpio_o(34), PAD => LED(2) );
-  pin35: OPAD port map(I => gpio_o(35), PAD => LED(3) );
-  pin36: OPAD port map(I => gpio_o(36), PAD => LED(4) );
-  pin37: OPAD port map(I => gpio_o(37), PAD => LED(5) );
-  pin38: OPAD port map(I => gpio_o(38), PAD => LED(6) );
-  pin39: OPAD port map(I => gpio_o(39), PAD => LED(7) );
+  pin32: OPAD port map(I => gpio_o(32), O => gpio_i(32),PAD => LED(0) );
+  pin33: OPAD port map(I => gpio_o(33), O => gpio_i(33),PAD => LED(1) );
+  pin34: OPAD port map(I => gpio_o(34), O => gpio_i(34),PAD => LED(2) );
+  pin35: OPAD port map(I => gpio_o(35), O => gpio_i(35),PAD => LED(3) );
+  pin36: OPAD port map(I => gpio_o(36), O => gpio_i(36),PAD => LED(4) );
+  pin37: OPAD port map(I => gpio_o(37), O => gpio_i(37),PAD => LED(5) );
+  pin38: OPAD port map(I => gpio_o(38), O => gpio_i(38),PAD => LED(6) );
+  pin39: OPAD port map(I => gpio_o(39), O => gpio_i(39),PAD => LED(7) );
 
   -- Connected to Nexys 2 onBoard 7seg display
 
-  pin40: OPAD port map(I => gpio_o(40), PAD => SEG_CA );
-  pin41: OPAD port map(I => gpio_o(41), PAD => SEG_CB );
-  pin42: OPAD port map(I => gpio_o(42), PAD => SEG_CC );
-  pin43: OPAD port map(I => gpio_o(43), PAD => SEG_CD );
-  pin44: OPAD port map(I => gpio_o(44), PAD => SEG_CE );
-  pin45: OPAD port map(I => gpio_o(45), PAD => SEG_CF );
-  pin46: OPAD port map(I => gpio_o(46), PAD => SEG_CG );
-  pin47: OPAD port map(I => gpio_o(47), PAD => SEG_DP );
-  pin48: OPAD port map(I => gpio_o(48), PAD => SEG_AN(0) );
-  pin49: OPAD port map(I => gpio_o(49), PAD => SEG_AN(1) );
-  pin50: OPAD port map(I => gpio_o(50), PAD => SEG_AN(2) );
-  pin51: OPAD port map(I => gpio_o(51), PAD => SEG_AN(3) );
+  pin40: OPAD port map(I => gpio_o(40), O => gpio_i(40),PAD => SEG_CA );
+  pin41: OPAD port map(I => gpio_o(41), O => gpio_i(41),PAD => SEG_CB );
+  pin42: OPAD port map(I => gpio_o(42), O => gpio_i(42),PAD => SEG_CC );
+  pin43: OPAD port map(I => gpio_o(43), O => gpio_i(43),PAD => SEG_CD );
+  pin44: OPAD port map(I => gpio_o(44), O => gpio_i(44),PAD => SEG_CE );
+  pin45: OPAD port map(I => gpio_o(45), O => gpio_i(45),PAD => SEG_CF );
+  pin46: OPAD port map(I => gpio_o(46), O => gpio_i(46),PAD => SEG_CG );
+  pin47: OPAD port map(I => gpio_o(47), O => gpio_i(47),PAD => SEG_DP );
+  pin48: OPAD port map(I => gpio_o(48), O => gpio_i(48),PAD => SEG_AN(0) );
+  pin49: OPAD port map(I => gpio_o(49), O => gpio_i(49),PAD => SEG_AN(1) );
+  pin50: OPAD port map(I => gpio_o(50), O => gpio_i(50),PAD => SEG_AN(2) );
+  pin51: OPAD port map(I => gpio_o(51), O => gpio_i(51),PAD => SEG_AN(3) );
 
   pin52: IPAD port map(O => gpio_i(52), C => sysclk, PAD => PS2_CLK );
   pin53: IPAD port map(O => gpio_i(53), C => sysclk, PAD => PS2_DATA );
