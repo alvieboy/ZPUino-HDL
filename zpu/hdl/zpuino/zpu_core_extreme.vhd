@@ -567,9 +567,13 @@ begin
           sampledDecodedOpcode<=Decoded_PopSP;
           sampledOpWillFreeze<='1';
         when OpCode_NA4 =>
-          sampledDecodedOpcode<=Decoded_MultF16;
-          sampledStackOperation<=Stack_Pop;
-          sampledOpWillFreeze<='1';
+          if enable_fmul16 then
+            sampledDecodedOpcode<=Decoded_MultF16;
+            sampledStackOperation<=Stack_Pop;
+            sampledOpWillFreeze<='1';
+          else
+            sampledDecodedOpcode<=Decoded_Nop;
+          end if;
         when others =>
           sampledDecodedOpcode<=Decoded_Nop;
           
