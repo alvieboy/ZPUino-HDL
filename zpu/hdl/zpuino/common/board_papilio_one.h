@@ -1,7 +1,9 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
+#ifndef CLK_FREQ
 #define CLK_FREQ 96000000UL
+#endif
 
 #if defined(__S3E_250__)
 #define SPIOFFSET 0x00042000 /* To be atmel-compatible */
