@@ -750,6 +750,14 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_OHO_GODIL__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
 #ifdef __ZPUINO_PAPILIO_PLUS__
 inline void configure_pins()
 {
