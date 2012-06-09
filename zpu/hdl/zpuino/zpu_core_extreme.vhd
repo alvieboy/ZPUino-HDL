@@ -763,42 +763,28 @@ begin
   process(wb_clk_i, wb_rst_i, decr, prefr, exu_busy, decode_jump, sp_load,
           decode_load_sp, dbg_in.flush)
     variable w: prefetchregs_type;
+    variable i_op_freeze: std_logic;
   begin
 
     w := prefr;
 
     pfu_busy<='0';
-
     stack_b_addr <= std_logic_vector(prefr.spnext + 1);
+    w.recompute_sp:='0';
 
-    if wb_rst_i='1' then
-      w.spnext := unsigned(spStart(10 downto 2));
-      w.sp := unsigned(spStart(10 downto 2));
-      w.valid := '0';
-      w.idim := '0';
-      w.recompute_sp:='0';
+    -- Stack
+    w.load := decode_load_sp;
+
+    if decode_load_sp='1' then
+      pfu_busy <= '1';
+      w.spnext := sp_load;
+      w.recompute_sp := '1';
     else
+      pfu_busy <= exu_busy;
 
-      w.recompute_sp:='0';
-
-      --if decr.valid='1' then
-
-        -- Stack
-        w.load := decode_load_sp;
-
-        if decode_load_sp='1' then
-          pfu_busy <= '1';
-          w.spnext := sp_load;
-          w.recompute_sp := '1';
-        else
-          
-          if exu_busy='1' then
-            pfu_busy <='1';
-          end if;
-
-          if decr.valid='1' then
-          if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
-            case decr.stackOperation is
+      if decr.valid='1' then
+        if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
+          case decr.stackOperation is
               when Stack_Push =>
                 w.spnext := prefr.spnext - 1;
               when Stack_Pop =>
@@ -806,40 +792,65 @@ begin
               when Stack_DualPop =>
                 w.spnext := prefr.spnext + 2;
               when others =>
-            end case;
-            w.sp := prefr.spnext;
-          end if;
-          end if;
+          end case;
+          w.sp := prefr.spnext;
         end if;
-      --end if;
+      end if;
+    end if;
 
-      case decr.decodedOpcode is
-        when Decoded_LoadSP | decoded_AddSP =>
-            stack_b_addr <= std_logic_vector(prefr.spnext + decr.spOffset);
-        when others =>
-      end case;
+    case decr.decodedOpcode is
+      when Decoded_LoadSP | decoded_AddSP =>
+          stack_b_addr <= std_logic_vector(prefr.spnext + decr.spOffset);
+      when others =>
+    end case;
 
-      if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
+    if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
+      w.valid := '0';
+    else
+      if dbg_in.flush='1' then
         w.valid := '0';
       else
-        if dbg_in.flush='1' then
-          w.valid := '0';
-        else
-          w.valid := decr.valid;
-        end if;
+        w.valid := decr.valid;
       end if;
-      
-      if exu_busy='0' then
-        w.decodedOpcode := decr.decodedOpcode;
-        w.tosSource     := decr.tosSource;
-        w.opcode        := decr.opcode;
-        w.opWillFreeze  := decr.opWillFreeze;
-        w.pc            := decr.pc;
-        w.fetchpc       := decr.pcint;
-        w.idim          := decr.idim;
-        w.break         := decr.break;
-      end if;
+    end if;
 
+    -- Moved op_will_freeze from decoder to here
+    case decr.decodedOpcode is
+      when Decoded_StoreSP
+          | Decoded_LoadB
+          | Decoded_Neqbranch
+          | Decoded_StoreB
+          | Decoded_Mult
+          | Decoded_Ashiftleft
+          | Decoded_Break
+          | Decoded_Load
+          | Decoded_Store
+          | Decoded_PopSP
+          | Decoded_MultF16 =>
+
+        i_op_freeze := '1';
+
+      when others =>
+        i_op_freeze := '0';
+    end case;
+
+    if exu_busy='0' then
+      w.decodedOpcode := decr.decodedOpcode;
+      w.tosSource     := decr.tosSource;
+      w.opcode        := decr.opcode;
+      w.opWillFreeze  := i_op_freeze;
+      w.pc            := decr.pc;
+      w.fetchpc       := decr.pcint;
+      w.idim          := decr.idim;
+      w.break         := decr.break;
+    end if;
+
+    if wb_rst_i='1' then
+      w.spnext := unsigned(spStart(10 downto 2));
+      --w.sp := unsigned(spStart(10 downto 2));
+      w.valid := '0';
+      w.idim := '0';
+      w.recompute_sp:='0';
     end if;
 
     if rising_edge(wb_clk_i) then
