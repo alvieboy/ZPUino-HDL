@@ -60,4 +60,5 @@ package zpu_config is
 	constant 	spStart				: std_logic_vector(maxAddrBitIncIO downto 0) :=
     conv_std_logic_vector((2**(maxAddrBitBRAM+1))-8, maxAddrBitIncIO+1);
 
+  constant enable_fmul16: boolean := false;
 end zpu_config;

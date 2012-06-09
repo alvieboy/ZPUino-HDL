@@ -7,7 +7,7 @@ This release is a minor release, with a few optimization features.
 \subsection*{Changes to the HDL Core}
 \begin{itemize}
 \item The multiplier and shifter are now merged together.
-\item Added a new ZPU instruction, FMUL16, opcode (01h), which performs a fixed-point 16:16 multiplication
+\item Added a new ZPU (optional) instruction, FMUL16, opcode (01h), which performs a fixed-point 16:16 multiplication
 \item Multiplier is now signed instead of unsigned
 \item SPI controller is now able to do 16, 24 and 32-bit transfers
 \item UART now has a bit depicting if all transmission has ended. Needed to fix a bug when your sketch changed baudrate and it was still transmitting.
