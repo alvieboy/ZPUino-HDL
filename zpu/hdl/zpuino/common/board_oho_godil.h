@@ -8,7 +8,7 @@
 #error Undefined board memory size
 #endif
 
-#define BOARD_SPI_DIVIDER /*BIT(SPICP0)*/0
+#define BOARD_SPI_DIVIDER BIT(SPICP0)
 
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
