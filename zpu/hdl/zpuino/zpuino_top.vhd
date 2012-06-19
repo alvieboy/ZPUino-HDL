@@ -177,6 +177,7 @@ architecture behave of zpuino_top is
     rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
     rom_wb_cyc_i:       in std_logic;
     rom_wb_stb_i:       in std_logic;
+    rom_wb_stall_o:     out std_logic;
     rom_wb_cti_i:       in std_logic_vector(2 downto 0)
   );
   end component wb_rom_ram;
@@ -299,6 +300,7 @@ architecture behave of zpuino_top is
   signal rom_wb_cyc_i:       std_logic;
   signal rom_wb_stb_i:       std_logic;
   signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal rom_wb_stall_i:     std_logic;
 
   signal dbg_to_zpu:         zpu_dbg_in_type;
   signal dbg_from_zpu:       zpu_dbg_out_type;
@@ -340,6 +342,7 @@ begin
       rom_wb_cyc_o  => rom_wb_cyc_i,
       rom_wb_stb_o  => rom_wb_stb_i,
       rom_wb_cti_o  => rom_wb_cti_i,
+      rom_wb_stall_i  => rom_wb_stall_i,
 
       dbg_in        => dbg_to_zpu,
       dbg_out       => dbg_from_zpu
@@ -379,7 +382,8 @@ begin
     rom_wb_adr_i      => rom_wb_adr_i,
     rom_wb_cyc_i      => rom_wb_cyc_i,
     rom_wb_stb_i      => rom_wb_stb_i,
-    rom_wb_cti_i      => rom_wb_cti_i
+    rom_wb_cti_i      => rom_wb_cti_i,
+    rom_wb_stall_o    => rom_wb_stall_i
   );
 
   dbg: zpuino_debug_core

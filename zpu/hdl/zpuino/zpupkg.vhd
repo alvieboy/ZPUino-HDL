@@ -131,6 +131,7 @@ package zpupkg is
     rom_wb_cyc_o:       out std_logic;
     rom_wb_stb_o:       out std_logic;
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);
+    rom_wb_stall_i:     in std_logic;
 
     -- Debug interface
     dbg_out:        out zpu_dbg_out_type;

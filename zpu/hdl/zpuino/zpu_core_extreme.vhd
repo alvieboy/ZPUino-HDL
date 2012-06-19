@@ -86,6 +86,7 @@ entity zpu_core_extreme is
     rom_wb_cyc_o:       out std_logic;
     rom_wb_stb_o:       out std_logic;
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);
+    rom_wb_stall_i:     in std_logic;
 
     -- Debug interface
 
@@ -627,17 +628,18 @@ begin
         when State_Run =>
 
           if pfu_busy='0' then
-            if dbg_in.injectmode='0' and decr.break='0' then
+            if dbg_in.injectmode='0' and decr.break='0' and rom_wb_stall_i='0' then
               w.fetchpc := pcnext;
             end if;
 
             -- Jump request
             if decode_jump='1' then
-              w.fetchpc := jump_address;
               w.valid := '0';
               w.im := '0';
               w.break := '0'; -- Invalidate eventual break after branch instruction
-              rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+              --rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+              rom_wb_cyc_o<='0';
+              w.fetchpc := jump_address;
               w.state := State_Jump;
             else
               if dbg_in.injectmode='1' then --or decr.break='1' then
@@ -671,7 +673,7 @@ begin
                   end if;
                 end if;
 
-                if prefr.break='0' then
+                if prefr.break='0' and rom_wb_stall_i='0' then
                   w.pcint := decr.fetchpc;
                   w.pc := decr.pcint;
                 end if;
