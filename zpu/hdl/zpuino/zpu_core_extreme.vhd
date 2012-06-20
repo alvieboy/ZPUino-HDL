@@ -648,7 +648,8 @@ begin
                 -- but save the current IM flag.
                 w.im_emu := decr.im;
                 w.valid := '0';
-                rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+                --rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
+                rom_wb_cyc_o <='0';
                 -- Wait until no work is to be done
                 if prefr.valid='0' and decr.valid='0' and exu_busy='0' then
                   w.state := State_Inject;
@@ -677,9 +678,9 @@ begin
                   w.pcint := decr.fetchpc;
                   w.pc := decr.pcint;
                 end if;
-
-                w.opcode := sampledOpcode;
-                
+                if rom_wb_stall_i='0' then
+                  w.opcode := sampledOpcode;
+                end if;
               end if;
 
             end if;

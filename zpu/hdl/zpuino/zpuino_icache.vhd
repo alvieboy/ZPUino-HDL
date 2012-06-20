@@ -110,6 +110,7 @@ architecture behave of zpuino_icache is
 
   signal fill_end: std_logic;
   signal fill_end_q: std_logic;
+  signal fill_end_q_q: std_logic;
   signal offcnt: unsigned(line_offset'HIGH+1 downto 2);
   signal offcnt_q: unsigned(line_offset'HIGH+1 downto 2);
 
@@ -128,6 +129,8 @@ architecture behave of zpuino_icache is
   signal access_i: std_logic;
   signal access_q: std_logic;
   signal stall: std_logic;
+  signal busy: std_logic;
+  signal hit: std_logic;
 
 begin
 
@@ -138,7 +141,7 @@ begin
   )
   port map (
     clka      => wb_clk_i,
-    ena       => '1',
+    ena       => access_i,
     wea       => '0',
     addra     => line,
     dia       => tag,
@@ -173,17 +176,6 @@ begin
     end if;
   end process;
 
-  ack <= '1' when ( tag_match='1' and valid='1') or fill_end_q='1' else '0';
-
-  fill_end<=offcnt(offcnt'HIGH);
-
-  miss <= not ack;
-  tag_mem_wen <= offcnt(offcnt'HIGH);
-  cache_addr_read <= line & line_offset when stall='0' else save_addr(CACHE_MAX_BITS-1 downto 2);
-  cache_addr_write <= line_save & std_logic_vector(offcnt_q(offcnt_q'HIGH-1 downto 2));
-  stall <= miss when access_q='1' else '0';
-  wb_stall_o <= stall;
-
   -- Address save
   process(wb_clk_i)
   begin
@@ -192,6 +184,7 @@ begin
         save_addr <= wb_adr_i;
       end if;
       fill_end_q <= fill_end;
+      fill_end_q_q <= fill_end_q;
     end if;
   end process;
 
@@ -241,7 +234,9 @@ begin
       if wb_rst_i='1' then
         access_q<='0';
       else
-        access_q <= access_i;
+        if busy='0' then
+          access_q <= access_i;
+        end if;
       end if;
     end if;
   end process;
@@ -249,9 +244,37 @@ begin
 
   wb_ack_o <= ack;
   m_wb_cyc_o <= cyc;
-  cyc <= '1' when miss='1' and tag_mem_wen='0' and access_q='1' else '0';
+  cyc <= '1' when miss='1' and tag_mem_wen='0' and access_q='1' else busy;
   m_wb_stb_o <= '1'; -- FIX
   m_wb_we_o<='0';
+
+  hit <= '1' when tag_match='1' and valid='1' else '0';
+
+  ack <= hit when busy='0' else fill_end_q_q;
+
+  fill_end<=offcnt(offcnt'HIGH);
+
+  miss <= not ack;
+  tag_mem_wen <= offcnt(offcnt'HIGH);
+  cache_addr_read <= line & line_offset when stall='0' else save_addr(CACHE_MAX_BITS-1 downto 2);
+  cache_addr_write <= line_save & std_logic_vector(offcnt_q(offcnt_q'HIGH-1 downto 2));
+  stall <= miss when access_q='1' else busy;
+  wb_stall_o <= stall;
+
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
+        busy<='0';
+      else
+        if fill_end_q='1' then
+          busy<='0';
+        elsif cyc='1' then
+          busy<='1';
+        end if;
+      end if;
+    end if;
+  end process;
 
   process(wb_adr_i,offcnt)
   begin
