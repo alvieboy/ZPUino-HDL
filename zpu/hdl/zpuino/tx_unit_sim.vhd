@@ -59,6 +59,7 @@ entity TxUnit is
      load_i   : in  std_logic;  -- Load input
      txd_o    : out std_logic;  -- RS-232 data output
      busy_o   : out std_logic;  -- Tx Busy
+     intx_o   : out std_logic;  -- In transmit
      datai_i  : in  std_logic_vector(7 downto 0)); -- Byte to transmit
 end entity TxUnit;
 
@@ -71,6 +72,7 @@ architecture Behaviour of TxUnit is
   signal lixo: integer;
 
 begin
+  intx_o <= '0';
   busy_o <= '0';--load_i or loaded_r;
   txd_o  <= txd_r;
   -- Tx process
