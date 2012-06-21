@@ -2,7 +2,7 @@
 #define __BOARD_H__
 
 #define CLK_FREQ 96000000UL
-#define SPIOFFSET 0x00046000
+#define SPIOFFSET 0x00050000
 
 #ifndef BOARD_MEMORYSIZE
 #error Undefined board memory size
