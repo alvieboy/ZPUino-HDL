@@ -167,13 +167,21 @@ begin
 end process;
 
 
-process(clk_wen)
+process(wb_clk_i)
 begin
-  if rising_edge(clk_wen) then
+  if falling_edge(wb_clk_i) then
     sram_data_read_q(31 downto 16) <= sram_data_read;
     sram_data_read_q(15 downto 0) <= sram_data_read_q(31 downto 16);
   end if;
 end process;
+
+--process(clk_wen)
+--begin
+--  if rising_edge(clk_wen) then
+--    sram_data_read_q(31 downto 16) <= sram_data_read;
+--    sram_data_read_q(15 downto 0) <= sram_data_read_q(31 downto 16);
+--  end if;
+--end process;
 
 process(wb_clk_i)
 begin

@@ -114,13 +114,13 @@ architecture behave of papilio_plus_top is
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
     "1111111111111111" &  -- Wing C
-    "1111111111111111" &  -- Wing B
+    "0000000000000000" &  -- Wing B
     "1111111111111111";   -- Wing A
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
     "1111111111111111" &  -- Wing C
-    "1111111111111111" &  -- Wing B
+    "0000000000000000" &  -- Wing B
     "1111111111111111";   -- Wing A
 
   -- I/O Signals
