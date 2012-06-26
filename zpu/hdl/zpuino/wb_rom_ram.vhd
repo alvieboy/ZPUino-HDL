@@ -36,31 +36,6 @@ end entity wb_rom_ram;
 
 architecture behave of wb_rom_ram is
 
-  component zpuino_icache is
-  port (
-    wb_clk_i:       in std_logic;
-    wb_rst_i:       in std_logic;
-
-    wb_ack_o:       out std_logic;
-    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
-    wb_cyc_i:       in std_logic;
-    wb_stb_i:       in std_logic;
-    wb_stall_o:     out std_logic;
-
-    -- Master wishbone interface
-
-    m_wb_ack_i:       in std_logic;
-    m_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
-    m_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    m_wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
-    m_wb_cyc_o:       out std_logic;
-    m_wb_stb_o:       out std_logic;
-    m_wb_stall_i:     in std_logic;
-    m_wb_we_o:        out std_logic
-  );
-  end component zpuino_icache;
-
   component dualport_ram is
   generic (
     maxbit: integer
@@ -85,7 +60,6 @@ architecture behave of wb_rom_ram is
 
   constant i_maxAddrBit: integer := 13; -- maxAddrBit
 
-
   signal memAWriteEnable:  std_logic;
   signal memAWriteMask:    std_logic_vector(3 downto 0);
   signal memAAddr:         std_logic_vector(i_maxAddrBit downto 2);
@@ -106,23 +80,17 @@ architecture behave of wb_rom_ram is
     do_wait: std_logic;
   end record;
   signal ramregs: ramregs_type;
-
-  signal i_rom_wb_clk_i:       std_logic;
-  signal i_rom_wb_rst_i:       std_logic;
-  signal i_rom_wb_ack_o:       std_logic;
-  signal i_rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal i_rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
-  signal i_rom_wb_cyc_i:       std_logic;
-  signal i_rom_wb_stb_i:       std_logic;
-  signal i_rom_wb_stall_o:       std_logic;
-
+  signal rom_ack: std_logic;
 begin
+
+  rom_wb_ack_o <= rom_ack;
+  rom_wb_stall_o <= '0';-- when rom_wb_cyc_i='0' else not rom_ack;
 
   -- System ROM/RAM
 
   ramrom: dualport_ram
   generic map (
-    maxbit => 13 --maxAddrBit
+    maxbit => 13--maxAddrBit
   )
   port map (
     clk               => ram_wb_clk_i,
@@ -144,39 +112,9 @@ begin
   memBWriteMask   <= (others => DontCareValue);
   memBWriteEnable <= '0';
 
-  i_rom_wb_dat_o    <= memBRead;
-  memBAddr        <= i_rom_wb_adr_i(i_maxAddrBit downto 2);
-  memBEnable      <= i_rom_wb_cyc_i and i_rom_wb_stb_i;
-
-  icache: zpuino_icache
-  port map (
-    wb_clk_i    => rom_wb_clk_i,
-    wb_rst_i    => rom_wb_rst_i,
-
-    wb_ack_o    => rom_wb_ack_o,
-    wb_dat_o    => rom_wb_dat_o,
-    wb_adr_i    => rom_wb_adr_i,
-    wb_cyc_i    => rom_wb_cyc_i,
-    wb_stb_i    => rom_wb_stb_i,
-    wb_stall_o  => rom_wb_stall_o,
-
-    -- Master wishbone interface
-
-    m_wb_ack_i  => i_rom_wb_ack_o,
-    m_wb_dat_i  => i_rom_wb_dat_o,
-    --m_wb_dat_o  => i_rom_wb_dat_i,
-    m_wb_adr_o  => i_rom_wb_adr_i,
-    m_wb_cyc_o  => i_rom_wb_cyc_i,
-    m_wb_stb_o  => i_rom_wb_stb_i,
-    --m_wb_we_o   => i_rom_wb_we_i,
-    m_wb_stall_i => '0'
-  );
-
-
-
-
-
-
+  rom_wb_dat_o    <= memBRead;
+  memBAddr        <= rom_wb_adr_i(i_maxAddrBit downto 2);
+  memBEnable      <= rom_wb_cyc_i and rom_wb_stb_i;
 
   -- ROM ack
 
@@ -184,34 +122,34 @@ begin
   begin
     if rising_edge(rom_wb_clk_i) then
       if rom_wb_rst_i='1' then
-        i_rom_wb_ack_o <= '0';
+        rom_ack <= '0';
         --rom_burst <= '0';
         rom_do_wait<='0';
       else
         if rom_do_wait='1' then
-          if rom_wb_cti_i=CTI_CYCLE_INCRADDR then
+          if true then--rom_wb_cti_i=CTI_CYCLE_INCRADDR then
               --rom_burst<='1';
               rom_do_wait<='0';
-              i_rom_wb_ack_o<='1';
+              rom_ack<='1';
             else
             
-              i_rom_wb_ack_o<='0';
+              rom_ack<='0';
               rom_do_wait<='0';
           end if;
         else
 
-          if i_rom_wb_cyc_i='1' and i_rom_wb_stb_i='1' then
-            if rom_wb_cti_i=CTI_CYCLE_INCRADDR then
+          if rom_wb_cyc_i='1' and rom_wb_stb_i='1' then
+            if true then --rom_wb_cti_i=CTI_CYCLE_INCRADDR then
               --rom_burst<='1';
               rom_do_wait<='0';
-              i_rom_wb_ack_o<='1';
+              rom_ack<='1';
             else
               --rom_burst<='0';
               rom_do_wait<='1';
-              i_rom_wb_ack_o<='1';
+              rom_ack<='1';
             end if;
-          elsif i_rom_wb_cyc_i='0' then
-            i_rom_wb_ack_o<='0';
+          elsif rom_wb_cyc_i='0' then
+            rom_ack<='0';
           end if;
         end if;
       end if;

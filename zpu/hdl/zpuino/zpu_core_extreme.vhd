@@ -597,7 +597,7 @@ begin
           pcnext, rom_wb_ack_i, wb_rst_i, sampledStackOperation, sampledspOffset,
           sampledTosSource, prefr.recompute_sp, sampledOpWillFreeze,
           dbg_in.flush, dbg_in.inject,dbg_in.injectmode,
-          prefr.valid, prefr.break
+          prefr.valid, prefr.break, rom_wb_stall_i
           )
     variable w: decoderegs_type;
   begin
@@ -639,8 +639,11 @@ begin
               w.break := '0'; -- Invalidate eventual break after branch instruction
               --rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
               rom_wb_cyc_o<='0';
-              w.fetchpc := jump_address;
-              w.state := State_Jump;
+              --if rom_wb_stall_i='0' then
+                w.fetchpc := jump_address;
+              --else
+                w.state := State_Jump;
+              --end if;
             else
               if dbg_in.injectmode='1' then --or decr.break='1' then
                 -- At this point we ought to push a new op into the pipeline.
@@ -1446,9 +1449,9 @@ begin
         -- TODO: move wroteback_q into EXU regs
         wroteback_q <= wroteback;
 
-        --if exr.break='1' then
-        --  report "BREAK" severity failure;
-        --end if;
+        if exr.break='1' then
+          report "BREAK" severity failure;
+        end if;
 
         -- Some sanity checks, to be caught in simulation
         if prefr.valid='1' then
