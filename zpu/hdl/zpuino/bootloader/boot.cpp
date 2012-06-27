@@ -64,7 +64,7 @@ struct bootloader_data_t bdata BDATA;
 
 static void outbyte(int);
 
-static void flush()
+void flush()
 {
 	/* Flush serial line */
 	while (UARTSTATUS & 4);
@@ -399,9 +399,10 @@ static void simpleReply(unsigned int r)
 	finishSend();
 }
 
-static int spi_read_status(register_t spidata)
+static int spi_read_status()
 {
 	unsigned int status;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
 
@@ -416,9 +417,10 @@ static int spi_read_status(register_t spidata)
 	return status;
 }
 
-static unsigned int spi_read_id(register_t spidata)
+static unsigned int spi_read_id()
 {
 	unsigned int ret;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
     /*
@@ -433,7 +435,7 @@ static unsigned int spi_read_id(register_t spidata)
 	return ret;
 }
 
-static void cmd_progmem(register_t spidata,unsigned char *buffer)
+static void cmd_progmem(unsigned char *buffer)
 {
 	/* Directly program memory. */
 
@@ -464,11 +466,12 @@ static void cmd_progmem(register_t spidata,unsigned char *buffer)
 }
 
 
-static void cmd_raw_send_receive(register_t spidata,unsigned char *buffer)
+static void cmd_raw_send_receive(unsigned char *buffer)
 {
 	unsigned int count;
 	unsigned int rxcount;
 	unsigned int txcount;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	// buffer[1-2] is number of TX bytes
 	// buffer[3-4] is number of RX bytes
@@ -506,10 +509,12 @@ static void cmd_raw_send_receive(register_t spidata,unsigned char *buffer)
 }
 
 
-static void cmd_sst_aai_program(register_t spidata,unsigned char *buffer)
+static void cmd_sst_aai_program(unsigned char *buffer)
 {
 	unsigned int count;
 	unsigned int txcount;
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+
 
 #ifndef __ZPUINO_S3E_EVAL__
 
@@ -542,7 +547,7 @@ static void cmd_sst_aai_program(register_t spidata,unsigned char *buffer)
 		spiwrite(spidata,buffer[6+count+1]);
 		spi_disable(spidata);
 		// Read back status, wait for completion
-		while (spi_read_status(spidata) & 1);
+		while (spi_read_status() & 1);
 	}
 
 	// Disable write enable
@@ -557,7 +562,7 @@ static void cmd_sst_aai_program(register_t spidata,unsigned char *buffer)
 #endif
 }
 
-static void cmd_set_baudrate(register_t spidata,unsigned char *buffer)
+static void cmd_set_baudrate(unsigned char *buffer)
 {
 
 	unsigned int bsel = buffer[1];
@@ -566,30 +571,29 @@ static void cmd_set_baudrate(register_t spidata,unsigned char *buffer)
 	bsel<<=8;
 	bsel |= buffer[3];
 	bsel<<=8;
-	bsel |= buffer[4];
+    bsel |= buffer[4];
 
 	simpleReply(BOOTLOADER_CMD_SETBAUDRATE);
 
 	// We ought to wait here, to ensure output is properly drained.
-	flush();
-	/*outbyte(0xff);
+	outbyte(0xff);
 	while ((UARTCTL&0x2)==2);
-     */
+
 	UARTCTL = bsel | BIT(UARTEN);
 }
 
 
-static void cmd_waitready(register_t spidata,unsigned char *buffer)
+static void cmd_waitready(unsigned char *buffer)
 {
 	int status;
 
 	if (is_atmel_flash()) {
 		do {
-			status = spi_read_status(spidata);
+			status = spi_read_status();
 		} while (!(status & 0x80));
 	} else {
 		do {
-			status = spi_read_status(spidata);
+			status = spi_read_status();
 		} while (status & 1);
 	}
 	prepareSend();
@@ -617,7 +621,7 @@ const unsigned char vstring[] = {
 	BOARD_ID
 };
 
-static void cmd_version(register_t spidata,unsigned char *buffer)
+static void cmd_version(unsigned char *buffer)
 {
 	// Reset boot counter
 	milisseconds = 0;
@@ -628,7 +632,7 @@ static void cmd_version(register_t spidata,unsigned char *buffer)
 	finishSend();
 }
 
-static void cmd_identify(register_t spidata,unsigned char *buffer)
+static void cmd_identify(unsigned char *buffer)
 {
 	// Reset boot counter
 	milisseconds = 0;
@@ -636,17 +640,17 @@ static void cmd_identify(register_t spidata,unsigned char *buffer)
 
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_IDENTIFY));
-	flash_id = spi_read_id(spidata);
+	flash_id = spi_read_id();
 	sendByte(flash_id>>16);
 	sendByte(flash_id>>8);
 	sendByte(flash_id);
-	id = spi_read_status(spidata);
+	id = spi_read_status();
 	sendByte(id);
 	finishSend();
 }
 
 
-static void cmd_enterpgm(register_t spidata,unsigned char *buffer)
+static void cmd_enterpgm(unsigned char *buffer)
 {
 	inprogrammode = 1;
 	// Disable timer.
@@ -654,7 +658,7 @@ static void cmd_enterpgm(register_t spidata,unsigned char *buffer)
 	simpleReply(BOOTLOADER_CMD_ENTERPGM);
 }
 
-static void cmd_leavepgm(register_t spidata,unsigned char *buffer)
+static void cmd_leavepgm(unsigned char *buffer)
 {
 	inprogrammode = 0;
 
@@ -663,8 +667,9 @@ static void cmd_leavepgm(register_t spidata,unsigned char *buffer)
 }
  
 
-void cmd_start(register_t spidata, unsigned char *buffer)
+void cmd_start(unsigned char *buffer)
 {
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	simpleReply(BOOTLOADER_CMD_START);
 
 	// Make sure we keep at least smallFS data
@@ -676,7 +681,7 @@ void cmd_start(register_t spidata, unsigned char *buffer)
 	start();
 }
 
-typedef void(*cmdhandler_t)(register_t spidata, unsigned char *);
+typedef void(*cmdhandler_t)(unsigned char *);
 
 static const cmdhandler_t handlers[] = {
 	&cmd_version,         /* CMD1 */
@@ -694,7 +699,6 @@ static const cmdhandler_t handlers[] = {
 
 inline void processCommand(unsigned char *buffer, unsigned bufferpos)
 {
-    register_t spidata = &SPIDATA;
 	unsigned int pos=0;
 	if (bufferpos<3)
 		return; // Too few data
@@ -716,7 +720,7 @@ inline void processCommand(unsigned char *buffer, unsigned bufferpos)
 	if (pos>BOOTLOADER_MAX_CMD)
 		return;
 	pos--;
-	handlers[pos](spidata,buffer);
+	handlers[pos](buffer);
 }
 
 #ifdef __ZPUINO_S3E_EVAL__
@@ -792,11 +796,10 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-	unsigned *bf=&_bfunctions[0];
-	*bf++ = (unsigned)&udivmodsi4;
-	*bf++ = (unsigned)&memcpy;
-	*bf++ = (unsigned)&memset;
-	*bf = (unsigned)&strcmp;
+	_bfunctions[0] = (unsigned)&udivmodsi4;
+	_bfunctions[1] = (unsigned)&memcpy;
+	_bfunctions[2] = (unsigned)&memset;
+	_bfunctions[3] = (unsigned)&strcmp;
 
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
