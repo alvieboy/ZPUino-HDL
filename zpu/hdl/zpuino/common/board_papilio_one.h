@@ -22,6 +22,7 @@
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
 
+#define __SST_FLASH__
 
 // Wing1 Column A
 #define FPGA_PIN_P18 0

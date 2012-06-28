@@ -163,6 +163,9 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
+#ifdef __ZPUINO_NEXYS3__
+			digitalWrite(FPGA_LED_0, LOW);
+#endif
 			spi_copy();
 		}
 #endif
@@ -295,6 +298,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef VERBOSE_LOADER
 	printstring("CP\r\n");
 #endif
+#ifdef __ZPUINO_NEXYS3__
+	digitalWrite(FPGA_LED_1, HIGH);
+#endif
+
 
 	spi_enable();
 	sketchsize=start_read_size(spidata);
@@ -311,6 +318,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		//printhexbyte((sketchsize)&0xff);
 		printstring("\r\n");
 #endif
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_2, HIGH);
+#endif
+
 		while(1) {}
 	}
 
@@ -350,6 +361,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		printhex(CRC16ACC);
 		printstring("\r\n");
 		*/
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_3, HIGH);
+#endif
+
 		while(1) {};
 	}
 
@@ -359,6 +374,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		//printhex(*board);
 		//printstring(" != ");
 		//printhex(BOARD_ID);
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_4, HIGH);
+#endif
+
 		while(1) {};
 	}
 
@@ -516,7 +535,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 
-#ifndef __ZPUINO_S3E_EVAL__
+#ifdef __SST_FLASH__
 
 	// buffer[1-2] is number of TX bytes
     // buffer[3-5] is address to program
@@ -772,6 +791,13 @@ inline void configure_pins()
 	pinModePPS(FPGA_PMOD_JA_2,LOW);
 	pinMode(FPGA_PMOD_JA_2, OUTPUT);
 	digitalWrite(FPGA_PMOD_JA_2,HIGH);
+}
+#endif
+#ifdef __ZPUINO_NEXYS3__
+inline void configure_pins()
+{
+	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
+	digitalWrite(FPGA_LED_0,HIGH);
 }
 #endif
 
