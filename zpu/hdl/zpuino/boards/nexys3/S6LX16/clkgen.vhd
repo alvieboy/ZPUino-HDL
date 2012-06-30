@@ -48,7 +48,8 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
-    rstout: out std_logic
+    rstout: out std_logic;
+    locked: out std_logic
   );
 end entity clkgen;
 
@@ -70,6 +71,7 @@ signal clkin_i_2: std_logic;
 begin
 
   clkout <= clkout_i;
+  locked <= dcmlocked;
 
   rstout <= rst1_q;
 
@@ -114,16 +116,16 @@ pll_base_inst : PLL_ADV
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
     COMPENSATION         => "SYSTEM_SYNCHRONOUS",
-    DIVCLK_DIVIDE        => 2,
-    CLKFBOUT_MULT        => 19,
+    DIVCLK_DIVIDE        => 1,
+    CLKFBOUT_MULT        => 5,
     CLKFBOUT_PHASE       => 0.000,
-    CLKOUT0_DIVIDE       => 10,
+    CLKOUT0_DIVIDE       => 5,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
-    CLKOUT1_DIVIDE       => 10,
+    CLKOUT1_DIVIDE       => 5,
     CLKOUT1_PHASE        => 319.500,--343.125,
     CLKOUT1_DUTY_CYCLE   => 0.500,
-    CLKOUT2_DIVIDE       => 10,
+    CLKOUT2_DIVIDE       => 5,
     CLKOUT2_PHASE        => 189.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
     CLKIN1_PERIOD         => 10.00,
