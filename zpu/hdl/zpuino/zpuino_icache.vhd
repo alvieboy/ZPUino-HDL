@@ -9,8 +9,8 @@ use work.zpu_config.all;
 use work.zpupkg.all;
 use work.wishbonepkg.all;
 
-library UNISIM;
-use UNISIM.vcomponents.all;
+--library UNISIM;
+--use UNISIM.vcomponents.all;
 
 entity zpuino_icache is
   port (
@@ -140,6 +140,7 @@ architecture behave of zpuino_icache is
   );
 
   signal state: state_type;
+  signal fill_success: std_logic;
 
 begin
 
@@ -181,7 +182,7 @@ begin
       else
         index := conv_integer(line_save);
         if tag_mem_wen='1' then
-          valid_mem(index) := '1';
+          valid_mem(index) := fill_success;
         end if;
       end if;
       valid_i <= valid_mem(conv_integer(line_save));
@@ -192,7 +193,7 @@ begin
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
-      if stall_i='0' then
+      if stall_i='0' and enable='1' then
         save_addr <= address;
       end if;
       fill_end_q <= fill_end;
@@ -250,28 +251,44 @@ begin
     end if;
   end process;
 
+
+  --fill_success<=fill_end;
+
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
         state <= running;
       else
+        busy <= '0';
+        
         case state is
           when running =>
             if access_q='1' then
               if miss='1' then
                 state <= filling;
                 offcnt <= (others => '0');
+                fill_success<='1';
               end if;
             end if;
           when filling =>
+            busy<='1';
             if m_wb_stall_i='0' then
               offcnt <= offcnt + 1;
             end if;
+            -- Abort
+            if enable='0' or strobe='0' then
+              --offcnt <= (others => '0');
+              --state <= running;
+              --fill_success<='0';
+              -- fill_success will be zero here, so will invalidate cache line
+            end if;
             if fill_end='1' then
               state <= ending;
+              offcnt <= (others => '0');
             end if;
           when ending =>
+            busy<='1';
             state <= running;
         end case;
       end if;
@@ -283,7 +300,20 @@ begin
   m_wb_cyc_o <= cyc;
   m_wb_stb_o <= cyc;
 
-  cyc <= '1' when miss='1' and tag_mem_wen='0' and strobe='1' and enable='1' and access_q='1' else busy;
+  process(miss,tag_mem_wen,strobe,enable,access_q,busy)
+  begin
+    if busy='1' then
+      cyc<='1';
+    else
+      if miss='1' and tag_mem_wen='0' and access_q='1' and enable='1' then --and strobe='1' and enable='1'
+        cyc <= '1';
+      else
+        cyc <= '0';
+      end if;
+    end if;
+  end process;
+
+
   m_wb_we_o<='0';
 
   hit <= '1' when tag_match='1' and valid_i='1' and access_q='1' else '0';
@@ -293,29 +323,31 @@ begin
   fill_end<=offcnt(offcnt'HIGH);
 
   miss <= not ack;
+
   tag_mem_wen <= offcnt(offcnt'HIGH);
+
   cache_addr_read <= line & line_offset when stall_i='0' else save_addr(CACHE_MAX_BITS-1 downto 2);
 
   cache_addr_write <= line_save & std_logic_vector(offcnt_q(offcnt_q'HIGH-1 downto 2));
 
   stall_i <= miss when access_q='1' else busy;
 
-  process(wb_clk_i)
-  begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
-        busy<='0';
-      else
-        if fill_end_q='1' then
-          busy<='0';
-        elsif cyc='1' then
-          busy<='1';
-        end if;
-      end if;
-    end if;
-  end process;
+--  process(wb_clk_i)
+--  begin
+--    if rising_edge(wb_clk_i) then
+--      if wb_rst_i='1' then
+--        busy<='0';
+--      else
+--        if fill_end_q='1' then
+--          busy<='0';
+--        elsif cyc='1' then
+--          busy<='1';
+--        end if;
+--      end if;
+--    end if;
+--  end process;
 
-  m_wb_adr_o(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= address(maxAddrBit downto CACHE_LINE_SIZE_BITS);
+  m_wb_adr_o(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
   m_wb_adr_o(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));
 
 end behave;
