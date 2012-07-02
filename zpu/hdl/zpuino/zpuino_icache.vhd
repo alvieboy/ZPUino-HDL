@@ -112,11 +112,11 @@ architecture behave of zpuino_icache is
   signal fill_end_q: std_logic;
   signal fill_end_q_q: std_logic;
   signal offcnt: unsigned(line_offset'HIGH+1 downto 2);
-  signal offcnt_q: unsigned(line_offset'HIGH+1 downto 2);
+  signal offcnt_write: unsigned(line_offset'HIGH+1 downto 2);
 
   signal tag_match: std_logic;
   signal save_addr: std_logic_vector(address'RANGE);
-  signal cyc, cyc_q: std_logic;
+  signal cyc, stb, cyc_q: std_logic;
   signal cache_addr_read,cache_addr_write:
     std_logic_vector(CACHE_MAX_BITS-1 downto 2);
 
@@ -247,7 +247,13 @@ begin
   --        offcnt <= offcnt + 1;
  --       end if;
   --    end if;
-      offcnt_q <= offcnt;
+      if cyc='0' then
+        offcnt_write <= (others =>'0');
+      else
+        if m_wb_ack_i='1' then
+          offcnt_write <= offcnt_write +1;
+        end if;
+      end if;
     end if;
   end process;
 
@@ -273,22 +279,17 @@ begin
             end if;
           when filling =>
             busy<='1';
-            if m_wb_stall_i='0' then
-              offcnt <= offcnt + 1;
-            end if;
-            -- Abort
-            if enable='0' or strobe='0' then
-              --offcnt <= (others => '0');
-              --state <= running;
-              --fill_success<='0';
-              -- fill_success will be zero here, so will invalidate cache line
-            end if;
+
+
             if fill_end='1' then
               state <= ending;
-              offcnt <= (others => '0');
+            else
+              if m_wb_stall_i='0' and stb='1' then
+                offcnt <= offcnt + 1;
+              end if;
             end if;
           when ending =>
-            busy<='1';
+            busy<='0';
             state <= running;
         end case;
       end if;
@@ -298,17 +299,24 @@ begin
 
   access_i <= strobe;
   m_wb_cyc_o <= cyc;
-  m_wb_stb_o <= cyc;
+  m_wb_stb_o <= stb;
 
-  process(miss,tag_mem_wen,strobe,enable,access_q,busy)
+  process(miss,tag_mem_wen,strobe,enable,access_q,busy,offcnt,m_wb_ack_i,fill_end)
   begin
     if busy='1' then
-      cyc<='1';
+      cyc <= '1';
+      if offcnt/="10000" then
+        stb<=not fill_end;
+      else
+        stb<='0';
+      end if;
     else
       if miss='1' and tag_mem_wen='0' and access_q='1' and enable='1' then --and strobe='1' and enable='1'
         cyc <= '1';
+        stb <= '1';
       else
         cyc <= '0';
+        stb <= '0';
       end if;
     end if;
   end process;
@@ -320,7 +328,7 @@ begin
 
   ack <= hit when busy='0' else fill_end_q_q;
 
-  fill_end<=offcnt(offcnt'HIGH);
+  fill_end<=offcnt_write(offcnt'HIGH);
 
   miss <= not ack;
 
@@ -328,24 +336,9 @@ begin
 
   cache_addr_read <= line & line_offset when stall_i='0' else save_addr(CACHE_MAX_BITS-1 downto 2);
 
-  cache_addr_write <= line_save & std_logic_vector(offcnt_q(offcnt_q'HIGH-1 downto 2));
+  cache_addr_write <= line_save & std_logic_vector(offcnt_write(offcnt_write'HIGH-1 downto 2));
 
   stall_i <= miss when access_q='1' else busy;
-
---  process(wb_clk_i)
---  begin
---    if rising_edge(wb_clk_i) then
---      if wb_rst_i='1' then
---        busy<='0';
---      else
---        if fill_end_q='1' then
---          busy<='0';
---        elsif cyc='1' then
---          busy<='1';
---        end if;
---      end if;
---    end if;
---  end process;
 
   m_wb_adr_o(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
   m_wb_adr_o(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));

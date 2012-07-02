@@ -20,6 +20,7 @@ entity wb_rom_ram is
     ram_wb_cyc_i:       in std_logic;
     ram_wb_stb_i:       in std_logic;
     ram_wb_we_i:        in std_logic;
+    ram_wb_stall_o:     out std_logic;
 
     rom_wb_clk_i:       in std_logic;
     rom_wb_rst_i:       in std_logic;
@@ -85,7 +86,7 @@ begin
 
   rom_wb_ack_o <= rom_ack;
   rom_wb_stall_o <= '0';-- when rom_wb_cyc_i='0' else not rom_ack;
-
+  ram_wb_stall_o <= '0';
   -- System ROM/RAM
 
   ramrom: dualport_ram

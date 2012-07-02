@@ -77,6 +77,25 @@ package zpuinopkg is
     m_wb_stb_i: in std_logic;
     m_wb_ack_o: out std_logic;
 
+    -- Memory connection
+
+    ram_wb_ack_i:       in std_logic;
+    ram_wb_stall_i:     in std_logic;
+    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    ram_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    ram_wb_cyc_o:       out std_logic;
+    ram_wb_stb_o:       out std_logic;
+    ram_wb_we_o:        out std_logic;
+
+    rom_wb_ack_i:       in std_logic;
+    rom_wb_stall_i:     in std_logic;
+    rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    rom_wb_cyc_o:       out std_logic;
+    rom_wb_cti_o:       out std_logic_vector(2 downto 0);
+    rom_wb_stb_o:       out std_logic;
+
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
@@ -324,11 +343,12 @@ package zpuinopkg is
     wb_dat_i: in std_logic_vector(31 downto 0);
     wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
     --wb_sel_i: in std_logic_vector(3 downto 0);
-    wb_cti_i: in std_logic_vector(2 downto 0);
+    --wb_cti_i: in std_logic_vector(2 downto 0);
     wb_we_i:  in std_logic;
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
+    wb_stall_o: out std_logic;
     clk_we: in std_logic;
     clk_wen: in std_logic;
 
@@ -369,5 +389,54 @@ package zpuinopkg is
   );
   end component;
 
+  component wbarb2_1 is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+    m0_wb_stall_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+    m1_wb_stall_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic;
+    s0_wb_stall_i: in std_logic
+  );
+  end component;
 
 end package zpuinopkg;
