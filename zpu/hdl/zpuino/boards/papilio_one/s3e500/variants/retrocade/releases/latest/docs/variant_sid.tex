@@ -1,0 +1,208 @@
+\documentclass[12pt,a4paper,openany,smallheadings,headinclude,headsepline,final]{scrreprt}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[pdftex]{graphicx}
+\usepackage{makeidx}
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{color}
+\usepackage[bookmarks,colorlinks=true]{hyperref}
+
+
+\def \board {Gadget Factory Papilio One 500 SID Variant }
+
+\begin{document}
+
+
+
+
+\lstset{ 
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{blue},
+commentstyle=\color{dkgreen},
+stringstyle=\color{mauve},
+}
+
+\parindent 0cm
+\parskip 0.2cm
+
+\title{ZPUino User Manual\\ \board}
+\maketitle
+
+\tableofcontents
+\clearpage
+
+\chapter{Board information}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rX}
+FPGA:              & Xilinx Spartan 3E 500, VQ100 (xc3s500e-4-vq100)\\
+Frequency:         & 96MHz (from on-board 32MHz oscillator)\\
+Memory size:       & 32KiB \\
+Bootloader size:   & 4KiB \\
+Stack size:        & 2KiB \\
+SPI flash:         & Any supported \\
+Reset type:        & UART Serial reset \\
+GPIO count:        & 49 \\
+UART:              & 2 (one connected to FTDI2232, other PPS) \\
+SPI:               & 2 (one connected to SPI flash, other PPS) \\
+SigmaDelta         & 1 2-channel 16-bit (PPS) \\
+Timers:            & 2 (one 16-bit, one 24-bit) \\
+PWM outputs:       & 2     \\
+SID Audio:         & one 18-bit with independent DAC \\
+SPI sketch offset: & 0x00046000
+\end{tabularx}
+\caption{\board}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{lllX}
+
+IO & Index & Mapping & Alias \\
+\hline
+I & 0 & USPI MISO & IOPIN\_USPI\_MISO \\
+I & 1 & UART2 RX & none \\
+O & 0 & SigmaDelta channel 0 & IOPIN\_SIGMADELTA0 \\
+O & 1 & Timer 0 PWM 0 &  IOPIN\_TIMER0\_OC \\
+O & 2 & Timer 1 PWM 0 & IOPIN\_TIMER1\_OC \\
+O & 3 & USPI MOSI & IOPIN\_USPI\_MOSI \\
+O & 4 & USPI SCK & IOPIN\_USPI\_SCK \\
+O & 5 & SigmaDelta channel 1 & IOPIN\_SIGMADELTA1 \\
+O & 6 & UART2 TX & none \\
+O & 8 & SID audio & none \\
+\end{tabularx}
+\caption{\board PPS mappings}
+\end{center}
+\end{table}
+
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+
+0 & FPGA\_PIN\_P18 & GPIO & I/O & WING\_A\_0 \\
+1 & FPGA\_PIN\_P23 & GPIO & I/O & WING\_A\_1 \\
+2 & FPGA\_PIN\_P26  & GPIO & I/O & WING\_A\_2 \\
+3 & FPGA\_PIN\_P33  & GPIO & I/O & WING\_A\_3 \\
+4 & FPGA\_PIN\_P35  & GPIO & I/O & WING\_A\_4 \\
+5 & FPGA\_PIN\_P40  & GPIO & I/O & WING\_A\_5 \\
+6 & FPGA\_PIN\_P53  & GPIO & I/O & WING\_A\_6 \\
+7 & FPGA\_PIN\_P57  & GPIO & I/O & WING\_A\_7 \\
+8 & FPGA\_PIN\_P60  & GPIO & I/O & WING\_A\_8 \\
+9 & FPGA\_PIN\_P62  & GPIO & I/O & WING\_A\_9 \\
+10 & FPGA\_PIN\_P65 & GPIO & I/O & WING\_A\_10 \\
+11 & FPGA\_PIN\_P67 & GPIO & I/O & WING\_A\_11 \\
+12 & FPGA\_PIN\_P70 & GPIO & I/O & WING\_A\_12 \\
+13 & FPGA\_PIN\_P79 & GPIO & I/O & WING\_A\_13 \\
+14 & FPGA\_PIN\_P84 & GPIO & I/O & WING\_A\_14 \\
+15 & FPGA\_PIN\_P86 & GPIO & I/O & WING\_A\_15
+\end{tabularx}
+\caption{\board pin mappings}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+16 &FPGA\_PIN\_P85 & GPIO & I/O & WING\_B\_0 \\
+17 &FPGA\_PIN\_P83 & GPIO & I/O & WING\_B\_1 \\
+18 &FPGA\_PIN\_P78 & GPIO & I/O & WING\_B\_2 \\
+19 &FPGA\_PIN\_P71 & GPIO & I/O & WING\_B\_3 \\
+20 &FPGA\_PIN\_P68 & GPIO & I/O & WING\_B\_4 \\
+21 &FPGA\_PIN\_P66 & GPIO & I/O & WING\_B\_5 \\
+22 &FPGA\_PIN\_P63 & GPIO & I/O & WING\_B\_6 \\
+23 &FPGA\_PIN\_P61 & GPIO & I/O & WING\_B\_7 \\
+24 &FPGA\_PIN\_P58 & GPIO & I/O & WING\_B\_8 \\
+25 &FPGA\_PIN\_P54 & GPIO & I/O & WING\_B\_9 \\
+26 &FPGA\_PIN\_P41 & GPIO & I/O & WING\_B\_10 \\
+27 &FPGA\_PIN\_P36 & GPIO & I/O & WING\_B\_11 \\
+28 &FPGA\_PIN\_P34 & GPIO & I/O & WING\_B\_12 \\
+29 &FPGA\_PIN\_P32 & GPIO & I/O & WING\_B\_13 \\
+30 &FPGA\_PIN\_P25 & GPIO & I/O & WING\_B\_14 \\
+31 &FPGA\_PIN\_P22 & GPIO & I/O & WING\_B\_15
+\end{tabularx}
+\caption{\board pin mappings (cont.)}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & PPS & Alias \\
+\hline
+32 & FPGA\_PIN\_P91 & GPIO & I/O & WING\_C\_0 \\
+33 & FPGA\_PIN\_P92 & GPIO & I/O & WING\_C\_1 \\
+34 & FPGA\_PIN\_P94 & GPIO & I/O &  WING\_C\_2 \\
+35 & FPGA\_PIN\_P95 & GPIO & I/O & WING\_C\_3 \\
+36 & FPGA\_PIN\_P98 & GPIO & I/O & WING\_C\_4 \\
+37 & FPGA\_PIN\_P2  & GPIO & I/O & WING\_C\_5 \\
+38 & FPGA\_PIN\_P3  & GPIO & I/O & WING\_C\_6 \\
+39 & FPGA\_PIN\_P4  & GPIO & I/O & WING\_C\_7 \\
+40 & FPGA\_PIN\_P5  & GPIO & I/O & WING\_C\_8 \\
+41 & FPGA\_PIN\_P9  & GPIO & I/O & WING\_C\_9 \\
+42 & FPGA\_PIN\_P10 & GPIO & I/O & WING\_C\_10 \\
+43 & FPGA\_PIN\_P11 & GPIO & I/O & WING\_C\_11 \\
+44 & FPGA\_PIN\_P12 & GPIO & I/O & WING\_C\_12 \\
+45 & FPGA\_PIN\_P15 & GPIO & I/O & WING\_C\_13 \\
+46 & FPGA\_PIN\_P16 & GPIO & I/O & WING\_C\_14 \\
+47 & FPGA\_PIN\_P17 & GPIO & I/O & WING\_C\_15 
+\end{tabularx}
+\caption{\board pin mappings (cont.)}
+\end{center}
+\end{table}
+
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{rlllX}
+Number & Name & Function & Alias \\
+\hline
+48 & FPGA\_PIN\_P24 & GPO & N/A &  FPGA\_PIN\_FLASHCS SPI\_FLASH\_SEL\_PIN 
+\end{tabularx}
+\caption{\board pin mappings (cont.)}
+\end{center}
+\end{table}
+
+%
+ % 
+  %%%% IO SLOTS
+ %
+%
+
+\begin{table}[H]
+\begin{center}
+\begin{tabularx}{14cm}{llX}
+IO Slot & Device & Notes \\
+\hline
+0 & SPI         & Connected to SPI flash \\
+1 & UART	& Connected to FT2232 \\
+2 & GPIO 	& \\
+3 & Timers 	& 1$\times$16 bit (one PWM), 1$\times$24 bit (one PWM) \\
+4 & Interrupt 	& Hardcoded \\
+5 & SigmaDelta 	& Mapped to PPS \\
+6 & SPI 	& Mapped to PPS \\
+7 & CRC16 	& \\
+8-10 & $empty$ 	& \\
+11 & UART 	& Mapped to PPS \\
+12-13 & $empty$    & \\
+14 & SID     & Mapped to PPS \\
+15 & $empty$ & 
+\end{tabularx}
+\caption{\board IO slot usage}
+\end{center}
+\end{table}
+
+
+
+\end{document}

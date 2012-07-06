@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated   -->
+<!--     by the Xilinx ISE software.  Any direct editing or        -->
+<!--     changes made to this file may result in unpredictable     -->
+<!--     behavior or data corruption.  It is strongly advised that -->
+<!--     users do not edit the contents of this file.              -->
+<!--                                                               -->
+<!-- Copyright (c) 1995-2011 Xilinx, Inc.  All rights reserved.    -->
+
+<messages>
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/stack.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/sid/clkgen.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/sid/papilio_one_top.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/sid/prom-generic-dp-32.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/zpu_config.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/zpuino_config.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/NetSID/src/sid_6581.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/NetSID/src/sid_components.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/NetSID/src/sid_voice.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/NetSID/src/wb_sid6581.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/simple_sigmadelta.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/zpuino_YM2149_linmix.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/zpuino_audiomixer.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/contrib/zpuino_pokey.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/dualport_ram.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/fifo.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/mult.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/pad.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/prescaler.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/shifter.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/spi.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/spiclkgen.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/sram_ctrl.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/timer.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/tx_unit.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/uart_brgen.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/wb_rom_ram.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/wbarb2_1.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/wbmux2.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/wishbonepkg.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpu_core_extreme.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_crc16.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_debug_core.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_debug_jtag.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_debug_spartan3e.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_empty_device.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_gpio.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_intr.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_io.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_serialreset.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_sigmadelta.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_spi.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_timers.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_top.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_uart.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_uart_mv_filter.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuino_uart_rx.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpuinopkg.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/zpupkg.vhd&quot; into library work</arg>
+</msg>
+
+</messages>
+

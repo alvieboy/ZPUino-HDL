@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated
+     by the Xilinx ISE software.  Any direct editing or
+     changes made to this file may result in unpredictable
+     behavior or data corruption.  It is strongly advised that
+     users do not edit the contents of this file. -->
+<messages>
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory1/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory2/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory3/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory4/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory5/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory8/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory6/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">slot11/fifo_instance/Mram_memory7/SPO</arg> has no load.
+</msg>
+
+<msg type="info" file="MapLib" num="562" delta="old" >No environment variables are currently set.
+</msg>
+
+<msg type="info" file="MapLib" num="159" delta="old" >Net Timing constraints on signal <arg fmt="%s" index="1">CLK</arg> are pushed forward through input buffer.
+</msg>
+
+<msg type="warning" file="Pack" num="504" delta="old" >The I/O component <arg fmt="%s" index="1">SPI_SCK</arg> has conflicting SLEW property values.  The symbol <arg fmt="%s" index="2">SPI_SCK</arg> has property value <arg fmt="%s" index="3">FAST</arg>.  The symbol <arg fmt="%s" index="4">ospiclk/obufi</arg> has property value <arg fmt="%s" index="5"></arg>.  The system will use the property value attached to symbol <arg fmt="%s" index="6">SPI_SCK</arg>.
+</msg>
+
+<msg type="warning" file="Pack" num="501" delta="old" >The I/O component <arg fmt="%s" index="1">SPI_SCK</arg> has conflicting DRIVE property values.  The symbol <arg fmt="%s" index="2">SPI_SCK</arg> has property value <arg fmt="%s" index="3">8</arg>.  The symbol <arg fmt="%s" index="4">ospiclk/obufi</arg> has property value <arg fmt="%s" index="5"></arg>.  The system will use the property value attached to symbol <arg fmt="%s" index="6">SPI_SCK</arg>.
+</msg>
+
+<msg type="warning" file="Pack" num="504" delta="old" >The I/O component <arg fmt="%s" index="1">TXD</arg> has conflicting SLEW property values.  The symbol <arg fmt="%s" index="2">TXD</arg> has property value <arg fmt="%s" index="3">FAST</arg>.  The symbol <arg fmt="%s" index="4">obuftx/obufi</arg> has property value <arg fmt="%s" index="5"></arg>.  The system will use the property value attached to symbol <arg fmt="%s" index="6">TXD</arg>.
+</msg>
+
+<msg type="warning" file="Pack" num="501" delta="old" >The I/O component <arg fmt="%s" index="1">TXD</arg> has conflicting DRIVE property values.  The symbol <arg fmt="%s" index="2">TXD</arg> has property value <arg fmt="%s" index="3">8</arg>.  The symbol <arg fmt="%s" index="4">obuftx/obufi</arg> has property value <arg fmt="%s" index="5"></arg>.  The system will use the property value attached to symbol <arg fmt="%s" index="6">TXD</arg>.
+</msg>
+
+<msg type="warning" file="Pack" num="501" delta="old" >The I/O component <arg fmt="%s" index="1">SPI_CS</arg> has conflicting DRIVE property values.  The symbol <arg fmt="%s" index="2">SPI_CS</arg> has property value <arg fmt="%s" index="3">8</arg>.  The symbol <arg fmt="%s" index="4">ospics/obufi</arg> has property value <arg fmt="%s" index="5"></arg>.  The system will use the property value attached to symbol <arg fmt="%s" index="6">SPI_CS</arg>.
+</msg>
+
+<msg type="info" file="Pack" num="1716" delta="old" >Initializing temperature to <arg fmt="%0.3f" index="1">85.000</arg> Celsius. (default - Range: <arg fmt="%0.3f" index="2">-40.000</arg> to <arg fmt="%0.3f" index="3">100.000</arg> Celsius)
+</msg>
+
+<msg type="info" file="Pack" num="1720" delta="old" >Initializing voltage to <arg fmt="%0.3f" index="1">1.140</arg> Volts. (default - Range: <arg fmt="%0.3f" index="2">1.140</arg> to <arg fmt="%0.3f" index="3">1.320</arg> Volts)
+</msg>
+
+<msg type="info" file="Pack" num="1650" delta="old" >Map created a placed design.
+</msg>
+
+<msg type="info" file="PhysDesignRules" num="772" delta="old" >To achieve optimal frequency synthesis performance with the CLKFX and CLKFX180 outputs of the DCM comp <arg fmt="%s" index="1">clkgen_inst/DCM_inst</arg>, consult the device Interactive Data Sheet.
+</msg>
+
+</messages>
+

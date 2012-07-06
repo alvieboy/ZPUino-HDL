@@ -1,0 +1,5 @@
+work	"../../../../../../contrib/simple_sigmadelta.vhd"
+work	"../../../../../../contrib/zpuino_audiomixer.vhd"
+work	"../../../../../../zpupkg.vhd"
+work	"../../../zpu_config.vhd"
+work	"../../../zpuino_config.vhd"
