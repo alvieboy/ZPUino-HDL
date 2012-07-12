@@ -74,109 +74,55 @@ end entity ${entity};
 
 architecture behave of ${entity} is
 
-  subtype RAM_WORD is STD_LOGIC_VECTOR (7 downto 0);
+  subtype RAM_WORD is STD_LOGIC_VECTOR (31 downto 0);
   type RAM_TABLE is array (0 to $twcount) of RAM_WORD;
 EOM
 
-# We use 4 rams here.
-
-my @rams = ([],[],[],[]);
+my @ram=();
 
 while ( $total_words ) {
     #print STDERR "E $val ";
     $mybuf="\0\0\0\0";
     sysread($in,$mybuf,4);
-    my @v = unpack("CCCC",$mybuf);
-    
-    @v=(0,0,0,0) unless scalar(@v);
-    my $index=0;
-    foreach (reverse @v) {
-        push (@{$rams[$index]}, $_);
-        $index++;
-    }
+    my $v = unpack("N",$mybuf);
+    push(@ram,$v);
     $addr++;
     $total_words--;
 }
 
-#    print "RAM_WORD'(x\"";
-#    printf ("%02x",$_) foreach @v;
-#    print "\")";
-#    print "," if $total_words>1;
-#    print "\n";
-#
-#print ");\n\n\n";
-
 # Output RAM contents
 
-my $index = 0;
-foreach my $ram (@rams)
-{
-    print " shared variable RAM${index}: RAM_TABLE := RAM_TABLE'(\n";
-    print join(",", map { sprintf("x\"%02x\"",$_) } @$ram );
-    print ");\n";
-    $index++;
-}
-print "signal rwea: std_logic_vector(3 downto 0);\n";
-print "signal rweb: std_logic_vector(3 downto 0);\n";
-
-# XST bug. We need to perform read decomposition.
-
-for ($index=0;$index<4;$index++) {
-    print "signal memaread${index}: std_logic_vector(7 downto 0);\n";
-    print "signal membread${index}: std_logic_vector(7 downto 0);\n";
-}
-
-
-
+print " shared variable RAM: RAM_TABLE := RAM_TABLE'(\n";
+print join(",", map { sprintf("x\"%08x\"",$_) } @ram );
+print ");\n";
 
 print "\nbegin\n";
 
-for ($index=0;$index<4;$index++) {
-    print "  rwea(${index}) <= WEA and MASKA(${index});\n";
-    print "  rweb(${index}) <= WEB and MASKB(${index});\n";
-}
-
-for ($index=0;$index<4;$index++) {
-    my $start = (($index+1)*8)-1;
-    my $end = $index*8;
-    print "DOA($start downto $end) <= memaread${index};\n";
-    print "DOB($start downto $end) <= membread${index};\n";
-}
-
-
-$index = 0;
-
-foreach my $ram (@rams)
-{
-    my $start = (($index+1)*8)-1;
-    my $end = $index*8;
-    print <<EOM;
+print <<EOM;
 
   process (clk)
   begin
     if rising_edge(clk) then
-    if ENA='1' then
-    if rwea(${index})='1' then
-      RAM${index}( conv_integer(ADDRA) ) := DIA($start downto $end);
+      if ENA='1' then
+        if WEA='1' then
+          RAM(conv_integer(ADDRA) ) := DIA;
+        end if;
+        DOA <= RAM(conv_integer(ADDRA)) ;
       end if;
-    memaread${index} <= RAM${index}(conv_integer(ADDRA)) ;
-    end if;
     end if;
   end process;  
 
   process (clk)
   begin
     if rising_edge(clk) then
-    if ENB='1' then
-      if rweb(${index})='1' then
-         RAM${index}( conv_integer(ADDRB) ) := DIB($start downto $end);
+      if ENB='1' then
+        if WEB='1' then
+          RAM( conv_integer(ADDRB) ) := DIB;
+        end if;
+        DOB <= RAM(conv_integer(ADDRB)) ;
       end if;
-      membread${index} <= RAM${index}(conv_integer(ADDRB)) ;
-    end if;
     end if;
   end process;  
 EOM
 
-$index++;
-}
 print "end behave;\n";

@@ -64,7 +64,7 @@ package zpuino_config is
   constant zpuino_gpio_count: integer := 50;
 
   -- Peripheral Pin Select
-  constant zpuino_pps_enabled: boolean := true;
+  constant zpuino_pps_enabled: boolean := false;
 
   -- Internal SPI ADC
   constant zpuino_adc_enabled: boolean := true;

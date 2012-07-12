@@ -60,6 +60,7 @@ entity zpuino_top is
     slot_interrupt: in slot_std_logic_type;
 
     dbg_reset:  out std_logic;
+    memory_enable: out std_logic;
 
     -- Memory accesses (for DMA)
     -- This is a master interface
@@ -271,7 +272,8 @@ architecture behave of zpuino_top is
   signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
   signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
   signal stack_clk: std_logic;
-
+  signal cache_flush: std_logic;
+  --signal memory_enable: std_logic;
 
   signal cpu_ram_wb_clk_i:       std_logic;
   signal cpu_ram_wb_rst_i:       std_logic;
@@ -305,6 +307,7 @@ begin
 
       poppc_inst    => poppc_inst,
 	 		break         => open,
+      cache_flush   => cache_flush,
 
       stack_clk     => stack_clk,
       stack_a_read  => stack_a_read,
@@ -373,6 +376,8 @@ begin
       wb_inta_o     => interrupt,
 
       intready      => poppc_inst,
+      cache_flush   => cache_flush,
+      memory_enable => memory_enable,
 
       slot_cyc      => slot_cyc,
       slot_we       => slot_we,

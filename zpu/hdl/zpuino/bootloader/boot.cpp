@@ -8,7 +8,6 @@
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
-#define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 #ifdef SIMULATION
 # define SPICODESIZE 0x1000
@@ -278,7 +277,7 @@ extern "C" void start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
-    start_sketch();
+	start_sketch();
 }
 
 unsigned start_read_size(register_t spidata)
@@ -429,10 +428,11 @@ static int spi_read_status()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
-
+#if 0
 	if (is_atmel_flash())
 		spiwrite(spidata,0x57);
 	else
+#endif
 		spiwrite(spidata,0x05);
 
 	spiwrite(spidata,0x00);
@@ -539,7 +539,6 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	unsigned int txcount;
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
-
 #ifdef __SST_FLASH__
 
 	// buffer[1-2] is number of TX bytes
@@ -584,6 +583,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
 #endif
+
 }
 
 static void cmd_set_baudrate(unsigned char *buffer)
@@ -846,7 +846,7 @@ extern "C" int main(int argc,char**argv)
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 	// Reset flash
 	spi_reset(&SPIDATA);
-#ifdef __ZPUINO_PAPILIO_ONE__
+#ifdef __SST_FLASH__
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable(&SPIDATA);

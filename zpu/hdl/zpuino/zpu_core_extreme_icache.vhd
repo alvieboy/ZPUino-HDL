@@ -88,6 +88,7 @@ entity zpu_core_extreme is
     rom_wb_cti_o:       out std_logic_vector(2 downto 0);
     rom_wb_stall_i:     in std_logic;
 
+    cache_flush:        in std_logic;
     -- Debug interface
 
     dbg_out:            out zpu_dbg_out_type;
@@ -121,7 +122,7 @@ component zpuino_icache is
     strobe:         in std_logic;
     enable:         in std_logic;
     stall:          out std_logic;
-
+    flush:          in std_logic;
     -- Master wishbone interface
 
     m_wb_ack_i:       in std_logic;
@@ -419,7 +420,7 @@ begin
     strobe      => cache_strobe,
     stall       => cache_stall,
     enable      => cache_enable,
-
+    flush       => cache_flush,
     -- Master wishbone interface
 
     m_wb_ack_i  => rom_wb_ack_i,
@@ -673,7 +674,7 @@ begin
       w.im_emu:='0';
       w.state := State_Run;
       w.break := '0';
-      cache_strobe <= '0';
+      cache_strobe <= DontCareValue;
     else
       cache_strobe <= '1';
 

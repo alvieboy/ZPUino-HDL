@@ -59,6 +59,9 @@ entity zpuino_intr is
 
     poppc_inst:in std_logic;
 
+    cache_flush: out std_logic;
+    memory_enable: out std_logic;
+
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0); -- edge interrupts
     intr_cfglvl: in std_logic_vector(INTERRUPT_LINES-1 downto 0) -- user-configurable interrupt level
   );
@@ -78,6 +81,8 @@ architecture behave of zpuino_intr is
   signal intr_in_q: std_logic_vector(INTERRUPT_LINES-1 downto 0);
   signal intr_level_q: std_logic_vector(INTERRUPT_LINES-1 downto 0);
   signal intr_served_q: std_logic_vector(INTERRUPT_LINES-1 downto 0); -- Interrupt being served
+
+  signal memory_enable_q: std_logic;
 begin
 
 
@@ -220,20 +225,27 @@ begin
       wb_inta_o <= '0';
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
+      memory_enable<='1';
+      cache_flush<='0';
     else
+      cache_flush<='0';
+
       if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
-        case wb_adr_i(3 downto 2) is
-          when "00" =>
+        case wb_adr_i(4 downto 2) is
+          when "000" =>
             ien_q <= wb_dat_i(0); -- Interrupt enable
             wb_inta_o <= '0';
-          when "01" =>
+          when "001" =>
             mask_q <= wb_dat_i(INTERRUPT_LINES-1 downto 0);
-          when "11" =>
+          when "011" =>
             for i in 0 to INTERRUPT_LINES-1 loop
               if intr_cfglvl(i)='1' then
                 intr_level_q(i) <= wb_dat_i(i);
               end if;
             end loop;
+          when "100" =>
+            memory_enable <= wb_dat_i(0);
+            cache_flush <= wb_dat_i(1);
           when others =>
         end case;
       end if;

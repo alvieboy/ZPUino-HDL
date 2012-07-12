@@ -109,6 +109,7 @@ package zpupkg is
 
     wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
+    cache_flush:    in std_logic;
     break:          out std_logic;
 
     stack_a_read:   in std_logic_vector(wordSize-1 downto 0);

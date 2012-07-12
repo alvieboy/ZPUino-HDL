@@ -77,6 +77,7 @@ package zpuinopkg is
     m_wb_stb_i: in std_logic;
     m_wb_ack_o: out std_logic;
 
+    memory_enable:      out std_logic;
     -- Memory connection
 
     ram_wb_ack_i:       in std_logic;
@@ -118,6 +119,8 @@ package zpuinopkg is
       wb_inta_o:out std_logic;
 
       intready: in std_logic;
+      cache_flush: out std_logic;
+      memory_enable: out std_logic;
 
       slot_cyc:   out slot_std_logic_type;
       slot_we:    out slot_std_logic_type;
@@ -267,6 +270,8 @@ package zpuinopkg is
     wb_inta_o:out std_logic;
 
     poppc_inst:in std_logic;
+    cache_flush: out std_logic;
+    memory_enable: out std_logic;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
     intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0)
@@ -438,5 +443,57 @@ package zpuinopkg is
     s0_wb_stall_i: in std_logic
   );
   end component;
+
+  component wbbootloadermux is
+  generic (
+    address_high: integer:=31;
+    address_low: integer:=2
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    sel:        in std_logic;
+    -- Master 
+
+    m_wb_dat_o: out std_logic_vector(31 downto 0);
+    m_wb_dat_i: in std_logic_vector(31 downto 0);
+    m_wb_adr_i: in std_logic_vector(address_high downto address_low);
+    m_wb_sel_i: in std_logic_vector(3 downto 0);
+    m_wb_cti_i: in std_logic_vector(2 downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+    m_wb_stall_o: out std_logic;
+
+    -- Slave 0 signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(address_high downto address_low);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic;
+    s0_wb_stall_i: in std_logic;
+
+    -- Slave 1 signals
+
+    s1_wb_dat_i: in std_logic_vector(31 downto 0);
+    s1_wb_dat_o: out std_logic_vector(31 downto 0);
+    s1_wb_adr_o: out std_logic_vector(11 downto 2);
+    s1_wb_sel_o: out std_logic_vector(3 downto 0);
+    s1_wb_cti_o: out std_logic_vector(2 downto 0);
+    s1_wb_we_o:  out std_logic;
+    s1_wb_cyc_o: out std_logic;
+    s1_wb_stb_o: out std_logic;
+    s1_wb_ack_i: in std_logic;
+    s1_wb_stall_i: in std_logic
+
+  );
+  end component wbbootloadermux;
 
 end package zpuinopkg;

@@ -71,16 +71,26 @@ signal stall: std_logic;
 
 signal ack_q, ack_q_q, ack_q_q_q: std_logic;
 
+signal sram_ce_i: std_logic :='1';
+signal sram_we_i: std_logic :='1';
+signal sram_be_i: std_logic :='0';
+signal sram_oe_i: std_logic :='1';
+
 attribute IOB : string;
 attribute IOB of sram_data_write: signal is "FORCE";
---attribute IOB of sram_ce: signal is "FORCE";
---attribute IOB of sram_we: signal is "FORCE";
---attribute IOB of sram_oe: signal is "FORCE";
---attribute IOB of sram_be: signal is "FORCE";
+attribute IOB of sram_ce_i: signal is "FORCE";
+attribute IOB of sram_we_i: signal is "FORCE";
+attribute IOB of sram_oe_i: signal is "FORCE";
+attribute IOB of sram_be_i: signal is "FORCE";
 attribute IOB of sram_addr_q: signal is "FORCE";
 
 
 begin
+
+sram_ce <= sram_ce_i;
+sram_we <= sram_we_i;
+sram_be <= sram_be_i;
+sram_oe <= sram_oe_i;
 
 sram_be <= '0';
 wb_stall_o <= stall;
@@ -107,7 +117,7 @@ ODDR2_nWE : ODDR2
       INIT          => '1',     -- Sets initial state of the Q output to '0' or '1'
       SRTYPE        => "ASYNC") -- Specifies "SYNC" or "ASYNC" set/reset
    port map (
-      Q  => sram_we,              -- 1-bit output data
+      Q  => sram_we_i,              -- 1-bit output data
       C0 => clk_we,              -- 1-bit clock input
       C1 => wb_clk_i,--clk_wen,             -- 1-bit clock input
       CE => '1',                  -- 1-bit clock enable input
@@ -119,7 +129,7 @@ ODDR2_nWE : ODDR2
 
 
 
-process(state,wb_cyc_i,wb_stb_i,wb_we_i)
+process(state,wb_cyc_i,wb_stb_i,wb_we_i,write_save_q)
 begin
   case state is
     when idle =>
@@ -159,7 +169,7 @@ end generate;
       CE => strobe_addr
     );
 
-process(state,wb_cyc_i,wb_stb_i)
+process(state,wb_cyc_i,wb_stb_i,wb_adr_i,addr_save_q)
 begin
   strobe_addr <='0';
   even_odd <= DontCareValue;
@@ -237,17 +247,19 @@ begin
       state <= idle;
       --out_write_enable<='1';
       --sram_we <= '1';
-      sram_ce <= '1';
-      sram_oe <= '1';
+      sram_ce_i <= '1';
+      sram_oe_i <= '1';
       ack_q_q_q <= '0';
       ack_q_q   <= '0';
-      ack_q     <= '0';
+--      ack_q     <= '0';
       sram_data_write <= (others => DontCareValue);
     else
+      sram_ce_i <= '1';
+      sram_oe_i <= '1';
       sram_data_write <= (others => DontCareValue);
       ack_q_q_q <= '0';
       ack_q_q <= ack_q_q_q;
-      ack_q <= ack_q_q;
+--      ack_q <= ack_q_q;
 
       case state is
 
@@ -255,8 +267,8 @@ begin
           if wb_cyc_i='1' and wb_stb_i='1' then
 
             sram_data_write <= wb_dat_i(15 downto 0);
-            sram_oe <= wb_we_i;
-            sram_ce <= '0';
+            sram_oe_i <= wb_we_i;
+            sram_ce_i <= '0';
 
             state <= stage1;
 
@@ -265,20 +277,20 @@ begin
         when stage1 =>
 
           sram_data_write <= wb_dat_i(31 downto 16);
-          sram_oe <= write_save_q;
-          sram_ce <= '0';
+          sram_oe_i <= write_save_q;
+          sram_ce_i <= '0';
           state <= stage2;
 
         when stage2 =>
 
           if wb_stb_i='1' then
             sram_data_write <= wb_dat_i(15 downto 0);
-            sram_oe <= wb_we_i;
-            sram_ce <= '0';
+            sram_oe_i <= wb_we_i;
+            sram_ce_i <= '0';
             state <= stage1;
           else
-            sram_oe <= '1';
-            sram_ce <= '1';
+            sram_oe_i <= '1';
+            sram_ce_i <= '1';
             state <= idle;
           end if;
           ack_q_q_q <= '1';

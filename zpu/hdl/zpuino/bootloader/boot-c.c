@@ -1,5 +1,5 @@
 #include "register.h"
-
+#include "zpuino.h"
 extern void (*ivector)(void);
 
 void ___zpu_interrupt_vector()
@@ -25,7 +25,7 @@ void ___zpu_interrupt_vector()
 
 extern unsigned char __ram_start,__data_start,__data_end;
 
-void __copy_data(void)
+static void __copy_data(void)
 {
 	unsigned int *cptr;
 	cptr = (unsigned int*)&__ram_start;
@@ -39,9 +39,12 @@ void __copy_data(void)
 }
 
 extern int main(int,char**);
-
+extern void __sys_load();
 void _premain()
 {
+ //   digitalWrite(FPGA_LED_PIN,HIGH);
+	__sys_load();
+   // digitalWrite(FPGA_LED_PIN,LOW);
  //   __copy_data();
 	main(0,0);
 }
