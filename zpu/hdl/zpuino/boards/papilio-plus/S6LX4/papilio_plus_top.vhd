@@ -1,4 +1,5 @@
 --
+--
 --  ZPUINO implementation on Gadget Factory 'Papilio Plus' Board
 -- 
 --  Copyright 2011 Alvaro Lopes <alvieboy@alvie.com>
@@ -409,15 +410,15 @@ begin
 
       -- No debug unit connected
       dbg_reset     => open,
-      jtag_data_chain_out => jtag_data_chain_in,
-      jtag_ctrl_chain_in  => jtag_ctrl_chain_out
+      jtag_data_chain_out => open,            --jtag_data_chain_in,
+      jtag_ctrl_chain_in  => (others => '0'), --jtag_ctrl_chain_out
       );
 
-  dbg: zpuino_debug_jtag_spartan6
-    port map (
-      jtag_data_chain_in    => jtag_data_chain_in,
-      jtag_ctrl_chain_out   => jtag_ctrl_chain_out
-    );
+  --dbg: zpuino_debug_jtag_spartan6
+  --  port map (
+  --    jtag_data_chain_in    => jtag_data_chain_in,
+  --    jtag_ctrl_chain_out   => jtag_ctrl_chain_out
+  --  );
 
   memarb: wbarb2_1
   generic map (
