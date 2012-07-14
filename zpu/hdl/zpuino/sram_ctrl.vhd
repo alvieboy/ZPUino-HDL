@@ -84,6 +84,10 @@ attribute IOB of sram_oe_i: signal is "FORCE";
 attribute IOB of sram_be_i: signal is "FORCE";
 attribute IOB of sram_addr_q: signal is "FORCE";
 
+attribute keep: string;
+attribute keep of sram_addr_q: signal is "true";
+attribute keep of out_addr: signal is "true";
+attribute keep of strobe_addr: signal is "true";
 
 begin
 
@@ -99,34 +103,6 @@ wb_stall_o <= stall;
 sram_data <= sram_data_write_i when wb_we_i='1' and wb_cyc_i='1' else (others => 'Z');
 
 sram_data_write_i <= transport sram_data_write after 1.7 ns;
---outbuffers: block
---  begin
--- sramdatabuf: for i in 0 to 15 generate
---    dbuf: BUFT
---      port map (
---        I => sram_data_write(i),
---        O => sram_data(i),
---        T => bus_tristate
---      );
---  end generate;
---end block;
-
-ODDR2_nWE : ODDR2
-   generic map(
-      DDR_ALIGNMENT => "NONE",    -- Sets output alignment to "NONE", "C0", "C1" 
-      INIT          => '1',     -- Sets initial state of the Q output to '0' or '1'
-      SRTYPE        => "ASYNC") -- Specifies "SYNC" or "ASYNC" set/reset
-   port map (
-      Q  => sram_we_i,              -- 1-bit output data
-      C0 => clk_we,              -- 1-bit clock input
-      C1 => wb_clk_i,--clk_wen,             -- 1-bit clock input
-      CE => '1',                  -- 1-bit clock enable input
-      D0 => '1', -- 1-bit data input (associated with C0)
-      D1 => out_write_enable, -- 1-bit data input (associated with C1)
-      R  => '0',                   -- 1-bit reset input
-      S  => '0'                   -- 1-bit set input
-   );
-
 
 
 process(state,wb_cyc_i,wb_stb_i,wb_we_i,write_save_q)
@@ -147,26 +123,56 @@ sram_addr <= sram_addr_q;
 
 sram_data_read <= transport sram_data after 3 ns;
 
+ODDR2_nWE : ODDR2
+   generic map(
+      DDR_ALIGNMENT => "NONE",    -- Sets output alignment to "NONE", "C0", "C1" 
+      INIT          => '1',     -- Sets initial state of the Q output to '0' or '1'
+      SRTYPE        => "ASYNC") -- Specifies "SYNC" or "ASYNC" set/reset
+   port map (
+      Q  => sram_we_i,              -- 1-bit output data
+      C0 => clk_we,              -- 1-bit clock input
+      C1 => wb_clk_i,--clk_wen,             -- 1-bit clock input
+      CE => '1',                  -- 1-bit clock enable input
+      D0 => '1', -- 1-bit data input (associated with C0)
+      D1 => out_write_enable, -- 1-bit data input (associated with C1)
+      R  => '0',                   -- 1-bit reset input
+      S  => '0'                   -- 1-bit set input
+   );
+
+
 saq: for index in 1 to 18 generate
-  addrff: FDE
+  addrff: ODDR2
+    generic map (
+      DDR_ALIGNMENT => "NONE",  
+      INIT          => '0',
+      SRTYPE        => "ASYNC") 
     port map (
-      D => out_addr(index+1),
+      D0 => out_addr(index+1),
       Q => sram_addr_q(index),
-      C => wb_clk_i,
-      CE => strobe_addr
+      C0 => wb_clk_i,
+      D1 => '0',
+      C1 => '0',
+      CE => strobe_addr,
+      R  => '0',
+      S  => '0'
     );
 
 end generate;
 
-  sram_addr_q_0: FDE
+  sram_addr_q_0: ODDR2
     generic map (
-      INIT => '1'
-    )
+      DDR_ALIGNMENT => "NONE",  
+      INIT          => '0',
+      SRTYPE        => "ASYNC") 
     port map (
-      D => even_odd,
+      D0 => even_odd,
+      D1 => '0',
       Q => sram_addr_q(0),
-      C => wb_clk_i,
-      CE => strobe_addr
+      C0 => wb_clk_i,
+      C1 => '0',
+      CE => strobe_addr,
+      R => '0',
+      S => '0'
     );
 
 process(state,wb_cyc_i,wb_stb_i,wb_adr_i,addr_save_q)

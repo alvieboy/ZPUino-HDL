@@ -323,7 +323,8 @@ begin
         stb<='0';
       end if;
     else
-      if miss='1' and tag_mem_wen='0' and access_q='1' and enable='1' then --and strobe='1' and enable='1'
+      --if miss='1' and tag_mem_wen='0' and access_q='1' and enable='1' then --and strobe='1' and enable='1'
+      if tag_mem_wen='0' then
         if state=filling then
         cyc <= '1';
         stb <= '1';

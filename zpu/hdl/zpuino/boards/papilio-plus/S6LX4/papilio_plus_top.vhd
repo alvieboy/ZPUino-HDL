@@ -411,7 +411,7 @@ begin
       -- No debug unit connected
       dbg_reset     => open,
       jtag_data_chain_out => open,            --jtag_data_chain_in,
-      jtag_ctrl_chain_in  => (others => '0'), --jtag_ctrl_chain_out
+      jtag_ctrl_chain_in  => (others => '0') --jtag_ctrl_chain_out
       );
 
   --dbg: zpuino_debug_jtag_spartan6
