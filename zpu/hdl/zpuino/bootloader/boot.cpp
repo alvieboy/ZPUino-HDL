@@ -816,7 +816,7 @@ extern "C" int main(int argc,char**argv)
 	inprogrammode = 0;
 	milisseconds = 0;
 	unsigned bufferpos = 0;
-    unsigned char buffer[256 + 32];
+	unsigned char buffer[256 + 32];
 	int syncSeen;
 	int unescaping;
 

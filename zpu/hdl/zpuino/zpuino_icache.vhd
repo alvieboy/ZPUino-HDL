@@ -79,7 +79,7 @@ architecture behave of zpuino_icache is
 
   constant ADDRESS_HIGH: integer := 18;
   constant ADDRESS_LOW: integer := 0;
-  constant CACHE_MAX_BITS: integer := 11; -- 2 Kb
+  constant CACHE_MAX_BITS: integer := 13; -- 8 Kb
   constant CACHE_LINE_SIZE_BITS: integer := 6; -- 64 bytes
   constant CACHE_LINE_ID_BITS: integer := CACHE_MAX_BITS-CACHE_LINE_SIZE_BITS;
 
@@ -108,11 +108,13 @@ architecture behave of zpuino_icache is
   signal miss: std_logic;
   signal ack: std_logic;
 
-  signal fill_end: std_logic;
-  signal fill_end_q: std_logic;
-  signal fill_end_q_q: std_logic;
+--  signal fill_end: std_logic;
+--  signal fill_end_q: std_logic;
+--  signal fill_end_q_q: std_logic;
   signal offcnt: unsigned(line_offset'HIGH+1 downto 2);
-  signal offcnt_write: unsigned(line_offset'HIGH+1 downto 2);
+  signal offcnt_write: unsigned(line_offset'HIGH downto 2);
+
+  constant offcnt_full: unsigned(line_offset'HIGH downto 2) := (others => '1');
 
   signal tag_match: std_logic;
   signal save_addr: std_logic_vector(address'RANGE);
@@ -136,6 +138,7 @@ architecture behave of zpuino_icache is
   type state_type is (
     running,
     filling,
+    waitwrite,
     ending
   );
 
@@ -154,7 +157,7 @@ begin
     ena       => tag_mem_enable,
     wea       => '0',
     addra     => line,
-    dia       => tag,
+    dia       => (others => DontCareValue),
     doa       => ctag,
 
     clkb      => wb_clk_i,
@@ -183,10 +186,14 @@ begin
       else
         index := conv_integer(line_save);
         if tag_mem_wen='1' then
-          valid_mem(index) := fill_success;
+          valid_mem(index) := '1';--fill_success;
         end if;
       end if;
-      valid_i <= valid_mem(conv_integer(line));
+      if enable='1' and strobe='1' then
+        valid_i <= valid_mem(conv_integer(line));
+      --else
+      --  valid_i <= valid_mem(conv_integer(line_save));
+      end if;
     end if;
   end process;
 
@@ -194,16 +201,17 @@ begin
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
-        fill_end_q<='0';
-        fill_end_q_q<='0';
-      else
-        if stall_i='0' and enable='1' then
+      --if wb_rst_i='1' then
+        --fill_end_q<='0';
+        --fill_end_q_q<='0';
+      --else
+        if stall_i='0' and enable='1' and strobe='1' then
+        --if busy='0' and enable='1' and strobe='1' then
           save_addr <= address;
         end if;
-        fill_end_q <= fill_end;
-        fill_end_q_q <= fill_end_q;
-      end if;
+        --fill_end_q <= fill_end;
+        --fill_end_q_q <= fill_end_q;
+      --end if;
     end if;
   end process;
 
@@ -242,32 +250,6 @@ begin
   end process;
 
 
-  -- offset counter
-  process(wb_clk_i)
-  begin
-    if rising_edge(wb_clk_i) then
-  --    if offcnt(offcnt'HIGH)='1' or wb_rst_i='1' then  -- this is probably ! ack.
-  --      offcnt <= (others => '0');
-  --    else
-  --     if m_wb_stall_i='0' and cyc='1' then
-  --        offcnt <= offcnt + 1;
- --       end if;
-  --    end if;
-      if cyc='0' then
-        offcnt_write <= (others =>'0');
-      else
-        if m_wb_ack_i='1' then
-          offcnt_write <= offcnt_write +1;
-        elsif state=ending then
-          offcnt_write <= (others => '0');
-        end if;
-      end if;
-    end if;
-  end process;
-
-
-  --fill_success<=fill_end;
-
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
@@ -278,87 +260,122 @@ begin
         offcnt <= (others => '0');
       else
         busy <= '0';
-        
+        cyc <= '0';
+        stb <= '0';
+        tag_mem_wen <= '0';
+        fill_success <='0';
+
         case state is
           when running =>
+
             if access_q='1' then
-              if miss='1' then
+              if miss='1' and enable='1' then
                 state <= filling;
                 offcnt <= (others => '0');
-                fill_success<='1';
+                offcnt_write <= (others => '0');
+                cyc <= '1';
+                stb <= '1';
+                --fill_success<='1';
                 busy <= '1';
               end if;
             end if;
+
           when filling =>
             busy<='1';
+            cyc <= '1';
+            stb <= '1';
+            --if offcnt(offcnt'HIGH)='0' then
+            --  stb <= '1';
+            --else
+            --  stb <= '0';
+            --end if;
 
+            if m_wb_ack_i='1' then
+              offcnt_write <= offcnt_write + 1;
+              -- This will go to 0, but we check before and switch state
+              if offcnt_write=offcnt_full then
+                tag_mem_wen<='1';
+                state <= waitwrite;
+              end if;
+            end if;
+              
 
-            if fill_end='1' then
-              state <= ending;
-            else
-              if m_wb_stall_i='0' and stb='1' then
+            --if offcnt_write = offcnt_full then
+            --  state <= waitwrite;
+            --  offcnt <= (others => '0');
+            --else
+
+            if m_wb_stall_i='0' then
+              if offcnt(offcnt'HIGH)='0' then
                 offcnt <= offcnt + 1;
               end if;
             end if;
+
+          when waitwrite =>
+            busy<='1';
+            state <= ending;
+
           when ending =>
             busy<='0';
+            fill_success<='1';
             state <= running;
         end case;
       end if;
     end if;
   end process;
 
-
-  access_i <= strobe;
-  m_wb_cyc_o <= cyc;
-  m_wb_stb_o <= stb;
-
-  process(miss,tag_mem_wen,strobe,enable,access_q,busy,offcnt,m_wb_ack_i,fill_end,state)
+  process(fill_success, busy, hit)
   begin
     if busy='1' then
-      cyc <= '1';
-      if offcnt/="10000" then
-        stb<=not fill_end;
-      else
-        stb<='0';
-      end if;
+      ack <= '0';
+    elsif fill_success='1' then
+      ack <= '1';
     else
-      --if miss='1' and tag_mem_wen='0' and access_q='1' and enable='1' then --and strobe='1' and enable='1'
-      if tag_mem_wen='0' then
-        if state=filling then
-        cyc <= '1';
-        stb <= '1';
-        else
-        cyc <= '0';
-        stb <= '0';
-        
-        end if;
-      else
-        cyc <= '0';
-        stb <= '0';
-      end if;
+      ack <= hit;
     end if;
   end process;
 
+    --if busy='0' then
+  --    ack <= hit;
+  --  else
+   --   ack <= fill_success;
+--      if state=ending then
+--        ack <= '1';
+--      else
+--        ack <= '0';
+--      end if;
+  --  end if;
+ -- end process;
 
-  m_wb_we_o<='0';
+  access_i <= strobe;
 
   hit <= '1' when tag_match='1' and valid_i='1' and access_q='1' else '0';
 
-  ack <= hit when busy='0' else fill_end_q;
-
-  fill_end<=offcnt_write(offcnt'HIGH);
-
-  miss <= not ack;
-
-  tag_mem_wen <= offcnt_write(offcnt'HIGH);
+  miss <= not hit;
 
   cache_addr_read <= line & line_offset when stall_i='0' else save_addr(CACHE_MAX_BITS-1 downto 2);
 
-  cache_addr_write <= line_save & std_logic_vector(offcnt_write(offcnt_write'HIGH-1 downto 2));
+  cache_addr_write <= line_save & std_logic_vector(offcnt_write(offcnt_write'HIGH downto 2));
 
-  stall_i <= miss when access_q='1' else busy;
+  process(busy,miss,access_q)
+  begin
+    if busy='1' then
+      stall_i<='1';
+    elsif fill_success='1' then
+      stall_i <= '0';
+    else
+      if access_q='1' then
+        stall_i<=miss;
+      else
+        stall_i<='0';
+      end if;
+    end if;
+  end process;
+  --stall_i <= miss when access_q='1' else busy;
 
+  m_wb_cyc_o <= cyc;
+  m_wb_stb_o <= stb when offcnt(offcnt'HIGH)='0' else '0';
+  m_wb_we_o<='0';
   m_wb_adr_o(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
   m_wb_adr_o(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));
 

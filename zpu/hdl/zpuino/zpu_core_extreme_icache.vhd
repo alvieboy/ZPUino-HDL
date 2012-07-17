@@ -440,7 +440,6 @@ begin
     and exr.inInterrupt='0'
     else '0';
 
-
   decodeControl:
   process(cache_data, tOpcode_sel, sp_load, decr,
     do_interrupt, dbg_in.inject, dbg_in.opcode)
@@ -817,7 +816,6 @@ begin
     end if;
 
   end process;
-
 
   -- Prefetch/Load unit.
   
@@ -1501,6 +1499,7 @@ begin
         exr.break <= '0';
         exr.wb_cyc <= '0';
         exr.wb_stb <= '1';
+        wroteback_q <= '0';
       else
         exr <= w;
         -- TODO: move wroteback_q into EXU regs

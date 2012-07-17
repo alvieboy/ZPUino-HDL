@@ -79,26 +79,26 @@ signal sram_oe_i: std_logic :='1';
 attribute IOB : string;
 attribute IOB of sram_data_write: signal is "FORCE";
 attribute IOB of sram_ce_i: signal is "FORCE";
-attribute IOB of sram_we_i: signal is "FORCE";
+--attribute IOB of sram_we_i: signal is "FORCE";
 attribute IOB of sram_oe_i: signal is "FORCE";
-attribute IOB of sram_be_i: signal is "FORCE";
-attribute IOB of sram_addr_q: signal is "FORCE";
+--attribute IOB of sram_be_i: signal is "FORCE";
+--attribute IOB of sram_addr_q: signal is "FORCE";
 
-attribute keep: string;
-attribute keep of sram_addr_q: signal is "true";
-attribute keep of out_addr: signal is "true";
-attribute keep of strobe_addr: signal is "true";
+--attribute keep: string;
+--attribute keep of sram_addr_q: signal is "true";
+--attribute keep of out_addr: signal is "true";
+--attribute keep of strobe_addr: signal is "true";
 
 begin
+
+sram_be_i <= '0';
 
 sram_ce <= sram_ce_i;
 sram_we <= sram_we_i;
 sram_be <= sram_be_i;
 sram_oe <= sram_oe_i;
 
-sram_be <= '0';
 wb_stall_o <= stall;
---bus_tristate<='0' when wb_we_i='1' and wb_cyc_i='1' else '0';
 
 sram_data <= sram_data_write_i when wb_we_i='1' and wb_cyc_i='1' else (others => 'Z');
 
