@@ -393,6 +393,8 @@ begin
 
   stack_clk <= wb_clk_i;
 
+  -- synopsys translate_off
+
   traceFileGenerate:
    if Generate_Trace generate
       trace_file: trace
@@ -408,6 +410,8 @@ begin
           intsp       => (others => 'U')
         );
   end generate;
+
+  -- synopsys translate_on
 
   cache: zpuino_icache
   port map (
