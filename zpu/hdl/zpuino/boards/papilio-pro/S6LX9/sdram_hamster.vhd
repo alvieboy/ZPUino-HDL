@@ -53,30 +53,23 @@ end entity;
 architecture rtl of sdram_controller is
 
    type reg is record
-      address     : std_logic_vector(12 downto 0);
-      bank         : std_logic_vector( 1 downto 0);
-
-      init_counter: std_logic_vector(14 downto 0);
-      rf_counter   : std_logic_vector( 9 downto 0);
+      address       : std_logic_vector(12 downto 0);
+      bank          : std_logic_vector( 1 downto 0);
+      init_counter  : std_logic_vector(14 downto 0);
+      rf_counter    : std_logic_vector( 9 downto 0);
       rf_pending    : std_logic;
-
       rd_pending    : std_logic;
       wr_pending    : std_logic;
       act_row       : std_logic_vector(12 downto 0);
       act_ba        : std_logic_vector(1 downto 0);
       data_out_low  : std_logic_vector(15 downto 0);
-      req_addr_q:   std_logic_vector(HIGH_BIT downto 2);
+      req_addr_q    : std_logic_vector(HIGH_BIT downto 2);
       req_data_write: std_logic_vector(31 downto 0);
-      data_out_valid : std_logic;
-
+      data_out_valid: std_logic;
       dq_masks      : std_logic_vector(1 downto 0);
    end record;
 
-   -- note to self - this constant should be "(others => '0')" when not simulating!!!
    signal r : reg;
-   --:= ((others => '0'), (others => '0'),
-   --                   (others => '0'), "000000000001000", (others => '0'),
-   --                   '0', '0', '0', (others => '0'), (others => '0'), '0', (others => '0'));
    signal n : reg;
 
    signal rstate       : std_logic_vector(8 downto 0);
@@ -93,7 +86,7 @@ architecture rtl of sdram_controller is
    constant cmd_act   : std_logic_vector(3 downto 0) := "0011";
    constant cmd_pre   : std_logic_vector(3 downto 0) := "0010";  -- Must set A10 to '1'.
    constant cmd_ref   : std_logic_vector(3 downto 0) := "0001";
-   constant cmd_mrs     : std_logic_vector(3 downto 0) := "0000"; -- Mode register set
+   constant cmd_mrs   : std_logic_vector(3 downto 0) := "0000"; -- Mode register set
 
    -- State assignments
    constant s_init_nop_id: std_logic_vector(4 downto 0) := "00000";
@@ -194,22 +187,18 @@ architecture rtl of sdram_controller is
    constant s_drdr2_id: std_logic_vector(4 downto 0) := "11111";
    constant s_drdr2 : std_logic_vector(8 downto 0) := "11111" & cmd_nop;
 
-   constant BURST_SIZE: integer := 2;
-
    signal addr_row : std_logic_vector(12 downto 0);
    signal addr_bank: std_logic_vector(1 downto 0);
 
    constant COLUMN_HIGH: integer := HIGH_BIT - addr_row'LENGTH - addr_bank'LENGTH - 1; -- last 1 means 16 bit width
 
 
-   signal addr_col : std_logic_vector(COLUMN_HIGH downto 0);
+  signal addr_col : std_logic_vector(COLUMN_HIGH downto 0);
+  signal captured : std_logic_vector(15 downto 0);
+  signal busy: std_logic;
 
-   signal captured : std_logic_vector(15 downto 0);
-
-   signal busy: std_logic;
-
-   constant tOPD: time := 1.6 ns;
-   signal dram_dq_dly : std_logic_vector(15 downto 0);
+  constant tOPD: time := 1.6 ns;
+  signal dram_dq_dly : std_logic_vector(15 downto 0);
 
   -- Debug only
    signal debug_cmd: std_logic_vector(3 downto 0);
