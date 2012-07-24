@@ -98,8 +98,7 @@ architecture behave of zpuino_icache is
   alias tag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)
     is address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
 
-  signal ctag: std_logic_vector(tag'RANGE);
-  --signal valid: std_logic;
+  signal ctag: std_logic_vector(tag'HIGH+1 downto 0);
 
   type validmemtype is ARRAY(0 to (2**line'LENGTH)-1) of std_logic;
   shared variable valid_mem: validmemtype;
@@ -107,10 +106,6 @@ architecture behave of zpuino_icache is
   signal tag_mem_wen: std_logic;
   signal miss: std_logic;
   signal ack: std_logic;
-
---  signal fill_end: std_logic;
---  signal fill_end_q: std_logic;
---  signal fill_end_q_q: std_logic;
   signal offcnt: unsigned(line_offset'HIGH+1 downto 2);
   signal offcnt_write: unsigned(line_offset'HIGH downto 2);
 
@@ -136,6 +131,7 @@ architecture behave of zpuino_icache is
   signal tag_mem_enable: std_logic;
 
   type state_type is (
+    flushing,
     running,
     filling,
     waitwrite,
@@ -144,6 +140,13 @@ architecture behave of zpuino_icache is
 
   signal state: state_type;
   signal fill_success: std_logic;
+
+  signal tag_mem_data: std_logic_vector(ctag'RANGE);
+  signal tag_mem_addr: std_logic_vector(line'RANGE);
+
+  signal tag_mem_ena: std_logic;
+
+  signal flushcnt: unsigned(line'RANGE);
 
 begin
 
@@ -163,39 +166,52 @@ begin
     clkb      => wb_clk_i,
     enb       => '1',
     web       => tag_mem_wen,
-    addrb     => line_save,
-    dib       => tag_save,
+    addrb     => tag_mem_addr,
+    dib       => tag_mem_data,
     dob       => open
   );
 
-  tag_match <= '1' when ctag=tag else '0';
+  valid_i <= ctag(ctag'HIGH);
+
+  process(state, line_save, tag_save, flushcnt)
+  begin
+    if state=flushing then
+      tag_mem_data <= '0' & tag_save;
+      tag_mem_addr <= std_logic_vector(flushcnt);
+    else
+      tag_mem_data <= '1' & tag_save;
+      tag_mem_addr <= line_save;
+    end if;
+  end process;
+
+  tag_match <= '1' when ctag(tag'HIGH downto tag'LOW)=tag else '0';
   stall <= stall_i;
   valid <= ack;
   tag_mem_enable <= access_i and enable;
   m_wb_dat_o <= (others => DontCareValue);
 
   -- Valid mem
-  process(wb_clk_i)
-    variable index: integer;
-  begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' or flush='1' then
-        for i in 0 to (valid_mem'LENGTH)-1 loop
-          valid_mem(i) := '0';
-        end loop;
-      else
-        index := conv_integer(line_save);
-        if tag_mem_wen='1' then
-          valid_mem(index) := '1';--fill_success;
-        end if;
-      end if;
-      if enable='1' and strobe='1' then
-        valid_i <= valid_mem(conv_integer(line));
+--  process(wb_clk_i)
+--    variable index: integer;
+--  begin
+--    if rising_edge(wb_clk_i) then
+--      if wb_rst_i='1' or flush='1' then
+--        for i in 0 to (valid_mem'LENGTH)-1 loop
+--          valid_mem(i) := '0';
+--        end loop;
+--      else
+--        index := conv_integer(line_save);
+--        if tag_mem_wen='1' then
+--          valid_mem(index) := '1';--fill_success;
+--        end if;
+--      end if;
+--      if enable='1' and strobe='1' then
+--        valid_i <= valid_mem(conv_integer(line));
       --else
       --  valid_i <= valid_mem(conv_integer(line_save));
-      end if;
-    end if;
-  end process;
+--      end if;
+--    end if;
+--  end process;
 
   -- Address save
   process(wb_clk_i)
@@ -222,7 +238,7 @@ begin
   )
   port map (
     clka      => wb_clk_i,
-    ena       => enable,
+    ena       => tag_mem_ena,               -- enable and strobe ?
     wea       => '0',
     addra     => cache_addr_read,
     dia       => (others => '0'),
@@ -235,6 +251,8 @@ begin
     dib       => m_wb_dat_i,
     dob       => open
   );
+
+  tag_mem_ena <= enable and strobe;
 
   process(wb_clk_i)
   begin
@@ -254,10 +272,12 @@ begin
   begin
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
-        state <= running;
+        state <= flushing;
         busy <= '0';
         fill_success <='0';
         offcnt <= (others => '0');
+        flushcnt <= (others => '1');
+        tag_mem_wen <= '1';
       else
         busy <= '0';
         cyc <= '0';
@@ -266,8 +286,21 @@ begin
         fill_success <='0';
 
         case state is
-          when running =>
 
+          when flushing =>
+            flushcnt <= flushcnt - 1;
+            tag_mem_wen<='1';
+            if flushcnt=0 then
+              tag_mem_wen<='0';
+             state <= running;
+            end if;
+
+          when running =>
+            if flush='1' then
+              state <= flushing;
+              flushcnt <= (others => '1');
+              tag_mem_wen <= '1';
+            else
             if access_q='1' then
               if miss='1' and enable='1' then
                 state <= filling;
@@ -279,7 +312,7 @@ begin
                 busy <= '1';
               end if;
             end if;
-
+            end if;
           when filling =>
             busy<='1';
             cyc <= '1';
