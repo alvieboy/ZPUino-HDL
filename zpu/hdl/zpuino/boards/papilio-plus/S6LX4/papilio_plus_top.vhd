@@ -692,7 +692,7 @@ begin
   -- IO SLOT 5
   --
 
-  sigmadelta_inst: zpuino_empty_device--zpuino_sigmadelta
+  sigmadelta_inst: zpuino_sigmadelta
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -703,11 +703,11 @@ begin
     wb_cyc_i      => slot_cyc(5),
     wb_stb_i      => slot_stb(5),
     wb_ack_o      => slot_ack(5),
-    wb_inta_o     => slot_interrupt(5)--,
+    wb_inta_o     => slot_interrupt(5),
 
-    --spp_data      => sigmadelta_spp_data,
-    --spp_en        => open,
-    --sync_in       => '1'
+    spp_data      => sigmadelta_spp_data,
+    spp_en        => open,
+    sync_in       => '1'
   );
 
   --
