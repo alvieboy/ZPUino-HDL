@@ -64,6 +64,12 @@ struct bootloader_data_t bdata BDATA;
 
 static void outbyte(int);
 
+void flush()
+{
+	/* Flush serial line */
+	while (UARTSTATUS & 4);
+}
+
 extern "C" void printnibble(unsigned int c)
 {
 	c&=0xf;
@@ -93,7 +99,7 @@ extern "C" void printhex(unsigned int c)
 	printhexbyte(c);
 }
 
-void spi_copy();
+static void spi_copy();
 
 #ifdef DEBUG_SERIAL
 const unsigned char serialbuffer[] = {
@@ -115,7 +121,7 @@ void sendByte(unsigned int i)
 		outbyte(i);
 }
 
-void sendBuffer(const unsigned char *buf, unsigned int size)
+static void sendBuffer(const unsigned char *buf, unsigned int size)
 {
 	while (size--!=0)
 		sendByte(*buf++);
@@ -157,6 +163,9 @@ unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
+#ifdef __ZPUINO_NEXYS3__
+			digitalWrite(FPGA_LED_0, LOW);
+#endif
 			spi_copy();
 		}
 #endif
@@ -193,8 +202,9 @@ static void outbyte(int c)
 	UARTDATA=c;
 }
 
-static void spi_disable()
+static void spi_disable(register_t base)
 {
+	(void)*base; // Let SPI finish
 	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
 }
 
@@ -203,11 +213,11 @@ static void spi_enable()
 	digitalWrite(SPI_FLASH_SEL_PIN,LOW);
 }
 
-static void spi_reset()
+static void spi_reset(register_t base)
 {
-	spi_disable();
+	spi_disable(base);
 	spi_enable();
-	spi_disable();
+	spi_disable(base);
 }
 
 static inline void waitspiready()
@@ -241,7 +251,7 @@ static inline unsigned int spiread(register_t base)
 	return *base;
 }
 
-void spi_copy()
+static void spi_copy()
 {
 	// Make sure we are on top of stack. We can safely discard everything
 	__asm__("im %0\n"
@@ -269,15 +279,8 @@ extern "C" void start()
 unsigned start_read_size(register_t spidata)
 {
 	spiwrite(spidata,0x0B);
-	spiwrite(spidata,SPIOFFSET >> 16);
-	spiwrite(spidata,SPIOFFSET >> 8);
-	spiwrite(spidata,SPIOFFSET);
-	spiwrite(spidata,0);
-
-	// Read size.
-
-	spiwrite(spidata,0);
-	spiwrite(spidata,0);
+	spiwrite(spidata+4,SPIOFFSET);
+	spiwrite(spidata+4,0);
 	return spiread(spidata) & 0xffff;
 }
 
@@ -295,6 +298,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef VERBOSE_LOADER
 	printstring("CP\r\n");
 #endif
+#ifdef __ZPUINO_NEXYS3__
+	digitalWrite(FPGA_LED_1, HIGH);
+#endif
+
 
 	spi_enable();
 	sketchsize=start_read_size(spidata);
@@ -311,6 +318,10 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		//printhexbyte((sketchsize)&0xff);
 		printstring("\r\n");
 #endif
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_2, HIGH);
+#endif
+
 		while(1) {}
 	}
 
@@ -338,10 +349,11 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
    // printstring("Filled\n");
 #endif
 
-	spi_disable();
+	spi_disable(spidata);
 
 	if (sketchcrc != REGISTER(crc16base,ROFF_CRC16ACC)) {
-        printstring("CRC");
+		outbyte('C');
+        //printstring("CRC");
 //		printstring("CRC error, please reset\r\n");
 		/*
 		printhex(sketchcrc);
@@ -349,14 +361,23 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 		printhex(CRC16ACC);
 		printstring("\r\n");
 		*/
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_3, HIGH);
+#endif
+
 		while(1) {};
 	}
 
 	if (*board != BOARD_ID) {
-		printstring("B!");
+        outbyte('B');
+		//printstring("B!");
 		//printhex(*board);
 		//printstring(" != ");
 		//printhex(BOARD_ID);
+#ifdef __ZPUINO_NEXYS3__
+		digitalWrite(FPGA_LED_4, HIGH);
+#endif
+
 		while(1) {};
 	}
 
@@ -372,7 +393,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	 GPIOTRIS(2) = 0xffffffff;
 	 GPIOTRIS(3) = 0xffffffff;
 	 */
-	
+	flush();
 	start();
 	//asm ("im _start\npoppc\nnop\n");
 	while (1) {}
@@ -411,7 +432,7 @@ static int spi_read_status()
 
 	spiwrite(spidata,0x00);
 	status =  spiread(spidata) & 0xff;
-	spi_disable();
+	spi_disable(spidata);
 	return status;
 }
 
@@ -421,12 +442,15 @@ static unsigned int spi_read_id()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
+    /*
 	spiwrite(spidata,0x9F);
 	spiwrite(spidata,0x00);
 	spiwrite(spidata,0x00);
 	spiwrite(spidata,0x00);
+	*/
+	spiwrite(spidata+6, 0x9f000000);
 	ret = spiread(spidata);
-	spi_disable();
+	spi_disable(spidata);
 	return ret;
 }
 
@@ -490,7 +514,7 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 		spiwrite(spidata,0x00);
 		buffer[count] = spiread(spidata);
 	}
-	spi_disable();
+	spi_disable(spidata);
 
 	// Send back
 	prepareSend();
@@ -511,7 +535,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 
-#ifndef __ZPUINO_S3E_EVAL__
+#ifdef __SST_FLASH__
 
 	// buffer[1-2] is number of TX bytes
     // buffer[3-5] is address to program
@@ -520,7 +544,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	// Enable writes
 	spi_enable();
 	spiwrite(spidata,0x06);
-	spi_disable();
+	spi_disable(spidata);
 
 	spi_enable();
 	spiwrite(spidata,0xAD);
@@ -540,7 +564,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 		}
 		spiwrite(spidata,buffer[6+count]);
 		spiwrite(spidata,buffer[6+count+1]);
-		spi_disable();
+		spi_disable(spidata);
 		// Read back status, wait for completion
 		while (spi_read_status() & 1);
 	}
@@ -549,7 +573,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 
 	spi_enable();
 	spiwrite(spidata,0x04);
-	spi_disable();
+	spi_disable(spidata);
 	// Send back
 	prepareSend();
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
@@ -671,8 +695,8 @@ void cmd_start(unsigned char *buffer)
 
 	spi_enable();
 	bdata.spiend = (start_read_size(spidata)<<2) + SPIOFFSET + 4;
-	spi_disable();
-
+	spi_disable(spidata);
+	flush();
 	start();
 }
 
@@ -746,6 +770,14 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_OHO_GODIL__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
 #ifdef __ZPUINO_PAPILIO_PLUS__
 inline void configure_pins()
 {
@@ -759,6 +791,13 @@ inline void configure_pins()
 	pinModePPS(FPGA_PMOD_JA_2,LOW);
 	pinMode(FPGA_PMOD_JA_2, OUTPUT);
 	digitalWrite(FPGA_PMOD_JA_2,HIGH);
+}
+#endif
+#ifdef __ZPUINO_NEXYS3__
+inline void configure_pins()
+{
+	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
+	digitalWrite(FPGA_LED_0,HIGH);
 }
 #endif
 
@@ -801,11 +840,11 @@ extern "C" int main(int argc,char**argv)
 	CRC16POLY = 0x8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 	// Reset flash
-	spi_reset();
+	spi_reset(&SPIDATA);
 #ifdef __ZPUINO_PAPILIO_ONE__
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash
-	spi_disable();
+	spi_disable(&SPIDATA);
 #endif
 
 	syncSeen = 0;

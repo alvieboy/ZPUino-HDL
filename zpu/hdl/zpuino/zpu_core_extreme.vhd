@@ -102,36 +102,19 @@ component lshifter is
     rst: in std_logic;
     enable:  in std_logic;
     done: out std_logic;
-    input:  in std_logic_vector(31 downto 0);
-    amount: in std_logic_vector(4 downto 0);
-    output: out std_logic_vector(31 downto 0)
-
-  );
-end component;
-
-component multiplier is
-  port (
-    clk: in std_logic;
-    rst: in std_logic;
-    enable:  in std_logic;
-    done: out std_logic;
     inputA:  in std_logic_vector(31 downto 0);
     inputB: in std_logic_vector(31 downto 0);
-    output: out std_logic_vector(31 downto 0)
+    output: out std_logic_vector(63 downto 0);
+    multorshift: in std_logic
   );
-end component multiplier;
+end component;
 
 signal lshifter_enable: std_logic;
 signal lshifter_done: std_logic;
 signal lshifter_input: std_logic_vector(31 downto 0);
-signal lshifter_amount: std_logic_vector(4 downto 0);
-signal lshifter_output: std_logic_vector(31 downto 0);
-
-signal multiplier_enable: std_logic;
-signal multiplier_done: std_logic;
-signal multiplier_inputA: std_logic_vector(31 downto 0);
-signal multiplier_inputB: std_logic_vector(31 downto 0);
-signal multiplier_output: std_logic_vector(31 downto 0);
+signal lshifter_amount: std_logic_vector(31 downto 0);
+signal lshifter_output: std_logic_vector(63 downto 0);
+signal lshifter_multorshift: std_logic;
 
 signal begin_inst:          std_logic;
 signal trace_opcode:        std_logic_vector(7 downto 0);
@@ -159,7 +142,8 @@ State_WaitSPB,
 State_ResyncFromStoreStack,
 State_Neqbranch,
 State_Ashiftleft,
-State_Mult
+State_Mult,
+State_MultF16
 );
 
 type DecodedOpcodeType is
@@ -200,7 +184,8 @@ Decoded_Ashiftleft,
 Decoded_Ashiftright,
 Decoded_Loadb,
 Decoded_Call,
-Decoded_Mult
+Decoded_Mult,
+Decoded_MultF16
 );
 
 constant spMaxBit: integer := 10;
@@ -366,20 +351,10 @@ begin
     rst     => wb_rst_i,
     enable  => lshifter_enable,
     done    => lshifter_done,
-    input   => lshifter_input,
-    amount  => lshifter_amount,
-    output  => lshifter_output
-  );
-
-  mul: multiplier
-  port map (
-    clk     => wb_clk_i,
-    rst     => wb_rst_i,
-    enable  => multiplier_enable,
-    done    => multiplier_done,
-    inputA  => multiplier_inputA,
-    inputB  => multiplier_inputB,
-    output  => multiplier_output
+    inputA   => lshifter_input,
+    inputB  => lshifter_amount,
+    output  => lshifter_output,
+    multorshift => lshifter_multorshift
   );
 
   stack_clk <= wb_clk_i;
@@ -591,8 +566,18 @@ begin
         when OpCode_PopSP =>
           sampledDecodedOpcode<=Decoded_PopSP;
           sampledOpWillFreeze<='1';
+        when OpCode_NA4 =>
+          if enable_fmul16 then
+            sampledDecodedOpcode<=Decoded_MultF16;
+            sampledStackOperation<=Stack_Pop;
+            sampledOpWillFreeze<='1';
+          else
+            sampledDecodedOpcode<=Decoded_Nop;
+          end if;
         when others =>
           sampledDecodedOpcode<=Decoded_Nop;
+          
+
       end case;
     end if;
 
@@ -778,42 +763,28 @@ begin
   process(wb_clk_i, wb_rst_i, decr, prefr, exu_busy, decode_jump, sp_load,
           decode_load_sp, dbg_in.flush)
     variable w: prefetchregs_type;
+    variable i_op_freeze: std_logic;
   begin
 
     w := prefr;
 
     pfu_busy<='0';
-
     stack_b_addr <= std_logic_vector(prefr.spnext + 1);
+    w.recompute_sp:='0';
 
-    if wb_rst_i='1' then
-      w.spnext := unsigned(spStart(10 downto 2));
-      w.sp := unsigned(spStart(10 downto 2));
-      w.valid := '0';
-      w.idim := '0';
-      w.recompute_sp:='0';
+    -- Stack
+    w.load := decode_load_sp;
+
+    if decode_load_sp='1' then
+      pfu_busy <= '1';
+      w.spnext := sp_load;
+      w.recompute_sp := '1';
     else
+      pfu_busy <= exu_busy;
 
-      w.recompute_sp:='0';
-
-      --if decr.valid='1' then
-
-        -- Stack
-        w.load := decode_load_sp;
-
-        if decode_load_sp='1' then
-          pfu_busy <= '1';
-          w.spnext := sp_load;
-          w.recompute_sp := '1';
-        else
-          
-          if exu_busy='1' then
-            pfu_busy <='1';
-          end if;
-
-          if decr.valid='1' then
-          if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
-            case decr.stackOperation is
+      if decr.valid='1' then
+        if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
+          case decr.stackOperation is
               when Stack_Push =>
                 w.spnext := prefr.spnext - 1;
               when Stack_Pop =>
@@ -821,40 +792,65 @@ begin
               when Stack_DualPop =>
                 w.spnext := prefr.spnext + 2;
               when others =>
-            end case;
-            w.sp := prefr.spnext;
-          end if;
-          end if;
+          end case;
+          w.sp := prefr.spnext;
         end if;
-      --end if;
+      end if;
+    end if;
 
-      case decr.decodedOpcode is
-        when Decoded_LoadSP | decoded_AddSP =>
-            stack_b_addr <= std_logic_vector(prefr.spnext + decr.spOffset);
-        when others =>
-      end case;
+    case decr.decodedOpcode is
+      when Decoded_LoadSP | decoded_AddSP =>
+          stack_b_addr <= std_logic_vector(prefr.spnext + decr.spOffset);
+      when others =>
+    end case;
 
-      if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
+    if decode_jump='1' then     -- this is a pipeline "invalidate" flag.
+      w.valid := '0';
+    else
+      if dbg_in.flush='1' then
         w.valid := '0';
       else
-        if dbg_in.flush='1' then
-          w.valid := '0';
-        else
-          w.valid := decr.valid;
-        end if;
+        w.valid := decr.valid;
       end if;
-      
-      if exu_busy='0' then
-        w.decodedOpcode := decr.decodedOpcode;
-        w.tosSource     := decr.tosSource;
-        w.opcode        := decr.opcode;
-        w.opWillFreeze  := decr.opWillFreeze;
-        w.pc            := decr.pc;
-        w.fetchpc       := decr.pcint;
-        w.idim          := decr.idim;
-        w.break         := decr.break;
-      end if;
+    end if;
 
+    -- Moved op_will_freeze from decoder to here
+    case decr.decodedOpcode is
+      when Decoded_StoreSP
+          | Decoded_LoadB
+          | Decoded_Neqbranch
+          | Decoded_StoreB
+          | Decoded_Mult
+          | Decoded_Ashiftleft
+          | Decoded_Break
+          | Decoded_Load
+          | Decoded_Store
+          | Decoded_PopSP
+          | Decoded_MultF16 =>
+
+        i_op_freeze := '1';
+
+      when others =>
+        i_op_freeze := '0';
+    end case;
+
+    if exu_busy='0' then
+      w.decodedOpcode := decr.decodedOpcode;
+      w.tosSource     := decr.tosSource;
+      w.opcode        := decr.opcode;
+      w.opWillFreeze  := i_op_freeze;
+      w.pc            := decr.pc;
+      w.fetchpc       := decr.pcint;
+      w.idim          := decr.idim;
+      w.break         := decr.break;
+    end if;
+
+    if wb_rst_i='1' then
+      w.spnext := unsigned(spStart(10 downto 2));
+      --w.sp := unsigned(spStart(10 downto 2));
+      w.valid := '0';
+      w.idim := '0';
+      w.recompute_sp:='0';
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -886,8 +882,8 @@ begin
 
   process(exr, wb_inta_i, wb_clk_i, wb_rst_i, pcnext, stack_a_read,stack_b_read,
           wb_ack_i, wb_dat_i, do_interrupt,exr, prefr, nos,
-          single_step, freeze_all, dbg_in.step, wroteback_q,lshifter_done,lshifter_output,
-          multiplier_done,multiplier_output)
+          single_step, freeze_all, dbg_in.step, wroteback_q,lshifter_done,lshifter_output
+          )
 
     variable spOffset: unsigned(4 downto 0);
     variable w: exuregs_type;
@@ -910,12 +906,9 @@ begin
     jump_address <= (others => DontCareValue);
 
     lshifter_enable <= '0';
-    lshifter_amount <= std_logic_vector(exr.tos_save(4 downto 0));
+    lshifter_amount <= std_logic_vector(exr.tos_save);
     lshifter_input <= std_logic_vector(exr.nos_save);
-
-    multiplier_enable <= '0';
-    multiplier_inputA <= std_logic_vector(exr.tos_save);
-    multiplier_inputB <= std_logic_vector(exr.nos_save);
+    lshifter_multorshift <= '0';
 
     poppc_inst <= '0';
     begin_inst<='0';
@@ -1153,8 +1146,11 @@ begin
           when Decoded_Ashiftleft =>
             w.state := State_Ashiftleft;
 
-          when Decoded_Mult =>
+          when Decoded_Mult  =>
             w.state := State_Mult;
+
+          when Decoded_MultF16  =>
+            w.state := State_MultF16;
 
           when Decoded_Store =>
 
@@ -1238,20 +1234,32 @@ begin
       when State_Ashiftleft =>
         exu_busy <= '1';
         lshifter_enable <= '1';
+        w.tos := unsigned(lshifter_output(31 downto 0));
 
         if lshifter_done='1' then
           exu_busy<='0';
-          w.tos := unsigned(lshifter_output);
           w.state := State_Execute;
         end if;
 
       when State_Mult =>
         exu_busy <= '1';
-        multiplier_enable <= '1';
+        lshifter_enable <= '1';
+        lshifter_multorshift <='1';
+        w.tos := unsigned(lshifter_output(31 downto 0));
 
-        if multiplier_done='1' then
+        if lshifter_done='1' then
           exu_busy<='0';
-          w.tos := unsigned(multiplier_output);
+          w.state := State_Execute;
+        end if;
+
+      when State_MultF16 =>
+        exu_busy <= '1';
+        lshifter_enable <= '1';
+        lshifter_multorshift <='1';
+        w.tos := unsigned(lshifter_output(47 downto 16));
+
+        if lshifter_done='1' then
+          exu_busy<='0';
           w.state := State_Execute;
         end if;
 

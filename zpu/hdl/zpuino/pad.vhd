@@ -64,6 +64,7 @@ end component ipad;
 component opad is
   port  (
     I: in std_logic;
+    O: out std_logic;
     PAD: out std_logic
   );
 end component opad;
@@ -201,6 +202,7 @@ use unisim.vcomponents.all;
 entity opad is
   port  (
     I: in std_logic;
+    O: out std_logic;
     PAD: out std_logic
   );
 end entity opad;
@@ -213,5 +215,6 @@ begin
       I => I,
       O => PAD
   );
+  O <= I;
 
 end behave;

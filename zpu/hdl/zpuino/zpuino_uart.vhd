@@ -86,6 +86,7 @@ architecture behave of zpuino_uart is
      load_i   : in  std_logic;  -- Load input
      txd_o    : out std_logic;  -- RS-232 data output
      busy_o   : out std_logic;  -- Tx Busy
+     intx_o   : out std_logic;  -- Tx in progress
      datai_i  : in  std_logic_vector(7 downto 0)); -- Byte to transmit
   end component TxUnit;
 
@@ -126,6 +127,7 @@ architecture behave of zpuino_uart is
   signal received_data: std_logic_vector(7 downto 0);
   signal fifo_data: std_logic_vector(7 downto 0);
   signal uart_busy: std_logic;
+  signal uart_intx: std_logic;
   signal fifo_empty: std_logic;
   signal rx_br: std_logic;
   signal tx_br: std_logic;
@@ -163,6 +165,7 @@ begin
       load_i    => uart_write,
       txd_o     => tx,
       busy_o    => uart_busy,
+      intx_o    => uart_intx,
       datai_i   => wb_dat_i(7 downto 0)
     );
 
@@ -227,13 +230,14 @@ begin
 
   fifo_rd<='1' when wb_adr_i(2)='0' and (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='0') else '0';
 
-  process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data)
+  process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data,uart_intx)
   begin
     wb_dat_o <= (others => '0');
     case wb_adr_i(2) is
       when '1' =>
         wb_dat_o(0) <= not fifo_empty;
         wb_dat_o(1) <= uart_busy;
+        wb_dat_o(2) <= uart_intx;
       when '0' =>
         wb_dat_o(7 downto 0) <= fifo_data;
       when others =>

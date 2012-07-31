@@ -602,10 +602,12 @@ begin
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
+  --ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
+  spi_pf_miso <= SPI_MISO;
+
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
   ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
+  ospics:   OPAD port map ( I => gpio_o(48),   O => gpio_i(48), PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 

@@ -8,10 +8,12 @@
 \usepackage{float}
 \usepackage{caption}
 \usepackage{listings}
+\usepackage{fancyhdr}
 \usepackage{color}
 \usepackage[bookmarks,colorlinks=true]{hyperref}
 
 \begin{document}
+\pagestyle{headings}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -25,17 +27,26 @@ stringstyle=\color{mauve},
 \parindent 0cm
 \parskip 0.2cm
 
-\title{ZPUino User Manual}
-\author{Alvaro Lopes}
-\maketitle
+%\title{ZPUino User Manual}
+%\author{Alvaro Lopes}
+%\maketitle
+\begin{titlepage}
+\begin{center}
+\includegraphics[width=10cm]{zpuino32.pdf}
+\vskip 2cm plus 1cm
+\huge{\bfseries{ZPUino User Manual}}
+\vskip 1cm plus 1cm
+\large{\bfseries{Version 1.0.1}}
+\end{center}
+
+\end{titlepage}
 
 \tableofcontents
 \clearpage
 
-\chapter{Version}
-This is version 0.9 of the document.
+\include{releasenotes}
+
 \include{about}
-%\include{ack}
 \section{Overview}
 \includegraphics[width=16cm]{zpuino-overview2.pdf}
 

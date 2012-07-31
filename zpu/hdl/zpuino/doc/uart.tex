@@ -133,10 +133,11 @@ The $UARTSTATUS$ register contains the current status of UART.
 
 \begin{table}[H]
 \begin{center}
-\begin{tabularx}{14cm}{Xcc}
-31 \hfill 2 & 1 & 0 \\
+\begin{tabularx}{14cm}{Xccc}
+31 \hfill 3 & 2 & 1 & 0 \\
 \hline
-\multicolumn{1}{|c|}{Reserved} & 
+\multicolumn{1}{|c|}{Reserved} &
+\multicolumn{1}{|c|}{UARTINTX} &
 \multicolumn{1}{|c|}{UARTTXR} &
 \multicolumn{1}{|c|}{UARTRXR} \\
 \hline
@@ -146,6 +147,9 @@ The $UARTSTATUS$ register contains the current status of UART.
 \end{table}
 
 \begin{description}
+\item{1 - UARTINTX\footnote{Introduced in 1.0.1 version}} \hfill \\
+UART in TX flag. Reads as 1 if the UART is still transmitting any data, 0 otherwise. This bit should be used to wait until
+UART has finished transmitting all data, for example when switching the baud rate.
 \item{1 - UARTTXR} \hfill \\
 UART TX Ready bit. Reads as 1 when there's space in TX FIFO for transmission, 0 otherwise. This bit should be checked before 
 attempting transmission over the UART.

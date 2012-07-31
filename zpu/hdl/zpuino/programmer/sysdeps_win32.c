@@ -105,7 +105,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	ctimeout.ReadIntervalTimeout = MAXDWORD;
 	ctimeout.ReadTotalTimeoutMultiplier = 0;
-	ctimeout.ReadTotalTimeoutConstant = 0;
+	ctimeout.ReadTotalTimeoutConstant = 500;
 	ctimeout.WriteTotalTimeoutMultiplier = 0;
 	ctimeout.WriteTotalTimeoutConstant = 10000;
 
@@ -287,6 +287,8 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 					rb = hdlc_process(conn->rxbuf,1);
 					if (rb)
 						return rb;
+				} else {
+                    debug("No data?\n");
 				}
 				break;
 			case 0:

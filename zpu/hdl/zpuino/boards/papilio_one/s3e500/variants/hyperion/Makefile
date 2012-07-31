@@ -4,7 +4,7 @@ PART=xc3s500e-vq100-4
 # For bootloader
 BOARD=PAPILIO_ONE
 SIZE=16384
-DEFINES="-D__S3E_500__ -DBOARD_ID=0xA4010E01 -DBOARD_MEMORYSIZE=0x4000"
+DEFINES="-D__S3E_500__ -DBOARD_ID=0xA4010E01 -DBOARD_MEMORYSIZE=0x4000 -DCLK_FREQ=92000000"
 
 BOOTPATH=../../../../../
 
@@ -24,7 +24,8 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -p ${PART} \
-	-cm speed -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
+	-cm speed -detail -ir off -ignore_keep_hierarchy -pr b -register_duplication on \
+	-timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd

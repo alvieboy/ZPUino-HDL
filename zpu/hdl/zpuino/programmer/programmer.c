@@ -771,6 +771,18 @@ int main(int argc, char **argv)
 	// Switch to correct baud rate
 	set_baudrate(conn,serial_speed_int,freq);
 
+	if(verbose>2) {
+		fprintf(stderr,"Entering program mode\n");
+	}
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
+	if (b) {
+		buffer_free(b);
+	} else {
+		fprintf(stderr,"Cannot enter program mode\n");
+		conn_close(conn);
+		return -1;
+	}
+
 	if (upload_only) {
 		int r = do_upload(conn, buf);
 		conn_close(conn);
@@ -794,17 +806,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if(verbose>2) {
-		fprintf(stderr,"Entering program mode\n");
-	}
-	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
-	if (b) {
-		buffer_free(b);
-	} else {
-		fprintf(stderr,"Cannot enter program mode\n");
-		conn_close(conn);
-		return -1;
-	}
 
 	if (only_read) {
 		return read_flash(conn,flash,spioffset/flash->pagesize);
@@ -934,7 +935,7 @@ report_out:
 		   (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
 
 #ifdef WIN32
-	freemakeargv(argv);
+	//freemakeargv(argv);
 #endif
 
 	return 0;

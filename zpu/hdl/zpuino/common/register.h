@@ -9,15 +9,19 @@
 # include "board_papilio_plus.h"
 #elif defined( __ZPUINO_NEXYS2__ )
 # include "board_nexys2.h"
+#elif defined( __ZPUINO_OHO_GODIL__ )
+# include "board_oho_godil.h"
+#elif defined( __ZPUINO_NEXYS3__ )
+# include "board_nexys3.h"
 #else
 #  error Unknown board.
 # endif
 
-
+#ifndef ASSEMBLY
+typedef volatile unsigned int* register_t;
+#endif
 
 #define SPIISBLOCKING 1
-
-typedef volatile unsigned int* register_t;
 
 #define BIT(x) (1<<x)
 
@@ -36,7 +40,7 @@ typedef volatile unsigned int* register_t;
 
 #define ROFF_UARTDATA   0
 #define ROFF_UARTCTL    1
-#define ROFF_UARTSTATUS 2
+#define ROFF_UARTSTATUS 1
 
 #define UARTDATA    REGISTER(UARTBASE,ROFF_UARTDATA)
 #define UARTCTL     REGISTER(UARTBASE,ROFF_UARTCTL)

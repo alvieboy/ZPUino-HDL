@@ -113,7 +113,7 @@ architecture behave of zpuino_spi is
   signal cpol: std_logic;
   signal miso_i: std_logic;
   signal spi_transfersize_q: std_logic_vector(1 downto 0);
-
+  signal trans: std_logic;
 begin
 
   zspi: spi
@@ -153,24 +153,49 @@ begin
 
   -- Direct access (write) to SPI
 
-  spi_en <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='1' and spi_ready='1' else '0';
+  --spi_en <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='1' and spi_ready='1' else '0';
 
   busygen: if zpuino_spiblocking=true generate
   
-    process(wb_adr_i,wb_cyc_i,wb_stb_i,spi_ready,spi_txblock_q)
+    process(wb_clk_i)
     begin
-      wb_ack_o <= '0';
-      if (wb_cyc_i='1' and wb_stb_i='1') then
-        if wb_adr_i(2)='1' then
-          if spi_txblock_q='1' then
-            if spi_ready='1' then
-              wb_ack_o <= '1';
-            end if;
-          else
-            wb_ack_o <= '1';
-          end if;
+      if rising_edge(wb_clk_i) then
+        if wb_rst_i='1' then
+
+          wb_ack_o <= '0';
+          spi_en <= '0';
+          trans <= '0';
+
         else
-          wb_ack_o <= '1';
+          wb_ack_o <= '0';
+          spi_en <= '0';
+          trans <='0';
+          if trans='0' then
+            if (wb_cyc_i='1' and wb_stb_i='1') then
+              if wb_adr_i(2)='1' then
+                if spi_txblock_q='1' then
+                  if spi_ready='1' then
+                    if wb_we_i='1' then
+                      spi_en <= '1';
+                      spi_transfersize_q <= wb_adr_i(4 downto 3);
+                    end if;
+                    wb_ack_o <= '1';
+                    trans <= '1';
+                  end if;
+                else
+                  if wb_we_i='1' then
+                    spi_en <= '1';
+                    spi_transfersize_q <= wb_adr_i(4 downto 3);
+                  end if;
+                  trans <= '1';
+                  wb_ack_o <= '1';
+                end if;
+              else
+                trans <= '1';
+                wb_ack_o <= '1';
+              end if;
+            end if;
+          end if;
         end if;
       end if;
     end process;
@@ -180,6 +205,7 @@ begin
 
   nobusygen: if zpuino_spiblocking=false generate
     --busy <= '0';
+    spi_en <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='1' and spi_ready='1' else '0';
     wb_ack_o <= wb_cyc_i and wb_stb_i;
   end generate;
 
@@ -196,7 +222,7 @@ begin
       if wb_rst_i='1' then
         spi_enable_q<='0';
         spi_txblock_q<='1';
-        spi_transfersize_q<=(others => '0');
+        --spi_transfersize_q<=(others => '0');
       else
       if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         if wb_adr_i(2)='0' then
@@ -205,7 +231,7 @@ begin
           spi_samprise <= wb_dat_i(5);
           spi_enable_q <= wb_dat_i(6);
           spi_txblock_q <= wb_dat_i(7);
-          spi_transfersize_q <= wb_dat_i(9 downto 8);
+          --spi_transfersize_q <= wb_dat_i(9 downto 8);
         end if;
       end if;
       end if;

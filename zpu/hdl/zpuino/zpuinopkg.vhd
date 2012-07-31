@@ -329,6 +329,8 @@ package zpuinopkg is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
+    clk_we: in std_logic;
+    clk_wen: in std_logic;
 
     -- SRAM signals
     sram_addr:  out std_logic_vector(18 downto 0);
