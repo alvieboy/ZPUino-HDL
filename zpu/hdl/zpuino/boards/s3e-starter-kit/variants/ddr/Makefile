@@ -1,17 +1,16 @@
-PROJECT=papilio_plus
-PART=xc6slx4-2-tqg144
+PROJECT=s3e_eval_zpuino
+PART=xc3s500e-fg320-4
 
 # For bootloader
-BOARD=PAPILIO_PLUS
-SIZE=16384
-DEFINES="-D__S3E_250__ -DBOARD_ID=0xA4031300 -DBOARD_MEMORYSIZE=0x80000"
+BOARD=S3E_EVAL
+SIZE=32768
+DEFINES="-DBOARD_ID=0x83010F00 -DBOARD_MEMORYSIZE=0x8000"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 prom-generic-dp-32.vhd:
-	$(MAKE) -C ../../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp ../../../bootloader/prom-generic-dp-32.vhd .
-	cp ../../../bootloader/bootloader.vhd .
+	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
+	cp ../../bootloader/prom-generic-dp-32.vhd .
 	
 ${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
@@ -23,11 +22,11 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -p ${PART} \
-	 -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
+	-cm speed -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd
-	par -w -intstyle ise -ol high ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf
+	par -w -intstyle ise -ol high -t 1 ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf
 
 ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 	bitgen -f ${PROJECT}.ut ${PROJECT}_routed.ncd
@@ -37,4 +36,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
-	$(MAKE) -C ../../../bootloader clean
+	$(MAKE) -C ../../bootloader clean

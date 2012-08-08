@@ -92,7 +92,7 @@ package zpupkg is
 			);
 	end component;
 
-  component zpu_core_extreme is
+  component zpu_core_extreme_icache is
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -110,6 +110,54 @@ package zpupkg is
     wb_inta_i:      in std_logic;
     poppc_inst:     out std_logic;
     cache_flush:    in std_logic;
+    break:          out std_logic;
+
+    stack_a_read:   in std_logic_vector(wordSize-1 downto 0);
+    stack_b_read:   in std_logic_vector(wordSize-1 downto 0);
+    stack_a_write:  out std_logic_vector(wordSize-1 downto 0);
+    stack_b_write:  out std_logic_vector(wordSize-1 downto 0);
+    stack_a_writeenable: out std_logic;
+    stack_b_writeenable: out std_logic;
+    stack_a_enable: out std_logic;
+    stack_b_enable: out std_logic;
+    stack_a_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
+    stack_b_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
+    stack_clk:      out std_logic;
+
+    -- ROM wb interface
+
+    rom_wb_ack_i:       in std_logic;
+    rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    rom_wb_cyc_o:       out std_logic;
+    rom_wb_stb_o:       out std_logic;
+    rom_wb_cti_o:       out std_logic_vector(2 downto 0);
+    rom_wb_stall_i:     in std_logic;
+
+    -- Debug interface
+    dbg_out:        out zpu_dbg_out_type;
+    dbg_in:         in zpu_dbg_in_type
+  );
+  end component;
+
+  component zpu_core_extreme is
+  port (
+    wb_clk_i:       in std_logic;
+    wb_rst_i:       in std_logic;
+
+    -- Master wishbone interface
+
+    wb_ack_i:       in std_logic;
+    wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
+    wb_cyc_o:       out std_logic;
+    wb_stb_o:       out std_logic;
+    wb_we_o:        out std_logic;
+
+    wb_inta_i:      in std_logic;
+    poppc_inst:     out std_logic;
+    --cache_flush:    in std_logic;
     break:          out std_logic;
 
     stack_a_read:   in std_logic_vector(wordSize-1 downto 0);

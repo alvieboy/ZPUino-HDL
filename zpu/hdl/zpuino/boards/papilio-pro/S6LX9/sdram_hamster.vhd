@@ -67,6 +67,7 @@ architecture rtl of sdram_controller is
       req_data_write: std_logic_vector(31 downto 0);
       data_out_valid: std_logic;
       dq_masks      : std_logic_vector(1 downto 0);
+      tristate      : std_logic;
    end record;
 
    signal r : reg;
@@ -197,7 +198,9 @@ architecture rtl of sdram_controller is
   signal captured : std_logic_vector(15 downto 0);
   signal busy: std_logic;
 
-  constant tOPD: time := 1.6 ns;
+  constant tOPD: time := 2.1 ns;
+  constant tHZ: time := 8 ns;
+
   signal dram_dq_dly : std_logic_vector(15 downto 0);
 
   -- Debug only
@@ -232,6 +235,8 @@ architecture rtl of sdram_controller is
 
   attribute IOB of rdata_write: signal is "true";
   attribute IOB of captured: signal is "true";
+
+  signal i_DRAM_CLK: std_logic;
 
   attribute fsm_encoding: string;
   attribute fsm_encoding of nstate: signal is "user";
@@ -268,7 +273,7 @@ begin
     port map (
       D0 => '1',
       D1 => '0',
-      Q => DRAM_CLK,
+      Q => i_DRAM_CLK,
       C0 => clock_100_delayed_3ns,
       C1 => not_clock_100_delayed_3ns,
       CE => '1',
@@ -277,6 +282,8 @@ begin
     );
 
    DRAM_CKE       <= '1';
+
+   DRAM_CLK <= transport i_DRAM_CLK after tOPD;
 
    i_DRAM_CS_N    <= transport rstate(3)  after tOPD;
    DRAM_CS_N      <= i_DRAM_CS_N;
@@ -299,8 +306,10 @@ begin
    i_DRAM_DQM     <= transport r.dq_masks  after tOPD;
    DRAM_DQM       <= i_DRAM_DQM;
 
-   DATA_OUT       <= r.data_out_low & captured;
+   DATA_OUT       <= captured & r.data_out_low;--r.data_out_low & captured;
    data_out_valid <= r.data_out_valid;
+
+   DRAM_DQ    <= (others => 'Z') after tHZ when r.tristate='1' else rdata_write;
 
    pending <= '1' when r.wr_pending='1' or r.rd_pending='1' else '0';
 
@@ -341,7 +350,8 @@ begin
       end if;
       
       -- Set the data bus into HIZ, high and low bytes masked
-      DRAM_DQ    <= (others => 'Z');
+      --DRAM_DQ    <= (others => 'Z');
+      n.tristate <= '0';
 
       n.init_counter <= r.init_counter-1;
 
@@ -432,6 +442,7 @@ begin
                n.act_ba    <= addr_bank;
                n.dq_masks <= "00";
                n.rd_pending <= '0';
+               n.tristate<='1';
             end if;
             
             -- unless we have a write on the same row? writes take priroty over reads
@@ -444,6 +455,7 @@ begin
                n.act_ba    <= addr_bank;
                n.dq_masks<= "00";
                n.wr_pending <= '0';
+               n.tristate <= '0';
             end if;
             
             -- But refreshes take piority over everything!
@@ -452,6 +464,7 @@ begin
                n.address(10) <= '1';
                n.rd_pending <= r.rd_pending;
                n.wr_pending <= r.wr_pending;
+               n.tristate <= '1';
             end if;
             
          ------------------------------------------------------
@@ -485,17 +498,22 @@ begin
             n.bank    <= addr_bank;
             n.address(0) <= '1';
             ndata_write <= r.req_data_write(31 downto 16);--data_in(31 downto 16);
-            DRAM_DQ <= rdata_write;
+            --DRAM_DQ <= rdata_write;
             n.dq_masks<= "00";
+            n.tristate <= '0';
 
          when s_wr1_id => null;
-         when s_wr2_id => null;
+         when s_wr2_id =>
+               nstate       <= s_dr0;
+               n.address(10) <= '1';
+
 
          when s_wr3_id =>
             -- Default to the idle+row active state
             nstate     <= s_ra2;
-            DRAM_DQ <= rdata_write;
+            --DRAM_DQ <= rdata_write;
             n.data_out_valid<='1'; -- alvie- ack write
+            n.tristate <= '0';
             n.dq_masks<= "11";
             
             -- If there is a read or write then deactivate the row
@@ -528,8 +546,8 @@ begin
 
             -- But always try and refresh if one is pending!
             if r.rf_pending = '1' then
-               nstate       <= s_dr0;
-               n.address(10) <= '1';
+               nstate       <= s_wr2; --dr0;
+               --n.address(10) <= '1';
             end if;
          
          ------------------------------
@@ -537,13 +555,14 @@ begin
          ------------------------------
          when s_rd0_id =>       -- 10001
             nstate <= s_rd1;
+            n.tristate<='1';
             n.dq_masks <= "00";
             n.address(0)<='1';
 
          when s_rd1_id =>      -- 10010
             nstate <= s_rd2;
             n.dq_masks <= "00";
-
+            n.tristate<='1';
             if r.rd_pending = '1' and r.act_row = addr_row and r.act_ba=addr_bank then
 
               nstate <= s_rd3;  -- Another request came, and we can pipeline -
@@ -559,7 +578,7 @@ begin
          when s_rd2_id =>       -- 10011
             nstate <= s_rd7;
             n.dq_masks <= "00";
-
+            n.tristate<='1';
 
 
          when s_rd3_id =>       -- 10100
@@ -567,6 +586,7 @@ begin
             nstate <= s_rd4;
             n.dq_masks <= "00";
             n.address(0) <= '1';
+            n.tristate<='1';
 
 
             -- Data is still not ready...
@@ -575,6 +595,7 @@ begin
             nstate <= s_rd5;
             n.dq_masks <= "00";
             --n.address(0)<='1';
+            n.tristate<='1';
 
             if r.rd_pending = '1' and r.act_row = addr_row and r.act_ba=addr_bank then
               nstate <= s_rd5;  -- Another request came, and we can pipeline -
@@ -611,15 +632,18 @@ begin
             n.address(0) <= '1';
             nstate <= s_rd4;  -- Another request came, and we can pipeline -
             n.dq_masks <= "00";
+            n.tristate<='1';
 
          when s_rd6_id =>
             nstate <= s_rd7;
             n.dq_masks<= "00";
+            n.tristate<='1';
 
          when s_rd7_id =>
             nstate <= s_ra2;
             n.data_out_low <= captured;
             n.data_out_valid <= '1';
+            n.tristate<='1';
 
          when s_rd8_id => null;
 
@@ -669,6 +693,7 @@ begin
           r.data_out_low <= (others => '0');
           r.data_out_valid <= '0';
           r.dq_masks <= "11";
+          r.tristate<='1';
         else
          r <= n;
          rstate <= nstate;
@@ -677,11 +702,18 @@ begin
       end if;
    end process;
 
-  dram_dq_dly <= transport dram_dq after 1.6 ns;
+  dram_dq_dly <= transport dram_dq after 1.9 ns;
 
-   process (clock_100_delayed_3ns, dram_dq_dly)
+--   process (clock_100_delayed_3ns, dram_dq_dly)
+--   begin
+--     if clock_100_delayed_3ns'event and clock_100_delayed_3ns = '1' then
+--         captured <= dram_dq_dly;
+--     end if;
+--   end process;
+
+   process (clock_100)
    begin
-      if clock_100_delayed_3ns'event and clock_100_delayed_3ns = '1' then
+      if falling_edge(clock_100) then
          captured <= dram_dq_dly;
       end if;
    end process;

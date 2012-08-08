@@ -59,7 +59,7 @@ architecture behave of wb_rom_ram is
   );
   end component dualport_ram;
 
-  constant i_maxAddrBit: integer := 13; -- maxAddrBit
+  constant i_maxAddrBit: integer := 14; -- maxAddrBit
 
   signal memAWriteEnable:  std_logic;
   signal memAWriteMask:    std_logic_vector(3 downto 0);
@@ -91,7 +91,7 @@ begin
 
   ramrom: dualport_ram
   generic map (
-    maxbit => 13--maxAddrBit
+    maxbit => 14--maxAddrBit
   )
   port map (
     clk               => ram_wb_clk_i,

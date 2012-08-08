@@ -130,8 +130,14 @@ begin
 
   wb_stall_o <= '1' when pending='1' else '0';
 
-  wb_ack_o <= sdr_data_out_valid;
-  wb_dat_o <= sdr_data_out;
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+
+     wb_ack_o <= sdr_data_out_valid;
+     wb_dat_o <= sdr_data_out;
+    end if;
+  end process;
 
 end behave;
 
