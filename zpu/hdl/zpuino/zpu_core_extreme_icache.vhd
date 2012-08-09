@@ -45,7 +45,7 @@ use work.wishbonepkg.all;
 --library UNISIM;
 --use UNISIM.vcomponents.all;
 
-entity zpu_core_extreme is
+entity zpu_core_extreme_icache is
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -94,9 +94,9 @@ entity zpu_core_extreme is
     dbg_out:            out zpu_dbg_out_type;
     dbg_in:             in zpu_dbg_in_type
   );
-end zpu_core_extreme;
+end zpu_core_extreme_icache;
 
-architecture behave of zpu_core_extreme is
+architecture behave of zpu_core_extreme_icache is
 
 component lshifter is
   port (

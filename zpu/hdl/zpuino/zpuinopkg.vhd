@@ -532,4 +532,42 @@ package zpuinopkg is
   );
   end component;
 
+  component generic_sp_ram is
+  generic (
+    address_bits: integer := 8;
+    data_bits: integer := 32
+  );
+  port (
+    clka:             in std_logic;
+    ena:              in std_logic;
+    wea:              in std_logic;
+    addra:            in std_logic_vector(address_bits-1 downto 0);
+    dia:              in std_logic_vector(data_bits-1 downto 0);
+    doa:              out std_logic_vector(data_bits-1 downto 0)
+  );
+  end component;
+
+  component generic_dp_ram is
+  generic (
+    address_bits: integer := 8;
+    data_bits: integer := 32
+  );
+  port (
+    clka:             in std_logic;
+    ena:              in std_logic;
+    wea:              in std_logic;
+    addra:            in std_logic_vector(address_bits-1 downto 0);
+    dia:              in std_logic_vector(data_bits-1 downto 0);
+    doa:              out std_logic_vector(data_bits-1 downto 0);
+    clkb:             in std_logic;
+    enb:              in std_logic;
+    web:              in std_logic;
+    addrb:            in std_logic_vector(address_bits-1 downto 0);
+    dib:              in std_logic_vector(data_bits-1 downto 0);
+    dob:              out std_logic_vector(data_bits-1 downto 0)
+  );
+
+  end component generic_dp_ram;
+
+
 end package zpuinopkg;

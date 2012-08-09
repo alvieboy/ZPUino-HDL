@@ -126,7 +126,7 @@ architecture behave of s3e_eval_zpuino is
 
   component zpuino_serialreset is
   generic (
-    SYSTEM_CLOCK_MHZ: integer := 96
+    SYSTEM_CLOCK_MHZ: integer := 90
   );
   port (
     clk:      in std_logic;
@@ -135,6 +135,27 @@ architecture behave of s3e_eval_zpuino is
     rstout:   out std_logic
   );
   end component zpuino_serialreset;
+
+  component wb_bootloader is
+  port (
+    wb_clk_i:   in std_logic;
+    wb_rst_i:   in std_logic;
+
+    wb_dat_o:   out std_logic_vector(31 downto 0);
+    wb_adr_i:   in std_logic_vector(11 downto 2);
+    wb_cyc_i:   in std_logic;
+    wb_stb_i:   in std_logic;
+    wb_ack_o:   out std_logic;
+    wb_stall_o: out std_logic;
+
+    wb2_dat_o:   out std_logic_vector(31 downto 0);
+    wb2_adr_i:   in std_logic_vector(11 downto 2);
+    wb2_cyc_i:   in std_logic;
+    wb2_stb_i:   in std_logic;
+    wb2_ack_o:   out std_logic;
+    wb2_stall_o: out std_logic
+  );
+  end component;
 
   component ddr_sdram is
   generic (
@@ -242,27 +263,9 @@ architecture behave of s3e_eval_zpuino is
   signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
 
-  -- For busy-implementation
-  signal addr_save_q: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal write_save_q: std_logic_vector(wordSize-1 downto 0);
-
-  signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
-  signal io_write: std_logic_vector(wordSize-1 downto 0);
-  signal io_cyc: std_logic;
-  signal io_stb: std_logic;
-  signal io_we: std_logic;
-
-  signal io_device_ack: std_logic;
-
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
   signal spi_pf_sck: std_logic;
-
-  signal adc_mosi:  std_logic;
-  signal adc_miso:  std_logic;
-  signal adc_sck:   std_logic;
-  signal adc_seln:  std_logic;
-  signal adc_enabled: std_logic;
 
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
@@ -277,6 +280,14 @@ architecture behave of s3e_eval_zpuino is
   signal dram_wb_stb_i:       std_logic;
   signal dram_wb_we_i:        std_logic;
   signal dram_wb_stall_o:     std_logic;
+
+  signal np_ram_wb_ack_o:       std_logic;
+  signal np_ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal np_ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal np_ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal np_ram_wb_cyc_i:       std_logic;
+  signal np_ram_wb_stb_i:       std_logic;
+  signal np_ram_wb_we_i:        std_logic;
 
   signal ram_wb_ack_o:       std_logic;
   signal ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
@@ -294,6 +305,34 @@ architecture behave of s3e_eval_zpuino is
   signal rom_wb_stb_i:       std_logic;
   signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
   signal rom_wb_stall_o:     std_logic;
+
+  signal prom_rom_wb_ack_o:       std_logic;
+  signal prom_rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal prom_rom_wb_adr_i:       std_logic_vector(maxAddrBit downto 2);
+  signal prom_rom_wb_cyc_i:       std_logic;
+  signal prom_rom_wb_stb_i:       std_logic;
+  signal prom_rom_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal prom_rom_wb_stall_o:     std_logic;
+
+  signal sram_wb_ack_o:       std_logic;
+  signal sram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal sram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal sram_wb_adr_i:       std_logic_vector(31 downto 0);
+  signal sram_wb_cyc_i:       std_logic;
+  signal sram_wb_stb_i:       std_logic;
+  signal sram_wb_we_i:        std_logic;
+  signal sram_wb_stall_o:     std_logic;
+
+  signal sram_rom_wb_ack_o:       std_logic;
+  signal sram_rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal sram_rom_wb_adr_i:       std_logic_vector(maxAddrBit downto 2);
+  signal sram_rom_wb_cyc_i:       std_logic;
+  signal sram_rom_wb_stb_i:       std_logic;
+  signal sram_rom_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal sram_rom_wb_stall_o:     std_logic;
+
+
+  signal memory_enable: std_logic;
 
   component wb_rom_ram is
   port (
@@ -325,7 +364,7 @@ begin
 
   rstgen: zpuino_serialreset
     generic map (
-      SYSTEM_CLOCK_MHZ  => 75
+      SYSTEM_CLOCK_MHZ  => 90
     )
     port map (
       clk       => sysclk,
@@ -421,10 +460,10 @@ begin
   pin53:  OPAD  port map ( I => gpio_o(53), O => gpio_i(53), PAD => AMP_CS );
 
   ibufrx: IPAD  port map ( O => rx, C => sysclk, PAD => UART_RX );
-  obuftx: OPAD  port map ( I => tx, PAD => UART_TX );
-  sckpad: OPAD  port map ( I => spi_pf_sck,   PAD => SPI_SCK );
-  mosipad:OPAD  port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
-  --misopad:IPAD  port map ( spi_pf_miso,  C => sysclk, PAD => SPI_MISO );
+  obuftx: OPAD  port map ( I => tx, O=> open, PAD => UART_TX );
+  sckpad: OPAD  port map ( I => spi_pf_sck, O => open,  PAD => SPI_SCK );
+  mosipad:OPAD  port map ( I => spi_pf_mosi, O => open,  PAD => SPI_MOSI );
+
   spi_pf_miso <= SPI_MISO;
 
   zpuino:zpuino_top
@@ -447,15 +486,17 @@ begin
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
       m_wb_ack_o    => open,
+      
+      memory_enable => memory_enable,
 
-      ram_wb_ack_i      => ram_wb_ack_o,
+      ram_wb_ack_i      => np_ram_wb_ack_o,
       ram_wb_stall_i    => '0',--np_ram_wb_stall_o,
-      ram_wb_dat_o      => ram_wb_dat_i,
-      ram_wb_dat_i      => ram_wb_dat_o,
-      ram_wb_adr_o      => ram_wb_adr_i(maxAddrBit downto 0),
-      ram_wb_cyc_o      => ram_wb_cyc_i,
-      ram_wb_stb_o      => ram_wb_stb_i,
-      ram_wb_we_o       => ram_wb_we_i,
+      ram_wb_dat_o      => np_ram_wb_dat_i,
+      ram_wb_dat_i      => np_ram_wb_dat_o,
+      ram_wb_adr_o      => np_ram_wb_adr_i(maxAddrBit downto 0),
+      ram_wb_cyc_o      => np_ram_wb_cyc_i,
+      ram_wb_stb_o      => np_ram_wb_stb_i,
+      ram_wb_we_o       => np_ram_wb_we_i,
 
       rom_wb_ack_i      => rom_wb_ack_o,
       rom_wb_stall_i      => rom_wb_stall_o,
@@ -466,6 +507,163 @@ begin
 
       jtag_ctrl_chain_in => (others => '0')
     );
+
+  memarb: wbarb2_1
+  generic map (
+    ADDRESS_HIGH => maxAddrBit,
+    ADDRESS_LOW => 2
+  )
+  port map (
+    wb_clk_i      => wb_clk_i,
+    wb_rst_i      => wb_rst_i,
+
+    m0_wb_dat_o   => ram_wb_dat_o,
+    m0_wb_dat_i   => ram_wb_dat_i,
+    m0_wb_adr_i   => ram_wb_adr_i(maxAddrBit downto 2),
+    m0_wb_sel_i   => (others => '1'),
+    m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m0_wb_we_i    => ram_wb_we_i,
+    m0_wb_cyc_i   => ram_wb_cyc_i,
+    m0_wb_stb_i   => ram_wb_stb_i,
+    m0_wb_ack_o   => ram_wb_ack_o,
+    m0_wb_stall_o => ram_wb_stall_o,
+
+    m1_wb_dat_o   => sram_rom_wb_dat_o,
+    m1_wb_dat_i   => (others => DontCareValue),
+    m1_wb_adr_i   => sram_rom_wb_adr_i(maxAddrBit downto 2),
+    m1_wb_sel_i   => (others => '1'),
+    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m1_wb_we_i    => '0',--rom_wb_we_i,
+    m1_wb_cyc_i   => sram_rom_wb_cyc_i,
+    m1_wb_stb_i   => sram_rom_wb_stb_i,
+    m1_wb_ack_o   => sram_rom_wb_ack_o,
+    m1_wb_stall_o => sram_rom_wb_stall_o,
+
+    s0_wb_dat_i   => sram_wb_dat_o,
+    s0_wb_dat_o   => sram_wb_dat_i,
+    s0_wb_adr_o   => sram_wb_adr_i(maxAddrBit downto 2),
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => sram_wb_we_i,
+    s0_wb_cyc_o   => sram_wb_cyc_i,
+    s0_wb_stb_o   => sram_wb_stb_i,
+    s0_wb_ack_i   => sram_wb_ack_o,
+    s0_wb_stall_i => sram_wb_stall_o
+  );
+
+  bootmux: wbbootloadermux
+  generic map (
+    address_high  => maxAddrBit
+  )
+  port map (
+    wb_clk_i      => wb_clk_i,
+	 	wb_rst_i      => wb_rst_i,
+
+    sel           => memory_enable,
+
+    -- Master 
+
+    m_wb_dat_o    => rom_wb_dat_o,
+    m_wb_dat_i    => (others => DontCareValue),
+    m_wb_adr_i    => rom_wb_adr_i(maxAddrBit downto 2),
+    m_wb_sel_i    => (others => '1'),
+    m_wb_cti_i    => CTI_CYCLE_CLASSIC,
+    m_wb_we_i     => '0',
+    m_wb_cyc_i    => rom_wb_cyc_i,
+    m_wb_stb_i    => rom_wb_stb_i,
+    m_wb_ack_o    => rom_wb_ack_o,
+    m_wb_stall_o  => rom_wb_stall_o,
+
+    -- Slave 0 signals
+
+    s0_wb_dat_i   => sram_rom_wb_dat_o,
+    s0_wb_dat_o   => open,
+    s0_wb_adr_o   => sram_rom_wb_adr_i,
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => open,
+    s0_wb_cyc_o   => sram_rom_wb_cyc_i,
+    s0_wb_stb_o   => sram_rom_wb_stb_i,
+    s0_wb_ack_i   => sram_rom_wb_ack_o,
+    s0_wb_stall_i => sram_rom_wb_stall_o,
+
+    -- Slave 1 signals
+
+    s1_wb_dat_i   => prom_rom_wb_dat_o,
+    s1_wb_dat_o   => open,
+    s1_wb_adr_o   => prom_rom_wb_adr_i(11 downto 2),
+    s1_wb_sel_o   => open,
+    s1_wb_cti_o   => open,
+    s1_wb_we_o    => open,
+    s1_wb_cyc_o   => prom_rom_wb_cyc_i,
+    s1_wb_stb_o   => prom_rom_wb_stb_i,
+    s1_wb_ack_i   => prom_rom_wb_ack_o,
+    s1_wb_stall_i => prom_rom_wb_stall_o
+
+  );
+
+  npnadapt: wb_master_np_to_slave_p
+  generic map (
+    ADDRESS_HIGH  => maxAddrBitIncIO,
+    ADDRESS_LOW   => 0
+  )
+  port map (
+    wb_clk_i    => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+
+    -- Master signals
+
+    m_wb_dat_o  => np_ram_wb_dat_o,
+    m_wb_dat_i  => np_ram_wb_dat_i,
+    m_wb_adr_i  => np_ram_wb_adr_i,
+    m_wb_sel_i  => (others => '1'),
+    m_wb_cti_i  => CTI_CYCLE_CLASSIC,
+    m_wb_we_i   => np_ram_wb_we_i,
+    m_wb_cyc_i  => np_ram_wb_cyc_i,
+    m_wb_stb_i  => np_ram_wb_stb_i,
+    m_wb_ack_o  => np_ram_wb_ack_o,
+
+    -- Slave signals
+
+    s_wb_dat_i  => ram_wb_dat_o,
+    s_wb_dat_o  => ram_wb_dat_i,
+    s_wb_adr_o  => ram_wb_adr_i,
+    s_wb_sel_o  => open,
+    s_wb_cti_o  => open,
+    s_wb_we_o   => ram_wb_we_i,
+    s_wb_cyc_o  => ram_wb_cyc_i,
+    s_wb_stb_o  => ram_wb_stb_i,
+    s_wb_ack_i  => ram_wb_ack_o,
+    s_wb_stall_i => ram_wb_stall_o
+  );
+
+
+  -- PROM
+
+  prom: wb_bootloader
+    port map (
+      wb_clk_i    => wb_clk_i,
+      wb_rst_i    => wb_rst_i,
+
+      wb_dat_o    => prom_rom_wb_dat_o,
+      wb_adr_i    => prom_rom_wb_adr_i(11 downto 2),
+      wb_cyc_i    => prom_rom_wb_cyc_i,
+      wb_stb_i    => prom_rom_wb_stb_i,
+      wb_ack_o    => prom_rom_wb_ack_o,
+      wb_stall_o  => prom_rom_wb_stall_o,
+
+      wb2_dat_o    => slot_read(15),
+      wb2_adr_i    => slot_address(15)(11 downto 2),
+      wb2_cyc_i    => slot_cyc(15),
+      wb2_stb_i    => slot_stb(15),
+      wb2_ack_o    => slot_ack(15),
+      wb2_stall_o  => open
+    );
+
+
+
+
+
 
   --
   --
@@ -779,50 +977,12 @@ begin
     wb_inta_o => slot_interrupt(14)
   );
 
-  --
-  -- IO SLOT 15
-  --
+  sram_wb_adr_i(31 downto maxAddrBitIncIO)<=(others => '0');
 
-
-  npnadapt: wb_master_np_to_slave_p
-  generic map (
-    ADDRESS_HIGH  => maxAddrBitIncIO-1,
-    ADDRESS_LOW   => 2
-  )
-  port map (
-    wb_clk_i    => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-
-    -- Master signals
-
-    m_wb_dat_o  => slot_read(15),
-    m_wb_dat_i  => slot_write(15),
-    m_wb_adr_i  => slot_address(15)(maxAddrBitIncIO-1 downto 2),
-    m_wb_sel_i  => (others => '1'),
-    m_wb_cti_i  => CTI_CYCLE_CLASSIC,
-    m_wb_we_i   => slot_we(15),
-    m_wb_cyc_i  => slot_cyc(15),
-    m_wb_stb_i  => slot_stb(15),
-    m_wb_ack_o  => slot_ack(15),
-
-    -- Slave signals
-
-    s_wb_dat_i  => dram_wb_dat_o,
-    s_wb_dat_o  => dram_wb_dat_i,
-    s_wb_adr_o  => dram_wb_adr_i(maxAddrBitIncIO-1 downto 2),
-    s_wb_sel_o  => open,
-    s_wb_cti_o  => open,
-    s_wb_we_o   => dram_wb_we_i,
-    s_wb_cyc_o  => dram_wb_cyc_i,
-    s_wb_stb_o  => dram_wb_stb_i,
-    s_wb_ack_i  => dram_wb_ack_o,
-    s_wb_stall_i => dram_wb_stall_o
-  );
-
-  dram_wb_adr_i(31 downto maxAddrBitIncIO)<=(others => '0');
   ddr: ddr_sdram
   GENERIC map (
-    MHZ => 75
+    HIGH_BIT => 25,
+    MHZ => 90
   )
   PORT map (
     clk         => sysclk,
@@ -847,38 +1007,15 @@ begin
     --wb_clk_i: in std_logic;
 	 	--wb_rst_i: in std_logic;
 
-    wb_dat_o    => dram_wb_dat_o,
-    wb_dat_i    => dram_wb_dat_i,
-    wb_adr_i    => dram_wb_adr_i,
-    wb_we_i     => dram_wb_we_i,
-    wb_cyc_i    => dram_wb_cyc_i,
-    wb_stb_i    => dram_wb_stb_i,
-    wb_ack_o    => dram_wb_ack_o,
-    wb_stall_o  => dram_wb_stall_o
+    wb_dat_o    => sram_wb_dat_o,
+    wb_dat_i    => sram_wb_dat_i,
+    wb_adr_i    => sram_wb_adr_i,
+    wb_we_i     => sram_wb_we_i,
+    wb_cyc_i    => sram_wb_cyc_i,
+    wb_stb_i    => sram_wb_stb_i,
+    wb_ack_o    => sram_wb_ack_o,
+    wb_stall_o  => sram_wb_stall_o
    );
-
-  memory: wb_rom_ram
-  port map (
-    ram_wb_clk_i      => sysclk,
-    ram_wb_rst_i      => sysrst,
-    ram_wb_ack_o      => ram_wb_ack_o,
-    ram_wb_dat_i      => ram_wb_dat_i,
-    ram_wb_dat_o      => ram_wb_dat_o,
-    ram_wb_adr_i      => ram_wb_adr_i(maxAddrBitIncIO downto 0),
-    ram_wb_cyc_i      => ram_wb_cyc_i,
-    ram_wb_stb_i      => ram_wb_stb_i,
-    ram_wb_we_i       => ram_wb_we_i,
-
-    rom_wb_clk_i      => sysclk,
-    rom_wb_rst_i      => sysrst,
-    rom_wb_ack_o      => rom_wb_ack_o,
-    rom_wb_dat_o      => rom_wb_dat_o,
-    rom_wb_adr_i      => rom_wb_adr_i(maxAddrBitIncIO downto 0),
-    rom_wb_cyc_i      => rom_wb_cyc_i,
-    rom_wb_stb_i      => rom_wb_stb_i,
-    rom_wb_cti_i      => rom_wb_cti_i
-  );
-
 
   process(gpio_spp_read, 
           sigmadelta_spp_data,timers_pwm,

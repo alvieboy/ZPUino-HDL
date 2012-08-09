@@ -7,6 +7,7 @@ use ieee.numeric_std.all;
 library work;
 use work.zpu_config.all;
 use work.zpupkg.all;
+use work.zpuinopkg.all;
 use work.wishbonepkg.all;
 
 --library UNISIM;
@@ -39,45 +40,8 @@ end zpuino_icache;
 
 architecture behave of zpuino_icache is
 
-  component generic_sp_ram is
-  generic (
-    address_bits: integer := 8;
-    data_bits: integer := 32
-  );
-  port (
-    clka:             in std_logic;
-    ena:              in std_logic;
-    wea:              in std_logic;
-    addra:            in std_logic_vector(address_bits-1 downto 0);
-    dia:              in std_logic_vector(data_bits-1 downto 0);
-    doa:              out std_logic_vector(data_bits-1 downto 0)
-  );
-  end component;
 
-  component generic_dp_ram is
-  generic (
-    address_bits: integer := 8;
-    data_bits: integer := 32
-  );
-  port (
-    clka:             in std_logic;
-    ena:              in std_logic;
-    wea:              in std_logic;
-    addra:            in std_logic_vector(address_bits-1 downto 0);
-    dia:              in std_logic_vector(data_bits-1 downto 0);
-    doa:              out std_logic_vector(data_bits-1 downto 0);
-    clkb:             in std_logic;
-    enb:              in std_logic;
-    web:              in std_logic;
-    addrb:            in std_logic_vector(address_bits-1 downto 0);
-    dib:              in std_logic_vector(data_bits-1 downto 0);
-    dob:              out std_logic_vector(data_bits-1 downto 0)
-  );
-  end component generic_dp_ram;
-
-
-
-  constant ADDRESS_HIGH: integer := 18;
+  constant ADDRESS_HIGH: integer := 26;
   constant ADDRESS_LOW: integer := 0;
   constant CACHE_MAX_BITS: integer := 13; -- 8 Kb
   constant CACHE_LINE_SIZE_BITS: integer := 6; -- 64 bytes
@@ -98,7 +62,7 @@ architecture behave of zpuino_icache is
   alias tag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)
     is address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
 
-  signal ctag: std_logic_vector(tag'HIGH+1 downto 0);
+  signal ctag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS downto 0);
 
   type validmemtype is ARRAY(0 to (2**line'LENGTH)-1) of std_logic;
   shared variable valid_mem: validmemtype;
@@ -141,26 +105,30 @@ architecture behave of zpuino_icache is
   signal state: state_type;
   signal fill_success: std_logic;
 
-  signal tag_mem_data: std_logic_vector(ctag'RANGE);
-  signal tag_mem_addr: std_logic_vector(line'RANGE);
+  signal tag_mem_data: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS downto 0);
+  signal tag_mem_addr: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0);
 
   signal tag_mem_ena: std_logic;
 
   signal flushcnt: unsigned(line'RANGE);
 
+  --constant line_length: integer := CACHE_LINE_ID_BITS;
+  --constant ctag_length: integer := ADDRESS_HIGH-CACHE_MAX_BITS;
+  constant dignore: std_logic_vector(ctag'RANGE) := (others => DontCareValue);
+  constant dignore32: std_logic_vector(31 downto 0) := (others => DontCareValue);
 begin
 
   tagmem: generic_dp_ram
   generic map (
-    address_bits  => line'LENGTH,
-    data_bits     => ctag'LENGTH
+    address_bits  => CACHE_LINE_ID_BITS,
+    data_bits     => ADDRESS_HIGH-CACHE_MAX_BITS+1
   )
   port map (
     clka      => wb_clk_i,
     ena       => tag_mem_enable,
     wea       => '0',
-    addra     => line,
-    dia       => (others => DontCareValue),
+    addra     => address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS),--line,
+    dia       => dignore,--(others => DontCareValue),
     doa       => ctag,
 
     clkb      => wb_clk_i,
@@ -241,7 +209,7 @@ begin
     ena       => tag_mem_ena,               -- enable and strobe ?
     wea       => '0',
     addra     => cache_addr_read,
-    dia       => (others => '0'),
+    dia       => dignore32,
     doa       => data,
 
     clkb      => wb_clk_i,

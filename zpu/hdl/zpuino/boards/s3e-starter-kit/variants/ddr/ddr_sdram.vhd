@@ -7,7 +7,7 @@ use unisim.vcomponents.all;
 
 entity ddr_sdram is
   generic (
-    HIGH_BIT: integer := 24;
+    HIGH_BIT: integer := 25;
     MHZ: integer := 96;
     tOPD: time := 1.962 ns;
     tIPD: time := 0.956 ns
@@ -213,10 +213,10 @@ begin
 
   process(r.reqaddr)
   begin
-    addr_bank <= r.reqaddr(HIGH_BIT downto (HIGH_BIT-addr_bank'LENGTH)+1);
-    addr_row  <= r.reqaddr(22 downto 10);
+    addr_bank <= r.reqaddr(25 downto 24);--HIGH_BIT downto (HIGH_BIT-addr_bank'LENGTH)+1);
+    addr_row  <= r.reqaddr(23 downto 11);
     addr_col  <= (others => '0');
-    addr_col(8 downto 0)  <= r.reqaddr(9 downto 2) & "0";
+    addr_col(9 downto 0)  <= r.reqaddr(10 downto 2) & "0";
   end process;
 
 process(clk, r, wb_dat_i,wb_adr_i,wb_we_i,wb_cyc_i,wb_stb_i,addr_bank,addr_row,addr_col,rst)

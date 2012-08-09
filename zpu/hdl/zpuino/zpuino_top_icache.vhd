@@ -291,7 +291,7 @@ architecture behave of zpuino_top is
 
 begin
 
-  core: zpu_core_extreme
+  core: zpu_core_extreme_icache
     port map (
       wb_clk_i      => clk,
 	 		wb_rst_i      => rst,

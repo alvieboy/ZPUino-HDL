@@ -4,15 +4,16 @@ PART=xc3s500e-fg320-4
 # For bootloader
 BOARD=S3E_EVAL
 SIZE=32768
-DEFINES="-DBOARD_ID=0x83010F00 -DBOARD_MEMORYSIZE=0x8000"
-
+DEFINES="-DBOARD_ID=0x83011900 -DBOARD_MEMORYSIZE=0x04000000"
+ROOT=../../../..
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
-prom-generic-dp-32.vhd:
-	$(MAKE) -C ../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp ../../bootloader/prom-generic-dp-32.vhd .
+bootloader.vhd:
+	$(MAKE) -C $(ROOT)/bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
+	#cp $(ROOT)/bootloader/prom-generic-dp-32.vhd .
+	cp $(ROOT)/bootloader/bootloader.vhd .
 	
-${PROJECT}.ngc: prom-generic-dp-32.vhd
+${PROJECT}.ngc: bootloader.vhd #prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
@@ -36,4 +37,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
-	$(MAKE) -C ../../bootloader clean
+	$(MAKE) -C $(ROOT)/bootloader clean
