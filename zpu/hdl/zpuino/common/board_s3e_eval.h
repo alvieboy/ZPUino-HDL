@@ -3,7 +3,8 @@
 
 #define CLK_FREQ 90000000UL
 #ifndef BOARD_MEMORYSIZE
-#define BOARD_MEMORYSIZE 0x8000
+//#define BOARD_MEMORYSIZE 0x8000
+#error missing memory size
 #endif
 
 #define SPIOFFSET 0x00000000
