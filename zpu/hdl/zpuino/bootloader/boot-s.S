@@ -1,4 +1,20 @@
-.section ".boots", "a"
+#define STACKTOP (BOARD_MEMORYSIZE - 0x8)
+
+.text
+.globl spi_copy
+spi_copy:
+       im STACKTOP
+        popsp 
+        im spi_copy_impl
+        poppc
+.globl start_sketch
+start_sketch:
+       im STACKTOP
+        popsp
+        im __sketch_start
+        poppc
+
+.section ".boots", ""
 
 /* ATTENTION - this requires a very strict memory map. Do not change before
    thinking */

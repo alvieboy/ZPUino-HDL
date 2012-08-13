@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-//#define VERBOSE_LOADER
+#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -99,7 +99,8 @@ extern "C" void printhex(unsigned int c)
 	printhexbyte(c);
 }
 
-static void spi_copy();
+extern "C" void spi_copy() __attribute__((noreturn));
+extern "C" void start_sketch() __attribute__((noreturn));
 
 #ifdef DEBUG_SERIAL
 const unsigned char serialbuffer[] = {
@@ -144,6 +145,10 @@ void finishSend()
 
 unsigned int inbyte()
 {
+#ifdef BOOT_IMMEDIATLY
+		spi_copy();
+#else
+
 	for (;;)
 	{
 #ifdef DEBUG_SERIAL
@@ -157,9 +162,6 @@ unsigned int inbyte()
 
 #endif
 
-#ifdef BOOT_IMMEDIATLY
-		spi_copy();
-#else
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
@@ -168,9 +170,8 @@ unsigned int inbyte()
 #endif
 			spi_copy();
 		}
-#endif
-
 	}
+#endif
 }
 
 void enableTimer()
@@ -251,29 +252,11 @@ static inline unsigned int spiread(register_t base)
 	return *base;
 }
 
-static void spi_copy()
-{
-	// Make sure we are on top of stack. We can safely discard everything
-	__asm__("im %0\n"
-			"popsp\n"
-			"im spi_copy_impl\n"
-			"" // poppc will be provided by func
-			:
-			:"i"(STACKTOP)
-		   );
-	//while (1) {}
-}
-
 extern "C" void start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
-	__asm__("nop\nim %0\n"
-			"popsp\n"
-			"im __sketch_start\n"
-			""
-			:
-			: "i" (STACKTOP));
+    start_sketch();
 }
 
 unsigned start_read_size(register_t spidata)
