@@ -14,6 +14,9 @@ use work.wishbonepkg.all;
 --use UNISIM.vcomponents.all;
 
 entity zpuino_icache is
+  generic (
+      ADDRESS_HIGH: integer := 26
+  );
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -39,9 +42,7 @@ entity zpuino_icache is
 end zpuino_icache;
 
 architecture behave of zpuino_icache is
-
-
-  constant ADDRESS_HIGH: integer := 26;
+  
   constant ADDRESS_LOW: integer := 0;
   constant CACHE_MAX_BITS: integer := 13; -- 8 Kb
   constant CACHE_LINE_SIZE_BITS: integer := 6; -- 64 bytes

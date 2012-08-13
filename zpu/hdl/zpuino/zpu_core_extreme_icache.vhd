@@ -112,6 +112,9 @@ component lshifter is
 end component;
 
 component zpuino_icache is
+  generic (
+      ADDRESS_HIGH: integer := 26
+  );
   port (
     wb_clk_i:       in std_logic;
     wb_rst_i:       in std_logic;
@@ -414,6 +417,9 @@ begin
   -- synopsys translate_on
 
   cache: zpuino_icache
+  generic map (
+    ADDRESS_HIGH => maxAddrBitBRAM
+  )
   port map (
     wb_clk_i    => wb_clk_i,
     wb_rst_i    => wb_rst_i,

@@ -83,7 +83,6 @@ type state_type is (
   ract1,
   ract2,
   read1,
-  read1_5,
   read2,
   read3,
   read4,
@@ -169,10 +168,6 @@ attribute IOB of nWE_i : signal is "true";
 attribute IOB of ADDR_i : signal is "true";
 attribute IOB of CKE_i : signal is "true";
 attribute IOB of BA_i : signal is "true";
-attribute IOB of CK_i : signal is "true";
-attribute IOB of nCK_i : signal is "true";
-attribute IOB of data_write_i : signal is "true";
-attribute IOB of DQS_i_i : signal is "true";
 
 signal not_enable_dqs: std_logic;
 
@@ -185,9 +180,7 @@ begin
   DRAM_CLK      <= transport CK_i after tOPD;
   DRAM_CLK_N    <= transport nCK_i after tOPD;
   DRAM_CS_N     <= transport nCS_i after tOPD;
-  --DRAM_DQ       <= (others => 'Z');
   DRAM_DQM      <= (others => '0');
-  --DRAM_DQS      <= (others => 'Z');
   DRAM_RAS_N    <= transport nRAS_i after tOPD;
   DRAM_WE_N     <= transport nWE_i after tOPD;
 
@@ -407,13 +400,6 @@ begin
         end if;
       end if;
 
-    when read1_5 =>
-      n.tristate <= '1';
-      n.dataq1 <= '1';
-      --n.ba <= addr_bank;
-      --n.addr <= addr_col;
-      n.state <= read2;
-
     when read2 =>
 
       n.state <= read3;
@@ -424,11 +410,6 @@ begin
     when read4 =>
       n.state <= idle;
       n.state <= pre3;
-
-    --when await =>
-    --  n.state <= read1;
-    --  n.ba <= r.reqba;
-    --  n.addr <= r.reqaddr;
 
     when write =>
       n.enable_dqs <= '1';
@@ -517,14 +498,13 @@ begin
     when dll_wait   =>  n.ctrl <= CMD_NOP;
     when idle       =>  n.ctrl <= CMD_NOP;
     when ract1      =>  n.ctrl <= CMD_ACTIVATE;
-    when ract2      =>  n.ctrl <= CMD_NOP;       
-    when read1      =>  n.ctrl <= CMD_READ;      
-    when read1_5    =>  n.ctrl <= CMD_READ;
+    when ract2      =>  n.ctrl <= CMD_NOP;
+    when read1      =>  n.ctrl <= CMD_READ;
     when read2      =>  n.ctrl <= CMD_NOP;
     when read3      =>  n.ctrl <= CMD_NOP;
     when read4      =>  n.ctrl <= CMD_NOP;
-    when write      =>  n.ctrl <= CMD_WRITE;     
-    when write2     =>  n.ctrl <= CMD_NOP;   --n.enable_dqs <= '1';
+    when write      =>  n.ctrl <= CMD_WRITE;
+    when write2     =>  n.ctrl <= CMD_NOP;
     when await      =>  n.ctrl <= CMD_NOP;
     when wras       =>  n.ctrl <= CMD_NOP;
     when others     =>  null;

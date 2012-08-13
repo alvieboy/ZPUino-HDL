@@ -23,7 +23,8 @@ run
 -slice_utilization_ratio 100
 -bram_utilization_ratio 100
 -verilog2001 YES
--fsm_extract YES -fsm_encoding Auto
+-fsm_extract YES 
+-fsm_encoding User
 -safe_implementation No
 -fsm_style LUT
 -ram_extract Yes
