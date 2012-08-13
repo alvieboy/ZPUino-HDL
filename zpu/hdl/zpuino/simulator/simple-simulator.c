@@ -76,6 +76,7 @@ void tick(unsigned int delta)
 
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
+    unsigned int *spalign  = (unsigned int*)&_stack[0];
 		//	if (pc < 0x40 || pc >=0x400) {
 		if (sp > sizeof(_stack)) {
 				printf("Access beyond end of stack 0x%08x\n",sp);
@@ -85,7 +86,7 @@ void trace(unsigned int pc, unsigned int sp, unsigned int top)
 		printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
 			   _memory[pc], sp,
 			   top,
-			   bswap_32(*(unsigned int*)&_stack[sp+4]),
+			   bswap_32(spalign[ (sp/4) + 1] ),//*(unsigned int*)&_stack[sp+4]),
 			   zpuino_get_tick_count()
 			  );
 		fflush(stdout);

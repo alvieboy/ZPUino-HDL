@@ -4,7 +4,7 @@
         C calling standard
 */
 
-// #define TRACE
+#undef TRACE
         
         .globl execute
 
