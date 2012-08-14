@@ -137,8 +137,9 @@ void *zpu_thread(void*data)
 
 void zpu_halt()
 {
-	request_halt=1;
+	
 	pthread_mutex_lock(&zpu_halted_lock);
+    request_halt=1;
 	while (!zpu_halted_flag)
 		pthread_cond_wait(&zpu_halted_cond, &zpu_halted_lock);
 
