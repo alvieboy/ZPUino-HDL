@@ -78,7 +78,7 @@ void timer_tick(unsigned delta)
 					//printf("Timer match %04x\n",timer_cnt);
 
 					if (ctrl & BIT(TCTLIEN) ) {
-						  printf("# Interrupting\n");
+						//printf("# Interrupting\n");
 						ctrl |= BIT(TCTLIF);
 						//do_interrupt=1;
 						zpuino_request_interrupt(0);
@@ -121,7 +121,7 @@ unsigned int timer_read_cmp( unsigned int address )
 
 void timer_write( unsigned int address, unsigned int value)
 {
-	zpudebug("Timer write, 0x%08x = 0x%08x\n",address,value);
+	//zpudebug("Timer write, 0x%08x = 0x%08x\n",address,value);
 	int reset_thread=0;
 
 	switch(address & 0xF) {
@@ -194,7 +194,7 @@ void timer_write( unsigned int address, unsigned int value)
 		unsigned long long count = (timer_match+1);
 		count *= 1000000000ULL;
 		count/=cl;
-		fprintf(stderr,"Timer delay is %llu nanoseconds\n",count);
+		//fprintf(stderr,"Timer delay is %llu nanoseconds\n",count);
 		sleepreq.tv_sec = count/1000000000;
 		sleepreq.tv_nsec = count% 1000000000;
 		if (threadid==-1 || reset_thread)
