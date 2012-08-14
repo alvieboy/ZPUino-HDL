@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-#define VERBOSE_LOADER
+//#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -389,9 +389,10 @@ extern "C" void _zpu_interrupt()
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
-static int is_atmel_flash()
+static inline int is_atmel_flash()
 {
-	return ((flash_id & 0xff0000)==0x1f0000);
+	//return ((flash_id & 0xff0000)==0x1f0000);
+	return 0;
 }
 
 static void simpleReply(unsigned int r)
