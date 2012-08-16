@@ -41,10 +41,15 @@ use work.zpu_config.all;
 use work.zpuino_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+-- synopsys translate_off
 library work;
 use work.txt_util.all;
+-- synopsys translate_on
 
 entity multispi is
+  generic (
+    spicount: integer := 10
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -70,8 +75,8 @@ entity multispi is
     mi_wb_ack_i: in std_logic;
 
     -- LED array interface (6 controllers)
-    lmosi:     out std_logic_vector(9 downto 0);
-    lsck:      out std_logic_vector(9 downto 0);
+    lmosi:     out std_logic_vector(spicount-1 downto 0);
+    lsck:      out std_logic_vector(spicount-1 downto 0);
 
     -- SPI flash
     fmosi:      out std_logic;
@@ -176,12 +181,12 @@ architecture behave of multispi is
   signal ctrlready: std_logic;
 
 
-  signal ispi_clken:    std_logic_vector(9 downto 0);
-  signal ispi_clkrise:  std_logic_vector(9 downto 0);
-  signal ispi_clkfall:  std_logic_vector(9 downto 0);
-  signal ictrlen:  std_logic_vector(9 downto 0);
-  signal ictrlsel:  std_logic_vector(9 downto 0);
-  signal ictrlready:  std_logic_vector(9 downto 0);
+  signal ispi_clken:    std_logic_vector(spicount-1 downto 0);
+  signal ispi_clkrise:  std_logic_vector(spicount-1 downto 0);
+  signal ispi_clkfall:  std_logic_vector(spicount-1 downto 0);
+  signal ictrlen:  std_logic_vector(spicount-1 downto 0);
+  signal ictrlsel:  std_logic_vector(spicount-1 downto 0);
+  signal ictrlready:  std_logic_vector(spicount-1 downto 0);
   signal ictrldata: std_logic_vector(31 downto 0);
 
   signal flash_din, df_din: std_logic_vector(31 downto 0);
@@ -191,42 +196,14 @@ architecture behave of multispi is
 begin
 
   process( r.ctrln, ictrlready )
+    variable ri: integer range 0 to spicount-1;
   begin
-    case r.ctrln is
-      when "0000" =>
-        ictrlsel <= "0000000001";
-        ctrlready <= ictrlready(0);
-      when "0001" =>
-        ictrlsel <= "0000000010";
-        ctrlready <= ictrlready(1);
-      when "0010" =>
-        ictrlsel <= "0000000100";
-        ctrlready <= ictrlready(2);
-      when "0011" =>
-        ictrlsel <= "0000001000";
-        ctrlready <= ictrlready(3);
-      when "0100" =>
-        ictrlsel <= "0000010000";
-        ctrlready <= ictrlready(4);
-      when "0101" =>
-        ictrlsel <= "0000100000";
-        ctrlready <= ictrlready(5);
-      when "0110" =>
-        ictrlsel <= "0001000000";
-        ctrlready <= ictrlready(6);
-      when "0111" =>
-        ictrlsel <= "0010000000";
-        ctrlready <= ictrlready(7);
-      when "1000" =>
-        ictrlsel <= "0100000000";
-        ctrlready <= ictrlready(8);
-      when "1001" =>
-        ictrlsel <= "1000000000";
-        ctrlready <= ictrlready(9);
-      when others =>
-        ictrlsel <= (others => '0');
-        ctrlready <='1';
-    end case;
+    ictrlsel <= (others => '0');
+    ri := to_integer( unsigned(r.ctrln) );
+
+    ictrlsel(ri) <= '1';
+    ctrlready <= ictrlready(ri);
+
   end process;  
 
   fnsel <= r.nsel;
@@ -434,9 +411,11 @@ begin
     end if;
 
     if rising_edge(wb_clk_i) then
+    -- synopsys translate_off
       if r.state=leave then
         report "LED " & hstr(std_logic_vector(r.ledcnt)) & " ctrl " & hstr(r.ctrln) & " address 0x" & hstr(r.maddr) & " offset 0x" & hstr(fdout(15 downto 0)) & " data 0x" & hstr(r.rgb);
       end if;
+    -- synopsys translate_on
       r <= w;
     end if;
 
@@ -483,7 +462,7 @@ begin
 
 
 
-  ictrl: for i in 0 to 9 generate
+  ictrl: for i in 0 to spicount-1 generate
 
     ictrlen(i) <= ictrlsel(i) and r.ctrlen;
 
