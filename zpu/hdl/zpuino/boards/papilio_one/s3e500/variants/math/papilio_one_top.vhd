@@ -798,31 +798,23 @@ begin
     wb_inta_o => slot_interrupt(15)
   );
 
-  pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
-  pin01: IOPAD port map(I => gpio_o(1), O => gpio_i(1), T => gpio_t(1), C => sysclk,PAD => WING_A(1) );
---  pin02: IOPAD port map(I => gpio_o(2), O => gpio_i(2), T => gpio_t(2), C => sysclk,PAD => WING_A(2) );
-  WING_A(2) <= extspi_fsck;
-  -- pin03: IOPAD port map(I => gpio_o(3), O => gpio_i(3), T => gpio_t(3), C => sysclk,PAD => WING_A(3) );
-  WING_A(3) <= extspi_fmosi;
-  pin04: IOPAD port map(I => gpio_o(4), O => gpio_i(4), T => gpio_t(4), C => sysclk,PAD => WING_A(4) );
-  pin05: IOPAD port map(I => gpio_o(5), O => gpio_i(5), T => gpio_t(5), C => sysclk,PAD => WING_A(5) );
- -- pin06: IOPAD port map(I => gpio_o(6), O => gpio_i(6), T => gpio_t(6), C => sysclk,PAD => WING_A(6) );
-  extspi_fmiso <= WING_A(6);
-  --pin07: IOPAD port map(I => gpio_o(7), O => gpio_i(7), T => gpio_t(7), C => sysclk,PAD => WING_A(7) );
-  WING_A(7) <= extspi_fnsel;
+  pin00: OPAD port map(I => lsck(5),  PAD => WING_A(0) );
+  pin01: OPAD port map(I => lmosi(5), PAD => WING_A(1) );
+  pin02: OPAD port map(I => lsck(4),  PAD => WING_A(2) );
+  pin03: OPAD port map(I => lmosi(4), PAD => WING_A(3) );
+  pin04: OPAD port map(I => lsck(3),  PAD => WING_A(4) );
+  pin05: OPAD port map(I => lmosi(3), PAD => WING_A(5) );
+  pin06: OPAD port map(I => lsck(2),  PAD => WING_A(6) );
+  pin07: OPAD port map(I => lmosi(2), PAD => WING_A(7) );
 
-  pin08: IOPAD port map(I => gpio_o(8), O => gpio_i(8), T => gpio_t(8), C => sysclk,PAD => WING_A(8) );
-  pin09: IOPAD port map(I => gpio_o(9), O => gpio_i(9), T => gpio_t(9), C => sysclk,PAD => WING_A(9) );
-  pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
-  pin11: IOPAD port map(I => gpio_o(11),O => gpio_i(11),T => gpio_t(11),C => sysclk,PAD => WING_A(11) );
-  --pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
-  --pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
-  --pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
-  --pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
-  -- So A15 = Data9, A14 = Clock9, A13 = Data10, A12 = Clk 10
 
-  pin12: OPAD port map(I => lsck(9), PAD => WING_A(12) );
-  pin13: OPAD port map(I => lmosi(9), PAD => WING_A(13) );
+  pin08: OPAD port map(I => lsck(1),  PAD => WING_A(8) );
+  pin09: OPAD port map(I => lmosi(1), PAD => WING_A(9) );
+  pin10: OPAD port map(I => lsck(0),  PAD => WING_A(10) );
+  pin11: OPAD port map(I => lmosi(0), PAD => WING_A(11) );
+
+  pin12: OPAD port map(I => extspi_fnsel, PAD => WING_A(12) );
+  pin13: OPAD port map(I => extspi_fmosi, PAD => WING_A(13) );
   pin14: OPAD port map(I => lsck(8), PAD => WING_A(14) );
   pin15: OPAD port map(I => lmosi(8), PAD => WING_A(15) );
 
