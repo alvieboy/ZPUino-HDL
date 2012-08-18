@@ -19,7 +19,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x08
+#define VERSION_LOW  0x09
 
 /* Commands for programmer */
 
@@ -57,10 +57,32 @@ static BDATA volatile unsigned int milisseconds;
 static BDATA unsigned int flash_id;
 
 struct bootloader_data_t {
-    unsigned int spiend;
+	unsigned int spiend;
+	unsigned int signature;
+	const unsigned char *vstring;
 };
 
 struct bootloader_data_t bdata BDATA;
+
+const unsigned char vstring[] = {
+	VERSION_HIGH,
+	VERSION_LOW,
+	SPIOFFSET>>16,
+	SPIOFFSET>>8,
+	SPIOFFSET&0xff,
+	SPICODESIZE>>16,
+	SPICODESIZE>>8,
+	SPICODESIZE&0xff,
+	CLK_FREQ >> 24,
+	CLK_FREQ >> 16,
+	CLK_FREQ >> 8,
+	CLK_FREQ,
+	BOARD_ID >> 24,
+	BOARD_ID >> 16,
+	BOARD_ID >> 8,
+	BOARD_ID
+};
+
 
 static void outbyte(int);
 
@@ -267,6 +289,17 @@ unsigned start_read_size(register_t spidata)
 	return spiread(spidata) & 0xffff;
 }
 
+extern "C" void copy_sketch(register_t spidata, unsigned crc16base, unsigned sketchsize, volatile unsigned *target)
+{
+	while (sketchsize--) {
+		for (int i=4;i!=0;i--) {
+			spiwrite(spidata,0);
+			REGISTER(crc16base,ROFF_CRC16APP)=spiread(spidata);
+		}
+		*target++ = spiread(spidata);
+	}
+}
+
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
 {
 	// We must not overflow stack, leave 128 bytes
@@ -289,7 +322,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spi_enable();
 	sketchsize=start_read_size(spidata);
 	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
-
+	bdata.signature = 0xb00110ad;
+	bdata.vstring=vstring;
 	spiwrite(spidata,0);
 	spiwrite(spidata,0);
 	sketchcrc= spiread(spidata) & 0xffff;
@@ -314,20 +348,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef VERBOSE_LOADER
 	//printstring("Filling\n");
 #endif
-	while (sketchsize--) {
-		for (int i=4;i!=0;i--) {
-			spiwrite(spidata,0);
-			REGISTER(crc16base,ROFF_CRC16APP)=spiread(spidata);
-		}
-        /*
-		spiwrite(0);
-		CRC16APP=spiread();
-		spiwrite(0);
-		CRC16APP=spiread();
-		spiwrite(0);
-		CRC16APP=spiread();*/
-		*target++ = spiread(spidata);
-	}
+    copy_sketch(spidata, crc16base, sketchsize, target);
 #ifdef VERBOSE_LOADER
    // printstring("Filled\n");
 #endif
@@ -605,24 +626,6 @@ static void cmd_waitready(unsigned char *buffer)
 	finishSend();
 }
 
-const unsigned char vstring[] = {
-	VERSION_HIGH,
-	VERSION_LOW,
-	SPIOFFSET>>16,
-	SPIOFFSET>>8,
-	SPIOFFSET&0xff,
-	SPICODESIZE>>16,
-	SPICODESIZE>>8,
-	SPICODESIZE&0xff,
-	CLK_FREQ >> 24,
-	CLK_FREQ >> 16,
-	CLK_FREQ >> 8,
-	CLK_FREQ,
-	BOARD_ID >> 24,
-	BOARD_ID >> 16,
-	BOARD_ID >> 8,
-	BOARD_ID
-};
 
 static void cmd_version(unsigned char *buffer)
 {
@@ -679,6 +682,8 @@ void cmd_start(unsigned char *buffer)
 
 	spi_enable();
 	bdata.spiend = (start_read_size(spidata)<<2) + SPIOFFSET + 4;
+	bdata.signature = 0xb00110ad;
+	bdata.vstring=vstring;
 	spi_disable(spidata);
 	flush();
 	start();
@@ -790,6 +795,21 @@ extern "C" unsigned _bfunctions[];
 
 extern "C" void udivmodsi4(); /* Just need it's address */
 
+extern "C" int loadsketch(unsigned offset, unsigned size)
+{
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+	unsigned crc16base = CRC16BASE;
+	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+	spi_disable(spidata);
+	spi_enable();
+	spiwrite(spidata,0x0b);
+    spiwrite(spidata+4,offset);
+	spiwrite(spidata,0x0);
+	copy_sketch(spidata, crc16base, size, target);
+    spi_disable(spidata);
+	flush();
+	start();
+}
 
 extern "C" int main(int argc,char**argv)
 {
@@ -810,6 +830,7 @@ extern "C" int main(int argc,char**argv)
 	_bfunctions[1] = (unsigned)&memcpy;
 	_bfunctions[2] = (unsigned)&memset;
 	_bfunctions[3] = (unsigned)&strcmp;
+	_bfunctions[4] = (unsigned)&loadsketch;
 
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
