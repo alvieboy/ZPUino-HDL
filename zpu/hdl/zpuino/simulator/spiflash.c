@@ -199,7 +199,7 @@ void spi_execute(unsigned int v)
 
 	switch(cmd) {
 	case READ_FAST:
-		//fprintf(stderr,"Reading address 0x%08x\n",savereg);
+		//printf("Reading address 0x%08x\n",savereg);
 		if (savereg>mapped_size) {
 			fprintf(stderr,"SPI: out of bounds %08x (mapped %08x)\n", savereg, mapped_size);
 			shiftout(0);
