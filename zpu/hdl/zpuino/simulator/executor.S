@@ -111,6 +111,18 @@ execute:
 zpu_nop:
         incl %edi
         jmp .opcode_return
+zpu_fmul16:
+        movl _stack+4(%esi), %eax
+        bswap %eax
+        addl $4, %esi
+        incl %edi
+        push %edx
+        imull %ebx
+        shrd   $0x10,%edx,%eax
+        movl %eax, %ebx
+        pop %edx
+        jmp .opcode_return
+
 zpu_ibreak:
         popa
         movl $1, %eax
@@ -1199,7 +1211,7 @@ idimflag:
 .section ".rodata"
 dispatchtable:
         .long zpu_ibreak /* opcode 00 */
-        .long zpu_ibreak /* opcode 01 */
+        .long zpu_fmul16 /* opcode 01 */
         .long zpu_pushsp /* opcode 02 */
         .long zpu_ibreak /* opcode 03 */
         .long zpu_poppc /* opcode 04 */
