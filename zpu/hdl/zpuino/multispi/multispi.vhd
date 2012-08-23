@@ -159,8 +159,8 @@ architecture behave of multispi is
     rgbseq: unsigned(1 downto 0);
     ctrlen: std_logic;
 
-    nleds:  unsigned(10 downto 0);
-    ledcnt: unsigned(10 downto 0);
+    nleds:  unsigned(12 downto 0);
+    ledcnt: unsigned(12 downto 0);
 
     ack: std_logic;
     directspi: std_logic; -- Direct access to SPI flash
@@ -264,7 +264,7 @@ begin
             when "010" =>
               w.membaseaddr := unsigned(wb_dat_i);
             when "011" =>
-              w.nleds := unsigned(wb_dat_i(10 downto 0));
+              w.nleds := unsigned(wb_dat_i(12 downto 0));
 
             when "100" =>
 
@@ -382,7 +382,7 @@ begin
 
       when leave =>
         w.ctrlen := '0';
-        if (r.ledcnt="00000000000") then
+        if (r.ledcnt="0000000000000") then
           w.nsel := '1';
           w.state := flush;
         else
@@ -403,7 +403,7 @@ begin
       w.nsel := '1';
       w.spibaseaddr := (others => '0');
       w.membaseaddr := (others => '0');
-      w.nleds := "00000001000";
+      w.nleds := "0000000001000";
       w.directspi := '0';
       w.lpres := "101";
       w.fpres := "100";
