@@ -174,7 +174,7 @@ begin
 
   -- REad
 
-  process(wb_adr_i)
+  process(wb_adr_i,enabled,brightctl,extra_q)
     variable idx: std_logic_vector(BITS-1 downto 0);
     variable int_idx: integer range 0 to COUNT-1;
   begin
