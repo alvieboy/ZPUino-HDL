@@ -342,4 +342,31 @@ package zpuinopkg is
   );
   end component sram_ctrl;
 
+  component zpuino_sevenseg is
+  generic (
+    BITS: integer := 2;
+    EXTRASIZE: integer := 32;
+    FREQ_PER_DISPLAY:  integer := 60;
+    MHZ:  integer := 96
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    segdata:  out std_logic_vector(6 downto 0);
+    dot:      out std_logic;
+    extra:    out std_logic_vector(EXTRASIZE-1 downto 0);
+    enable:   out std_logic_vector((2**BITS)-1 downto 0)
+  );
+  end component;
+
+
 end package zpuinopkg;
