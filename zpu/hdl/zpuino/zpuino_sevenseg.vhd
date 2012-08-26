@@ -81,13 +81,13 @@ architecture behave of zpuino_sevenseg is
   subtype segvaltype is std_logic_vector(7 downto 0);
   type segstype is array(COUNT-1 downto 0) of segvaltype;
 
-  signal segs: segstype := ( "00000001", "00000010","00000011","00000100" );
+  signal segs: segstype;
   signal current_display: integer range 0 to COUNT-1;  -- same as enashift
   signal ack_q: std_logic;
   signal extra_q:    std_logic_vector(EXTRASIZE-1 downto 0);
 
-  signal brightctl: unsigned(3 downto 0) := "0100";
-  signal brightcount: unsigned(3 downto 0) := "1111";
+  signal brightctl: unsigned(3 downto 0);
+  signal brightcount: unsigned(3 downto 0);
   signal pwm: std_logic;
 begin
 
