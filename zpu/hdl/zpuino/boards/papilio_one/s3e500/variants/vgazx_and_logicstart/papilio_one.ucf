@@ -1,0 +1,74 @@
+##################################################################################
+## papilio_one.ucf
+##
+## Author: Alvaro Lopes, Jack Gasset
+##
+## Contains assignment and iostandard information for
+## all used pins as well as timing and area constraints for 
+## Papilio One Version 2.03 and greater that uses 32Mhz oscillator.
+##
+##################################################################################
+
+# Crystal Clock - use 32MHz onboard oscillator
+NET "clk" LOC = "P89" | IOSTANDARD = LVCMOS25 | PERIOD = 31.25ns ;
+
+NET Seg7_AN(3)   LOC="P18"  | IOSTANDARD=LVTTL;                                # A0
+NET Seg7_DP      LOC="P23"  | IOSTANDARD=LVTTL;                                # A1
+NET Seg7_AN(2)   LOC="P26"  | IOSTANDARD=LVTTL;                                # A2
+NET Seg7_E       LOC="P33"  | IOSTANDARD=LVTTL;                                # A3
+NET Seg7_F       LOC="P35"  | IOSTANDARD=LVTTL;                                # A4
+NET Seg7_C       LOC="P40"  | IOSTANDARD=LVTTL;                                # A5
+NET Seg7_D       LOC="P53"  | IOSTANDARD=LVTTL;                                # A6
+NET Seg7_A       LOC="P57"  | IOSTANDARD=LVTTL;                                # A7
+NET Seg7_AN(1)   LOC="P60"  | IOSTANDARD=LVTTL;                                # A8
+NET Seg7_G       LOC="P62"  | IOSTANDARD=LVTTL;                                # A9
+NET Seg7_B       LOC="P65"  | IOSTANDARD=LVTTL;                                # A10
+NET Seg7_AN(0)   LOC="P67"  | IOSTANDARD=LVTTL;                                # A11
+NET ADC_SPI_CS       LOC="P70"  | IOSTANDARD=LVTTL;                                # A12
+NET ADC_SPI_MISO     LOC="P79"  | IOSTANDARD=LVTTL;                                # A13
+NET ADC_SPI_MOSI     LOC="P84"  | IOSTANDARD=LVTTL;                                # A14
+NET ADC_SPI_SCLK     LOC="P86"  | IOSTANDARD=LVTTL;                                # A15
+NET VSYNC    LOC="P85"  | IOSTANDARD=LVTTL;                                # B0
+NET HSYNC    LOC="P83"  | IOSTANDARD=LVTTL;                                # B1
+NET BLUE(0)  LOC="P78"  | IOSTANDARD=LVTTL;                                # B2
+NET BLUE(1)  LOC="P71"  | IOSTANDARD=LVTTL;                                # B3
+NET GREEN(0) LOC="P68"  | IOSTANDARD=LVTTL;                                # B4
+NET GREEN(1) LOC="P66"  | IOSTANDARD=LVTTL;                                # B5
+NET GREEN(2) LOC="P63"  | IOSTANDARD=LVTTL;                                # B6
+NET RED(0)   LOC="P61"  | IOSTANDARD=LVTTL;                                # B7
+NET RED(1)   LOC="P58"  | IOSTANDARD=LVTTL;                                # B8
+NET RED(2)   LOC="P54"  | IOSTANDARD=LVTTL;                                # B9
+NET AUDIO        LOC="P41"  | IOSTANDARD=LVTTL;                                # B10
+NET JOY_RIGHT    LOC="P36"  | IOSTANDARD=LVTTL;                                # B11
+NET JOY_LEFT     LOC="P34"  | IOSTANDARD=LVTTL;                                # B12
+NET JOY_DOWN     LOC="P32"  | IOSTANDARD=LVTTL;                                # B13
+NET JOY_UP       LOC="P25"  | IOSTANDARD=LVTTL;                                # B14
+NET JOY_SELECT   LOC="P22"  | IOSTANDARD=LVTTL;                                # B15
+
+NET SWITCH(0)    LOC="P91" | IOSTANDARD=LVTTL;                                # C0
+NET SWITCH(1)    LOC="P92"| IOSTANDARD=LVTTL;                                # C1
+NET SWITCH(2)    LOC="P94"| IOSTANDARD=LVTTL;                                # C2
+NET SWITCH(3)    LOC="P95"| IOSTANDARD=LVTTL;                                # C3
+NET SWITCH(4)    LOC="P98"| IOSTANDARD=LVTTL;                                # C4
+NET SWITCH(5)    LOC="P2"| IOSTANDARD=LVTTL;                                # C5
+NET SWITCH(6)    LOC="P3"| IOSTANDARD=LVTTL;                                # C6
+NET SWITCH(7)    LOC="P4"| IOSTANDARD=LVTTL;                                # C7
+NET LED(0)       LOC="P5"| IOSTANDARD=LVTTL;                                # C8
+NET LED(1)       LOC="P9"| IOSTANDARD=LVTTL;                                # C9
+NET LED(2)       LOC="P10"| IOSTANDARD=LVTTL;                                # C10
+NET LED(3)       LOC="P11"| IOSTANDARD=LVTTL;                                # C11
+NET LED(4)       LOC="P12"| IOSTANDARD=LVTTL;                                # C12
+NET LED(5)       LOC="P15"| IOSTANDARD=LVTTL;                                # C13
+NET LED(6)       LOC="P16"| IOSTANDARD=LVTTL;                                # C14
+NET LED(7)       LOC="P17"| IOSTANDARD=LVTTL;                                # C15
+
+## RS232
+NET "rxd"  LOC = "P88" | IOSTANDARD = LVTTL ;
+NET "txd"  LOC = "P90" | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;
+
+## SPI flash
+NET "SPI_CS"   LOC = "P24" | IOSTANDARD = LVCMOS33 | SLEW = SLOW | DRIVE = 8;
+NET "SPI_SCK"  LOC = "P50" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;
+NET "SPI_MISO" LOC = "P44" | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8;
+NET "SPI_MOSI" LOC = "P27" | IOSTANDARD = LVCMOS33 ;
+
