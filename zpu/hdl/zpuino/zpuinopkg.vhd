@@ -346,8 +346,9 @@ package zpuinopkg is
   generic (
     BITS: integer := 2;
     EXTRASIZE: integer := 32;
-    FREQ_PER_DISPLAY:  integer := 60;
-    MHZ:  integer := 96
+    FREQ_PER_DISPLAY:  integer := 120;
+    MHZ:  integer := 96;
+    INVERT: boolean := true
   );
   port (
     wb_clk_i: in std_logic;

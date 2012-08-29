@@ -46,8 +46,9 @@ entity zpuino_sevenseg is
   generic (
     BITS: integer := 2;
     EXTRASIZE: integer := 32;
-    FREQ_PER_DISPLAY:  integer := 60;
-    MHZ:  integer := 96
+    FREQ_PER_DISPLAY:  integer := 120;
+    MHZ:  integer := 96;
+    INVERT: boolean := true
   );
   port (
     wb_clk_i: in std_logic;
@@ -89,16 +90,26 @@ architecture behave of zpuino_sevenseg is
   signal brightctl: unsigned(3 downto 0);
   signal brightcount: unsigned(3 downto 0);
   signal pwm: std_logic;
+
+  signal invsig: std_logic;
+
 begin
 
+  invsig <= '1' when INVERT=true else '0';
+
   enloop: for i in 0 to COUNT-1 generate
-    enable(i)  <= enabled(i) and pwm when current_display=i else '0';
+    enable(i)  <= (enabled(i) and pwm) xor invsig when current_display=i else invsig;
   end generate;
 
   pwm <= '1' when brightcount >= brightctl else '0';
 
-  segdata <= segs(current_display)(6 downto 0);
-  dot <= segs(current_display)(7);
+  outdata: for i in 0 to 6 generate
+    segdata(i) <= segs(current_display)(i) xor invsig;
+  end generate;
+
+
+
+  dot <= segs(current_display)(7) xor invsig;
   wb_ack_o <= ack_q;
   wb_inta_o <= '0';
   extra <= extra_q when current_display=0 and pwm='1' else (others => '0');
@@ -148,7 +159,7 @@ begin
         -- Wishbone write
         if wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1' and ack_q='0' then
           ack_q<='1';
-          if wb_adr_i(BITS+1)='1' then
+          if wb_adr_i(BITS+2)='1' then
             -- Display access --
             idx := wb_adr_i(BITS+1 downto 2);
 
@@ -180,7 +191,7 @@ begin
   begin
     wb_dat_o <= (others => DontCareValue);
 
-    if wb_adr_i(BITS+1)='1' then
+    if wb_adr_i(BITS+2)='1' then
       -- Display access --
       idx := wb_adr_i(BITS+1 downto 2);
       int_idx := conv_integer(idx);
