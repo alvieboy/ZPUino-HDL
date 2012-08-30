@@ -260,10 +260,10 @@ begin
   ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
 
-  oled0:    OPAD port map ( I => gpio_o(49), O => gpio_o(49),  PAD => LED(0));
-  oled1:    OPAD port map ( I => gpio_o(50), O => gpio_o(50),  PAD => LED(1));
-  oled2:    OPAD port map ( I => gpio_o(51), O => gpio_o(51),  PAD => LED(2));
-  oled3:    OPAD port map ( I => gpio_o(52), O => gpio_o(52),  PAD => LED(3));
+  oled0:    OPAD port map ( I => gpio_o(49), O => gpio_i(49),  PAD => LED(0));
+  oled1:    OPAD port map ( I => gpio_o(50), O => gpio_i(50),  PAD => LED(1));
+  oled2:    OPAD port map ( I => gpio_o(51), O => gpio_i(51),  PAD => LED(2));
+  oled3:    OPAD port map ( I => gpio_o(52), O => gpio_i(52),  PAD => LED(3));
 --  oled4:    OPAD port map ( I => gpio_o(53), O => gpio_o(53),  PAD => LED(4));
   oled4:    OPAD port map ( I => rx, PAD => LED(4));
 --  oled5:    OPAD port map ( I => gpio_o(54), O => gpio_o(54),  PAD => LED(5));
