@@ -42,10 +42,9 @@ extern int main(int,char**);
 extern void __sys_load();
 void _premain()
 {
- //   digitalWrite(FPGA_LED_PIN,HIGH);
+#ifdef ZPUINO_HAS_ICACHE
 	__sys_load();
-   // digitalWrite(FPGA_LED_PIN,LOW);
- //   __copy_data();
+#endif
 	main(0,0);
 }
 
