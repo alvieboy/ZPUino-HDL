@@ -18,7 +18,8 @@ use unisim.vcomponents.all;
 entity sdram_controller is
   generic (
     HIGH_BIT: integer := 24;
-    MHZ: integer := 96
+    MHZ: integer := 96;
+    REFRESH_CYCLES: integer := 4096
   );
   PORT (
       clock_100:  in std_logic;
@@ -194,7 +195,7 @@ architecture rtl of sdram_controller is
    constant COLUMN_HIGH: integer := HIGH_BIT - addr_row'LENGTH - addr_bank'LENGTH - 1; -- last 1 means 16 bit width
 
 
-  signal addr_col : std_logic_vector(COLUMN_HIGH downto 0);
+  signal addr_col : std_logic_vector(7 downto 0);
   signal captured : std_logic_vector(15 downto 0);
   signal busy: std_logic;
 
@@ -208,7 +209,7 @@ architecture rtl of sdram_controller is
 
    signal not_clock_100_delayed_3ns: std_logic;
 
-  constant RELOAD: integer := (((64000000/8192)*MHZ)/1000) - 10;
+  constant RELOAD: integer := (((64000000/REFRESH_CYCLES)*MHZ)/1000) - 10;
 
   attribute IOB: string;
 
@@ -256,11 +257,11 @@ begin
              -- (24-2) downto (24-2 - 2 - 13 - 1)
              --  22 downto 6
     addr_row  <= --r.req_addr_q(HIGH_BIT-addr_bank'LENGTH  downto COLUMN_HIGH+2);
-                 r.req_addr_q(22 downto 10);
+                 r.req_addr_q(21 downto 9);
     addr_col  <= (others => '0');
 
     addr_col  <= --r.req_addr_q(COLUMN_HIGH+1 downto  2) & "0";
-                 r.req_addr_q(9 downto 2) & "0";
+                 r.req_addr_q(8 downto 2) & "0";
    end process;
 
   not_clock_100_delayed_3ns <= not clock_100_delayed_3ns;
@@ -426,6 +427,7 @@ begin
          when s_ra2_id=>
             -- we can stay in this state until we have something to do
             nstate       <= s_ra2;
+            n.tristate<='0';
 
             -- If there is a read pending, deactivate the row
             if r.rd_pending = '1' or r.wr_pending = '1' then
@@ -442,7 +444,7 @@ begin
                n.act_ba    <= addr_bank;
                n.dq_masks <= "00";
                n.rd_pending <= '0';
-               n.tristate<='1';
+               --n.tristate<='1';
             end if;
             
             -- unless we have a write on the same row? writes take priroty over reads
@@ -455,7 +457,7 @@ begin
                n.act_ba    <= addr_bank;
                n.dq_masks<= "00";
                n.wr_pending <= '0';
-               n.tristate <= '0';
+               --n.tristate <= '0';
             end if;
             
             -- But refreshes take piority over everything!
@@ -464,7 +466,7 @@ begin
                n.address(10) <= '1';
                n.rd_pending <= r.rd_pending;
                n.wr_pending <= r.wr_pending;
-               n.tristate <= '1';
+               n.tristate <= '0';
             end if;
             
          ------------------------------------------------------
@@ -684,7 +686,10 @@ begin
           rstate <= (others => '0');
           r.address <= (others => '0');
           r.bank <= (others => '0');
+          r.init_counter <= "100000000000000";
+          -- synopsys translate_off
           r.init_counter <= "000000100000000";
+          -- synopsys translate_on
           r.rf_counter <= (others => '0');
           r.rf_pending <= '0';
           r.rd_pending <= '0';

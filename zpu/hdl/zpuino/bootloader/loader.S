@@ -8,7 +8,7 @@
 
 .globl __flush
 __flush:
-
+        /* poppc Skip */
         im         2                        ; Flush cache, enable SRAM
         nop
         im        IO_SLOT(4) + 16
@@ -106,9 +106,9 @@ testcase:
         load        
         loadsp        8
         store
-        /* Test loading it again  
+        /* Test loading it again 
         loadsp        4               // +16
-        load        
+        load 
         storesp 0
         End test */
         

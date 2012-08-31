@@ -3,11 +3,13 @@ Current board listing
 |     ID     |     Board     |   FPGA   | Notes                               |
 +------------+---------------+----------+-------------------------------------+
 | 0xA4010F00 | GF PapilioOne | S3E500   | 32Kb                                |
-| 0xA4020E00 | CF PapilioOne | S3E250   | 16Kb                                |
-| 0xA4020F00 | CF PapilioOne | S3E250   | 16Kb+4Kb                            |
 | 0xA4010E01 | CF PapilioOne | S3E500   | 16Kb + 8 bit HQVGA                  |
+| 0xA4020F00 | CF PapilioOne | S3E250   | 16Kb+4Kb                            |
+| 0xA4020E00 | CF PapilioOne | S3E250   | 16Kb                                |
 | 0x83010F00 | S3ESK         | S3E500   | 32Kb                                |
 | 0x83010E01 | S3ESK         | S3E500   | 16Kb + 8 bit HQVGA                  |
+| 0x83011A00 | S3ESK         | S3E500   | 64MB (8K Inst Cache)                |
 | 0xA4030E00 | GF Papilioplus| S6 LX4   | 16Kb                                |
 | 0xA4040F00 | GF Papilioplus| S6 LX9   | 32Kb                                |
 | 0x84010F00 | Nexys2        | S3E1200  | 32Kb                                |
+| 0xA4031800 | GF PapilioPro | S6 LX9   | 8MB (8K Inst Cache) 		      |

@@ -80,7 +80,7 @@ architecture behave of sdram_ctrl is
    );
   end component;
 
-  signal sdr_address:    STD_LOGIC_VECTOR (24 downto 2);
+  signal sdr_address:    STD_LOGIC_VECTOR (maxAddrBitBRAM downto 2);
   signal sdr_req_read      :     STD_LOGIC;
   signal sdr_req_write   :      STD_LOGIC;
   signal sdr_data_out      :      STD_LOGIC_VECTOR (31 downto 0);
@@ -93,7 +93,7 @@ begin
 
   ctrl: sdram_controller
     generic map (
-      HIGH_BIT => 24
+      HIGH_BIT => maxAddrBitBRAM
    )
    port map (
     clock_100   => wb_clk_i,
@@ -121,7 +121,7 @@ begin
    );
 
 
-  sdr_address(24 downto 2) <= wb_adr_i(24 downto 2);
+  sdr_address(maxAddrBitBRAM downto 2) <= wb_adr_i(maxAddrBitBRAM downto 2);
 
   sdr_req_read<='1' when wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='0' else '0';
   sdr_req_write<='1' when wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' else '0';

@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-//#define VERBOSE_LOADER
+#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -164,7 +164,7 @@ void finishSend()
 	outbyte(HDLC_frameFlag);
 }
 
-unsigned int inbyte()
+static unsigned int inbyte()
 {
 #ifdef BOOT_IMMEDIATLY
 		spi_copy();
@@ -195,7 +195,7 @@ unsigned int inbyte()
 #endif
 }
 
-void enableTimer()
+static void enableTimer()
 {
 #ifdef BOOT_IMMEDIATLY
 	return; // TEST
@@ -273,14 +273,14 @@ static inline unsigned int spiread(register_t base)
 	return *base;
 }
 
-extern "C" void start()
+extern "C" void __attribute__((noreturn)) start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
 	start_sketch();
 }
 
-unsigned start_read_size(register_t spidata)
+static unsigned start_read_size(register_t spidata)
 {
 	spiwrite(spidata,0x0B);
 	spiwrite(spidata+4,SPIOFFSET);
@@ -406,6 +406,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
+//	outbyte('I');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -767,7 +768,7 @@ inline void configure_pins()
 }
 #endif
 
-#ifdef __ZPUINO_PAPILIO_PLUS__
+#if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
@@ -803,10 +804,10 @@ extern "C" int loadsketch(unsigned offset, unsigned size)
 	spi_disable(spidata);
 	spi_enable();
 	spiwrite(spidata,0x0b);
-    spiwrite(spidata+4,offset);
+	spiwrite(spidata+4,offset);
 	spiwrite(spidata,0x0);
 	copy_sketch(spidata, crc16base, size, target);
-    spi_disable(spidata);
+	spi_disable(spidata);
 	flush();
 	start();
 }
@@ -826,11 +827,13 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
+#ifndef VERBOSE_LOADER
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;
 	_bfunctions[2] = (unsigned)&memset;
 	_bfunctions[3] = (unsigned)&strcmp;
 	_bfunctions[4] = (unsigned)&loadsketch;
+#endif
 
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
