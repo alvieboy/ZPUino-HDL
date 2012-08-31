@@ -1,6 +1,6 @@
 --
 --
---  ZPUINO implementation on Gadget Factory 'Papilio Plus' Board
+--  ZPUINO implementation on Gadget Factory 'Papilio Pro' Board
 -- 
 --  Copyright 2011 Alvaro Lopes <alvieboy@alvie.com>
 -- 
@@ -45,7 +45,7 @@ use work.zpu_config.all;
 use work.pad.all;
 use work.wishbonepkg.all;
 
-entity papilio_plus_top is
+entity papilio_pro_top is
   port (
     CLK:        in std_logic;
 
@@ -78,9 +78,9 @@ entity papilio_plus_top is
     -- The LED
     LED:        out std_logic
   );
-end entity papilio_plus_top;
+end entity papilio_pro_top;
 
-architecture behave of papilio_plus_top is
+architecture behave of papilio_pro_top is
 
   component zpuino_debug_jtag_spartan6 is
   port (

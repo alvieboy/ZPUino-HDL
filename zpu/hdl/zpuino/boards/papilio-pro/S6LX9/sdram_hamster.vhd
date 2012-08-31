@@ -58,7 +58,7 @@ architecture rtl of sdram_controller is
       address       : std_logic_vector(ADDRESS_BITS-1 downto 0);
       bank          : std_logic_vector( 1 downto 0);
       init_counter  : std_logic_vector(14 downto 0);
-      rf_counter    : std_logic_vector( 9 downto 0);
+      rf_counter    : integer;
       rf_pending    : std_logic;
       rd_pending    : std_logic;
       wr_pending    : std_logic;
@@ -342,7 +342,7 @@ begin
       
       -- first off, do we need to perform a refresh cycle ASAP?
       if r.rf_counter = RELOAD then -- 781 = 64,000,000ns / 8192 / 10ns
-         n.rf_counter <= (others => '0');
+         n.rf_counter <= 0;
          n.rf_pending <= '1';
       else
          -- only start looking for refreshes outside of the initialisation state.
@@ -368,7 +368,7 @@ begin
             n.address <= (others => '0');
             n.bank    <= (others => '0');
             n.act_ba  <= (others => '0');
-            n.rf_counter   <= (others => '0');
+            n.rf_counter   <= 0;
             -- n.data_out_valid <= '1'; -- alvie- not here
             
             -- T-130, precharge all banks.
@@ -426,10 +426,17 @@ begin
             nstate        <= s_ra1;
          when s_ra1_id =>
             nstate        <= s_ra2;
+
+
          when s_ra2_id=>
             -- we can stay in this state until we have something to do
             nstate       <= s_ra2;
             n.tristate<='0';
+
+            if r.rf_pending = '1' then
+              nstate     <= s_dr0;
+                 n.address(10) <= '1';
+            else
 
             -- If there is a read pending, deactivate the row
             if r.rd_pending = '1' or r.wr_pending = '1' then
@@ -462,14 +469,14 @@ begin
                --n.tristate <= '0';
             end if;
             
-            -- But refreshes take piority over everything!
-            if r.rf_pending = '1' then
-               nstate     <= s_dr0;
-               n.address(10) <= '1';
-               n.rd_pending <= r.rd_pending;
-               n.wr_pending <= r.wr_pending;
-               n.tristate <= '0';
+            
             end if;
+            --   nstate     <= s_dr0;
+            --   n.address(10) <= '1';
+            --   n.rd_pending <= r.rd_pending;
+            --   n.wr_pending <= r.wr_pending;
+               --n.tristate <= '0';
+            --end if;
             
          ------------------------------------------------------
          -- Deactivate the current row and return to idle state
@@ -615,11 +622,11 @@ begin
               nstate <= s_rd6; -- NOTE: not correct
             end if;
 
-            if r.rf_pending = '1' then 
-               nstate <= s_drdr0;
-               n.address(10) <= '1';
-               n.rd_pending <= r.rd_pending; -- Keep request
-            end if;
+            --if r.rf_pending = '1' then
+            --   nstate <= s_drdr0;
+            --   n.address(10) <= '1';
+            --   n.rd_pending <= r.rd_pending; -- Keep request
+            --end if;
 
 
             n.data_out_low <= captured;
@@ -628,10 +635,10 @@ begin
 
          when s_rd5_id =>
                -- If a refresh is pending then always deactivate the row
-            if r.rf_pending = '1' then 
-               nstate <= s_drdr0;
-               n.address(10) <= '1';
-            end if;
+            --if r.rf_pending = '1' then
+            --   nstate <= s_drdr0;
+            --   n.address(10) <= '1';
+            --end if;
 
             n.address(0) <= '1';
             nstate <= s_rd4;  -- Another request came, and we can pipeline -
@@ -692,7 +699,7 @@ begin
           -- synopsys translate_off
           r.init_counter <= "000000100000000";
           -- synopsys translate_on
-          r.rf_counter <= (others => '0');
+          r.rf_counter <= 0;
           r.rf_pending <= '0';
           r.rd_pending <= '0';
           r.wr_pending <= '0';
