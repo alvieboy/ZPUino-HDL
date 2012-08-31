@@ -19,7 +19,8 @@ entity sdram_controller is
   generic (
     HIGH_BIT: integer := 24;
     MHZ: integer := 96;
-    REFRESH_CYCLES: integer := 4096
+    REFRESH_CYCLES: integer := 4096;
+    ADDRESS_BITS: integer := 12
   );
   PORT (
       clock_100:  in std_logic;
@@ -27,7 +28,7 @@ entity sdram_controller is
       rst: in std_logic;
 
    -- Signals to/from the SDRAM chip
-   DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (12 downto 0);
+   DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (ADDRESS_BITS-1 downto 0);
    DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
    DRAM_CAS_N   : OUT   STD_LOGIC;
    DRAM_CKE      : OUT   STD_LOGIC;
@@ -54,14 +55,14 @@ end entity;
 architecture rtl of sdram_controller is
 
    type reg is record
-      address       : std_logic_vector(12 downto 0);
+      address       : std_logic_vector(ADDRESS_BITS-1 downto 0);
       bank          : std_logic_vector( 1 downto 0);
       init_counter  : std_logic_vector(14 downto 0);
       rf_counter    : std_logic_vector( 9 downto 0);
       rf_pending    : std_logic;
       rd_pending    : std_logic;
       wr_pending    : std_logic;
-      act_row       : std_logic_vector(12 downto 0);
+      act_row       : std_logic_vector(ADDRESS_BITS-1 downto 0);
       act_ba        : std_logic_vector(1 downto 0);
       data_out_low  : std_logic_vector(15 downto 0);
       req_addr_q    : std_logic_vector(HIGH_BIT downto 2);
@@ -189,7 +190,7 @@ architecture rtl of sdram_controller is
    constant s_drdr2_id: std_logic_vector(4 downto 0) := "11111";
    constant s_drdr2 : std_logic_vector(8 downto 0) := "11111" & cmd_nop;
 
-   signal addr_row : std_logic_vector(12 downto 0);
+   signal addr_row : std_logic_vector(ADDRESS_BITS-1 downto 0);
    signal addr_bank: std_logic_vector(1 downto 0);
 
    constant COLUMN_HIGH: integer := HIGH_BIT - addr_row'LENGTH - addr_bank'LENGTH - 1; -- last 1 means 16 bit width
@@ -225,7 +226,7 @@ architecture rtl of sdram_controller is
   signal i_DRAM_WE_N: std_logic;
   attribute IOB of i_DRAM_WE_N: signal is "true";
 
-  signal i_DRAM_ADDR: std_logic_vector(12 downto 0);
+  signal i_DRAM_ADDR: std_logic_vector(ADDRESS_BITS-1 downto 0);
   attribute IOB of i_DRAM_ADDR: signal is "true";
 
   signal i_DRAM_BA: std_logic_vector(1 downto 0);
@@ -257,7 +258,7 @@ begin
              -- (24-2) downto (24-2 - 2 - 13 - 1)
              --  22 downto 6
     addr_row  <= --r.req_addr_q(HIGH_BIT-addr_bank'LENGTH  downto COLUMN_HIGH+2);
-                 r.req_addr_q(21 downto 9);
+                 r.req_addr_q(ADDRESS_BITS-1+9 downto 9);
     addr_col  <= (others => '0');
 
     addr_col  <= --r.req_addr_q(COLUMN_HIGH+1 downto  2) & "0";
@@ -387,7 +388,7 @@ begin
                nstate     <= s_init_mrs;
                            -- Mode register is as follows:
                            -- resvd   wr_b   OpMd   CAS=3   Seq   bust=1
-                n.address   <= "000" & "0" & "00" & "011" & "0" & "000";
+                n.address   <= "00" & "0" & "00" & "011" & "0" & "000";
                            -- resvd
                n.bank      <= "00";
             end if;
@@ -408,6 +409,7 @@ begin
                nstate        <= s_ra0;
                n.address     <= addr_row;
                n.act_row    <= addr_row;
+               n.bank       <= addr_bank;
             end if;
 
             -- refreshes take priority over everything

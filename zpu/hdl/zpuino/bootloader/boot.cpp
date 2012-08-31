@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-#define VERBOSE_LOADER
+//#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000

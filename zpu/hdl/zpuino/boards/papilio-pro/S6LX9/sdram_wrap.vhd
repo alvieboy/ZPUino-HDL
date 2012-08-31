@@ -31,7 +31,7 @@ entity sdram_ctrl is
     clk_off_3ns: in std_logic;
 
     -- SDRAM signals
-     DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (12 downto 0);
+     DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (11 downto 0);
      DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
      DRAM_CAS_N   : OUT   STD_LOGIC;
      DRAM_CKE      : OUT   STD_LOGIC;
@@ -59,7 +59,7 @@ architecture behave of sdram_ctrl is
       rst: in std_logic;
 
    -- Signals to/from the SDRAM chip
-   DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (12 downto 0);
+   DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (11 downto 0);
    DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
    DRAM_CAS_N   : OUT   STD_LOGIC;
    DRAM_CKE      : OUT   STD_LOGIC;
