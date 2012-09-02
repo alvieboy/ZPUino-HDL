@@ -10,6 +10,9 @@ use work.zpuino_config.all;
 use work.wishbonepkg.all;
 
 entity wb_rom_ram is
+  generic (
+    maxbit: integer := maxAddrBit
+  );
   port (
     ram_wb_clk_i:       in std_logic;
     ram_wb_rst_i:       in std_logic;
@@ -59,7 +62,7 @@ architecture behave of wb_rom_ram is
   );
   end component dualport_ram;
 
-  constant i_maxAddrBit: integer := 13; -- maxAddrBit
+  constant i_maxAddrBit: integer := maxbit; -- maxAddrBit
 
   signal memAWriteEnable:  std_logic;
   signal memAWriteMask:    std_logic_vector(3 downto 0);
@@ -91,7 +94,7 @@ begin
 
   ramrom: dualport_ram
   generic map (
-    maxbit => 13--maxAddrBit
+    maxbit => maxbit --13--maxAddrBit
   )
   port map (
     clk               => ram_wb_clk_i,
