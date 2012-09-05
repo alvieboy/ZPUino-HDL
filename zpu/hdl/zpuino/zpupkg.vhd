@@ -105,6 +105,7 @@ package zpupkg is
     wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 0);
     wb_cyc_o:       out std_logic;
     wb_stb_o:       out std_logic;
+    wb_sel_o:       out std_logic_vector(3 downto 0);
     wb_we_o:        out std_logic;
 
     wb_inta_i:      in std_logic;
@@ -116,12 +117,12 @@ package zpupkg is
     stack_b_read:   in std_logic_vector(wordSize-1 downto 0);
     stack_a_write:  out std_logic_vector(wordSize-1 downto 0);
     stack_b_write:  out std_logic_vector(wordSize-1 downto 0);
-    stack_a_writeenable: out std_logic;
-    stack_b_writeenable: out std_logic;
+    stack_a_writeenable: out std_logic_vector(3 downto 0);
+    stack_b_writeenable: out std_logic_vector(3 downto 0);
     stack_a_enable: out std_logic;
     stack_b_enable: out std_logic;
-    stack_a_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
-    stack_b_addr:   out std_logic_vector(stackSize_bits+1 downto 2);
+    stack_a_addr:   out std_logic_vector(stackSize_bits-1 downto 2);
+    stack_b_addr:   out std_logic_vector(stackSize_bits-1 downto 2);
     stack_clk:      out std_logic;
 
     -- ROM wb interface
@@ -215,7 +216,8 @@ package zpupkg is
 	constant	OpCode_PopSP	: std_logic_vector(3 downto 0) := "1101";
 	constant	OpCode_NA2		: std_logic_vector(3 downto 0) := "1110";
 	constant	OpCode_NA		: std_logic_vector(3 downto 0) := "1111";
-	
+
+	constant	OpCode_Loadh				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(34, 6));
 	constant	OpCode_Storeh				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(35, 6));
 	constant	OpCode_Lessthan				: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(36, 6));
 	constant	OpCode_Lessthanorequal		: std_logic_vector(5 downto 0) := std_logic_vector(to_unsigned(37, 6));

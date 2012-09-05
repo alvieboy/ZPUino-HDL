@@ -17,46 +17,49 @@ entity zpuino_stack is
     stack_b_read: out std_logic_vector(wordSize-1 downto 0);
     stack_a_write: in std_logic_vector(wordSize-1 downto 0);
     stack_b_write: in std_logic_vector(wordSize-1 downto 0);
-    stack_a_writeenable: in std_logic;
+    stack_a_writeenable: in std_logic_vector(3 downto 0);
     stack_a_enable: in std_logic;
-    stack_b_writeenable: in std_logic;
+    stack_b_writeenable: in std_logic_vector(3 downto 0);
     stack_b_enable: in std_logic;
-    stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 0);
-    stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 0)
+    stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 2);
+    stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 2)
   );
 end entity zpuino_stack;
 
 architecture behave of zpuino_stack is
 
-  signal dipa,dipb: std_logic_vector(3 downto 0) := (others => '0');
+  signal dipa,dipb: std_logic_vector(0 downto 0) := (others => '0');
 
 begin
 
-  stack: RAMB16_S36_S36
+  stackram: for i in 0 to 3 generate
+
+  stackmem: RAMB16_S9_S9
   generic map (
     WRITE_MODE_A => "WRITE_FIRST",
     WRITE_MODE_B => "WRITE_FIRST",
     SIM_COLLISION_CHECK => "NONE"
     )
   port map (
-    DOA  => stack_a_read,
-    DOB  => stack_b_read,
+    DOA  => stack_a_read( ((i+1)*8)-1  downto (i*8)),
+    DOB  => stack_b_read( ((i+1)*8)-1  downto (i*8)),
     DOPA => open,
     DOPB => open,
 
-    ADDRA => stack_a_addr,
-    ADDRB => stack_b_addr,
+    ADDRA => stack_a_addr(stackSize_bits-1 downto 2),
+    ADDRB => stack_b_addr(stackSize_bits-1 downto 2),
     CLKA  => stack_clk,
     CLKB  => stack_clk,
-    DIA   => stack_a_write,
-    DIB   => stack_b_write,
+    DIA   => stack_a_write( ((i+1)*8)-1  downto (i*8)),
+    DIB   => stack_b_write( ((i+1)*8)-1  downto (i*8)),
     DIPA  => dipa,
     DIPB  => dipb,
     ENA   => stack_a_enable,
     ENB   => stack_b_enable,
     SSRA  => '0',
     SSRB  => '0',
-    WEA   => stack_a_writeenable,
-    WEB   => stack_b_writeenable
+    WEA   => stack_a_writeenable(i),
+    WEB   => stack_b_writeenable(i)
     );
+    end generate;
 end behave;

@@ -130,5 +130,41 @@ testcase:
         im        __flush
         poppc
 
+/*        
+.globl __tests
+        __tests:
+        poppc
+        im 0x112233AA
+        nop
+        im 0x80000021
+        storeb
+        im 0x80000020
+        load
+        im 0x80000021
+        loadb	
+        
+        im 0x112233AA
+        nop
+        im 0x00000021
+        storeb
+        im 0x00000020
+        load
+        im 0x00000021
+        loadb	
+        
+        im 0xdeadbeef
+        nop
+        im 0x00000022
+        storeh
+        im 0x00000020
+        load
+        im 0x00000022
+        loadh	
+        im 0x00000020
+        loadh	
         
         
+        breakpoint
+        
+
+  */

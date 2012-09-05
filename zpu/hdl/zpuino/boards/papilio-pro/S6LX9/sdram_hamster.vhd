@@ -47,7 +47,8 @@ entity sdram_controller is
    req_write   : IN     STD_LOGIC;
    data_out      : OUT     STD_LOGIC_VECTOR (31 downto 0);
    data_out_valid : OUT     STD_LOGIC;
-   data_in      : IN     STD_LOGIC_VECTOR (31 downto 0)
+   data_in      : IN     STD_LOGIC_VECTOR (31 downto 0);
+   data_mask    : IN     STD_LOGIC_VECTOR (3 downto 0)
    );
 end entity;
    
@@ -67,6 +68,7 @@ architecture rtl of sdram_controller is
       data_out_low  : std_logic_vector(15 downto 0);
       req_addr_q    : std_logic_vector(HIGH_BIT downto 2);
       req_data_write: std_logic_vector(31 downto 0);
+      req_mask      : std_logic_vector(3 downto 0);
       data_out_valid: std_logic;
       dq_masks      : std_logic_vector(1 downto 0);
       tristate      : std_logic;
@@ -335,6 +337,7 @@ begin
            n.req_addr_q <= address;
            -- Queue data here
            n.req_data_write <= data_in;
+           n.req_mask <= data_mask;
          end if;
       end if;
       
@@ -464,7 +467,7 @@ begin
                ndata_write <= r.req_data_write(15 downto 0);--data_in(15 downto 0);
                n.bank    <= addr_bank;
                n.act_ba    <= addr_bank;
-               n.dq_masks<= "00";
+               n.dq_masks<= not r.req_mask(1 downto 0);
                n.wr_pending <= '0';
                --n.tristate <= '0';
             end if;
@@ -510,7 +513,7 @@ begin
             n.address(0) <= '1';
             ndata_write <= r.req_data_write(31 downto 16);--data_in(31 downto 16);
             --DRAM_DQ <= rdata_write;
-            n.dq_masks<= "00";
+            n.dq_masks<= not r.req_mask(3 downto 2);
             n.tristate <= '0';
 
          when s_wr1_id => null;

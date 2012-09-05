@@ -87,6 +87,7 @@ package zpuinopkg is
     ram_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     ram_wb_cyc_o:       out std_logic;
     ram_wb_stb_o:       out std_logic;
+    ram_wb_sel_o:       out std_logic_vector(3 downto 0);
     ram_wb_we_o:        out std_logic;
 
     rom_wb_ack_i:       in std_logic;

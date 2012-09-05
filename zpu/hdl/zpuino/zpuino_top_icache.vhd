@@ -83,6 +83,7 @@ entity zpuino_top_icache is
     ram_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     ram_wb_cyc_o:       out std_logic;
     ram_wb_stb_o:       out std_logic;
+    ram_wb_sel_o:       out std_logic_vector(3 downto 0);
     ram_wb_we_o:        out std_logic;
 
     rom_wb_ack_i:       in std_logic;
@@ -109,12 +110,12 @@ architecture behave of zpuino_top_icache is
     stack_b_read: out std_logic_vector(wordSize-1 downto 0);
     stack_a_write: in std_logic_vector(wordSize-1 downto 0);
     stack_b_write: in std_logic_vector(wordSize-1 downto 0);
-    stack_a_writeenable: in std_logic;
+    stack_a_writeenable: in std_logic_vector(3 downto 0);
     stack_a_enable: in std_logic;
-    stack_b_writeenable: in std_logic;
+    stack_b_writeenable: in std_logic_vector(3 downto 0);
     stack_b_enable: in std_logic;
-    stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 0);
-    stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 0)
+    stack_a_addr: in std_logic_vector(stackSize_bits-1 downto 2);
+    stack_b_addr: in std_logic_vector(stackSize_bits-1 downto 2)
   );
   end component zpuino_stack;
 
@@ -245,6 +246,7 @@ architecture behave of zpuino_top_icache is
   signal wb_address: std_logic_vector(maxAddrBitIncIO downto 0);
   signal wb_stb:     std_logic;
   signal wb_cyc:     std_logic;
+  signal wb_sel:     std_logic_vector(3 downto 0);
   signal wb_we:       std_logic;
   signal wb_ack:     std_logic;
 
@@ -267,8 +269,9 @@ architecture behave of zpuino_top_icache is
   signal dbg_injectmode: std_logic;
   signal dbg_idim:      std_logic;
 
-  signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits+1 downto 2);
-  signal stack_a_writeenable, stack_b_writeenable, stack_a_enable,stack_b_enable: std_logic;
+  signal stack_a_addr,stack_b_addr: std_logic_vector(stackSize_bits-1 downto 2);
+  signal stack_a_writeenable, stack_b_writeenable: std_logic_vector(3 downto 0);
+  signal stack_a_enable,stack_b_enable: std_logic;
   signal stack_a_write,stack_b_write: std_logic_vector(31 downto 0);
   signal stack_a_read,stack_b_read: std_logic_vector(31 downto 0);
   signal stack_clk: std_logic;
@@ -284,6 +287,7 @@ architecture behave of zpuino_top_icache is
   signal cpu_ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
   signal cpu_ram_wb_cyc_i:       std_logic;
   signal cpu_ram_wb_stb_i:       std_logic;
+  signal cpu_ram_wb_sel_i:       std_logic_vector(3 downto 0);
   signal cpu_ram_wb_we_i:        std_logic;
 
   signal dbg_to_zpu:         zpu_dbg_in_type;
@@ -302,6 +306,7 @@ begin
       wb_adr_o      => wb_address,
 			wb_cyc_o      => wb_cyc,
 			wb_stb_o      => wb_stb,
+      wb_sel_o        => wb_sel,
       wb_we_o       => wb_we,
 	 		wb_inta_i     => interrupt,
 
@@ -451,7 +456,7 @@ begin
     m0_wb_dat_o   => cpu_ram_wb_dat_o,
     m0_wb_dat_i   => cpu_ram_wb_dat_i,
     m0_wb_adr_i   => cpu_ram_wb_adr_i(maxAddrBit downto 0),
-    m0_wb_sel_i   => (others => '1'),
+    m0_wb_sel_i   => cpu_ram_wb_sel_i,
     m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
     m0_wb_we_i    => cpu_ram_wb_we_i,
     m0_wb_cyc_i   => cpu_ram_wb_cyc_i,
@@ -477,7 +482,7 @@ begin
     s0_wb_dat_i   => ram_wb_dat_i,
     s0_wb_dat_o   => ram_wb_dat_o,
     s0_wb_adr_o   => ram_wb_adr_o(maxAddrBit downto 0),
-    s0_wb_sel_o   => open,
+    s0_wb_sel_o   => ram_wb_sel_o,
     s0_wb_cti_o   => open,
     s0_wb_we_o    => ram_wb_we_o,
     s0_wb_cyc_o   => ram_wb_cyc_o,

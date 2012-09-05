@@ -24,6 +24,7 @@ entity sdram_ctrl is
     wb_we_i:  in std_logic;
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
+    wb_sel_i: in std_logic_vector(3 downto 0);
     wb_ack_o: out std_logic;
     wb_stall_o: out std_logic;
 
@@ -76,7 +77,8 @@ architecture behave of sdram_ctrl is
    req_write   : IN     STD_LOGIC;
    data_out      : OUT     STD_LOGIC_VECTOR (31 downto 0);
    data_out_valid : OUT     STD_LOGIC;
-   data_in      : IN     STD_LOGIC_VECTOR (31 downto 0)
+   data_in      : IN     STD_LOGIC_VECTOR (31 downto 0);
+   data_mask    : in std_logic_vector(3 downto 0)
    );
   end component;
 
@@ -86,6 +88,8 @@ architecture behave of sdram_ctrl is
   signal sdr_data_out      :      STD_LOGIC_VECTOR (31 downto 0);
   signal sdr_data_out_valid :      STD_LOGIC;
   signal sdr_data_in      : STD_LOGIC_VECTOR (31 downto 0);
+
+  signal sdr_data_mask: std_logic_vector(3 downto 0);
 
   signal pending: std_logic;
 
@@ -117,7 +121,8 @@ begin
     req_write   => sdr_req_write,
     data_out    => sdr_data_out,
     data_out_valid => sdr_data_out_valid,
-    data_in      => sdr_data_in
+    data_in      => sdr_data_in,
+    data_mask  => sdr_data_mask
    );
 
 
@@ -127,6 +132,7 @@ begin
   sdr_req_write<='1' when wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' else '0';
 
   sdr_data_in <= wb_dat_i;
+  sdr_data_mask <= wb_sel_i;
 
   wb_stall_o <= '1' when pending='1' else '0';
 
