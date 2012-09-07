@@ -194,17 +194,10 @@ signal trace_topOfStackB:   std_logic_vector(wordSize-1 downto 0);
 type State_Type is
 (
 State_Execute,
-State_Store,
-State_StoreB,
-State_StoreB2,
-State_Load,
-State_LoadMemory,
 State_LoadStack,
 State_Loadb,
 State_Loadh,
-State_Resync1,
 State_Resync2,
-State_LoadSP,
 State_WaitSPB,
 State_ResyncFromStoreStack,
 State_Neqbranch,
@@ -1093,13 +1086,6 @@ begin
     lsu_data_write <= (others => DontCareValue);
     case exr.state is
 
-      when State_Resync1 =>
-        exu_busy <= '1';
-
-        stack_a_enable<='1';
-        w.state := State_Resync2;
-        wroteback := '0';
-
       when State_ResyncFromStoreStack =>
         exu_busy <= '1';
         stack_a_addr <= std_logic_vector(prefr.spnext);
@@ -1485,30 +1471,6 @@ begin
         wroteback := '0';
         w.state := State_Execute;
   
-      when State_Store =>
-        
-
-        exu_busy <= '1';
-
-        
-        -- Keep writeback flag
-        wroteback := wroteback_q;
-
-        if wb_ack_i='1' then
-          stack_a_addr <= std_logic_vector(prefr.spnext);
-          stack_a_enable<='1';
-          stack_b_enable<='1';
-          wroteback := '0';
-          --exu_busy <= '1';
-          w.wb_cyc := '0';
-          w.state := State_Resync2;
-        else
-          stack_a_addr  <= (others => DontCareValue);
-          stack_a_write <= (others => DontCareValue);
-          stack_a_enable<='0';
-          stack_b_enable<='0';
-        end if;
-
       when State_Loadb =>
         w.tos(wordSize-1 downto 8) := (others => '0');
         case exr.tos_save(1 downto 0) is
@@ -1548,9 +1510,9 @@ begin
         if prefr.decodedOpcode=Decoded_Loadb then
           exu_busy<='1';
           w.state:=State_Loadb;
-        --elsif prefr.decodedOpcode=Decoded_Storeb then
-        --  exu_busy<='1';
-        --  w.state:=State_Storeb;
+        elsif prefr.decodedOpcode=Decoded_Load then
+          exu_busy<='1';
+          w.state:=State_Loadh;
         else
           instruction_executed:='1';
           wroteback := '0';
@@ -1572,66 +1534,6 @@ begin
         stack_a_addr <= std_logic_vector(prefr.spnext);
         wroteback:='0';
         w.state := State_Resync2;
-
-      when State_StoreB =>
-        exu_busy <= '1';
-        --
-        -- At this point, we have loaded the 32-bit, and it's in TOS
-        -- The IO address is still saved in save_TOS.
-        -- The original write value is still at save_NOS
-        --
-        -- So we mangle the write value, and update save_NOS, and restore
-        -- the IO address to TOS
-        --
-        -- This is still buggy - don't use. Problems arise when writing to stack.
-        --
-
-        w.nos_save := exr.tos;
-
-        case exr.tos_save(1 downto 0) is
-          when "00" =>
-            w.nos_save(31 downto 24) := exr.nos_save(7 downto 0);
-          when "01" =>
-            w.nos_save(23 downto 16) := exr.nos_save(7 downto 0);
-          when "10" =>
-            w.nos_save(15 downto 8) := exr.nos_save(7 downto 0);
-          when "11" =>
-            w.nos_save(7 downto 0) := exr.nos_save(7 downto 0);
-          when others =>
-            null;
-        end case;
-
-        w.tos := exr.tos_save;
-        w.state := State_StoreB2;
-
-      when State_StoreB2 =>
-
-            exu_busy <= '1';
-
-            if exr.tos(31)='1' then
-              stack_a_addr <= std_logic_vector(exr.tos(spMaxBit downto 2));
-              stack_a_write <= std_logic_vector(exr.nos_save); -- hmm I don't like this
-              stack_a_writeenable<=(others =>'1');
-              w.state := State_ResyncFromStoreStack;
-            else
-
-              w.wb_we  := '1';
-              w.wb_cyc := '1';
-              w.wb_stb := '1';
-
-              wroteback := wroteback_q; -- Keep WB
-              stack_a_enable<='0';
-              stack_a_addr  <= (others => DontCareValue);
-              stack_a_write <= (others => DontCareValue);
-
-              stack_b_enable<='0';
-
-              instruction_executed := '0';
-              w.state := State_Store;
-
-            end if;
-
-
 
       when others =>
          null;
