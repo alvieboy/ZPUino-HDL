@@ -798,11 +798,15 @@ begin
                 if decr.break='1' then
                   w.valid := '0';
                 else
-                  w.valid := cache_valid;
+                  if exu_busy='0' then
+                    w.valid := cache_valid;
+                  end if;
                 end if;
 
                 if cache_valid='1' then
-                  w.im := sampledOpcode(7);
+                  if exu_busy='0' then
+                    w.im := sampledOpcode(7);
+                  end if;
                   if sampledDecodedOpcode=Decoded_Break then
                     w.break:='1';
                   end if;
@@ -813,7 +817,9 @@ begin
                   w.pc := decr.pcint;
                 end if;
                 --if cache_stall='0' then
+                if exu_busy='0' then
                   w.opcode := sampledOpcode;
+                end if;
                 --end if;
               end if;
 
@@ -948,7 +954,9 @@ begin
       if dbg_in.flush='1' then
         w.valid := '0';
       else
-        w.valid := decr.valid;
+        if exu_busy='0' then
+          w.valid := decr.valid;
+        end if;
       end if;
     end if;
 
@@ -1082,6 +1090,7 @@ begin
     lsu_req <= '0';
     lsu_we <= DontCareValue;
     lsu_data_sel <= (others => DontCareValue);
+    lsu_data_write <= (others => DontCareValue);
     case exr.state is
 
       when State_Resync1 =>
@@ -1361,8 +1370,8 @@ begin
               lsu_data_write <= datawrite;
 
               instruction_executed := '0';
-              --w.state := State_Store;
-              exu_busy <= '1';--lsu_busy;
+
+              exu_busy <= '1';
               lsu_req <= '1';
               lsu_we  <= '1';
 

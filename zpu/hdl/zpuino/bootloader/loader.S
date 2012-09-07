@@ -8,7 +8,7 @@
 
 .globl __flush
 __flush:
-        /* poppc Skip */
+        /* poppc */
         im         2                        ; Flush cache, enable SRAM
         nop
         im        IO_SLOT(4) + 16
