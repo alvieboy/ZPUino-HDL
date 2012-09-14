@@ -205,15 +205,15 @@ begin
 
   sdram: mt48lc16m16a2
     GENERIC MAP  (
-        addr_bits  => 13,
+        addr_bits  => 12,
         data_bits  => 16,
-        col_bits   => 9,
+        col_bits   => 8,
         index      => 0,
       	fname      => "sdram.srec"
     )
     PORT MAP (
         Dq    => DRAM_DQ,
-        Addr  => DRAM_ADDR,
+        Addr  => DRAM_ADDR(11 downto 0),
         Ba    => DRAM_BA,
         Clk   => DRAM_CLK,
         Cke   => DRAM_CKE,
