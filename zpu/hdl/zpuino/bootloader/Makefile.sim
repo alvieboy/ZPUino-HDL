@@ -20,9 +20,9 @@ OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o loader.o
 #crt0.o
 
 #-nostartfiles -nostdlib
-CFLAGS= -O2 -g -Wall -fno-gcse -mno-callpcrel -mno-pushspadd -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ 
+CFLAGS= -O2 -g -Wall -fno-gcse -mno-callpcrel -mno-pushspadd -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ -DZPUINO_HAS_ICACHE
 LDFLAGS= -O2 -g -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
-ASFLAGS=-g 
+ASFLAGS=-g -I../common -DASSEMBLY -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE
 #-nostartfiles
 
 CXXFLAGS=$(CFLAGS) -fno-exceptions
@@ -46,6 +46,7 @@ $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin.merged
+	perl ../gen-prom-generic-dualport-simple_32.pl $(TARGET).bin 4096 bootloader_dp_32 > bootloader.vhd || rm -f bootloader.vhd	
 	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
 clean:	
 	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).bin.merged $(TARGET).s $(TARGET).S prom-simulation.vhd
