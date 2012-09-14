@@ -310,7 +310,7 @@ begin
    i_DRAM_DQM     <= transport r.dq_masks  after tOPD;
    DRAM_DQM       <= i_DRAM_DQM;
 
-   DATA_OUT       <= captured & r.data_out_low;--r.data_out_low & captured;
+   DATA_OUT       <= r.data_out_low & captured;--r.data_out_low & captured;
    data_out_valid <= r.data_out_valid;
 
    DRAM_DQ    <= (others => 'Z') after tHZ when r.tristate='1' else rdata_write;
@@ -464,10 +464,10 @@ begin
                nstate     <= s_wr0;
                n.address <= (others => '0');
                n.address(addr_col'HIGH downto 0) <= addr_col;
-               ndata_write <= r.req_data_write(15 downto 0);--data_in(15 downto 0);
+               ndata_write <= r.req_data_write(31 downto 16);
                n.bank    <= addr_bank;
                n.act_ba    <= addr_bank;
-               n.dq_masks<= not r.req_mask(1 downto 0);
+               n.dq_masks<= not r.req_mask(3 downto 2);
                n.wr_pending <= '0';
                --n.tristate <= '0';
             end if;
@@ -511,9 +511,9 @@ begin
             nstate    <= s_wr3;
             n.bank    <= addr_bank;
             n.address(0) <= '1';
-            ndata_write <= r.req_data_write(31 downto 16);--data_in(31 downto 16);
+            ndata_write <= r.req_data_write(15 downto 0);--data_in(31 downto 16);
             --DRAM_DQ <= rdata_write;
-            n.dq_masks<= not r.req_mask(3 downto 2);
+            n.dq_masks<= not r.req_mask(1 downto 0);
             n.tristate <= '0';
 
          when s_wr1_id => null;
