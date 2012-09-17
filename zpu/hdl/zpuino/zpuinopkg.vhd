@@ -270,6 +270,7 @@ package zpuinopkg is
     sync_in:  in std_logic;
 
     -- Connection to GPIO pin
+	 raw_out: out std_logic_vector(17 downto 0);	 
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0)
 

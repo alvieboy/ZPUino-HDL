@@ -52,9 +52,9 @@ entity zpuino_io_audiomixer is
     rst:      	in std_logic;
     ena:			in std_logic;
     
-    data_in1:  	in std_logic_vector(7 downto 0);
-    data_in2:  	in std_logic_vector(7 downto 0);
-    data_in3:  	in std_logic_vector(7 downto 0);
+    data_in1:  	in std_logic_vector(17 downto 0);
+    data_in2:  	in std_logic_vector(17 downto 0);
+    data_in3:  	in std_logic_vector(17 downto 0);
     
     audio_out: 	out std_logic
     );
@@ -66,17 +66,17 @@ architecture behave of zpuino_io_audiomixer is
 signal cnt_div: 			std_logic_vector(1 downto 0) := (others => '0');
 
 -- accumulator for each input, on 9 bits, enough for 3 inputs@8bits
-signal audio_mix: 		std_logic_vector(9 downto 0) := (others => '0'); 
+signal audio_mix: 		std_logic_vector(19 downto 0) := (others => '0'); 
 
 -- to store final accumulator value
-signal audio_final: 		std_logic_vector(9 downto 0) := (others => '0');
-signal current_input:	std_logic_vector(7 downto 0) := (others => '0');
-signal data_out:			std_logic_vector(7 downto 0) := (others => '0');
+signal audio_final: 		std_logic_vector(19 downto 0) := (others => '0');
+signal current_input:	std_logic_vector(17 downto 0) := (others => '0');
+signal data_out:			std_logic_vector(17 downto 0) := (others => '0');
 
 -- DAC
 component simple_sigmadelta is
   generic (
-    BITS: integer := 8
+    BITS: integer := 18
   );
 	port (
     clk:      in std_logic;
@@ -90,7 +90,7 @@ begin
 
 	sdo: simple_sigmadelta
 	generic map (
-		BITS =>  8
+		BITS =>  18
 	)
 	port map (
 		clk       => clk,
@@ -144,12 +144,12 @@ begin
 		end if;
 
 		if (rst='1') then
-			data_out(7 downto 0) <= "00000000";
+			data_out(17 downto 0) <= (others => '0');
 		else
-			if (audio_final(9) = '0') then
-				data_out(7 downto 0) <= audio_final(8 downto 1);
+			if (audio_final(19) = '0') then
+				data_out(17 downto 0) <= audio_final(18 downto 1);
 			else -- clip
-				data_out(7 downto 0) <= x"FF";
+				data_out(17 downto 0) <= "111111111111111111";
 			end if;
 		end if;
   end process;	

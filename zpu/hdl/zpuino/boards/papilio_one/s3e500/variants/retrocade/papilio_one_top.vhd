@@ -141,7 +141,7 @@ architecture behave of papilio_one_top is
   signal timers_interrupt:  std_logic_vector(1 downto 0);
   signal timers_pwm: std_logic_vector(1 downto 0);
 
-  signal ivecs: std_logic_vector(17 downto 0);
+  signal ivecs, sigmadelta_raw: std_logic_vector(17 downto 0);
 
   signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
@@ -520,6 +520,7 @@ begin
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5),
 
+	 raw_out => sigmadelta_raw,
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
     sync_in   => '1'
@@ -750,7 +751,7 @@ begin
      
      data_in1  => sid_audio_data,
      data_in2  => ym2149_audio_dac,
-     data_in3  => (others => '0'),
+     data_in3  => sigmadelta_raw,
      
      audio_out => platform_audio_sd
      );
@@ -826,12 +827,12 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_data(0) <= sigmadelta_spp_data(0) and platform_audio_sd; -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(0) <= platform_audio_sd; -- PPS0 : SIGMADELTA DATA
     gpio_spp_data(1) <= timers_pwm(0);          -- PPS1 : TIMER0
     gpio_spp_data(2) <= timers_pwm(1);          -- PPS2 : TIMER1
     gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
     gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
-    gpio_spp_data(5) <= sigmadelta_spp_data(1) and platform_audio_sd; -- PPS5 : SIGMADELTA1 DATA
+    gpio_spp_data(5) <= platform_audio_sd; -- PPS5 : SIGMADELTA1 DATA
     gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
     gpio_spp_data(8) <= platform_audio_sd;
     spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO

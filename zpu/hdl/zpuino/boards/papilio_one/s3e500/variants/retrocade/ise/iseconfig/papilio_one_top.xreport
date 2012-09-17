@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2012-07-06T10:08:22</DateModified>
+  <DateModified>2012-09-17T17:34:47</DateModified>
   <ModuleName>papilio_one_top</ModuleName>
-  <SummaryTimeStamp>Unknown</SummaryTimeStamp>
-  <SavedFilePath>C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/sid/ise/iseconfig/papilio_one_top.xreport</SavedFilePath>
-  <ImplementationReportsDirectory>C:/Users/killian/Dropbox/GadgetFactory/zpuino_main/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/sid/ise\</ImplementationReportsDirectory>
+  <SummaryTimeStamp>2012-09-17T14:44:54</SummaryTimeStamp>
+  <SavedFilePath>C:/Users/killian/Dropbox/GadgetFactory/GadgetFactory_Engineering/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/retrocade/ise/iseconfig/papilio_one_top.xreport</SavedFilePath>
+  <ImplementationReportsDirectory>C:/Users/killian/Dropbox/GadgetFactory/GadgetFactory_Engineering/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/retrocade/ise\</ImplementationReportsDirectory>
   <DateInitialized>2012-04-26T09:28:11</DateInitialized>
   <EnableMessageFiltering>false</EnableMessageFiltering>
  </header>

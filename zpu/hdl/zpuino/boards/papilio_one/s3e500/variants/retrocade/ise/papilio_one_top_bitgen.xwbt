@@ -1,8 +1,8 @@
 INTSTYLE=ise
-INFILE=C:\Users\killian\Dropbox\GadgetFactory\zpuino_main\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\sid\ise\papilio_one_top.ncd
-OUTFILE=C:\Users\killian\Dropbox\GadgetFactory\zpuino_main\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\sid\ise\papilio_one_top.bit
+INFILE=C:\Users\killian\Dropbox\GadgetFactory\GadgetFactory_Engineering\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\retrocade\ise\papilio_one_top.ncd
+OUTFILE=C:\Users\killian\Dropbox\GadgetFactory\GadgetFactory_Engineering\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\retrocade\ise\papilio_one_top.bit
 FAMILY=Spartan3E
 PART=xc3s500e-4vq100
-WORKINGDIR=C:\Users\killian\Dropbox\GadgetFactory\zpuino_main\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\sid\ise
+WORKINGDIR=C:\Users\killian\Dropbox\GadgetFactory\GadgetFactory_Engineering\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\variants\retrocade\ise
 LICENSE=WebPack
 USER_INFO=175441551_0_0_650
