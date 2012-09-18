@@ -199,10 +199,13 @@ begin
   wb_dat_o <= (others => Undefined);
   case wb_adr_i(3 downto 2) is
     when "00" =>
-      wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
+      --wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
+      wb_dat_o(0) <= ien_q; 
     when "01" =>
       wb_dat_o(INTERRUPT_LINES-1 downto 0) <= mask_q;
     when "10" =>
+      wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
+    when "11" =>
       for i in 0 to INTERRUPT_LINES-1 loop
         if intr_cfglvl(i)='1' then
           wb_dat_o(i) <= intr_level_q(i);
