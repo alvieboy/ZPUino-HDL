@@ -791,15 +791,15 @@ begin
                 if decr.break='1' then
                   w.valid := '0';
                 else
-                  if exu_busy='0' then
+                  --if exu_busy='0' then
                     w.valid := cache_valid;
-                  end if;
+                  --end if;
                 end if;
 
                 if cache_valid='1' then
-                  if exu_busy='0' then
+                  --if exu_busy='0' then
                     w.im := sampledOpcode(7);
-                  end if;
+                  --end if;
                   if sampledDecodedOpcode=Decoded_Break then
                     w.break:='1';
                   end if;
@@ -1510,7 +1510,7 @@ begin
         if prefr.decodedOpcode=Decoded_Loadb then
           exu_busy<='1';
           w.state:=State_Loadb;
-        elsif prefr.decodedOpcode=Decoded_Load then
+        elsif prefr.decodedOpcode=Decoded_Loadh then
           exu_busy<='1';
           w.state:=State_Loadh;
         else
