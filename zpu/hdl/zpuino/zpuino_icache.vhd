@@ -257,6 +257,7 @@ begin
         case state is
 
           when flushing =>
+            busy <= '1';
             flushcnt <= flushcnt - 1;
             tag_mem_wen<='1';
             if flushcnt=0 then
@@ -319,7 +320,10 @@ begin
 
           when ending =>
             busy<='0';
-            fill_success<='1';
+            
+            if enable='1' then
+              fill_success<='1';
+            end if;
             state <= running;
         end case;
       end if;
