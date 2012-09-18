@@ -100,7 +100,7 @@ begin
   wb_dat_o <= (others => DontCareValue);
   wb_inta_o <= '0';
   wb_ack_o <= wb_cyc_i and wb_stb_i;
-  raw_out <= std_logic_vector(dat_q1);
+  raw_out <= std_logic_vector(sigma_latch1);
 
 process(wb_clk_i)
   variable in_le1,in_le2: std_logic_vector(15 downto 0);
