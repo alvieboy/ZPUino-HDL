@@ -203,7 +203,9 @@ State_ResyncFromStoreStack,
 State_Neqbranch,
 State_Ashiftleft,
 State_Mult,
-State_MultF16
+State_MultF16,
+State_WriteBackStack,
+State_LoadMemoryStack
 );
 
 type DecodedOpcodeType is
@@ -333,6 +335,8 @@ end record;
 
 type prefetchregs_type is record
   sp:             unsigned(spMaxBit downto 2);
+  spseg:          unsigned(maxAddrBit-spMaxBit-1 downto 0);
+  spnextseg:      unsigned(maxAddrBit-spMaxBit-1 downto 0);
   spnext:         unsigned(spMaxBit downto 2);
   valid:          std_logic;
   decodedOpcode:  DecodedOpcodeType;
@@ -359,6 +363,8 @@ type exuregs_type is record
   wb_cyc:     std_logic;
   wb_stb:     std_logic;
   wb_we:      std_logic;
+  fillspread: unsigned(spMaxBit downto 2);
+  fillspwrite: unsigned(spMaxBit downto 2);
 end record;
 
 -- Registers for each stage
@@ -367,7 +373,7 @@ signal prefr:   prefetchregs_type;
 signal decr:    decoderegs_type;
 
 signal pcnext:          unsigned(maxAddrBit downto 0);  -- Helper only. TODO: move into variable
-signal sp_load:         unsigned(spMaxBit downto 2);    -- SP value to load, coming from EXU into PFU
+signal sp_load:         unsigned(maxAddrBit downto 2);    -- SP value to load, coming from EXU into PFU
 signal decode_load_sp:  std_logic;                      -- Load SP signal from EXU to PFU
 signal exu_busy:        std_logic;                      -- EXU busy ( stalls PFU )
 signal pfu_busy:        std_logic;                      -- PFU busy ( stalls DFU )
@@ -400,6 +406,8 @@ signal lsu_data_read:      std_logic_vector(wordSize-1 downto 0);
 signal lsu_data_write:     std_logic_vector(wordSize-1 downto 0);
 signal lsu_data_sel:       std_logic_vector(3 downto 0);
 signal lsu_address:        std_logic_vector(maxAddrBitIncIO downto 0);
+
+signal inside_stack: std_logic;
 
 begin
 
@@ -895,7 +903,7 @@ begin
 
   -- Prefetch/Load unit.
   
-  sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed one clock cycle
+  sp_load <= exr.tos(maxAddrBit downto 2); -- Will be delayed one clock cycle
 
   process(wb_clk_i, wb_rst_i, decr, prefr, exu_busy, decode_jump, sp_load,
           decode_load_sp, dbg_in.flush)
@@ -914,11 +922,13 @@ begin
 
     if decode_load_sp='1' then
       pfu_busy <= '1';
-      w.spnext := sp_load;
+      w.spnext := sp_load(spMaxBit downto 2);
+      w.spnextseg := sp_load(maxAddrBit downto spMaxBit+1);
+
       w.recompute_sp := '1';
     else
       pfu_busy <= exu_busy;
-
+      
       if decr.valid='1' then
         if (exu_busy='0' and decode_jump='0') or prefr.recompute_sp='1' then
           case decr.stackOperation is
@@ -931,6 +941,7 @@ begin
               when others =>
           end case;
           w.sp := prefr.spnext;
+          w.spseg := prefr.spnextseg;
         end if;
       end if;
     end if;
@@ -988,6 +999,7 @@ begin
 
     if wb_rst_i='1' then
       w.spnext := unsigned(spStart(spMaxBit downto 2));
+      w.spnextseg := (others => '1');
       --w.sp := unsigned(spStart(10 downto 2));
       w.valid := '0';
       w.idim := '0';
@@ -1006,6 +1018,7 @@ begin
         trace_pc(maxAddrBit downto 0) <= std_logic_vector(prefr.pc);
         trace_opcode <= prefr.opcode;
         trace_sp <= (others => '0');
+        trace_sp(maxAddrBit downto spMaxBit+1) <= std_logic_vector(prefr.spseg);
         trace_sp(spMaxBit downto 2) <= std_logic_vector(prefr.sp);
         trace_topOfStack <= std_logic_vector( exr.tos );
         trace_topOfStackB <= std_logic_vector( nos );
@@ -1013,7 +1026,6 @@ begin
 
   -- IO/Memory Accesses
 
-  lsu_address    <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
   --wb_cyc_o    <= exr.wb_cyc;
   --wb_stb_o    <= exr.wb_stb;
   --wb_we_o     <= exr.wb_we;
@@ -1033,11 +1045,13 @@ begin
     variable wroteback: std_logic;
     variable datawrite: std_logic_vector(wordSize-1 downto 0);
     variable sel: std_logic_vector(3 downto 0);
+    variable stackptrfull: unsigned(spMaxBit downto 2):= (others => '1');
   begin
 
     w := exr;
 
     instruction_executed := '0'; -- used for single stepping
+    lsu_address    <= std_logic_vector(exr.tos(maxAddrBitIncIO downto 0));
 
     stack_b_writeenable <= (others => '0');
     stack_a_enable <= '1';
@@ -1084,6 +1098,13 @@ begin
     lsu_we <= DontCareValue;
     lsu_data_sel <= (others => DontCareValue);
     lsu_data_write <= (others => DontCareValue);
+
+    if exr.tos(maxAddrBit downto spMaxBit+1) = prefr.spseg then
+      inside_stack <= '1';
+    else
+      inside_stack <= '0';
+    end if;
+
     case exr.state is
 
       when State_ResyncFromStoreStack =>
@@ -1147,7 +1168,8 @@ begin
 
           when Tos_Source_SP =>
             w.tos := (others => '0');
-            w.tos(31) := '1'; -- Stack address
+            --w.tos(31) := '1'; -- Stack address
+            w.tos(maxAddrBit downto spMaxBit+1) := prefr.spseg;
             w.tos(spMaxBit downto 2) := prefr.sp;
 
           when Tos_Source_Add =>
@@ -1334,7 +1356,7 @@ begin
             stack_a_writeenable <=sel;
             lsu_data_sel <= sel;
 
-            if exr.tos(31)='1' then
+            if inside_stack='1' then --exr.tos(31)='1' then
               stack_a_addr <= std_logic_vector(exr.tos(spMaxBit downto 2));
               stack_a_write <= datawrite;
               stack_a_writeenable <= sel;
@@ -1376,7 +1398,7 @@ begin
             instruction_executed := '0';
             wroteback := wroteback_q; -- Keep WB
 
-            if exr.tos(wordSize-1)='1' then
+            if inside_stack='1' then --exr.tos(wordSize-1)='1' then
               stack_a_addr<=std_logic_vector(exr.tos(spMaxBit downto 2));
               stack_a_enable<='1';
               exu_busy <= '1';
@@ -1403,10 +1425,20 @@ begin
 
           when Decoded_PopSP =>
 
-            decode_load_sp <= '1';
+            if inside_stack='1' then
+              decode_load_sp <= '1';
+              w.state := State_Resync2;
+              stack_a_addr <= std_logic_vector(exr.tos(spMaxBit downto 2));
+            else
+              --report "Implement me" severity failure;
+              w.state := State_WriteBackStack;
+              stack_a_addr <= (others => '0');
+              w.fillspread := (others => '0');
+              w.fillspwrite := (others => '0');
+            end if;
+
             instruction_executed := '0';
-            stack_a_addr <= std_logic_vector(exr.tos(spMaxBit downto 2));
-            w.state := State_Resync2;
+            
 
           --when Decoded_Break =>
 
@@ -1535,6 +1567,56 @@ begin
         wroteback:='0';
         w.state := State_Resync2;
 
+      when State_WriteBackStack =>
+        exu_busy <= '1';
+        stack_a_addr <= std_logic_vector(exr.fillspwrite);
+
+        lsu_address(maxAddrBit downto spMaxBit+1) <= std_logic_vector(prefr.spseg);
+        lsu_address(spMaxBit downto 2) <= std_logic_vector(exr.fillspread);
+        lsu_we <= '1';
+        lsu_req <= '1';
+        lsu_data_write <= stack_a_read;
+
+        if lsu_busy='0' then
+          w.fillspread := exr.fillspread + 1;
+          w.fillspwrite := exr.fillspwrite + 1;
+          if exr.fillspread=stackptrfull then
+            --report "Implement me" severity failure;
+            --lsu_req<='0';
+            w.state := State_LoadMemoryStack;
+          end if;
+        end if;
+
+      when State_LoadMemoryStack =>
+
+        exu_busy <= '1';
+        stack_a_addr <= std_logic_vector(exr.fillspwrite);
+
+        lsu_address(maxAddrBit downto spMaxBit+1) <= std_logic_vector(exr.tos(maxAddrBit downto spMaxBit+1));
+        lsu_address(spMaxBit downto 2) <= std_logic_vector(exr.fillspread);
+        lsu_we <= '0';
+        lsu_req <= '1';
+        lsu_data_sel <=(others => '1');
+        stack_a_write <= lsu_data_read;
+
+        stack_a_writeenable <= (others =>'1');
+
+        if lsu_busy='0' then
+          w.fillspread := exr.fillspread + 1;
+          w.fillspwrite := exr.fillspwrite + 1;
+          if exr.fillspread=stackptrfull then
+            
+            lsu_req<='0';
+            decode_load_sp <= '1';
+            w.state := State_Resync2;
+            stack_a_addr <= std_logic_vector(exr.tos(spMaxBit downto 2));
+
+            w.state := State_Resync2;
+          end if;
+        end if;
+
+
+
       when others =>
          null;
 
@@ -1549,6 +1631,7 @@ begin
         exr.break <= '0';
         exr.wb_cyc <= '0';
         exr.wb_stb <= '1';
+        exr.tos <= (others => DontCareValue);
         wroteback_q <= '0';
       else
         exr <= w;

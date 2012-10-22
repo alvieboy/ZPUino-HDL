@@ -38,6 +38,9 @@ begin
   generic map (
     WRITE_MODE_A => "WRITE_FIRST",
     WRITE_MODE_B => "WRITE_FIRST",
+    INIT_A       => X"111",
+    INIT_B       => X"111",
+
     SIM_COLLISION_CHECK => "NONE"
     )
   port map (

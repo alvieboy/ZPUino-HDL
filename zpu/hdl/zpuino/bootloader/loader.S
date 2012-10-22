@@ -2,7 +2,7 @@
 
 .text
 
-#undef PRELOADED 
+#define PRELOADED 
 
 .balign 16 /* Ensure we don't have a cache miss on this code */
 
