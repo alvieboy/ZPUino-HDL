@@ -55,7 +55,8 @@ int main(int argc,char **argv)
 		return -1;
 	}
 	// Sig
-	write(outfd,"ZPUFLASH",8);
+	if (write(outfd,"ZPUFLASH",8)!=8)
+        perror("write");
 
 	return 0;
 }

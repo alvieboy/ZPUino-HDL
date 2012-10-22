@@ -4,7 +4,7 @@
         C calling standard
 */
 
-#define TRACE
+#undef TRACE
         
         .globl execute
 
@@ -13,6 +13,16 @@
 #define STACKPAGEMASK (MEMMASK ^ STACKMASK)
 
 #define MAXADDRBITINCIO $27
+
+
+	.macro is_current_stack
+	push %ebx
+	movl %esi, %eax
+	andl  $STACKPAGEMASK, %ebx
+	andl  $STACKPAGEMASK, %eax
+	cmp  %eax, %ebx
+	pop  %ebx
+	.endm
 
 .do_tick:
         push %edx
@@ -160,7 +170,7 @@ zpu_pushsp:
         movl %eax, _stack(%esi)
         pop %esi
         movl %esi, %ebx
-        orl $0x80000000, %ebx
+        //orl $	0x80000000, %ebx
         subl $4,%esi
         incl %edi
         jmp .opcode_return
@@ -173,6 +183,9 @@ zpu_poppc:
         movl _stack(%esi), %ebx
         pop %esi
         bswap %ebx
+        pusha
+        call poppc_instruction
+        popa
         jmp .opcode_return
 
 .align 16
@@ -185,6 +198,19 @@ zpu_add:
         addl $4, %esi
         incl %edi
         addl %eax, %ebx
+        jmp .opcode_return
+
+zpu_ashiftleft:
+	    push %esi
+        and $STACKMASK, %esi
+        movl _stack+4(%esi), %eax
+        pop %esi
+        bswap %eax
+        addl $4, %esi
+	    incl %edi
+        mov  %bl, %cl
+	    sall %cl, %eax
+        movl %eax, %ebx
         jmp .opcode_return
 
 zpu_or:
@@ -257,22 +283,26 @@ zpu_storeb:
         addl $4, %esi
         bt MAXADDRBITINCIO, %ebx
         jc abort
-        bt $31, %ebx
-        jnc storeb_to_memory
+#ifdef TRACE
+	call debug_lowmem_access
+#endif
+	is_current_stack
+        jne storeb_to_memory
 
         and $STACKMASK, %ebx
         movb %cl, _stack(%ebx)
         
         push %esi
         and $STACKMASK, %esi
-	movl _stack(%esi), %ebx // Reload stack top
+	    movl _stack(%esi), %ebx // Reload stack top
         pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
-
 storeb_to_memory:
-        movb %cl, _memory(%ebx)
+        and $0x7fffffff, %ebx
+        
+	    movb %cl, _memory(%ebx)
         push %esi
         and $STACKMASK, %esi
         movl _stack(%esi), %ebx // Reload stack top
@@ -293,9 +323,11 @@ zpu_store:
         addl $4, %esi
         bt MAXADDRBITINCIO, %ebx
         jc store_external
-        bt $31, %ebx
-        jnc store_to_memory
-
+        is_current_stack
+	jne store_to_memory
+#ifdef TRACE
+        call debug_lowmem_access
+#endif
         and $STACKMASK, %ebx
         movl %ecx, _stack(%ebx)
         
@@ -306,8 +338,12 @@ zpu_store:
         bswap %ebx
         incl %edi
         jmp .opcode_return
-
 store_to_memory:
+        and $0x7fffffff, %ebx
+#ifdef TRACE
+        call debug_lowmem_access
+#endif
+nstore:
         movl %ecx, _memory(%ebx)
         push %esi
         and $STACKMASK, %esi
@@ -317,6 +353,17 @@ store_to_memory:
         incl %edi
         jmp .opcode_return
 
+debug_lowmem_access:
+	pusha
+	push %ebx
+        push %edi
+        bswap %ecx
+        push %ecx
+        call warn_lowmem_access
+        addl $12, %esp
+        popa
+	ret
+        
 store_external:
         bswap %ecx
         //mov io_write_table-32768(%ebx), %eax
@@ -346,35 +393,38 @@ store_external:
 zpu_loadb:
         bt MAXADDRBITINCIO, %ebx
         jc abort
-        bt $31, %ebx
-        jc loadb_stack
-        movb _memory(%ebx), %bl
+	    is_current_stack
+        je loadb_stack
+     	and $0x7fffffff, %ebx
+	    movb _memory(%ebx), %bl
         and $0xff, %ebx
-        bswap %ebx
+        //bswap %ebx
         incl %edi
         jmp .opcode_return
 
 loadb_stack:
+
         and $STACKMASK, %ebx
         movb _stack(%ebx), %bl
         and $0xff, %ebx
-        bswap %ebx
+        //bswap %ebx
         incl %edi
         jmp .opcode_return
-
 
 zpu_load:
         bt MAXADDRBITINCIO, %ebx
         jc load_external
-        bt $31, %ebx
-        jc load_stack
+        is_current_stack
+        je load_stack
 
+	    and $0x7fffffff, %ebx
         movl _memory(%ebx), %ebx
         bswap %ebx
         incl %edi
         jmp .opcode_return
 
 load_stack:
+
         and $STACKMASK, %ebx
         movl _stack(%ebx), %ebx
         bswap %ebx
@@ -591,7 +641,12 @@ zpu_emulate29:           // 61 Pushspadd
 zpu_emulate30:           // 62 Halfmult
         emulateX 30
 zpu_emulate31:           // 63 Callpcrel
-        emulateX 31
+	//emulateX 31
+        movl %edi, %eax   // return
+	    addl %ebx, %edi
+        movl %eax, %ebx
+        incl %ebx
+        jmp .opcode_return
         
 zpu_popsp:
         // Write back
@@ -617,22 +672,37 @@ not_same_page:
         // Original address is in %eax
         push 	%esi
         push 	%edi
-        andl	$STACKPAGEMASK, %eax
-        addl	$_memory, %eax
+	    andl	$STACKPAGEMASK, %eax
+        push    %edx
+        movl    %eax, %edx
+	    addl	$_memory, %eax
         movl	%eax, %edi
         
         movl  	$_stack, %esi
         cld
-        movl  	$2040, %ecx
+        movl  	$2048, %ecx
+        
         rep 	movsd
         // Ok, now load from memory, from %ebx 
-        movl  	$2040, %ecx
+        movl  	$2048, %ecx
         movl 	%ebx, %esi
         andl	$STACKPAGEMASK, %esi
-        addl	$_memory, %esi
+test:
+	    addl	$_memory, %esi
         movl  	$_stack, %edi
         rep	movsd
-        pop	%edi
+#ifdef TRACE
+	 pusha
+        pushfl
+        push %ebx
+        push %edx
+        call debug_stack_writeback
+        addl $8, %esp
+        popfl
+        popa
+#endif
+        pop %edx
+	    pop	%edi
         pop	%esi
 	
 .stack_same_page:
@@ -650,12 +720,28 @@ not_same_page:
         bswap %ebx
         incl %edi
         jmp .opcode_return
-        
+asm_stack_exception:
+        push %esi
+        push %edi
+        push %ebx
+        push %eax
+        call stack_exception
+        addl $16, %esp
+        call abort
 .macro storespX off
         bswap %ebx
-        push %esi
-        and $STACKMASK, %esi
+	    push %esi
 
+	    push %ebx
+        mov %esi, %ebx
+        add $\off*4, %ebx
+        is_current_stack
+        pop %ebx
+        jne asm_stack_exception
+        movl $\off+4, %eax
+
+
+        and $STACKMASK, %esi
         movl %ebx, _stack+\off*4(%esi)
         pop %esi
         addl $4, %esi
@@ -1397,7 +1483,7 @@ dispatchtable:
         .long zpu_emulate8 /* opcode 28 */
         .long zpu_emulate9 /* opcode 29 */
         .long zpu_emulate10 /* opcode 2a */
-        .long zpu_emulate11 /* opcode 2b */
+        .long zpu_ashiftleft /* opcode 2b */
         .long zpu_emulate12 /* opcode 2c */
         .long zpu_emulate13 /* opcode 2d */
         .long zpu_emulate14 /* opcode 2e */
@@ -1405,7 +1491,7 @@ dispatchtable:
         .long zpu_emulate16 /* opcode 30 */
         .long zpu_emulate17 /* opcode 31 */
         .long zpu_emulate18 /* opcode 32 */
-        .long zpu_emulate19 /* opcode 33 */
+        .long zpu_loadb	    /* opcode 33 */
         .long zpu_storeb    /* opcode 34 */
         .long zpu_emulate21 /* opcode 35 */
         .long zpu_emulate22 /* opcode 36 */
@@ -1659,7 +1745,7 @@ dispatchtable:
         .long zpu_emulate8 /* opcode 28 */
         .long zpu_emulate9 /* opcode 29 */
         .long zpu_emulate10 /* opcode 2a */
-        .long zpu_emulate11 /* opcode 2b */
+        .long zpu_ashiftleft /* opcode 2b */
         .long zpu_emulate12 /* opcode 2c */
         .long zpu_emulate13 /* opcode 2d */
         .long zpu_emulate14 /* opcode 2e */
@@ -1667,8 +1753,8 @@ dispatchtable:
         .long zpu_emulate16 /* opcode 30 */
         .long zpu_emulate17 /* opcode 31 */
         .long zpu_emulate18 /* opcode 32 */
-        .long zpu_emulate19 /* opcode 33 */
-        .long zpu_emulate20 /* opcode 34 */
+        .long zpu_loadb // zpu_emulate19 /* opcode 33 */
+        .long zpu_storeb      //zpu_emulate20 /* opcode 34 */
         .long zpu_emulate21 /* opcode 35 */
         .long zpu_emulate22 /* opcode 36 */
         .long zpu_emulate23 /* opcode 37 */

@@ -34,6 +34,8 @@ void *timer_runner(void *data)
 			return NULL;
 		//printf("Tick %lu %lu\n", sleepreq.tv_sec, sleepreq.tv_nsec);
 		if (ctrl &BIT(TCTLIEN)) {
+			ctrl |= BIT(TCTLIF);
+		  //  printf("Timer: Interrupting\n");
 			zpuino_request_interrupt(0);
 		}
 	}
@@ -56,6 +58,7 @@ void stop_start_thread()
 
 	/* Cancel */
 	cancel_thread();
+    printf("Starting timer thread\n");
 	pthread_create(&threadid, &attr, &timer_runner, NULL);
 }
 
@@ -78,7 +81,7 @@ void timer_tick(unsigned delta)
 					//printf("Timer match %04x\n",timer_cnt);
 
 					if (ctrl & BIT(TCTLIEN) ) {
-						//printf("# Interrupting\n");
+						//printf("Timer: Interrupting\n");
 						ctrl |= BIT(TCTLIF);
 						//do_interrupt=1;
 						zpuino_request_interrupt(0);
@@ -95,6 +98,7 @@ void timer_tick(unsigned delta)
 					timer_cnt++;
 				else
 					timer_cnt--;
+                printf("Timer CNT %d\n", timer_cnt);
 				timer_prescaleCount = timer_prescaler;
 			}
 
@@ -127,13 +131,13 @@ void timer_write( unsigned int address, unsigned int value)
 	switch(address & 0xF) {
 	case 0:
 		ctrl = value;
-       /*
+/*
 		 printf("Timer bits: EN %d CCM %d DIR %d IEN %d\n",
 			   !!(ctrl & BIT(TCTLENA)),
 			   !!(ctrl & BIT(TCTLCCM)),
 			   !!(ctrl & BIT(TCTLDIR)),
 			   !!(ctrl & BIT(TCTLIEN)));
-        */
+*/
 		switch (bit_range(ctrl,6,4)) {
 		case 0:
 			timer_prescaler=0;
@@ -166,7 +170,7 @@ void timer_write( unsigned int address, unsigned int value)
 		break;
 	case 4:
 		// Counter
-		//printf("# Timer: set counter to %04x\n",value);
+		//printf("Timer: set counter to %04x\n",value);
 		timer_cnt = value & 0xffff;
 		reset_thread=1;
 		break;
@@ -194,6 +198,8 @@ void timer_write( unsigned int address, unsigned int value)
 		unsigned long long count = (timer_match+1);
 		count *= 1000000000ULL;
 		count/=cl;
+		count*=10;
+
 		//fprintf(stderr,"Timer delay is %llu nanoseconds\n",count);
 		sleepreq.tv_sec = count/1000000000;
 		sleepreq.tv_nsec = count% 1000000000;

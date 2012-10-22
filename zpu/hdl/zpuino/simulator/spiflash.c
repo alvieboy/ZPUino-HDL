@@ -44,8 +44,8 @@ unsigned char *mapped_orig;
 int mapfd;
 size_t mapped_size;
 const char *binfile=NULL;
-const char *extrafile=NULL;
-unsigned spi_select_pin = 40;
+static const char *extrafile=NULL;
+static unsigned spi_select_pin = 40;
 
 static int in_aai_mode=0;
 

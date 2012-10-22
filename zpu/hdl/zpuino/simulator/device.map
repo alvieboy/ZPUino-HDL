@@ -9,6 +9,7 @@
 2,gpio
 3,timer
 4,intr
+5,spisdcard,binfile=sd.bin,selectpin=47
 7,crc16
 8,vgazx
 10,vgacharram

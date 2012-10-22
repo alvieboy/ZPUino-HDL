@@ -19,6 +19,8 @@
 #include "defs.h"
 #include "trace.h"
 
+#define MEMMASK 0x3FFFFF
+
 unsigned char _memory[MEMSIZE];
 unsigned char _stack[STACK_SIZE];
 
@@ -57,6 +59,12 @@ extern void zpu_resume();
 
 void sign(int s);
 
+void segv(int s)
+{
+	trace_dump();
+	exit(-1);
+}
+
 void zpudebug(const char *fmt,...)
 {
 	va_list ap;
@@ -66,6 +74,41 @@ void zpudebug(const char *fmt,...)
 	va_end(ap);
 }
 
+void stack_exception(unsigned a, unsigned b, unsigned c, unsigned d)
+{
+	fprintf(stderr,"STACK exception: 0x%08x 0x%08x 0x%08x 0x%08x\n",a,b,c,d);
+}
+
+void debug_stack_writeback(unsigned to, unsigned from)
+{
+#if 0
+	fprintf(stderr,"WRITEBACK STACK to %08x (new stack at 0x%08x)\n", to, from);
+	unsigned *x = (unsigned*)&_memory[to & MEMMASK];
+	unsigned *y = (unsigned*)&_memory[from & MEMMASK];
+	fprintf(stderr,"OLD taskPTR? 0x%08x, new 0x%08x\n", bswap_32(*x), bswap_32(*y));
+	unsigned *p = (unsigned *)&_memory[0x3fc000];
+	fprintf(stderr,"DBG CONTENTS: 0x%08x\n", bswap_32(*p));
+#endif
+}
+
+void warn_lowmem_access(unsigned val, unsigned pc,unsigned addr)
+{
+#if 0
+	if (addr<0x1000){
+		fprintf(stderr,"WARNING: low memory access write at 0x%08x, pc 0x%08x\n", addr, pc);
+		if (addr == 0) {
+			trace_dump();
+			abort();
+		}
+	}
+
+	if (addr==0x0011029) {
+		fprintf(stderr,"WARNING: TARGET write at 0x%08x, pc 0x%08x, value 0x%08x\n", addr, pc, val);
+		trace_dump();
+		abort();
+	}
+#endif
+}
 
 void tick(unsigned int delta)
 {
@@ -350,7 +393,7 @@ int main(int argc,char **argv)
 
 	zpuino_interface_init();
 
-	trace_init(1024);
+	trace_init(1024*1024);
 
 	if (load_device_map("device.map")<0) {
 		fprintf(stderr,"SIMULATOR: Error loading device map\n");
@@ -358,7 +401,10 @@ int main(int argc,char **argv)
 	}
 
 	int infile = open(argv[1],O_RDONLY);
-	read(infile,_memory,MEMSIZE);
+	if (read(infile,_memory,MEMSIZE)!=MEMSIZE) {
+		perror("Cannot read from file");
+		//return -1;
+	}
 	close(infile);
 
 	zpuino_io_post_init();
@@ -377,6 +423,8 @@ int main(int argc,char **argv)
 		return -1;
   */
 	signal(SIGINT,&sign);
+	signal(SIGSEGV,&segv);
+	signal(SIGABRT,&segv);
 
 	_usp=get_initial_stack_location();
 

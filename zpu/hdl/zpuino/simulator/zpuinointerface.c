@@ -15,6 +15,11 @@ unsigned int count=0; // ZPU ticks
 
 struct timeval start;
 
+
+extern void zpu_halt();
+extern void zpu_reset();
+extern void zpu_resume();
+extern void trace_dump();
 unsigned zpuino_get_wall_tick_count()
 {
 
@@ -93,14 +98,19 @@ void zpuino_io_set_write_func(unsigned int index, io_write_func_t f)
 unsigned int zpuino_io_read_dummy(unsigned int address)
 {
 	fprintf(stderr,"ERROR: Invalid IO read, address 0x%08x (slot %d)\n",address,(address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
-	//byebye();
+	byebye();
+	trace_dump();
 	return 0;
 }
 
 void zpuino_io_write_dummy(unsigned int address,unsigned int val)
 {
 	printf("ERROR: Invalid IO write, address 0x%08x = 0x%08x (slot %d)\n",address,val, (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
+	byebye();
+	trace_dump();
 }
+
+
 
 void sign(int s)
 {
@@ -112,14 +122,17 @@ void sign(int s)
 	secs = (double)diff.tv_sec;
 	secs += (double)(diff.tv_usec)/1000000.0;
 
+	zpu_halt();
+
 	printf("%u ticks in %f seconds\n", count,secs);
 	printf("Frequency: %fMHz\n",(double)count/(secs*1000000.0));
+	trace_dump();
 	exit(-1);
 }
 
 void byebye()
 {
-	sign(0);
+	kill(getpid(),SIGINT);
 }
 
 void zpuino_tick(unsigned v)
@@ -188,10 +201,6 @@ int zpuino_device_parse_args(const zpuino_device_args_t *args, int argc, char **
 	}
 	return 0;
 }
-
-extern void zpu_halt();
-extern void zpu_reset();
-extern void zpu_resume();
 
 void zpuino_softreset()
 {

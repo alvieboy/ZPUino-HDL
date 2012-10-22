@@ -25,6 +25,7 @@ FILE *logfd;
 static char name[PATH_MAX];
 //static int master, slave;
 //static struct termios t;
+static int uart_interrupt_enabled = 1;
 
 static unsigned char fifodata[FIFO_SIZE];
 static unsigned int lowmark,highmark;
@@ -128,7 +129,7 @@ unsigned int uart_read_data(unsigned int address)
 void uart_write_ctrl(unsigned int address,unsigned int val)
 {
 	printf("UART: set CTL 0x%08x\n",val);
-
+	uart_interrupt_enabled = (val >> 17) & 1;
 }
 
 void uart_write_data(unsigned int address,unsigned int val)
@@ -283,7 +284,7 @@ void vte_uart_data(VteTerminal *vteterminal,
 		pthread_mutex_lock(&fifo_lock);
 		while (size--) {
 			fifodata[highmark]=text[i];
-			//fprintf(stderr,"UART RX: %02x\n", text[i]);
+			fprintf(stderr,"UART RX: %02x\n", text[i]);
 			i++;
 			highmark++;
 			if (highmark>=FIFO_SIZE)
@@ -294,8 +295,13 @@ void vte_uart_data(VteTerminal *vteterminal,
 				abort();
 			}
 		}
-	} 
+	}
 	pthread_mutex_unlock(&fifo_lock);
+
+	if (1/*uart_interrupt_enabled*/){
+		printf("UART: interrupting\n");
+		zpuino_request_interrupt(1);
+	}
 }
 
 int uart_init(int argc, char **argv)
