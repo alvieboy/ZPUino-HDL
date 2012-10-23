@@ -266,6 +266,8 @@ begin
         b_r_address <= "000000000000000000010000";
         b_strobe <= '1';
         b_enable <= '1';
+        b_we <= '0';
+        b_data_in <= x"deadbeef";
         biter <= biter + 1;
       when 2 =>
         if b_stall='0' then

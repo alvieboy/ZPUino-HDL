@@ -75,6 +75,7 @@ architecture behave of zpuino_dcache is
     idle,
     readline,
     writeback,
+    write_after_fill,
     settle
   );
 
@@ -84,6 +85,7 @@ architecture behave of zpuino_dcache is
     a_req_addr: address_type;
     b_req_addr: address_type;
     b_req_we:   std_logic;
+    b_req_data:   std_logic_vector(wordSize-1 downto 0);
     fill_offset_r:    line_offset_type;
     fill_offset_w:    line_offset_type;
     fill_tag:         tag_type;
@@ -258,6 +260,8 @@ begin
     cmem_web <= '0';
     cmem_enb <= b_strobe;
     cmem_dia <= (others => DontCareValue); -- No writes on port A
+    cmem_dib <= (others => DontCareValue);
+
     a_data_out <= cmem_doa;
     b_data_out <= cmem_dob;
 
@@ -276,6 +280,7 @@ begin
           if b_strobe='1' then
             w.b_req_addr := b_address(address_type'RANGE);
             w.b_req_we := b_we;
+            w.b_req_data := b_data_in;
           end if;
         end if;
 
@@ -380,7 +385,31 @@ begin
           end if;
         else
           if b_miss='0' then
-            b_valid <= '1';
+
+
+            -- Process writes, line is in cache
+            if r.b_req_we='1' then
+              b_stall <= '1'; -- Stall everything.
+              b_will_busy <= '1';
+
+              -- Now, we need to re-write tag so to set dirty to '1'
+              tmem_addrb <= address_to_line_number(r.b_req_addr);
+              tmem_dib(tag_type'RANGE) <=address_to_tag(r.b_req_addr);
+              tmem_dib(VALID)<='1';
+              tmem_dib(DIRTY)<='1';
+              tmem_web<='1';
+              tmem_enb<='1';
+
+              cmem_addrb <= r.b_req_addr;
+              cmem_dib <= r.b_req_data;
+              cmem_web <= '1';
+              cmem_enb <= '1';
+
+              w.state := settle;
+
+            else
+              b_valid <= '1';
+            end if;
           else
             b_will_busy<='1';
             b_stall <= '1';
@@ -424,15 +453,45 @@ begin
           w.fill_offset_w := std_logic_vector(unsigned(r.fill_offset_w) + 1);
           if r.fill_offset_w=offset_all_ones then
             w.state := settle;
-            tmem_addra <= r.fill_line_number;
-            tmem_dia(tag_type'RANGE) <= r.fill_tag;
-            tmem_dia(VALID)<='1';
-            tmem_dia(DIRTY)<='0';
-            tmem_wea<='1';
-            tmem_ena<='1';
+            if r.fill_is_b='1' then
+              tmem_addrb <= r.fill_line_number;
+              tmem_dib(tag_type'RANGE) <= r.fill_tag;
+              tmem_dib(VALID)<='1';
+              tmem_dib(DIRTY)<=r.b_req_we;
+              tmem_web<='1';
+              tmem_enb<='1';
+              if r.b_req_we='1' then
+                -- Perform write
+                w.state := write_after_fill;
+              end if;
+            else
+              tmem_addra <= r.fill_line_number;
+              tmem_dia(tag_type'RANGE) <= r.fill_tag;
+              tmem_dia(VALID)<='1';
+              tmem_dia(DIRTY)<='0';
+              tmem_wea<='1';
+              tmem_ena<='1';
+            end if;
           end if;
         end if;
+
+
       when writeback =>
+        report "unimplemented" severity failure;
+
+      when write_after_fill =>
+        cmem_addra <= r.a_req_addr;
+        cmem_addrb <= r.b_req_addr;
+        cmem_dib <= r.b_req_data;
+        cmem_web  <= r.b_req_we;
+        cmem_enb <= '1';
+
+        a_stall <= '1';
+        b_stall <= '1';
+        a_valid <= '0'; -- ERROR
+        b_valid <= '0'; -- ERROR
+
+        w.state := settle;
 
       when settle =>
         cmem_addra <= r.a_req_addr;--r.fill_tag & r.fill_line_number & r.fill_offset_w;
