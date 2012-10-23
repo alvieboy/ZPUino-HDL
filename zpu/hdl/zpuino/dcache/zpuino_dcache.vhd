@@ -393,7 +393,7 @@ begin
             -- Process writes, line is in cache
             if r.b_req_we='1' then
               b_stall <= '1'; -- Stall everything.
-              b_will_busy <= '1';
+              --b_will_busy <= '1';
 
               -- Now, we need to re-write tag so to set dirty to '1'
               tmem_addrb <= address_to_line_number(r.b_req_addr);
@@ -503,7 +503,7 @@ begin
         tmem_addra <= address_to_line_number(r.a_req_addr);
         tmem_addrb <= address_to_line_number(r.b_req_addr);
         a_stall <= '1';
-        b_stall <= '1';
+        b_stall <= not r.ack_b_write;--'1';
         a_valid <= '0'; -- ERROR
         b_valid <= r.ack_b_write; -- ERROR
         w.state := idle;
