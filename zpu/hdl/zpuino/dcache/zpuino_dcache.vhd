@@ -92,6 +92,7 @@ architecture behave of zpuino_dcache is
     fill_line_number: line_number_type;
     fill_r_done:      std_logic;
     fill_is_b:        std_logic;
+    ack_b_write:      std_logic;
     state:      state_type;
   end record;
 
@@ -265,6 +266,8 @@ begin
     a_data_out <= cmem_doa;
     b_data_out <= cmem_dob;
 
+    w.ack_b_write := '0';
+
     case r.state is
       when idle =>
 
@@ -384,7 +387,7 @@ begin
             w.state := readline;
           end if;
         else
-          if b_miss='0' then
+          if a_miss='0' and b_miss='0' then
 
 
             -- Process writes, line is in cache
@@ -405,6 +408,7 @@ begin
               cmem_web <= '1';
               cmem_enb <= '1';
 
+              w.ack_b_write:='1';
               w.state := settle;
 
             else
@@ -490,16 +494,18 @@ begin
         b_stall <= '1';
         a_valid <= '0'; -- ERROR
         b_valid <= '0'; -- ERROR
-
+        w.ack_b_write := '1';
         w.state := settle;
 
       when settle =>
         cmem_addra <= r.a_req_addr;--r.fill_tag & r.fill_line_number & r.fill_offset_w;
         cmem_addrb <= r.b_req_addr;--r.fill_tag & r.fill_line_number & r.fill_offset_w;
+        tmem_addra <= address_to_line_number(r.a_req_addr);
+        tmem_addrb <= address_to_line_number(r.b_req_addr);
         a_stall <= '1';
         b_stall <= '1';
         a_valid <= '0'; -- ERROR
-        b_valid <= '0'; -- ERROR
+        b_valid <= r.ack_b_write; -- ERROR
         w.state := idle;
 
     end case;

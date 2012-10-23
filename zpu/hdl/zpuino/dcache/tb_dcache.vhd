@@ -215,6 +215,7 @@ begin
 
 
   process(wb_clk)
+    variable ar: std_logic_vector(wordSize-1 downto 0);
   begin
     if rising_edge(wb_clk) then
     if ready='1' then
@@ -231,7 +232,9 @@ begin
         end if;
         if a_valid='1' then
             if a_data_out(ADDRESS_HIGH-3 downto 0) /= a_r_address then
-              report "ERROR A"  severity error;
+              ar := (others => '0');
+              ar(ADDRESS_HIGH-3 downto 0):=a_r_address;
+              report "ERROR A, got 0x"  & hstr(a_data_out) & " expected 0x" & hstr(ar) severity error;
             end if;
           a_r_address <= a_r_address +1;
 
@@ -253,7 +256,7 @@ begin
 
 
   process(wb_clk)
-    variable br: std_logic_vector(ADDRESS_HIGH-3 downto 0);
+    variable br: std_logic_vector(wordSize-1 downto 0);
   begin
     if rising_edge(wb_clk) then
     if ready='1' then
@@ -266,7 +269,7 @@ begin
         b_r_address <= "000000000000000000010000";
         b_strobe <= '1';
         b_enable <= '1';
-        b_we <= '0';
+        b_we <= '1';
         b_data_in <= x"deadbeef";
         biter <= biter + 1;
       when 2 =>
@@ -275,8 +278,9 @@ begin
         end if;
         if b_valid='1' then
             if b_data_out(ADDRESS_HIGH-3 downto 0) /= b_r_address then
+              br := (others => '0');
               br(ADDRESS_HIGH-3 downto 0):=b_r_address;
-              report "ERROR B " & hstr(b_data_out) & " " & hstr(br) severity error;
+              report "ERROR B, got 0x" & hstr(b_data_out) & " expected 0x" & hstr(br) severity error;
             end if;
           b_r_address <= b_r_address +1;
 
