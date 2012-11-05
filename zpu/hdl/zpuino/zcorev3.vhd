@@ -931,6 +931,7 @@ begin
           do_interrupt,
           exr, prefr, prefr_valid,
           nos,
+          iowbi,
           lshifter_done,
           lshifter_output
           )
@@ -1335,6 +1336,7 @@ begin
             --if inside_stack='1' then --exr.tos(wordSize-1)='1' then
 
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
+            exu_busy <= '1';
 
             if exr.tos(maxAddrBitIncIO)='0' then
               b_enable := '1';
@@ -1367,7 +1369,7 @@ begin
 
             end if;
 
-            exu_busy <= '1';
+            
 
             --else
             --  exu_busy <= lsu_busy;
@@ -1394,8 +1396,9 @@ begin
             --if inside_stack='1' then
             decode_load_sp <= '1';
             w.state := State_Resync2;
-            dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
-
+            --dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
+            w.state := State_ResyncFromStoreStack;
+            exu_busy <= '1';
             --else
               --report "Implement me" severity failure;
             --  w.state := State_WriteBackStack;

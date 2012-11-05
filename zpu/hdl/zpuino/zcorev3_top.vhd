@@ -68,6 +68,10 @@ entity zcorev3_top is
     ram_wbo:    out wb_mosi_type;
     ram_wbi:    in wb_miso_type;
 
+    -- ROM/Memory connection
+    rom_wbo:    out wb_mosi_type;
+    rom_wbi:    in wb_miso_type;
+
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
 
@@ -187,23 +191,26 @@ begin
 
     );
 
-  memarb: wbarb2_1
-  generic map (
-    ADDRESS_HIGH => maxAddrBit,
-    ADDRESS_LOW => 0
-  )
-  port map (
-    syscon        => syscon,
-    -- Master 0 signals (CPU)
-    m0wbi         => mwbo,--cpuramwbi,
-    m0wbo         => mwbi,--cpuramwbo,
-    -- Master 1 signals
-    m1wbi         => rwbo,--dma_wbi,
-    m1wbo         => rwbi,--dma_wbo,
-    -- Slave signals
-    s0wbi         => ram_wbi,
-    s0wbo         => ram_wbo
-  );
-
+--  memarb: wbarb2_1
+--  generic map (
+--    ADDRESS_HIGH => maxAddrBit,
+--    ADDRESS_LOW => 0
+--  )
+--  port map (
+--    syscon        => syscon,
+--    -- Master 0 signals (CPU)
+--    m0wbi         => mwbo,--cpuramwbi,
+--    m0wbo         => mwbi,--cpuramwbo,
+--    -- Master 1 signals
+--    m1wbi         => rwbo,--dma_wbi,
+--    m1wbo         => rwbi,--dma_wbo,
+--    -- Slave signals
+--    s0wbi         => ram_wbi,
+--    s0wbo         => ram_wbo
+--  );
+  rom_wbo <= rwbo;
+  rwbi <= rom_wbi;
+  ram_wbo <= mwbo;
+  mwbi <= ram_wbi;
 
 end behave;

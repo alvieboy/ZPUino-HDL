@@ -147,8 +147,8 @@ package zpuinopkg is
     ram_wbi:    in wb_miso_type;
 
     -- ROM connection
-    --rom_wbo:    out wb_mosi_type;
-    --rom_wbi:    in wb_miso_type;
+    rom_wbo:    out wb_mosi_type;
+    rom_wbi:    in wb_miso_type;
 
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)

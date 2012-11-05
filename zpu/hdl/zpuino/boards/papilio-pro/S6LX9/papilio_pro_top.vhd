@@ -380,6 +380,10 @@ begin
 
       ram_wbi          => ram_wbi,
       ram_wbo          => ram_wbo,
+
+      rom_wbi          => rom_wbo,
+      rom_wbo          => rom_wbi,
+
       dma_wbi          => dma_wbi,
       -- No debug unit connected
       dbg_reset     => open,
