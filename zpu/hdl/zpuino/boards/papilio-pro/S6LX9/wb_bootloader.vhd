@@ -4,25 +4,15 @@ use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 library work;
 use work.zpu_config.all;
+use work.wishbonepkg.all;
 
 entity wb_bootloader is
   port (
-    wb_clk_i:   in std_logic;
-    wb_rst_i:   in std_logic;
-
-    wb_dat_o:   out std_logic_vector(31 downto 0);
-    wb_adr_i:   in std_logic_vector(11 downto 2);
-    wb_cyc_i:   in std_logic;
-    wb_stb_i:   in std_logic;
-    wb_ack_o:   out std_logic;
-    wb_stall_o: out std_logic;
-
-    wb2_dat_o:   out std_logic_vector(31 downto 0);
-    wb2_adr_i:   in std_logic_vector(11 downto 2);
-    wb2_cyc_i:   in std_logic;
-    wb2_stb_i:   in std_logic;
-    wb2_ack_o:   out std_logic;
-    wb2_stall_o: out std_logic
+    syscon:     in wb_syscon_type;
+    wb1i:       in wb_mosi_type;
+    wb1o:       out wb_miso_type;
+    wb2i:       in wb_mosi_type;
+    wb2o:       out wb_miso_type
   );
 end wb_bootloader;
 
@@ -54,18 +44,18 @@ architecture behave of wb_bootloader is
 
 begin
 
-  wb_stall_o <= '0';
-  wb2_stall_o <= '0';
-  wb_ack_o <= ack;
-  wb2_ack_o <= ack2;
+  wb1o.stall <= '0';
+  wb2o.stall <= '0';
+  wb1o.ack <= ack;
+  wb2o.ack <= ack2;
 
-  en <= wb_cyc_i and wb_stb_i;
-  en2 <= wb2_cyc_i and wb2_stb_i;
+  en  <= wb1i.cyc and wb1i.stb;
+  en2 <= wb2i.cyc and wb2i.stb;
 
-  process(wb_clk_i)
+  process(syscon.clk)
   begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
+    if rising_edge(syscon.clk) then
+      if syscon.rst='1' then
         ack <= '0';
         ack2 <= '0';
       else
@@ -78,19 +68,19 @@ begin
 
   rom: bootloader_dp_32
   port map (
-    CLK         => wb_clk_i,
+    CLK         => syscon.clk,
     WEA         => '0',
     ENA         => en,
     MASKA       => (others => '1'),
-    ADDRA       => wb_adr_i,
+    ADDRA       => wb1i.adr(11 downto 2),
     DIA         => (others => DontCareValue),
-    DOA         => wb_dat_o,
+    DOA         => wb1o.dat,
     WEB         => '0',
     ENB         => en2,
-    ADDRB       => wb2_adr_i,
+    ADDRB       => wb2i.adr(11 downto 2),
     DIB         => (others => DontCareValue),
     MASKB       => (others => '1'),
-    DOB         => wb2_dat_o
+    DOB         => wb2o.dat
   );
 
 end behave;

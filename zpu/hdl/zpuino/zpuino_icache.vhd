@@ -10,34 +10,16 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 use work.wishbonepkg.all;
 
---library UNISIM;
---use UNISIM.vcomponents.all;
-
 entity zpuino_icache is
   generic (
       ADDRESS_HIGH: integer := 26
   );
   port (
-    wb_clk_i:       in std_logic;
-    wb_rst_i:       in std_logic;
-
-    valid:          out std_logic;
-    data:           out std_logic_vector(wordSize-1 downto 0);
-    address:        in std_logic_vector(maxAddrBit downto 0);
-    strobe:         in std_logic;
-    enable:         in std_logic;
-    stall:          out std_logic;
-    flush:          in std_logic;
-    -- Master wishbone interface
-
-    m_wb_ack_i:       in std_logic;
-    m_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
-    m_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    m_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
-    m_wb_cyc_o:       out std_logic;
-    m_wb_stb_o:       out std_logic;
-    m_wb_stall_i:     in std_logic;
-    m_wb_we_o:        out std_logic
+    syscon:         in wb_syscon_type;
+    co:             out icache_out_type;
+    ci:             in icache_in_type;
+    mwbi:           in wb_miso_type;
+    mwbo:           out wb_mosi_type
   );
 end zpuino_icache;
 
@@ -55,13 +37,13 @@ architecture behave of zpuino_icache is
 
 
   alias line: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0)
-    is address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
+    is ci.address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
 
   alias line_offset: std_logic_vector(CACHE_LINE_SIZE_BITS-1 downto 2)
-    is address(CACHE_LINE_SIZE_BITS-1 downto 2);
+    is ci.address(CACHE_LINE_SIZE_BITS-1 downto 2);
 
   alias tag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)
-    is address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
+    is ci.address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
 
   signal ctag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS downto 0);
 
@@ -77,7 +59,7 @@ architecture behave of zpuino_icache is
   constant offcnt_full: unsigned(line_offset'HIGH downto 2) := (others => '1');
 
   signal tag_match: std_logic;
-  signal save_addr: std_logic_vector(address'RANGE);
+  signal save_addr: std_logic_vector(ci.address'RANGE);
   signal cyc, stb: std_logic;
   signal cache_addr_read,cache_addr_write:
     std_logic_vector(CACHE_MAX_BITS-1 downto 2);
@@ -125,14 +107,14 @@ begin
     data_bits     => ADDRESS_HIGH-CACHE_MAX_BITS+1
   )
   port map (
-    clka      => wb_clk_i,
+    clka      => syscon.clk,
     ena       => tag_mem_enable,
     wea       => '0',
-    addra     => address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS),--line,
+    addra     => ci.address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS),--line,
     dia       => dignore,--(others => DontCareValue),
     doa       => ctag,
 
-    clkb      => wb_clk_i,
+    clkb      => syscon.clk,
     enb       => '1',
     web       => tag_mem_wen,
     addrb     => tag_mem_addr,
@@ -154,49 +136,18 @@ begin
   end process;
 
   tag_match <= '1' when ctag(tag'HIGH downto tag'LOW)=tag else '0';
-  stall <= stall_i;
-  valid <= ack;
-  tag_mem_enable <= access_i and enable;
-  m_wb_dat_o <= (others => DontCareValue);
-
-  -- Valid mem
---  process(wb_clk_i)
---    variable index: integer;
---  begin
---    if rising_edge(wb_clk_i) then
---      if wb_rst_i='1' or flush='1' then
---        for i in 0 to (valid_mem'LENGTH)-1 loop
---          valid_mem(i) := '0';
---        end loop;
---      else
---        index := conv_integer(line_save);
---        if tag_mem_wen='1' then
---          valid_mem(index) := '1';--fill_success;
---        end if;
---      end if;
---      if enable='1' and strobe='1' then
---        valid_i <= valid_mem(conv_integer(line));
-      --else
-      --  valid_i <= valid_mem(conv_integer(line_save));
---      end if;
---    end if;
---  end process;
+  co.stall <= stall_i;
+  co.valid <= ack;
+  tag_mem_enable <= access_i and ci.enable;
+  mwbo.dat <= (others => DontCareValue);
 
   -- Address save
-  process(wb_clk_i)
+  process(syscon.clk)
   begin
-    if rising_edge(wb_clk_i) then
-      --if wb_rst_i='1' then
-        --fill_end_q<='0';
-        --fill_end_q_q<='0';
-      --else
-        if stall_i='0' and enable='1' and strobe='1' then
-        --if busy='0' and enable='1' and strobe='1' then
-          save_addr <= address;
-        end if;
-        --fill_end_q <= fill_end;
-        --fill_end_q_q <= fill_end_q;
-      --end if;
+    if rising_edge(syscon.clk) then
+      if stall_i='0' and ci.enable='1' and ci.strobe='1' then
+        save_addr <= ci.address;
+      end if;
     end if;
   end process;
 
@@ -206,30 +157,30 @@ begin
     data_bits => 32
   )
   port map (
-    clka      => wb_clk_i,
+    clka      => syscon.clk,
     ena       => tag_mem_ena,               -- enable and strobe ?
     wea       => '0',
     addra     => cache_addr_read,
     dia       => dignore32,
-    doa       => data,
+    doa       => co.data,
 
-    clkb      => wb_clk_i,
+    clkb      => syscon.clk,
     enb       => '1',
-    web       => m_wb_ack_i,
+    web       => mwbi.ack,
     addrb     => cache_addr_write,
-    dib       => m_wb_dat_i,
+    dib       => mwbi.dat,
     dob       => open
   );
 
-  tag_mem_ena <= enable and strobe;
+  tag_mem_ena <= ci.enable and ci.strobe;
 
-  process(wb_clk_i)
+  process(syscon.clk)
   begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
+    if rising_edge(syscon.clk) then
+      if syscon.rst='1' then
         access_q<='0';
       else
-        if busy='0' and enable='1' then
+        if busy='0' and ci.enable='1' then
           access_q <= access_i;
         end if;
       end if;
@@ -237,10 +188,10 @@ begin
   end process;
 
 
-  process(wb_clk_i)
+  process(syscon.clk)
   begin
-    if rising_edge(wb_clk_i) then
-      if wb_rst_i='1' then
+    if rising_edge(syscon.clk) then
+      if syscon.rst='1' then
         state <= flushing;
         busy <= '0';
         fill_success <='0';
@@ -266,13 +217,13 @@ begin
             end if;
 
           when running =>
-            if flush='1' then
+            if ci.flush='1' then
               state <= flushing;
               flushcnt <= (others => '1');
               tag_mem_wen <= '1';
             else
             if access_q='1' then
-              if miss='1' and enable='1' then
+              if miss='1' and ci.enable='1' then
                 state <= filling;
                 offcnt <= (others => '0');
                 offcnt_write <= (others => '0');
@@ -293,7 +244,7 @@ begin
             --  stb <= '0';
             --end if;
 
-            if m_wb_ack_i='1' then
+            if mwbi.ack='1' then
               offcnt_write <= offcnt_write + 1;
               -- This will go to 0, but we check before and switch state
               if offcnt_write=offcnt_full then
@@ -308,7 +259,7 @@ begin
             --  offcnt <= (others => '0');
             --else
 
-            if m_wb_stall_i='0' then
+            if mwbi.stall='0' then
               if offcnt(offcnt'HIGH)='0' then
                 offcnt <= offcnt + 1;
               end if;
@@ -321,7 +272,7 @@ begin
           when ending =>
             busy<='0';
             
-            if enable='1' then
+            if ci.enable='1' then
               fill_success<='1';
             end if;
             state <= running;
@@ -353,7 +304,7 @@ begin
   --  end if;
  -- end process;
 
-  access_i <= strobe;
+  access_i <= ci.strobe;
 
   hit <= '1' when tag_match='1' and valid_i='1' and access_q='1' else '0';
 
@@ -379,10 +330,10 @@ begin
   end process;
   --stall_i <= miss when access_q='1' else busy;
 
-  m_wb_cyc_o <= cyc;
-  m_wb_stb_o <= stb when offcnt(offcnt'HIGH)='0' else '0';
-  m_wb_we_o<='0';
-  m_wb_adr_o(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
-  m_wb_adr_o(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));
+  mwbo.cyc <= cyc;
+  mwbo.stb <= stb when offcnt(offcnt'HIGH)='0' else '0';
+  mwbo.we <='0';
+  mwbo.adr(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
+  mwbo.adr(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));
 
 end behave;

@@ -38,6 +38,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.zpu_config.all;
+use work.wishbonepkg.all;
 
 package zpupkg is
 
@@ -188,6 +189,28 @@ package zpupkg is
     dbg_in:         in zpu_dbg_in_type
   );
   end component;
+
+  component zcorev3 is
+  port (
+    syscon:         in wb_syscon_type;
+    mwbi:           in wb_miso_type;
+    mwbo:           out wb_mosi_type;
+    iowbi:          in wb_miso_type;
+    iowbo:          out wb_mosi_type;
+
+    poppc_inst:     out std_logic;
+    break:          out std_logic;
+    -- ROM wb interface
+    rwbi:           in wb_miso_type;
+    rwbo:           out wb_mosi_type;
+    cache_flush:    in std_logic;
+    -- Debug interface
+    dbg_out:            out zpu_dbg_out_type;
+    dbg_in:             in zpu_dbg_in_type
+  );
+  end component;
+
+
 
 	-- opcode decode constants
 	constant	OpCode_Im		: std_logic_vector(7 downto 7) := "1";

@@ -40,6 +40,7 @@ library work;
 use work.zpu_config.all;
 use work.zpupkg.all;
 use work.zpuino_config.all;
+use work.wishbonepkg.all;
 
 package zpuinopkg is
 
@@ -51,6 +52,21 @@ package zpuinopkg is
   type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
   subtype address_type     is std_logic_vector(maxIObit downto minIObit);
   type slot_address_type   is array(0 to num_devices-1) of address_type;
+
+
+  type icache_out_type is record
+    valid:          std_logic;
+    stall:          std_logic;
+    data:           std_logic_vector(wordSize-1 downto 0);
+  end record;
+
+  type icache_in_type is record
+    address:        std_logic_vector(maxAddrBit downto 0);
+    strobe:         std_logic;
+    enable:         std_logic;
+    flush:          std_logic;
+  end record;
+
 
   component zpuino_top_icache is
   port (
@@ -104,6 +120,42 @@ package zpuinopkg is
 
   );
   end component zpuino_top_icache;
+
+  component zcorev3_top is
+  port (
+    syscon:   in wb_syscon_type;
+
+    -- Connection to board IO module
+
+    slot_cyc:   out slot_std_logic_type;
+    slot_we:    out slot_std_logic_type;
+    slot_stb:   out slot_std_logic_type;
+    slot_read:  in slot_cpuword_type;
+    slot_write: out slot_cpuword_type;
+    slot_address:  out slot_address_type;
+    slot_ack:   in slot_std_logic_type;
+    slot_interrupt: in slot_std_logic_type;
+
+    dbg_reset:  out std_logic;
+    memory_enable: out std_logic;
+
+    dma_wbo:    out wb_miso_type;
+    dma_wbi:    in wb_mosi_type;
+
+    -- Memory connection
+    ram_wbo:    out wb_mosi_type;
+    ram_wbi:    in wb_miso_type;
+
+    -- ROM connection
+    --rom_wbo:    out wb_mosi_type;
+    --rom_wbi:    in wb_miso_type;
+
+    jtag_data_chain_out: out std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+
+  );
+  end component;
+
 
   component zpuino_top is
   port (
@@ -437,101 +489,19 @@ package zpuinopkg is
     ADDRESS_LOW: integer := maxIObit
   );
   port (
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-
+    syscon:   in wb_syscon_type;
     -- Master 0 signals
-
-    m0_wb_dat_o: out std_logic_vector(31 downto 0);
-    m0_wb_dat_i: in std_logic_vector(31 downto 0);
-    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
-    m0_wb_sel_i: in std_logic_vector(3 downto 0);
-    m0_wb_cti_i: in std_logic_vector(2 downto 0);
-    m0_wb_we_i:  in std_logic;
-    m0_wb_cyc_i: in std_logic;
-    m0_wb_stb_i: in std_logic;
-    m0_wb_ack_o: out std_logic;
-    m0_wb_stall_o: out std_logic;
-
+    m0wbi:    in wb_mosi_type;
+    m0wbo:    out wb_miso_type;
     -- Master 1 signals
-
-    m1_wb_dat_o: out std_logic_vector(31 downto 0);
-    m1_wb_dat_i: in std_logic_vector(31 downto 0);
-    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
-    m1_wb_sel_i: in std_logic_vector(3 downto 0);
-    m1_wb_cti_i: in std_logic_vector(2 downto 0);
-    m1_wb_we_i:  in std_logic;
-    m1_wb_cyc_i: in std_logic;
-    m1_wb_stb_i: in std_logic;
-    m1_wb_ack_o: out std_logic;
-    m1_wb_stall_o: out std_logic;
-
+    m1wbi:    in wb_mosi_type;
+    m1wbo:    out wb_miso_type;
     -- Slave signals
-
-    s0_wb_dat_i: in std_logic_vector(31 downto 0);
-    s0_wb_dat_o: out std_logic_vector(31 downto 0);
-    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
-    s0_wb_sel_o: out std_logic_vector(3 downto 0);
-    s0_wb_cti_o: out std_logic_vector(2 downto 0);
-    s0_wb_we_o:  out std_logic;
-    s0_wb_cyc_o: out std_logic;
-    s0_wb_stb_o: out std_logic;
-    s0_wb_ack_i: in std_logic;
-    s0_wb_stall_i: in std_logic
+    s0wbi:    in wb_miso_type;
+    s0wbo:    out wb_mosi_type
   );
   end component;
 
-  component wbbootloadermux is
-  generic (
-    address_high: integer:=31;
-    address_low: integer:=2
-  );
-  port (
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-
-    sel:        in std_logic;
-    -- Master 
-
-    m_wb_dat_o: out std_logic_vector(31 downto 0);
-    m_wb_dat_i: in std_logic_vector(31 downto 0);
-    m_wb_adr_i: in std_logic_vector(address_high downto address_low);
-    m_wb_sel_i: in std_logic_vector(3 downto 0);
-    m_wb_cti_i: in std_logic_vector(2 downto 0);
-    m_wb_we_i:  in std_logic;
-    m_wb_cyc_i: in std_logic;
-    m_wb_stb_i: in std_logic;
-    m_wb_ack_o: out std_logic;
-    m_wb_stall_o: out std_logic;
-
-    -- Slave 0 signals
-
-    s0_wb_dat_i: in std_logic_vector(31 downto 0);
-    s0_wb_dat_o: out std_logic_vector(31 downto 0);
-    s0_wb_adr_o: out std_logic_vector(address_high downto address_low);
-    s0_wb_sel_o: out std_logic_vector(3 downto 0);
-    s0_wb_cti_o: out std_logic_vector(2 downto 0);
-    s0_wb_we_o:  out std_logic;
-    s0_wb_cyc_o: out std_logic;
-    s0_wb_stb_o: out std_logic;
-    s0_wb_ack_i: in std_logic;
-    s0_wb_stall_i: in std_logic;
-
-    -- Slave 1 signals
-
-    s1_wb_dat_i: in std_logic_vector(31 downto 0);
-    s1_wb_dat_o: out std_logic_vector(31 downto 0);
-    s1_wb_adr_o: out std_logic_vector(11 downto 2);
-    s1_wb_sel_o: out std_logic_vector(3 downto 0);
-    s1_wb_cti_o: out std_logic_vector(2 downto 0);
-    s1_wb_we_o:  out std_logic;
-    s1_wb_cyc_o: out std_logic;
-    s1_wb_stb_o: out std_logic;
-    s1_wb_ack_i: in std_logic;
-    s1_wb_stall_i: in std_logic
-
-  );
-  end component wbbootloadermux;
 
   component wb_master_np_to_slave_p is
   generic (
@@ -605,6 +575,179 @@ package zpuinopkg is
   );
 
   end component generic_dp_ram;
+
+  type dcache_in_type is record
+    a_address:        std_logic_vector(31 downto 0);
+    a_strobe:         std_logic;
+    a_enable:         std_logic;
+    b_data_in:        std_logic_vector(wordSize-1 downto 0);
+    b_address:        std_logic_vector(31 downto 0);
+    b_strobe:         std_logic;
+    b_we:             std_logic;
+    b_wmask:          std_logic_vector(3 downto 0);
+    b_enable:         std_logic;
+    flush:            std_logic;
+  end record;
+
+  type dcache_out_type is record
+    a_valid:          std_logic;
+    a_data_out:       std_logic_vector(wordSize-1 downto 0);
+    a_stall:          std_logic;
+    b_valid:          std_logic;
+    b_data_out:       std_logic_vector(wordSize-1 downto 0);
+    b_stall:          std_logic;
+  end record;
+
+  component zpuino_dcache is
+  generic (
+      ADDRESS_HIGH: integer := 26;
+      CACHE_MAX_BITS: integer := 13; -- 8 Kb
+      CACHE_LINE_SIZE_BITS: integer := 6 -- 64 bytes
+  );
+  port (
+    syscon:     in wb_syscon_type;
+    ci:         in dcache_in_type;
+    co:         out dcache_out_type;
+    mwbi:       in wb_miso_type;
+    mwbo:       out wb_mosi_type
+  );
+  end component;
+
+
+  component zpuino_debug_core is
+  port (
+    clk: in std_logic;
+    rst: in std_logic;
+
+    dbg_in:         in zpu_dbg_out_type;
+    dbg_out:        out zpu_dbg_in_type;
+    dbg_reset:      out std_logic;
+
+    jtag_data_chain_out: out std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+
+  );
+  end component;
+
+  component wb_rom_ram is
+  port (
+    ram_wb_clk_i:       in std_logic;
+    ram_wb_rst_i:       in std_logic;
+    ram_wb_ack_o:       out std_logic;
+    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    ram_wb_cyc_i:       in std_logic;
+    ram_wb_stb_i:       in std_logic;
+    ram_wb_we_i:        in std_logic;
+
+    rom_wb_clk_i:       in std_logic;
+    rom_wb_rst_i:       in std_logic;
+    rom_wb_ack_o:       out std_logic;
+    rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_cyc_i:       in std_logic;
+    rom_wb_stb_i:       in std_logic;
+    rom_wb_cti_i:       in std_logic_vector(2 downto 0)
+  );
+  end component wb_rom_ram;
+
+  component wbmux2 is
+  generic (
+    select_line: integer;
+    address_high: integer:=31;
+    address_low: integer:=2
+  );
+  port (
+    syscon:   in wb_syscon_type;
+    -- Master (sink)
+    mwbi:     in wb_mosi_type;
+    mwbo:     out wb_miso_type;
+    -- Slave 0 signals (driver)
+    s0wbo:    out wb_mosi_type;
+    s0wbi:    in wb_miso_type;
+    -- Slave 1 signals (driver)
+    s1wbo:    out wb_mosi_type;
+    s1wbi:    in wb_miso_type
+  );
+  end component;
+
+
+  component lshifter is
+  port (
+    clk: in std_logic;
+    rst: in std_logic;
+    enable:  in std_logic;
+    done: out std_logic;
+    inputA:  in std_logic_vector(31 downto 0);
+    inputB: in std_logic_vector(31 downto 0);
+    output: out std_logic_vector(63 downto 0);
+    multorshift: in std_logic
+  );
+  end component;
+
+  component zpuino_icache is
+  generic (
+      ADDRESS_HIGH: integer := 26
+  );
+  port (
+    syscon:         in wb_syscon_type;
+    co:             out icache_out_type;
+    ci:             in icache_in_type;
+    mwbi:           in wb_miso_type;
+    mwbo:           out wb_mosi_type
+  );
+  end component;
+
+
+  component zpuino_lsu is
+  port (
+    wb_clk_i:       in std_logic;
+    wb_rst_i:       in std_logic;
+
+    wb_ack_i:       in std_logic;
+    wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    wb_adr_o:       out std_logic_vector(maxAddrBitIncIO downto 2);
+    wb_cyc_o:       out std_logic;
+    wb_stb_o:       out std_logic;
+    wb_sel_o:       out std_logic_vector(3 downto 0);
+    wb_we_o:        out std_logic;
+
+
+    -- Connection to cpu
+    req:            in std_logic;
+    we:             in std_logic;
+    busy:           out std_logic;
+
+    data_read:      out std_logic_vector(wordSize-1 downto 0);
+    data_write:     in std_logic_vector(wordSize-1 downto 0);
+    data_sel:       in std_logic_vector(3 downto 0);
+    address:        in std_logic_vector(maxAddrBitIncIO downto 0)
+  );
+  end component;
+
+  component wbbootloadermux is
+  generic (
+    address_high: integer:=31;
+    address_low: integer:=2
+  );
+  port (
+    syscon:   in wb_syscon_type;
+
+    sel:      in std_logic;
+
+      -- Master (sink)
+    mwbi:     in wb_mosi_type;
+    mwbo:     out wb_miso_type;
+    -- Slave 0 signals
+
+    s0wbi:    in wb_miso_type;
+    s0wbo:    out wb_mosi_type;
+    s1wbi:    in wb_miso_type;
+    s1wbo:    out wb_mosi_type
+  );
+  end component wbbootloadermux;
 
 
 end package zpuinopkg;
