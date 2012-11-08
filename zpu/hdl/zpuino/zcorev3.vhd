@@ -1380,7 +1380,9 @@ begin
             if exr.tos(maxAddrBitIncIO)='0' then
               b_enable := '1';
               b_strobe := '1';
-              w.state := State_LoadStack;
+              if dco.b_stall='0' then
+                w.state := State_LoadStack;
+              end if;
             else
               b_enable := '0';
               b_strobe := '0';
@@ -1548,6 +1550,7 @@ begin
       when State_LoadStack =>
         w.tos := unsigned( dco.b_data_out );
 
+        if dco.b_valid='1' then
         if prefr.op.decoded=Decoded_Loadb then
           exu_busy<='1';
           w.state:=State_Loadb;
@@ -1558,6 +1561,9 @@ begin
           instruction_executed:='1';
           wroteback := '0';
           w.state := State_Execute;
+        end if;
+        else
+          exu_busy<='1';
         end if;
 
       when State_NeqBranch =>

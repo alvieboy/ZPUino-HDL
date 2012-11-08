@@ -71,6 +71,7 @@ architecture behave of zpuino_dcache is
     ack_b_write:      std_logic;
     writeback_tag:    tag_type;
     state:      state_type;
+    misses: integer;
   end record;
 
   function address_to_tag(a: in address_type) return tag_type is
@@ -324,7 +325,7 @@ begin
           --b_stall <= '1';
           co.a_valid <= '0';
           --b_valid <= '0';
-
+          w.misses := r.misses+1;
           w.fill_tag := address_to_tag(r.a_req_addr);
           w.fill_line_number := address_to_line_number(r.a_req_addr);
           w.fill_offset_r := (others => '0');
@@ -363,6 +364,7 @@ begin
         if r.b_req='1' then
         if b_miss='1' and a_miss='0' then
           co.b_stall <= '1';
+          w.misses := r.misses+1;
           --a_stall <= '1';
           co.b_valid <= '0';
           b_will_busy<='1';
@@ -551,7 +553,7 @@ begin
         co.a_stall <= '1';
         co.b_stall <= '1';--not r.ack_b_write;--'1';
         co.a_valid <= '0'; -- ERROR
-        co.b_valid <= r.ack_b_write; -- ERROR
+        co.b_valid <= '0';--r.ack_b_write; -- ERROR -- note: don't ack writes
         w.state := idle;
 
     end case;
@@ -561,6 +563,7 @@ begin
         r.state <= idle;
         r.a_req <= '0';
         r.b_req <= '0';
+        r.misses<=0;
       else
         r <= w;
       end if;
