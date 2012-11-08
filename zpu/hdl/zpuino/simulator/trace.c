@@ -2,6 +2,7 @@
 #include <byteswap.h>
 #include "defs.h"
 #include <malloc.h>
+#include <stdlib.h>
 
 static unsigned tracebufsize;
 static unsigned tracelow=0, tracehigh=0;
@@ -33,6 +34,8 @@ void trace_append(unsigned int pc, unsigned int sp, unsigned int top)
 	entry->tos = top;
 	entry->nos = bswap_32(spalign[ (( ( sp & (STACK_SIZE-1) ) >>2) + 1 )] );
 	entry->tick = zpuino_get_tick_count();
+	if (entry->tick>=tracebufsize-10)
+        abort();
 #if 0
 	/* Slowdown */
 	{
