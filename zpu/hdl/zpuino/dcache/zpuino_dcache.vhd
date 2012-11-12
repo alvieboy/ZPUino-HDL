@@ -73,6 +73,7 @@ architecture behave of zpuino_dcache is
     writeback_tag:    tag_type;
     state:      state_type;
     misses: integer;
+    rvalid:   std_logic;
   end record;
 
   function address_to_tag(a: in address_type) return tag_type is
@@ -254,6 +255,7 @@ begin
     co.b_data_out <= cmem_dob;
 
     w.ack_b_write := '0';
+    w.rvalid := '0';
 
     case r.state is
       when idle =>
@@ -486,45 +488,51 @@ begin
 
         co.a_stall <= '1';
         co.b_stall <= '1';
+        w.rvalid := '1';
 
         mwbo.adr<=(others => '0');
         mwbo.adr(ADDRESS_HIGH-1 downto 2) <= r.writeback_tag & r.fill_line_number & r.fill_offset_r;
-        mwbo.cyc<='1';
-        mwbo.stb<=not r.fill_r_done;
-        mwbo.we<='1';
+        mwbo.cyc<=r.rvalid; --'1';
+        mwbo.stb<=r.rvalid;--not r.fill_r_done;
+        mwbo.we<=r.rvalid; --1';
+        mwbo.sel<= (others => '1');
+        if mwbi.stall='0' and r.rvalid='1'  then
+
+          w.fill_offset_r := std_logic_vector(unsigned(r.fill_offset_r) + 1);
+          if r.fill_offset_r = offset_all_ones then
+            --w.fill_r_done := '1';
+            w.fill_offset_r := (others => '0');
+            w.fill_offset_w := (others => '0');
+            w.fill_r_done := '0';
+            w.state := readline;
+          end if;
+        end if;
+
+        if (mwbi.stall='0' or r.rvalid='0') and r.fill_r_done='0' then
+          w.fill_offset_w := std_logic_vector(unsigned(r.fill_offset_w) + 1);
+          if r.fill_offset_w=offset_all_ones then
+            --w.fill_offset_r := (others => '0');
+            --w.fill_offset_w := (others => '0');
+            w.fill_r_done := '1';
+
+            --w.state := readline;
+          end if;
+        end if;
 
         if r.fill_is_b='1' then
           mwbo.dat <= cmem_dob;
 
           cmem_addrb <= r.fill_line_number & r.fill_offset_w;
-          cmem_enb <= '1';
+          cmem_enb <= not mwbi.stall or not r.rvalid;
           cmem_ena <= '0';
           cmem_web <= (others=>'0');
 
         else
           mwbo.dat <= cmem_doa;
           cmem_addra <= r.fill_line_number & r.fill_offset_w;
-          cmem_ena <= '1';
+          cmem_ena <= not mwbi.stall or not r.rvalid;
           cmem_enb <= '0';
           cmem_wea <= (others=>'0');
-        end if;
-
-        if mwbi.stall='0' and r.fill_r_done='0' then
-          w.fill_offset_r := std_logic_vector(unsigned(r.fill_offset_r) + 1);
-          if r.fill_offset_r = offset_all_ones then
-            w.fill_r_done := '1';
-          end if;
-        end if;
-
-        if mwbi.ack='1' then
-          w.fill_offset_w := std_logic_vector(unsigned(r.fill_offset_w) + 1);
-          if r.fill_offset_w=offset_all_ones then
-            w.fill_offset_r := (others => '0');
-            w.fill_offset_w := (others => '0');
-            w.fill_r_done := '0';
-
-            w.state := readline;
-          end if;
         end if;
 
 

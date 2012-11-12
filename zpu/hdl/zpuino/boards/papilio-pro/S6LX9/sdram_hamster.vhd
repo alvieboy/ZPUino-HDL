@@ -325,19 +325,20 @@ begin
       ndata_write <= rdata_write;
 
       if req_read = '1' then
-         n.rd_pending <= '1';
-         if r.rd_pending='0' then
+         if r.rd_pending='0' and r.wr_pending='0' then
+           n.rd_pending <= '1';
            n.req_addr_q <= address;
          end if;
       end if;
       
       if req_write = '1' then
-         n.wr_pending <= '1';
-         if r.wr_pending='0' then
+         if r.wr_pending='0' and r.rd_pending='0' then
            n.req_addr_q <= address;
            -- Queue data here
+           n.wr_pending <= '1';
            n.req_data_write <= data_in;
            n.req_mask <= data_mask;
+           --n.data_out_valid <= '1';
          end if;
       end if;
       
@@ -469,6 +470,8 @@ begin
                n.act_ba    <= addr_bank;
                n.dq_masks<= not r.req_mask(3 downto 2);
                n.wr_pending <= '0';
+               -- TEST - ack writes
+               --n.data_out_valid <= '1';
                --n.tristate <= '0';
             end if;
             
@@ -526,7 +529,7 @@ begin
             -- Default to the idle+row active state
             nstate     <= s_ra2;
             --DRAM_DQ <= rdata_write;
-            n.data_out_valid<='1'; -- alvie- ack write
+            --n.data_out_valid<='1'; -- alvie- ack write
             n.tristate <= '0';
             n.dq_masks<= "11";
             

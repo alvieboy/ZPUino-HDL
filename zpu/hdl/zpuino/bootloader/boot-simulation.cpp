@@ -139,16 +139,29 @@ extern "C" void udivmodsi4(); /* Just need it's address */
 
 void test()
 {
-	unsigned *a = (unsigned*)0x600000;
-	unsigned *b = (unsigned*)0x700000;
-	*a=8;
+    return;
+	volatile unsigned *a = (volatile unsigned*)0x200000;
+	volatile unsigned *b = (volatile unsigned*)0x300000;
+	int i;
+	for (i=0;i<16;i++) {
+		*a = 0x8000+(i*4);
+		a++;
+	}
 	*b=16;
-    asm("breakpoint");
+    /* And read back */
+	a=(volatile unsigned int*)0x200000;
+	for (i=0;i<16;i++) {
+		volatile int i = *a;
+		a++;
+	}
+	
+
+	asm("breakpoint");
 }
 
 extern "C" int main(int argc,char**argv)
 {
-    test();
+	test();
 
 	ivector = &_zpu_interrupt;
 	_bfunctions[0] = (unsigned)&udivmodsi4;
