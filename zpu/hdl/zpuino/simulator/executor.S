@@ -9,7 +9,7 @@
         .globl execute
 
 #define STACKMASK 0x1FFF
-#define MEMMASK 0x3FFFFF
+#define MEMMASK 0x7FFFFF
 #define STACKPAGEMASK (MEMMASK ^ STACKMASK)
 
 #define MAXADDRBITINCIO $27
@@ -516,7 +516,20 @@ zpu_emulate2:            // 34 LoadH
 zpu_emulate3:            // 35 StoreH
         emulateX 3
 zpu_emulate4:            // 36 Lessthan
-        emulateX 4             
+        //emulateX 4             
+        push %esi
+        and $STACKMASK, %esi
+        movl _stack+4(%esi), %eax
+        pop %esi
+        addl $4, %esi
+        bswap %eax
+        incl %edi
+        cmpl %eax, %ebx
+        movl $0, %ebx
+        jge .opcode_return
+        incl %ebx
+        jmp .opcode_return
+
 zpu_emulate5:            // 37 Lessthanorequal
         emulateX 5
 zpu_emulate6:            // 38 Ulessthan

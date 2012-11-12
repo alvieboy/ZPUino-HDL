@@ -228,7 +228,7 @@ begin
       wb_inta_o <= '0';
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
-      memory_enable<='1'; -- '1' to boot from internal bootloader
+      memory_enable<='0'; -- '1' to boot from internal bootloader
       cache_flush<='0';
     else
       cache_flush<='0';

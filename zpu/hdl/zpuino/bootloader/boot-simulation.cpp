@@ -137,8 +137,19 @@ unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 extern "C" unsigned _bfunctions[];
 extern "C" void udivmodsi4(); /* Just need it's address */
 
+void test()
+{
+	unsigned *a = (unsigned*)0x600000;
+	unsigned *b = (unsigned*)0x700000;
+	*a=8;
+	*b=16;
+    asm("breakpoint");
+}
+
 extern "C" int main(int argc,char**argv)
 {
+    test();
+
 	ivector = &_zpu_interrupt;
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;

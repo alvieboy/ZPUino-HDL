@@ -61,6 +61,7 @@ architecture behave of zpuino_dcache is
     a_req_addr: address_type;
     b_req_addr: address_type;
     b_req_we:   std_logic;
+    b_req_wmask:   std_logic_vector(3 downto 0);
     b_req_data:   std_logic_vector(wordSize-1 downto 0);
     fill_offset_r:    line_offset_type;
     fill_offset_w:    line_offset_type;
@@ -129,13 +130,13 @@ architecture behave of zpuino_dcache is
   signal tmem_dob:    full_tag_type;
 
   signal cmem_ena:    std_logic;
-  signal cmem_wea:    std_logic;
+  signal cmem_wea:    std_logic_vector(3 downto 0);
   signal cmem_dia:    std_logic_vector(wordSize-1 downto 0);
   signal cmem_doa:    std_logic_vector(wordSize-1 downto 0);
   signal cmem_addra:  std_logic_vector(CACHE_MAX_BITS-1 downto 2);
 
   signal cmem_enb:    std_logic;
-  signal cmem_web:    std_logic;
+  signal cmem_web:    std_logic_vector(3 downto 0);
   signal cmem_dib:    std_logic_vector(wordSize-1 downto 0);
   signal cmem_dob:    std_logic_vector(wordSize-1 downto 0);
   signal cmem_addrb:  std_logic_vector(CACHE_MAX_BITS-1 downto 2);
@@ -183,33 +184,33 @@ begin
   );
 
   -- Cache memory
+  memgen: for i in 0 to 3 generate
 
   cachemem: generic_dp_ram
   generic map (
     address_bits => cmem_addra'LENGTH,
-    data_bits => 32
+    data_bits => 8
   )
   port map (
     clka      => syscon.clk,
     ena       => cmem_ena,
-    wea       => cmem_wea,
+    wea       => cmem_wea(i),
     addra     => cmem_addra,
-    dia       => cmem_dia,
-    doa       => cmem_doa,
+    dia       => cmem_dia(((i+1)*8)-1 downto i*8),
+    doa       => cmem_doa(((i+1)*8)-1 downto i*8),
 
     clkb      => syscon.clk,
     enb       => cmem_enb,
-    web       => cmem_web,
+    web       => cmem_web(i),
     addrb     => cmem_addrb,
-    dib       => cmem_dib,
-    dob       => cmem_dob
+    dib       => cmem_dib(((i+1)*8)-1 downto i*8),
+    dob       => cmem_dob(((i+1)*8)-1 downto i*8)
   );
 
-  
+  end generate;
 
   process(r,syscon.clk,syscon.rst, ci, mwbi, tmem_doa, a_miss,b_miss,
-          tmem_doa, tmem_dob, a_line_number, b_line_number, a_tag, b_tag, a_will_busy,
-          b_will_busy)
+          tmem_doa, tmem_dob, a_line_number, b_line_number, a_tag, b_tag, cmem_doa, cmem_dob)
     variable w: regs_type;
   begin
     w := r;
@@ -217,7 +218,6 @@ begin
     co.b_valid<='0';
     co.a_stall<='0';
     co.b_stall<='0';
-    a_hit <='0';
     a_miss <='0';
     b_hit <='0';
     b_miss <='0';
@@ -244,8 +244,8 @@ begin
     cmem_addra <= ci.a_address(CACHE_MAX_BITS-1 downto 2);
     cmem_addrb <= ci.b_address(CACHE_MAX_BITS-1 downto 2);
     cmem_ena <= ci.a_enable;
-    cmem_wea <= '0';
-    cmem_web <= '0';
+    cmem_wea <= (others =>'0');
+    cmem_web <= (others =>'0');
     cmem_enb <= ci.b_enable;
     cmem_dia <= (others => DontCareValue); -- No writes on port A
     cmem_dib <= (others => DontCareValue);
@@ -258,30 +258,12 @@ begin
     case r.state is
       when idle =>
 
-        if a_will_busy='0' then
-          w.a_req := ci.a_strobe and ci.a_enable;
-          if ci.a_strobe='1' and ci.a_enable='1' then
-            w.a_req_addr := ci.a_address(address_type'RANGE);
-          end if;
-        end if;
-
-        if b_will_busy='0' then
-          w.b_req := ci.b_strobe and ci.b_enable;
-          if ci.b_strobe='1' and ci.b_enable='1' then
-            w.b_req_addr := ci.b_address(address_type'RANGE);
-            w.b_req_we := ci.b_we;
-            w.b_req_data := ci.b_data_in;
-          end if;
-        end if;
-
         -- Now, after reading from tag memory....
         if (r.a_req='1') then
           -- We had a request, check
           a_miss<='1';
           if tmem_doa(VALID)='1' then
             if tmem_doa(tag_type'RANGE) = address_to_tag(r.a_req_addr) then
-
-              a_hit<='1';
               a_miss<='0';
             end if;
           end if;
@@ -406,7 +388,7 @@ begin
 
               cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
               cmem_dib <= r.b_req_data;
-              cmem_web <= '1';
+              cmem_web <= r.b_req_wmask;
               cmem_enb <= '1';
 
               w.ack_b_write:='1';
@@ -420,6 +402,25 @@ begin
             co.b_stall <= '1';
           end if;
         end if;
+        end if;
+
+
+        -- Queue requests
+        if a_will_busy='0' then
+          w.a_req := ci.a_strobe and ci.a_enable;
+          if ci.a_strobe='1' and ci.a_enable='1' then
+            w.a_req_addr := ci.a_address(address_type'RANGE);
+          end if;
+        end if;
+
+        if b_will_busy='0' then
+          w.b_req := ci.b_strobe and ci.b_enable;
+          if ci.b_strobe='1' and ci.b_enable='1' then
+            w.b_req_addr := ci.b_address(address_type'RANGE);
+            w.b_req_we := ci.b_we;
+            w.b_req_wmask := ci.b_wmask;
+            w.b_req_data := ci.b_data_in;
+          end if;
         end if;
 
 
@@ -437,13 +438,13 @@ begin
           cmem_addrb <= r.fill_line_number & r.fill_offset_w;
           cmem_enb <= '1';
           cmem_ena <= '0';
-          cmem_web <= mwbi.ack;
+          cmem_web <= (others => mwbi.ack);
           cmem_dib <= mwbi.dat;
         else
           cmem_addra <= r.fill_line_number & r.fill_offset_w;
           cmem_ena <= '1';
           cmem_enb <= '0';
-          cmem_wea <= mwbi.ack;
+          cmem_wea <= (others =>mwbi.ack);
           cmem_dia <= mwbi.dat;
         end if;
 
@@ -498,14 +499,14 @@ begin
           cmem_addrb <= r.fill_line_number & r.fill_offset_w;
           cmem_enb <= '1';
           cmem_ena <= '0';
-          cmem_web <= '0';
+          cmem_web <= (others=>'0');
 
         else
           mwbo.dat <= cmem_doa;
           cmem_addra <= r.fill_line_number & r.fill_offset_w;
           cmem_ena <= '1';
           cmem_enb <= '0';
-          cmem_wea <= '0';
+          cmem_wea <= (others=>'0');
         end if;
 
         if mwbi.stall='0' and r.fill_r_done='0' then
@@ -535,8 +536,8 @@ begin
         cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);
         cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
         cmem_dib <= r.b_req_data;
-        cmem_web  <= r.b_req_we;
-        cmem_enb <= '1';
+        cmem_web  <= r.b_req_wmask;
+        cmem_enb <= r.b_req_we;--'1';
 
         co.a_stall <= '1';
         co.b_stall <= '1';

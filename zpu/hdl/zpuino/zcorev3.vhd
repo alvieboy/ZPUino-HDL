@@ -1008,16 +1008,10 @@ begin
 
       when State_ResyncFromStoreStack =>
         exu_busy <= '1';
-        --dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(prefr.spnext);
-        --b_enable   := '1';
-        --b_strobe   := '1';
-        --w.state := State_Resync2;
         w.state := State_ResyncNos;
         dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);--exr.tos(maxAddrBitBRAM downto 2)+1);
         b_enable := '1';
         b_strobe := '1';
-
-
         wroteback := '0';
 
       when State_ResyncNos =>
@@ -1036,12 +1030,11 @@ begin
         instruction_executed := '1';
         exu_busy <= '0';
         wroteback := '0';
-        --stack_b_enable <= '1';
-        --dci.a_enable <= '1';
 
         w.state := State_Execute;
 
       when State_Execute =>
+
        instruction_executed:='0';
 
        if prefr_valid='1' then
@@ -1164,26 +1157,14 @@ begin
            w.inInterrupt := '1';
            jump_address <= to_unsigned(32, maxAddrBit+1);
            decode_jump <= '1';
-
-           --dci.b_we <='1';
-           --dci.b_wmask <="1111";
-           --dci.b_enable <= '1';
-           --dci.b_enable <= '1';
-           --dci.a_enable <= '0';
-           --dci.a_strobe <= '0';
-
-           --stack_a_writeenable<=(others =>'1');
-           --w.nos := exr.tos;
            wroteback:='1';
            instruction_executed := '0';
-
-           w.state := State_WaitSPB;
+           --w.state := State_WaitSPB;
 
           when Decoded_Im0 =>
 
            dci.b_we <='1';
            dci.b_wmask <="1111";
-           --w.nos := exr.tos;
            wroteback:='1';
 
           when Decoded_ImN =>
@@ -1192,23 +1173,16 @@ begin
 
           when Decoded_PopPC =>
 
-            decode_jump <= not dco.b_stall;--'1';
+            decode_jump <= not dco.b_stall;
             jump_address <= exr.tos(maxAddrBit downto 0);
             poppc_inst <= not dco.b_stall;
-
-            --dci.a_enable <= '0';
             instruction_executed := '0';
 
           when Decoded_Call =>
 
             decode_jump <= '1';
             jump_address <= exr.tos(maxAddrBit downto 0);
-            --poppc_inst <= '1';
-
-            --dci.a_enable <= '0';
             instruction_executed := '0';
-
-            --w.state := State_WaitSPB;
 
           when Decoded_Emulate =>
 
@@ -1219,8 +1193,6 @@ begin
             dci.b_we <='1';
             dci.b_wmask <="1111";
 
-            --stack_a_writeenable<=(others =>'1');
-            --w.nos := exr.tos;
             wroteback:='1';
 
           when Decoded_PushSP =>
@@ -1287,12 +1259,15 @@ begin
           when Decoded_Pop =>
 
           when Decoded_Ashiftleft =>
+            exu_busy<='1';
             w.state := State_Ashiftleft;
 
           when Decoded_Mult  =>
+            exu_busy<='1';
             w.state := State_Mult;
 
           when Decoded_MultF16  =>
+            exu_busy<='1';
             w.state := State_MultF16;
 
           when Decoded_Store | Decoded_StoreB | Decoded_StoreH =>
