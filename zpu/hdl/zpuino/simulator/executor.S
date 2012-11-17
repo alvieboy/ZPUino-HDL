@@ -353,6 +353,59 @@ nstore:
         incl %edi
         jmp .opcode_return
 
+
+zpu_storeh:
+        // Address in %ebx
+        addl $4, %esi
+        push %esi
+        and $STACKMASK, %esi
+        movl _stack(%esi), %ecx //value
+        pop %esi
+        bswap %ecx
+        addl $4, %esi
+        bt MAXADDRBITINCIO, %ebx
+        jc abort
+#ifdef TRACE
+	call debug_lowmem_access
+#endif
+	is_current_stack
+        jne storeh_to_memory
+
+        and $STACKMASK, %ebx
+        movw %cx, _stack(%ebx)
+        
+        push %esi
+        and $STACKMASK, %esi
+	    movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+storeh_to_memory:
+        and $0x7fffffff, %ebx
+        
+	    movw %cx, _memory(%ebx)
+        push %esi
+        and $STACKMASK, %esi
+        movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 debug_lowmem_access:
 	pusha
 	push %ebx
@@ -514,6 +567,7 @@ zpu_emulate1:            // 33 Interrupt
 zpu_emulate2:            // 34 LoadH
         emulateX 2
 zpu_emulate3:            // 35 StoreH
+    //jmp zpu_storeh
         emulateX 3
 zpu_emulate4:            // 36 Lessthan
         //emulateX 4             
@@ -552,7 +606,20 @@ zpu_emulate7:            // 39 Ulessthanorequal
 zpu_emulate8:            // 40 Swap (unused)
         emulateX 8
 zpu_emulate9:            // 41 Mult
-        emulateX 9
+        //emulateX 9
+	push %esi
+        and $STACKMASK, %esi
+        movl _stack+4(%esi), %eax
+        pop %esi
+        bswap %eax
+        addl $4, %esi
+        incl %edi
+        push %edx
+        imull %ebx
+        movl %eax, %ebx
+        pop %edx
+        jmp .opcode_return
+
 zpu_emulate10:           // 42 Lshiftright
         emulateX 10
 zpu_emulate11:           // 43 Ashiftleft
@@ -654,9 +721,10 @@ zpu_emulate29:           // 61 Pushspadd
 zpu_emulate30:           // 62 Halfmult
         emulateX 30
 zpu_emulate31:           // 63 Callpcrel
-	//emulateX 31
+	emulateX 31
+        
         movl %edi, %eax   // return
-	    addl %ebx, %edi
+	addl %ebx, %edi
         movl %eax, %ebx
         incl %ebx
         jmp .opcode_return

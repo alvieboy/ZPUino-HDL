@@ -35,7 +35,7 @@ void trace_append(unsigned int pc, unsigned int sp, unsigned int top)
 	entry->nos = bswap_32(spalign[ (( ( sp & (STACK_SIZE-1) ) >>2) + 1 )] );
 	entry->tick = zpuino_get_tick_count();
 	if (entry->tick>=tracebufsize-10)
-        abort();
+		abort();
 #if 0
 	/* Slowdown */
 	{

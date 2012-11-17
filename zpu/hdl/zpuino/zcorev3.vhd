@@ -484,10 +484,10 @@ begin
           sop.stackOper<=Stack_Same;
           sop.decoded<=Decoded_Loadb;
           sop.tosSource <= Tos_Source_LSU;
-        elsif (tOpcode(5 downto 0)=OpCode_Loadh) then
-          sop.stackOper<=Stack_Same;
-          sop.decoded<=Decoded_Loadh;
-          sop.tosSource <= Tos_Source_LSU;
+        --elsif (tOpcode(5 downto 0)=OpCode_Loadh) then
+        --  sop.stackOper<=Stack_Same;
+        --  sop.decoded<=Decoded_Loadh;
+        --  sop.tosSource <= Tos_Source_LSU;
         elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
           sop.stackOper<=Stack_DualPop;
           sop.decoded<=Decoded_Neqbranch;
@@ -515,10 +515,10 @@ begin
           sop.decoded<=Decoded_StoreB;
           sop.stackOper<=Stack_DualPop;
           sop.freeze<='1';
-        elsif (tOpcode(5 downto 0)=OpCode_StoreH) then
-          sop.decoded<=Decoded_StoreH;
-          sop.stackOper<=Stack_DualPop;
-          sop.freeze<='1';
+        --elsif (tOpcode(5 downto 0)=OpCode_StoreH) then
+        --  sop.decoded<=Decoded_StoreH;
+        --  sop.stackOper<=Stack_DualPop;
+        --  sop.freeze<='1';
         elsif (tOpcode(5 downto 0)=OpCode_Mult) then
           sop.decoded<=Decoded_Mult;
           sop.stackOper<=Stack_Pop;
@@ -584,6 +584,7 @@ begin
           sop.freeze<='1';
         when OpCode_PopSP =>
           sop.decoded<=Decoded_PopSP;
+          sop.stackOper <= Stack_Push; -- Enforce writeback
           sop.freeze<='1';
         when OpCode_NA4 =>
           if enable_fmul16 then
@@ -870,6 +871,12 @@ begin
       w.pending:='0';
     end if;
 
+    -- If we were halted and we were not able to place
+    -- request, reset valid.
+    if prefr.pending='1' and pfu_hold='1' then
+      w.valid := '0';
+    end if;
+
     prefr_valid <= prefr.valid and request_done;
 
     if exu_busy='0' and request_done='1' then
@@ -1022,16 +1029,19 @@ begin
         b_strobe := '1';
         exu_busy <= '1';
         wroteback := '0';
-        w.state := State_Resync2;
+        if dco.b_valid='1' then
+          w.state := State_Resync2;
+        end if;
 
       when State_Resync2 =>
 
         w.tos := unsigned( dco.b_data_out );
         instruction_executed := '1';
-        exu_busy <= '0';
         wroteback := '0';
-
-        w.state := State_Execute;
+        if dco.b_valid='1' then
+          w.state := State_Execute;
+        exu_busy <= '0';
+        end if;
 
       when State_Execute =>
 
@@ -1243,8 +1253,8 @@ begin
             --w.state := State_WaitSPB;
 
           when Decoded_PopDown =>
-            dci.b_we <='1';
-            dci.b_wmask <="1111";
+            --dci.b_we <='1';
+            --dci.b_wmask <="1111";
 
           when Decoded_PopDownDown =>
             dci.b_we <='1';
@@ -1410,11 +1420,14 @@ begin
           when Decoded_PopSP =>
 
             decode_load_sp <= '1';
-            w.state := State_ResyncNos;
-            dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2)+1);
-            b_enable := '1';
-            b_strobe := '1';
+            w.state := State_ResyncFromStoreStack;
+            --dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2)+1);
+            --b_enable := '1';
+            --b_strobe := '1';
             exu_busy <= '1';
+            dci.b_we <='1';
+            dci.b_wmask <="1111";
+
             --else
               --report "Implement me" severity failure;
             --  w.state := State_WriteBackStack;

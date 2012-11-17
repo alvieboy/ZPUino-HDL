@@ -56,13 +56,13 @@ architecture behave of zpuino_dcache is
   );
 
   type regs_type is record
-    a_req:      std_logic;
-    b_req:      std_logic;
-    a_req_addr: address_type;
-    b_req_addr: address_type;
-    b_req_we:   std_logic;
-    b_req_wmask:   std_logic_vector(3 downto 0);
-    b_req_data:   std_logic_vector(wordSize-1 downto 0);
+    a_req:            std_logic;
+    b_req:            std_logic;
+    a_req_addr:       address_type;
+    b_req_addr:       address_type;
+    b_req_we:         std_logic;
+    b_req_wmask:      std_logic_vector(3 downto 0);
+    b_req_data:       std_logic_vector(wordSize-1 downto 0);
     fill_offset_r:    line_offset_type;
     fill_offset_w:    line_offset_type;
     fill_tag:         tag_type;
@@ -71,9 +71,10 @@ architecture behave of zpuino_dcache is
     fill_is_b:        std_logic;
     ack_b_write:      std_logic;
     writeback_tag:    tag_type;
-    state:      state_type;
-    misses: integer;
-    rvalid:   std_logic;
+    state:            state_type;
+    misses:           integer;
+    rvalid:           std_logic;
+    wr_conflict:      std_logic;
   end record;
 
   function address_to_tag(a: in address_type) return tag_type is
@@ -142,13 +143,18 @@ architecture behave of zpuino_dcache is
   signal cmem_dob:    std_logic_vector(wordSize-1 downto 0);
   signal cmem_addrb:  std_logic_vector(CACHE_MAX_BITS-1 downto 2);
 
-
   signal r: regs_type;
   signal a_will_busy, b_will_busy: std_logic;
   signal same_address: std_logic;
 
   constant offset_all_ones: line_offset_type := (others => '1');
 
+  signal dbg_a_valid: std_logic;
+  signal dbg_b_valid: std_logic;
+  signal dbg_a_dirty: std_logic;
+  signal dbg_b_dirty: std_logic;
+
+  signal wr_conflict: std_logic;
 begin
 
   -- These are alias, but written as signals so we can inspect them
@@ -163,7 +169,7 @@ begin
 
   -- TAG memory
 
-  tagmem: generic_dp_ram
+  tagmem: generic_dp_ram_rf
   generic map (
     address_bits  => CACHE_LINE_ID_BITS,
     data_bits     => ADDRESS_HIGH-CACHE_MAX_BITS+2
@@ -187,7 +193,7 @@ begin
   -- Cache memory
   memgen: for i in 0 to 3 generate
 
-  cachemem: generic_dp_ram
+  cachemem: generic_dp_ram_rf
   generic map (
     address_bits => cmem_addra'LENGTH,
     data_bits => 8
@@ -213,6 +219,8 @@ begin
   process(r,syscon.clk,syscon.rst, ci, mwbi, tmem_doa, a_miss,b_miss,
           tmem_doa, tmem_dob, a_line_number, b_line_number, a_tag, b_tag, cmem_doa, cmem_dob)
     variable w: regs_type;
+    variable a_have_request: std_logic;
+    variable b_have_request: std_logic;
   begin
     w := r;
     co.a_valid<='0';
@@ -238,7 +246,7 @@ begin
     tmem_wea <= '0';
     tmem_enb <= '1';
     tmem_web <= '0';
-    tmem_dib <= (others => DontCareValue);
+    tmem_dib(tag_type'RANGE) <= address_to_tag(ci.b_address(r.b_req_addr'RANGE));--(others => DontCareValue);
     tmem_dia <= (others => DontCareValue);
 
 
@@ -246,16 +254,23 @@ begin
     cmem_addrb <= ci.b_address(CACHE_MAX_BITS-1 downto 2);
     cmem_ena <= ci.a_enable;
     cmem_wea <= (others =>'0');
-    cmem_web <= (others =>'0');
+    cmem_web <= ci.b_wmask;--(others =>'0');  -- NOTE: or with we?
     cmem_enb <= ci.b_enable;
     cmem_dia <= (others => DontCareValue); -- No writes on port A
-    cmem_dib <= (others => DontCareValue);
+    cmem_dib <= ci.b_data_in;--(others => DontCareValue);
 
     co.a_data_out <= cmem_doa;
     co.b_data_out <= cmem_dob;
 
     w.ack_b_write := '0';
     w.rvalid := '0';
+
+    dbg_a_valid <= tmem_doa(VALID);
+    dbg_b_valid <= tmem_dob(VALID);
+
+    dbg_a_dirty <= tmem_doa(DIRTY);
+    dbg_b_dirty <= tmem_dob(DIRTY);
+    wr_conflict <= '0';
 
     case r.state is
       when idle =>
@@ -332,10 +347,13 @@ begin
           end if;
         else
           -- if we're writing to a similar address, delay for one clock cycle
-          if r.b_req='1' and r.b_req_we='1' and address_to_line_offset(r.b_req_addr)=address_to_line_offset(r.a_req_addr) then
+          --if r.b_req='1' and r.b_req_we='1' and address_to_line_offset(r.b_req_addr)=address_to_line_offset(r.a_req_addr) then
+          if r.wr_conflict='1' then
             co.a_valid<='0';
             co.a_stall<='1';
             a_will_busy<='1';
+            cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
+
           else
             co.a_valid <= '1';
           end if;
@@ -363,7 +381,14 @@ begin
 
           if tmem_dob(VALID)='1' then
             if tmem_dob(DIRTY)='1' then
+              -- need to recover data - we overwrote it ...
               w.writeback_tag := tmem_dob(tag_type'RANGE);
+
+              cmem_dib <= cmem_dob;
+              cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
+              cmem_web <= (others => '1');
+              cmem_enb <= '1';
+
               w.state := writeback;
             else
               w.state := readline;
@@ -381,20 +406,20 @@ begin
               --b_will_busy <= '1';
 
               -- Now, we need to re-write tag so to set dirty to '1'
-              tmem_addrb <= address_to_line_number(r.b_req_addr);
-              tmem_dib(tag_type'RANGE) <=address_to_tag(r.b_req_addr);
-              tmem_dib(VALID)<='1';
-              tmem_dib(DIRTY)<='1';
-              tmem_web<='1';
-              tmem_enb<='1';
+              --tmem_addrb <= address_to_line_number(r.b_req_addr);
+              --tmem_dib(tag_type'RANGE) <=address_to_tag(r.b_req_addr);
+              --tmem_dib(VALID)<='1';
+              --tmem_dib(DIRTY)<='1';
+              --tmem_web<='1';
+              --tmem_enb<='1';
 
-              cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
-              cmem_dib <= r.b_req_data;
-              cmem_web <= r.b_req_wmask;
-              cmem_enb <= '1';
+              --cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
+              --cmem_dib <= r.b_req_data;
+              --cmem_web <= r.b_req_wmask;
+              --cmem_enb <= '1';
 
               w.ack_b_write:='1';
-              w.state := settle;
+              --w.state := settle;
 
             else
               co.b_valid <= '1';
@@ -406,25 +431,41 @@ begin
         end if;
         end if;
 
+        a_have_request := '0';
 
         -- Queue requests
         if a_will_busy='0' then
           w.a_req := ci.a_strobe and ci.a_enable;
           if ci.a_strobe='1' and ci.a_enable='1' then
+            a_have_request := '1';
             w.a_req_addr := ci.a_address(address_type'RANGE);
           end if;
         end if;
 
+        tmem_web <= '0';
+
+        b_have_request := '0';
         if b_will_busy='0' then
           w.b_req := ci.b_strobe and ci.b_enable;
           if ci.b_strobe='1' and ci.b_enable='1' then
+            b_have_request := '1';
             w.b_req_addr := ci.b_address(address_type'RANGE);
             w.b_req_we := ci.b_we;
+            tmem_web <= ci.b_we;
+            tmem_dib(VALID)<='1';
+            tmem_dib(DIRTY)<='1';
+
             w.b_req_wmask := ci.b_wmask;
             w.b_req_data := ci.b_data_in;
           end if;
         end if;
 
+        wr_conflict <= '0';
+        if a_have_request='1' and b_have_request='1' and
+          ci.a_address(address_type'RANGE)=ci.b_address(address_type'RANGE) then
+          wr_conflict <= '1';
+        end if;
+        w.wr_conflict := wr_conflict;
 
       when readline =>
         co.a_stall <= '1';
@@ -557,10 +598,12 @@ begin
       when settle =>
         cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
         cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
+        cmem_web <= (others => '0');
         tmem_addra <= address_to_line_number(r.a_req_addr);
         tmem_addrb <= address_to_line_number(r.b_req_addr);
         co.a_stall <= '1';
         co.b_stall <= '1';--not r.ack_b_write;--'1';
+
         co.a_valid <= '0'; -- ERROR
         co.b_valid <= '0';--r.ack_b_write; -- ERROR -- note: don't ack writes
         w.state := idle;
@@ -572,6 +615,7 @@ begin
         r.state <= idle;
         r.a_req <= '0';
         r.b_req <= '0';
+        r.wr_conflict <= '0';
         r.misses<=0;
       else
         r <= w;

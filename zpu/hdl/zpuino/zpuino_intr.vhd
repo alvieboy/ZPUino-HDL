@@ -222,7 +222,7 @@ process(wb_clk_i,wb_rst_i)
 begin
   if rising_edge(wb_clk_i) then
     if wb_rst_i='1' then
-      mask_q <= (others => '0');  -- Start with all interrupts masked out
+      mask_q <= (others => '0');  -- Start with all interrupts masked
       ien_q <= '0';
       iready_q <= '1';
       wb_inta_o <= '0';

@@ -5,7 +5,7 @@
 extern int do_interrupt;
 int interrupt_enabled=0;
 int interrupt_enabled_request=0;
-static unsigned interrupt_mask=0xff;
+static unsigned interrupt_mask=0x00;
 static unsigned int_line;
 
 static int int_lines[32] = {0};
