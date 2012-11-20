@@ -59,6 +59,8 @@ struct bootloader_data_t {
 	unsigned int spiend;
 	unsigned int signature;
 	const unsigned char *vstring;
+	/* New fields */
+	unsigned long memsize;
 };
 
 struct bootloader_data_t bdata BDATA;

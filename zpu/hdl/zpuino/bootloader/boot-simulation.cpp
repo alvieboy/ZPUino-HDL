@@ -140,22 +140,32 @@ extern "C" void udivmodsi4(); /* Just need it's address */
 void test()
 {
     return;
-	volatile unsigned *a = (volatile unsigned*)0x200000;
-	volatile unsigned *b = (volatile unsigned*)0x300000;
+	printstring("TEST\n");
+	volatile unsigned char *a = (volatile unsigned char*)0x1C8000;
+    volatile unsigned char *b = (volatile unsigned char*)0x2C8000;
+
 	int i;
+
 	for (i=0;i<16;i++) {
-		*a = 0x8000+(i*4);
+		*a = 0x80 + i*4;
 		a++;
 	}
 	*b=16;
-    /* And read back */
-	a=(volatile unsigned int*)0x200000;
+
+	(void)(*b);
+
+    a = (volatile unsigned char*)0x1C8000;
+
 	for (i=0;i<16;i++) {
-		volatile int i = *a;
+		volatile int x = *a;
+
+		if (x!=(0x80+(i*4)))
+			asm("breakpoint");
+
 		a++;
 	}
 	
-
+    printstring("OK\n");
 	asm("breakpoint");
 }
 

@@ -32,14 +32,14 @@ run
 -shreg_extract YES
 -rom_style Auto
 -auto_bram_packing No
--resource_sharing YES
+-resource_sharing No
 -async_to_sync NO
 -mult_style Auto
 -iobuf YES
--max_fanout 5
+-max_fanout 500
 -bufg 24
 -register_duplication YES
--register_balancing NO
+-register_balancing YES
 -move_first_stage YES
 -move_last_stage YES
 -optimize_primitives YES

@@ -769,15 +769,14 @@ begin
               when others =>
             end case;
 
-          case decr.op.decoded is
-            when Decoded_LoadSP | decoded_AddSP =>
+            case decr.op.decoded is
+              when Decoded_LoadSP | decoded_AddSP =>
 
-              dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
+                dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
                 --a_enable := '1';
-              a_strobe := '1';
-            when others =>
-          end case;
-
+                a_strobe := '1';
+              when others =>
+            end case;
           end if;
 
 
@@ -852,8 +851,7 @@ begin
       when others =>
     end case;
 
-    dci.a_enable <= a_enable;
-    dci.a_strobe <= a_strobe;
+
 
     pfu_busy <= dco.a_stall and a_strobe;
 
@@ -865,19 +863,30 @@ begin
       end if;
     end if;
 
-    if a_strobe='1' and a_enable='1' and dco.a_stall='1' then
-      w.pending:='1';
-    else
-      w.pending:='0';
+    if pfu_hold='0' then
+      if a_strobe='1' and a_enable='1' and dco.a_stall='1' then
+        w.pending:='1';
+      else
+        w.pending:='0';
+      end if;
     end if;
 
     -- If we were halted and we were not able to place
     -- request, reset valid.
     if prefr.pending='1' and pfu_hold='1' then
-      w.valid := '0';
+      -- This is buggy - we can miss instructions here.
+      --report "Pending request and holding at same time!" severity note;
+      --w.pending := '0';
+      --w.request := '0';
+      --a_enable  := '0';
+      --a_strobe:='0';
+      --w.valid := '0';
     end if;
 
     prefr_valid <= prefr.valid and request_done;
+
+    dci.a_enable <= a_enable;
+    dci.a_strobe <= a_strobe;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;
@@ -969,8 +978,6 @@ begin
     w.wb_adr := (others => DontCareValue);
     w.wb_dat := (others => DontCareValue);
 
-    --dci.a_enable <='1';
-    --dci.a_strobe <='1';
     b_enable :='1';
     b_strobe :='0';
 
@@ -992,7 +999,7 @@ begin
     poppc_inst <= '0';
     begin_inst<='0';
 
-    dci.b_address <= (others => '0');--DontCareValue);
+    dci.b_address <= (others => '0');
     dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector( prefr.sp );
     dci.b_data_in <= std_logic_vector( exr.tos );
 
@@ -1002,12 +1009,6 @@ begin
 
 
     nos <= exr.nos;
-
-    --if exr.wroteback='1' then
-    --  nos <= exr.tos_save;
-    --else
-    --  nos <= unsigned( dco.a_data_out );
-    --end if;
 
     decode_load_sp <= '0';
 
@@ -1321,6 +1322,8 @@ begin
 
               b_enable := '1';
               b_strobe := '1';
+              dci.b_we <='1';
+              dci.b_wmask <= sel;
 
               if dco.b_stall='0' then
                 w.state := State_ResyncFromStoreStack;
@@ -1328,8 +1331,10 @@ begin
               end if;
 
             else
-              dci.b_enable<='0';
-              dci.b_strobe<='0';
+              b_enable :='0';
+              b_strobe :='0';
+              dci.b_we <='0';
+              dci.b_wmask <= (others => '0');
               w.wb_cyc := '1';
               w.wb_stb := '1';
               w.wb_we := '1';
@@ -1344,8 +1349,6 @@ begin
 
             end if;
 
-            dci.b_we <='1';
-            dci.b_wmask <= sel;
             dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
             dci.b_data_in <= datawrite;
             exu_busy <= '1';
@@ -1586,7 +1589,7 @@ begin
 
     if b_strobe='1' and dco.b_stall='1' then
       exu_busy<='1';
-      w := exr;
+      w := exr; -- Hold everything
     end if;
   
 
@@ -1604,9 +1607,11 @@ begin
         exr.inInterrupt <= '0';
         exr.break <= '0';
         exr.wb_cyc <= '0';
-
+        -- synopsys translate_off
         exr.tos <= x"deadbeef";
         exr.nos <= x"cafecafe";
+        -- synopsys translate_on
+        
 
         exr.wroteback <= '0';
       else

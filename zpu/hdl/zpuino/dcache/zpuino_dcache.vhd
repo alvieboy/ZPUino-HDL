@@ -103,13 +103,9 @@ architecture behave of zpuino_dcache is
 
   -- extracted values from port A
   signal a_line_number:   line_number_type;
-  signal a_line_offset:   line_offset_type;
-  signal a_tag:           tag_type;
 
   -- extracted values from port B
   signal b_line_number:   line_number_type;
-  signal b_line_offset:   line_offset_type;
-  signal b_tag:           tag_type;
 
   -- Some helpers
   signal a_hit: std_logic;
@@ -159,13 +155,8 @@ begin
 
   -- These are alias, but written as signals so we can inspect them
 
-  a_tag         <= address_to_tag(ci.a_address(address_type'RANGE));
   a_line_number <= address_to_line_number(ci.a_address(address_type'RANGE));
-  a_line_offset <= address_to_line_offset(ci.a_address(address_type'RANGE));
-
-  b_tag         <= address_to_tag(ci.b_address(address_type'RANGE));
   b_line_number <= address_to_line_number(ci.b_address(address_type'RANGE));
-  b_line_offset <= address_to_line_offset(ci.b_address(address_type'RANGE));
 
   -- TAG memory
 
@@ -217,7 +208,7 @@ begin
   end generate;
 
   process(r,syscon.clk,syscon.rst, ci, mwbi, tmem_doa, a_miss,b_miss,
-          tmem_doa, tmem_dob, a_line_number, b_line_number, a_tag, b_tag, cmem_doa, cmem_dob)
+          tmem_doa, tmem_dob, a_line_number, b_line_number, cmem_doa, cmem_dob)
     variable w: regs_type;
     variable a_have_request: std_logic;
     variable b_have_request: std_logic;
@@ -239,6 +230,7 @@ begin
     mwbo.adr <= (others => DontCareValue);
     mwbo.dat <= (others => DontCareValue);
     mwbo.we <= DontCareValue;
+    mwbo.sel<=(others => '1');
 
     tmem_addra <= a_line_number;
     tmem_addrb <= b_line_number;
@@ -247,6 +239,9 @@ begin
     tmem_enb <= '1';
     tmem_web <= '0';
     tmem_dib(tag_type'RANGE) <= address_to_tag(ci.b_address(r.b_req_addr'RANGE));--(others => DontCareValue);
+    tmem_dib(DIRTY)<=DontCareValue;
+    tmem_dib(VALID)<=DontCareValue;
+
     tmem_dia <= (others => DontCareValue);
 
 
