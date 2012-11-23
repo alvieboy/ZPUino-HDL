@@ -260,6 +260,7 @@ type prefetchregs_type is record
   recompute_sp:   std_logic;
   request:        std_logic;
   pending:        std_logic;
+  abort:          std_logic;
 end record;
 
 type exuregs_type is record
@@ -757,11 +758,11 @@ begin
 
       else
 
-        pfu_busy <= exu_busy or (not dco.a_valid);
+        pfu_busy <= exu_busy or (not dco.a_valid) or prefr.abort;
 
         if decr.valid='1' then
 
-          if (pfu_hold='0' and pfu_invalidate='0') then --or prefr.recompute_sp='1' then
+          if (pfu_hold='0' and pfu_invalidate='0') then 
             case decr.op.stackOper is
               when Stack_Push =>    a_strobe := '0';
               when Stack_Pop =>     a_strobe := '1';
@@ -777,6 +778,7 @@ begin
                 a_strobe := '1';
               when others =>
             end case;
+            w.abort := '0';
           end if;
 
 
@@ -855,6 +857,8 @@ begin
 
     pfu_busy <= dco.a_stall and a_strobe;
 
+    
+
     if prefr.request='0' then
       w.request := (a_strobe and a_enable) and not dco.a_stall;
     else
@@ -863,19 +867,23 @@ begin
       end if;
     end if;
 
-    if pfu_hold='0' then
+   --if pfu_hold='0' then
       if a_strobe='1' and a_enable='1' and dco.a_stall='1' then
         w.pending:='1';
       else
         w.pending:='0';
       end if;
-    end if;
+   --end if;
 
     -- If we were halted and we were not able to place
     -- request, reset valid.
+    prefr_valid <= prefr.valid and request_done and not prefr.abort;
+
     if prefr.pending='1' and pfu_hold='1' then
       -- This is buggy - we can miss instructions here.
-      --report "Pending request and holding at same time!" severity note;
+      w.abort := '1';
+      w.pending := '0';
+      report "Pending request and holding at same time!" severity note;
       --w.pending := '0';
       --w.request := '0';
       --a_enable  := '0';
@@ -883,7 +891,6 @@ begin
       --w.valid := '0';
     end if;
 
-    prefr_valid <= prefr.valid and request_done;
 
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
@@ -914,7 +921,23 @@ begin
 
   end block; -- PFU
 
-
+  dbg: block
+    signal dco_a_valid: std_logic;
+    signal dco_b_valid: std_logic;
+    signal dco_a_stall: std_logic;
+    signal dco_b_stall: std_logic;
+    signal prefr_valid: std_logic;
+    signal prefr_abort: std_logic;
+    signal prefr_pending: std_logic;
+  begin
+    dco_a_valid <= dco.a_valid;
+    dco_b_valid <= dco.b_valid;
+    dco_a_stall <= dco.a_stall;
+    dco_b_stall <= dco.b_stall;
+    prefr_valid <= prefr.valid;
+    prefr_abort <= prefr.abort;
+    prefr_pending <= prefr.pending;
+  end block;
 
 
 
@@ -984,8 +1007,8 @@ begin
     dci.b_we <= '0';
     dci.b_wmask <= "0000";
 
-    --exu_busy <= '0';
-    exu_busy <= dco.b_stall;
+    exu_busy <= '0';
+    --exu_busy <= dco.b_stall;
 
     decode_jump <= '0';
 
@@ -1039,9 +1062,10 @@ begin
         w.tos := unsigned( dco.b_data_out );
         instruction_executed := '1';
         wroteback := '0';
+        exu_busy<='1';
         if dco.b_valid='1' then
           w.state := State_Execute;
-        exu_busy <= '0';
+          exu_busy <= '0';
         end if;
 
       when State_Execute =>

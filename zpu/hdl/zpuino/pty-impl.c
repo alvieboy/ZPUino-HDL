@@ -37,8 +37,8 @@ int pty_initialize()
 	if (bind(mastersockfd,(struct sockaddr*)&sock,sizeof(struct sockaddr_in))<0) {
 		abort();
 	}
-	printf("Serial listening on %d\n",port);
-	printf("Waiting for connection\n");
+	fprintf(stderr,"Serial listening on %d\n",port);
+	fprintf(stderr,"Waiting for connection\n");
 
 	listen(mastersockfd,1);
 	if ((fd=accept(mastersockfd,(struct sockaddr*)&clientsock,&clientsocksize))<0){
@@ -80,14 +80,14 @@ int pty_receive()
 		//fprintf(stderr,"Cannot read from pty ????\n");
 		return -1; // No one connected, probably
 	}
-	printf("Data read: %02x\n",r);
+	fprintf(stderr,"Data read: %02x\n",r);
 	return (int)r;
 }
 
 int pty_transmit(int t)
 {
 	unsigned char r = (unsigned)t & 0xff;
-	printf("%c",r);
+	fprintf(stderr,"%c",r);
 	fflush(stdout);
 	if (mastersockfd <0)
         return 0;

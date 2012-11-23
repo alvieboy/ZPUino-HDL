@@ -90,9 +90,9 @@ begin
 
 counter := (others => '0');
    -- print header for the logfile
-   print(l_file, "#pc,opcode,sp,top_of_stack ");
-   print(l_file, "#----------");
-   print(l_file, " ");
+--   print(l_file, "#pc,opcode,sp,top_of_stack ");
+--   print(l_file, "#----------");
+--   print(l_file, " ");
 
 	wait until clk = '1';
 	wait until clk = '0'; 

@@ -348,7 +348,7 @@ begin
             co.a_stall<='1';
             a_will_busy<='1';
             cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
-
+            tmem_addra <= address_to_line_number(r.a_req_addr);
           else
             co.a_valid <= '1';
           end if;
