@@ -184,7 +184,7 @@ begin
   uut: papilio_pro_top
   port map (
     CLK => w_clk,
-    RXD => '0',
+    RXD => '1',
     SPI_MISO => spi_miso,
     SPI_MOSI => spi_mosi,
     SPI_SCK => spi_sck,

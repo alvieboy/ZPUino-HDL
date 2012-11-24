@@ -105,9 +105,7 @@ State_ResyncFromStoreStack,
 State_Neqbranch,
 State_Ashiftleft,
 State_Mult,
-State_MultF16,
-State_WriteBackStack,
-State_LoadMemoryStack
+State_MultF16
 );
 
 type DecodedOpcodeType is
@@ -883,7 +881,7 @@ begin
       -- This is buggy - we can miss instructions here.
       w.abort := '1';
       w.pending := '0';
-      report "Pending request and holding at same time!" severity note;
+--      report "Pending request and holding at same time!" severity note;
       --w.pending := '0';
       --w.request := '0';
       --a_enable  := '0';
@@ -907,6 +905,7 @@ begin
     if syscon.rst='1' then
       w.spnext := unsigned(spStart(maxAddrBitBRAM downto 2));
       w.valid := '0';
+      w.abort := '0';
       w.idim := '0';
       w.recompute_sp:='0';
       w.request:='0';
@@ -1489,6 +1488,11 @@ begin
         dci.b_address <= (others => DontCareValue);
 
        end if;
+      else
+        -- not valid
+        dci.b_address <= (others => DontCareValue);
+        dci.b_data_in <= (others => DontCareValue);
+
       end if; -- valid
 
       when State_Ashiftleft =>
@@ -1600,11 +1604,6 @@ begin
         dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);--exr.tos(maxAddrBitBRAM downto 2)+1);
         b_enable := '1';
         b_strobe := '1';
-
-      when State_WriteBackStack =>
-        report "error" severity failure;
-      when State_LoadMemoryStack =>
-        report "error" severity failure;
 
       when others =>
          null;
