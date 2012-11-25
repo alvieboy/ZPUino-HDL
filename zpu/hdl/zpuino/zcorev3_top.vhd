@@ -96,7 +96,7 @@ architecture behave of zcorev3_top is
   );
   end component;
 
-  signal interrupt:  std_logic;
+  --signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
 
   signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);
@@ -122,7 +122,8 @@ architecture behave of zcorev3_top is
   signal mwbi:  wb_miso_type;
   signal iowbi:  wb_mosi_type;
   signal iowbo:  wb_miso_type;
-  signal cache_flush: std_logic;
+  signal icache_flush: std_logic;
+  signal dcache_flush: std_logic;
   signal rwbo: wb_mosi_type;
   signal rwbi: wb_miso_type;
 
@@ -142,7 +143,8 @@ begin
       iowbo         => iowbi,
       poppc_inst    => poppc_inst,
 	 		break         => open,
-      cache_flush   => cache_flush,
+      icache_flush   => icache_flush,
+      dcache_flush   => dcache_flush,
       rwbi          => rwbi,
       rwbo          => rwbo,
       dbg_in        => dbg_to_zpu,
@@ -174,10 +176,11 @@ begin
       wb_stb_i      => iowbi.stb,
       wb_ack_o      => iowbo.ack,
       wb_we_i       => iowbi.we,
-      wb_inta_o     => interrupt,
+      wb_inta_o     => iowbo.int,
 
       intready      => poppc_inst,
-      cache_flush   => cache_flush,
+      icache_flush   => icache_flush,
+      dcache_flush   => dcache_flush,
       memory_enable => memory_enable,
 
       slot_cyc      => slot_cyc,
@@ -191,26 +194,9 @@ begin
 
     );
 
---  memarb: wbarb2_1
---  generic map (
---    ADDRESS_HIGH => maxAddrBit,
---    ADDRESS_LOW => 0
---  )
---  port map (
---    syscon        => syscon,
---    -- Master 0 signals (CPU)
---    m0wbi         => mwbo,--cpuramwbi,
---    m0wbo         => mwbi,--cpuramwbo,
---    -- Master 1 signals
---    m1wbi         => rwbo,--dma_wbi,
---    m1wbo         => rwbi,--dma_wbo,
---    -- Slave signals
---    s0wbi         => ram_wbi,
---    s0wbo         => ram_wbo
---  );
-  rom_wbo <= rwbo;
-  rwbi <= rom_wbi;
-  ram_wbo <= mwbo;
-  mwbi <= ram_wbi;
+    rom_wbo <= rwbo;
+    rwbi <= rom_wbi;
+    ram_wbo <= mwbo;
+    mwbi <= ram_wbi;
 
 end behave;

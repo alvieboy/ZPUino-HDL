@@ -2,14 +2,22 @@
 
 .text
 
-#define PRELOADED 
+#undef PRELOADED 
 
 .balign 16 /* Ensure we don't have a cache miss on this code */
 
 .globl __flush
 __flush:
         /* poppc */
-        im         2                        ; Flush cache, enable SRAM
+        im         4                        ; Flush dcache, enable SRAM
+        nop
+        im        IO_SLOT(4) + 16
+        store
+        nop
+        nop
+        nop
+
+        im         2                        ; Flush icache, enable SRAM
         nop
         im        IO_SLOT(4) + 16
         store

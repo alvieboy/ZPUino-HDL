@@ -63,7 +63,8 @@ entity zcorev3 is
     rwbi:           in wb_miso_type;
     rwbo:           out wb_mosi_type;
 
-    cache_flush:        in std_logic;
+    icache_flush:        in std_logic;
+    dcache_flush:        in std_logic;
     -- Debug interface
 
     dbg_out:            out zpu_dbg_out_type;
@@ -348,6 +349,8 @@ begin
     mwbo      => rwbo
   );
 
+  ici.flush <= icache_flush;
+
   dcache: zpuino_dcache
   generic map (
       ADDRESS_HIGH    => maxAddrBitBRAM
@@ -360,8 +363,10 @@ begin
     mwbo    => mwbo
   );
 
+  dci.flush <= dcache_flush;
 
-  do_interrupt <= '1' when rwbi.int='1'
+
+  do_interrupt <= '1' when iowbi.int='1'
     and exr.inInterrupt='0'
     else '0';
 
@@ -1025,7 +1030,7 @@ begin
     dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector( prefr.sp );
     dci.b_data_in <= std_logic_vector( exr.tos );
 
-    if mwbi.int='0' then
+    if iowbi.int='0' then
       w.inInterrupt := '0';
     end if;
 

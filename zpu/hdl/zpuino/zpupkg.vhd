@@ -203,7 +203,8 @@ package zpupkg is
     -- ROM wb interface
     rwbi:           in wb_miso_type;
     rwbo:           out wb_mosi_type;
-    cache_flush:    in std_logic;
+    icache_flush:    in std_logic;
+    dcache_flush:    in std_logic;
     -- Debug interface
     dbg_out:            out zpu_dbg_out_type;
     dbg_in:             in zpu_dbg_in_type

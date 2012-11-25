@@ -52,7 +52,8 @@ architecture behave of zpuino_dcache is
     readline,
     writeback,
     write_after_fill,
-    settle
+    settle,
+    flush
   );
 
   type regs_type is record
@@ -67,6 +68,7 @@ architecture behave of zpuino_dcache is
     fill_offset_w:    line_offset_type;
     fill_tag:         tag_type;
     fill_line_number: line_number_type;
+    flush_line_number: line_number_type;
     fill_r_done:      std_logic;
     fill_is_b:        std_logic;
     ack_b_write:      std_logic;
@@ -75,6 +77,8 @@ architecture behave of zpuino_dcache is
     misses:           integer;
     rvalid:           std_logic;
     wr_conflict:      std_logic;
+    flush_req:        std_logic;
+    in_flush:         std_logic;
   end record;
 
   function address_to_tag(a: in address_type) return tag_type is
@@ -144,6 +148,7 @@ architecture behave of zpuino_dcache is
   signal same_address: std_logic;
 
   constant offset_all_ones: line_offset_type := (others => '1');
+  constant line_number_all_ones: line_number_type := (others => '1');
 
   signal dbg_a_valid: std_logic;
   signal dbg_b_valid: std_logic;
@@ -426,6 +431,15 @@ begin
         end if;
         end if;
 
+
+        if r.flush_req='1' then
+          a_will_busy<='1';
+          b_will_busy<='1';
+          w.state := flush;
+          w.fill_line_number := (others => '0');
+          w.flush_line_number := (others => '0');
+        end if;
+
         a_have_request := '0';
 
         -- Queue requests
@@ -532,6 +546,7 @@ begin
         mwbo.stb<=r.rvalid;--not r.fill_r_done;
         mwbo.we<=r.rvalid; --1';
         mwbo.sel<= (others => '1');
+        w.in_flush:='0'; -- test
         if mwbi.stall='0' and r.rvalid='1'  then
 
           w.fill_offset_r := std_logic_vector(unsigned(r.fill_offset_r) + 1);
@@ -540,7 +555,11 @@ begin
             w.fill_offset_r := (others => '0');
             w.fill_offset_w := (others => '0');
             w.fill_r_done := '0';
-            w.state := readline;
+            if r.in_flush<='1' then
+              w.state := flush;
+            else
+              w.state := readline;
+            end if;
           end if;
         end if;
 
@@ -603,7 +622,56 @@ begin
         co.b_valid <= '0';--r.ack_b_write; -- ERROR -- note: don't ack writes
         w.state := idle;
 
+      when flush =>
+        co.a_stall<='1';
+        co.b_stall<='1';
+        co.a_valid<='0';
+        co.b_valid<='0';
+
+        --tmem_addrb <= r.fill_line_number;
+        tmem_addrb <= r.flush_line_number;
+
+        tmem_dib(VALID)<='0';
+        tmem_dib(DIRTY)<='0';
+        tmem_web<='1';
+        tmem_enb<='1';
+        --w.fill_line_number := r.fill_line_number+1;
+        w.flush_line_number := r.flush_line_number+1;
+
+        w.fill_offset_r := (others => '0');
+        w.in_flush := '1';
+        w.flush_req := '0';
+
+        -- only valid in next cycle
+        if r.in_flush='1' and tmem_dob(VALID)='1' and tmem_dob(DIRTY)='1' then
+          report "Need to wb" severity note;
+          w.writeback_tag := tmem_dob(tag_type'RANGE);
+          w.fill_is_b := '1';
+          tmem_web<='0';
+          w.fill_offset_r := (others => '0');
+          w.flush_line_number := r.flush_line_number;
+          --cmem_dib <= cmem_dob;
+          --cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
+          --cmem_web <= (others => '1');
+          --cmem_enb <= '1';
+          w.fill_r_done := '0';
+          w.state := writeback;
+        else
+          --w.flush_line_number := r.fill_line_number;
+          w.fill_line_number := r.flush_line_number;
+
+          --if r.flush_line_number = line_number_all_ones then --r.in_flush='1' and r.fill_line_number=line_number_all_zeroes then
+          if r.fill_line_number = line_number_all_ones then --r.in_flush='1' and r.fill_line_number=line_number_all_zeroes then
+            w.state := idle;
+            w.in_flush :='0';
+          end if;
+        end if;
+
     end case;
+
+    if ci.flush='1' then
+      w.flush_req :='1';
+    end if;
 
     if rising_edge(syscon.clk) then
       if syscon.rst='1' then
@@ -612,6 +680,8 @@ begin
         r.b_req <= '0';
         r.wr_conflict <= '0';
         r.misses<=0;
+        r.flush_req<='0';
+        r.in_flush<='0';
       else
         r <= w;
       end if;

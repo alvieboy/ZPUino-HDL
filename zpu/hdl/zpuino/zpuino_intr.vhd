@@ -59,7 +59,8 @@ entity zpuino_intr is
 
     poppc_inst:in std_logic;
 
-    cache_flush: out std_logic;
+    icache_flush: out std_logic;
+    dcache_flush: out std_logic;
     memory_enable: out std_logic;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0); -- edge interrupts
@@ -228,10 +229,12 @@ begin
       wb_inta_o <= '0';
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
-      memory_enable<='0'; -- '1' to boot from internal bootloader
-      cache_flush<='0';
+      memory_enable<='1'; -- '1' to boot from internal bootloader
+      icache_flush<='0';
+      dcache_flush<='0';
     else
-      cache_flush<='0';
+      icache_flush<='0';
+      dcache_flush<='0';
 
       if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         case wb_adr_i(4 downto 2) is
@@ -248,7 +251,8 @@ begin
             end loop;
           when "100" =>
             memory_enable <= wb_dat_i(0);
-            cache_flush <= wb_dat_i(1);
+            icache_flush <= wb_dat_i(1);
+            dcache_flush <= wb_dat_i(2);
           when others =>
         end case;
       end if;

@@ -208,7 +208,8 @@ package zpuinopkg is
       wb_inta_o:out std_logic;
 
       intready: in std_logic;
-      cache_flush: out std_logic;
+      icache_flush: out std_logic;
+      dcache_flush: out std_logic;
       memory_enable: out std_logic;
 
       slot_cyc:   out slot_std_logic_type;
@@ -359,7 +360,8 @@ package zpuinopkg is
     wb_inta_o:out std_logic;
 
     poppc_inst:in std_logic;
-    cache_flush: out std_logic;
+    icache_flush: out std_logic;
+    dcache_flush: out std_logic;
     memory_enable: out std_logic;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
