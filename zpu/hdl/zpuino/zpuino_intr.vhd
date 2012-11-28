@@ -230,6 +230,9 @@ begin
       intr_level_q<=(others =>'0');
       --intr_q <= (others =>'0');
       memory_enable<='1'; -- '1' to boot from internal bootloader
+      -- synopsys translate_off
+      --memory_enable<='0';
+      -- synopsys translate_on
       icache_flush<='0';
       dcache_flush<='0';
     else

@@ -234,9 +234,9 @@ type decoderegs_type is record
 
   valid:          std_logic;
   op:             opcode_type;
-  pc:             unsigned(maxAddrBit downto 0);
-  fetchpc:        unsigned(maxAddrBit downto 0);
-  pcint:          unsigned(maxAddrBit downto 0);
+  pc:             unsigned(maxAddrBitBRAM downto 0);
+  fetchpc:        unsigned(maxAddrBitBRAM downto 0);
+  pcint:          unsigned(maxAddrBitBRAM downto 0);
   idim:           std_logic;
   im:             std_logic;
   im_emu:         std_logic;
@@ -249,8 +249,8 @@ type prefetchregs_type is record
   op:             opcode_type;
   spnext:         unsigned(maxAddrBitBRAM downto 2);
   valid:          std_logic;
-  pc:             unsigned(maxAddrBit downto 0);
-  fetchpc:        unsigned(maxAddrBit downto 0);
+  pc:             unsigned(maxAddrBitBRAM downto 0);
+  fetchpc:        unsigned(maxAddrBitBRAM downto 0);
   idim:           std_logic;
   break:          std_logic;
   load:           std_logic;
@@ -416,7 +416,9 @@ begin
             when 1 => tOpcode := std_logic_vector(ico.data(23 downto 16));
             when 2 => tOpcode := std_logic_vector(ico.data(15 downto 8));
             when 3 => tOpcode := std_logic_vector(ico.data(7 downto 0));
+            -- synopsys translate_off
             when others => null;
+            -- synopsys translate_on
        end case;
 
     sop.opcode    <= tOpcode;
@@ -609,13 +611,14 @@ begin
 
     end process;
 
-    process(decr, jump_address, decode_jump, syscon, sop, dfu_hold, ico)
+    pcnext <= decr.fetchpc + 1;
+
+    process(decr, jump_address, decode_jump, syscon, sop, dfu_hold, ico, pcnext )
       variable w: decoderegs_type;
     begin
 
       w := decr;
-      pcnext <= decr.fetchpc + 1;
-      ici.address(maxAddrBit downto 0) <= std_logic_vector(decr.fetchpc(maxAddrBit downto 0));
+      ici.address(maxAddrBitBRAM downto 0) <= std_logic_vector(decr.fetchpc(maxAddrBitBRAM downto 0));
 
       case decr.state is
 
@@ -626,8 +629,8 @@ begin
               ici.strobe <= '1';
               ici.enable <= '1';
             else
-            ici.strobe <= not dfu_hold;
-            ici.enable <= not dfu_hold;
+              ici.strobe <= not dfu_hold;
+              ici.enable <= not dfu_hold;
             end if;
             if ico.stall='0' then
               w.fetchpc := pcnext;
@@ -730,6 +733,7 @@ begin
       variable a_enable: std_logic;
       variable a_strobe: std_logic;
       variable request_done: std_logic;
+      variable do_hold_dfu: std_logic;
     begin
 
       w := prefr;
@@ -784,11 +788,10 @@ begin
             w.abort := '0';
           end if;
 
+          do_hold_dfu := exu_busy or (prefr.request and not dco.a_valid) or  (a_strobe and dco.a_stall);
+          dfu_hold <= do_hold_dfu;
 
-
-          dfu_hold <= exu_busy or (prefr.request and not dco.a_valid) or  (a_strobe and dco.a_stall);
-
-          if (pfu_hold='0' and pfu_invalidate='0' and dfu_hold='0') then --or prefr.recompute_sp='1' then
+          if (pfu_hold='0' and pfu_invalidate='0' and do_hold_dfu='0') then
 
             case decr.op.stackOper is
               when Stack_Push =>      w.spnext := prefr.spnext - 1;
@@ -897,6 +900,10 @@ begin
 
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
+
+    if a_enable<='0' then
+      dci.a_address <= (others => DontCareValue);
+    end if;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;

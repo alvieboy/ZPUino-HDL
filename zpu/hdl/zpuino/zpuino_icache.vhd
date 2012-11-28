@@ -314,7 +314,7 @@ begin
 
   cache_addr_write <= line_save & std_logic_vector(offcnt_write(offcnt_write'HIGH downto 2));
 
-  process(busy,miss,access_q)
+  process(busy,miss,access_q,fill_success)
   begin
     if busy='1' then
       stall_i<='1';
@@ -333,7 +333,7 @@ begin
   mwbo.cyc <= cyc;
   mwbo.stb <= stb when offcnt(offcnt'HIGH)='0' else '0';
   mwbo.we <='0';
-  mwbo.adr(maxAddrBit downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBit downto CACHE_LINE_SIZE_BITS);
+  mwbo.adr(maxAddrBitBRAM downto CACHE_LINE_SIZE_BITS) <= save_addr(maxAddrBitBRAM downto CACHE_LINE_SIZE_BITS);
   mwbo.adr(CACHE_LINE_SIZE_BITS-1 downto 2) <= std_logic_vector(offcnt(CACHE_LINE_SIZE_BITS-1 downto 2));
 
 end behave;

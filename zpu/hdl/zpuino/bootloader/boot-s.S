@@ -11,6 +11,8 @@ spi_copy:
 start_sketch:
 	im STACKTOP
         popsp
+        im __flush
+        call
         im __sketch_start
         poppc
 

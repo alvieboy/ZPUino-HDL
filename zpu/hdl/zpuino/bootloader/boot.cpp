@@ -50,6 +50,7 @@
 
 extern "C" void (*ivector)(void);
 extern "C" void *bootloaderdata;
+extern "C" void __flush();
 
 static BDATA int inprogrammode;
 static BDATA volatile unsigned int milisseconds;

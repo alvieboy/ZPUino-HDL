@@ -33,18 +33,18 @@ architecture behave of zpuino_dcache is
   
   constant CACHE_LINE_ID_BITS: integer := CACHE_MAX_BITS-CACHE_LINE_SIZE_BITS;
 
-  subtype address_type is std_logic_vector(ADDRESS_HIGH-1 downto 2);
+  subtype address_type is std_logic_vector(ADDRESS_HIGH downto 2);
   -- A line descriptor
   subtype line_number_type is std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0);
   -- Offset within a line
   subtype line_offset_type is std_logic_vector(CACHE_LINE_SIZE_BITS-1-2 downto 0);
   -- A tag descriptor
-  subtype tag_type is std_logic_vector((ADDRESS_HIGH-CACHE_MAX_BITS)-1 downto 0);
+  subtype tag_type is std_logic_vector((ADDRESS_HIGH-CACHE_MAX_BITS) downto 0);
   -- A full tag memory descriptor. Includes valid bit and dirty bit
-  subtype full_tag_type is std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS+1 downto 0);
+  subtype full_tag_type is std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS+2 downto 0);
 
-  constant VALID: integer := ADDRESS_HIGH-CACHE_MAX_BITS;
-  constant DIRTY: integer := ADDRESS_HIGH-CACHE_MAX_BITS+1;
+  constant VALID: integer := ADDRESS_HIGH-CACHE_MAX_BITS+1;
+  constant DIRTY: integer := ADDRESS_HIGH-CACHE_MAX_BITS+2;
   ------------------------------------------------------------------------------
 
   type state_type is (
@@ -84,7 +84,7 @@ architecture behave of zpuino_dcache is
   function address_to_tag(a: in address_type) return tag_type is
     variable t: tag_type;
   begin
-    t:= a(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
+    t:= a(ADDRESS_HIGH downto CACHE_MAX_BITS);
     return t;
   end address_to_tag;
 
@@ -114,7 +114,6 @@ architecture behave of zpuino_dcache is
   -- Some helpers
   signal a_hit: std_logic;
   signal a_miss: std_logic;
-  signal b_hit: std_logic;
   signal b_miss: std_logic;
   signal a_b_conflict: std_logic;
   
@@ -144,7 +143,6 @@ architecture behave of zpuino_dcache is
   signal cmem_addrb:  std_logic_vector(CACHE_MAX_BITS-1 downto 2);
 
   signal r: regs_type;
-  signal a_will_busy, b_will_busy: std_logic;
   signal same_address: std_logic;
 
   constant offset_all_ones: line_offset_type := (others => '1');
@@ -155,7 +153,6 @@ architecture behave of zpuino_dcache is
   signal dbg_a_dirty: std_logic;
   signal dbg_b_dirty: std_logic;
 
-  signal wr_conflict: std_logic;
 begin
 
   -- These are alias, but written as signals so we can inspect them
@@ -168,7 +165,7 @@ begin
   tagmem: generic_dp_ram_rf
   generic map (
     address_bits  => CACHE_LINE_ID_BITS,
-    data_bits     => ADDRESS_HIGH-CACHE_MAX_BITS+2
+    data_bits     => ADDRESS_HIGH-CACHE_MAX_BITS+3
   )
   port map (
     clka      => syscon.clk,
@@ -217,6 +214,9 @@ begin
     variable w: regs_type;
     variable a_have_request: std_logic;
     variable b_have_request: std_logic;
+    variable a_will_busy: std_logic;
+    variable b_will_busy: std_logic;
+    variable wr_conflict: std_logic;
   begin
     w := r;
     co.a_valid<='0';
@@ -224,10 +224,9 @@ begin
     co.a_stall<='0';
     co.b_stall<='0';
     a_miss <='0';
-    b_hit <='0';
     b_miss <='0';
-    a_will_busy <= '0';
-    b_will_busy <= '0';
+    a_will_busy := '0';
+    b_will_busy := '0';
 
     a_b_conflict <='0';
     mwbo.cyc <= '0';
@@ -270,7 +269,7 @@ begin
 
     dbg_a_dirty <= tmem_doa(DIRTY);
     dbg_b_dirty <= tmem_dob(DIRTY);
-    wr_conflict <= '0';
+    wr_conflict := '0';
 
     case r.state is
       when idle =>
@@ -293,7 +292,6 @@ begin
           b_miss<='1';
           if tmem_dob(VALID)='1' then
             if tmem_dob(tag_type'RANGE) = address_to_tag(r.b_req_addr) then
-              b_hit<='1';
               b_miss<='0';
             end if;
           end if;
@@ -336,14 +334,14 @@ begin
             if tmem_doa(DIRTY)='1' then
               w.writeback_tag := tmem_doa(tag_type'RANGE);
               w.state := writeback;
-              a_will_busy<='1';
+              a_will_busy :='1';
             else
               w.state := readline;
-              a_will_busy<='1';
+              a_will_busy :='1';
             end if;
           else
             w.state := readline;
-            a_will_busy<='1';
+            a_will_busy :='1';
           end if;
         else
           -- if we're writing to a similar address, delay for one clock cycle
@@ -351,7 +349,7 @@ begin
           if r.wr_conflict='1' then
             co.a_valid<='0';
             co.a_stall<='1';
-            a_will_busy<='1';
+            a_will_busy :='1';
             cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
             tmem_addra <= address_to_line_number(r.a_req_addr);
           else
@@ -369,7 +367,7 @@ begin
           w.misses := r.misses+1;
           --a_stall <= '1';
           co.b_valid <= '0';
-          b_will_busy<='1';
+          b_will_busy :='1';
           --a_valid <= '0';
 
           w.fill_tag := address_to_tag(r.b_req_addr);
@@ -425,7 +423,7 @@ begin
               co.b_valid <= '1';
             end if;
           else
-            b_will_busy<='1';
+            b_will_busy :='1';
             co.b_stall <= '1';
           end if;
         end if;
@@ -433,8 +431,10 @@ begin
 
 
         if r.flush_req='1' then
-          a_will_busy<='1';
-          b_will_busy<='1';
+          a_will_busy :='1';
+          co.a_stall <= '1';
+          b_will_busy :='1';
+          co.b_stall <= '1';
           w.state := flush;
           w.fill_line_number := (others => '0');
           w.flush_line_number := (others => '0');
@@ -469,10 +469,10 @@ begin
           end if;
         end if;
 
-        wr_conflict <= '0';
+        wr_conflict := '0';
         if a_have_request='1' and b_have_request='1' and
           ci.a_address(address_type'RANGE)=ci.b_address(address_type'RANGE) then
-          wr_conflict <= '1';
+          wr_conflict := '1';
         end if;
         w.wr_conflict := wr_conflict;
 
@@ -481,7 +481,7 @@ begin
         co.b_stall <= '1';
 
         mwbo.adr<=(others => '0');
-        mwbo.adr(ADDRESS_HIGH-1 downto 2) <= r.fill_tag & r.fill_line_number & r.fill_offset_r;
+        mwbo.adr(ADDRESS_HIGH downto 2) <= r.fill_tag & r.fill_line_number & r.fill_offset_r;
         mwbo.cyc<='1';
         mwbo.stb<=not r.fill_r_done;
         mwbo.we<='0';
@@ -541,12 +541,11 @@ begin
         w.rvalid := '1';
 
         mwbo.adr<=(others => '0');
-        mwbo.adr(ADDRESS_HIGH-1 downto 2) <= r.writeback_tag & r.fill_line_number & r.fill_offset_r;
+        mwbo.adr(ADDRESS_HIGH downto 2) <= r.writeback_tag & r.fill_line_number & r.fill_offset_r;
         mwbo.cyc<=r.rvalid; --'1';
         mwbo.stb<=r.rvalid;--not r.fill_r_done;
         mwbo.we<=r.rvalid; --1';
         mwbo.sel<= (others => '1');
-        w.in_flush:='0'; -- test
         if mwbi.stall='0' and r.rvalid='1'  then
 
           w.fill_offset_r := std_logic_vector(unsigned(r.fill_offset_r) + 1);
@@ -555,8 +554,9 @@ begin
             w.fill_offset_r := (others => '0');
             w.fill_offset_w := (others => '0');
             w.fill_r_done := '0';
-            if r.in_flush<='1' then
+            if r.in_flush='1' then
               w.state := flush;
+              w.in_flush:='0';
             else
               w.state := readline;
             end if;
@@ -596,11 +596,12 @@ begin
 
 
       when write_after_fill =>
-        cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);
+        --cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);
+        cmem_addra <= (others => DontCareValue);
         cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
         cmem_dib <= r.b_req_data;
-        cmem_web  <= r.b_req_wmask;
-        cmem_enb <= r.b_req_we;--'1';
+        cmem_web <= r.b_req_wmask;
+        cmem_enb <= '1';
 
         co.a_stall <= '1';
         co.b_stall <= '1';
@@ -630,11 +631,21 @@ begin
 
         --tmem_addrb <= r.fill_line_number;
         tmem_addrb <= r.flush_line_number;
+        tmem_addra <= (others => DontCareValue);
+        tmem_ena <='0';
+        tmem_wea <='0';
 
         tmem_dib(VALID)<='0';
         tmem_dib(DIRTY)<='0';
+
         tmem_web<='1';
         tmem_enb<='1';
+        cmem_ena <= '0';
+        cmem_enb <= '0';
+        cmem_addra <= (others => DontCareValue);
+        cmem_addrb <= (others => DontCareValue);
+        cmem_dia <= (others => DontCareValue);
+        cmem_dib <= (others => DontCareValue);
         --w.fill_line_number := r.fill_line_number+1;
         w.flush_line_number := r.flush_line_number+1;
 
@@ -650,17 +661,11 @@ begin
           tmem_web<='0';
           w.fill_offset_r := (others => '0');
           w.flush_line_number := r.flush_line_number;
-          --cmem_dib <= cmem_dob;
-          --cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
-          --cmem_web <= (others => '1');
-          --cmem_enb <= '1';
           w.fill_r_done := '0';
           w.state := writeback;
         else
-          --w.flush_line_number := r.fill_line_number;
           w.fill_line_number := r.flush_line_number;
 
-          --if r.flush_line_number = line_number_all_ones then --r.in_flush='1' and r.fill_line_number=line_number_all_zeroes then
           if r.fill_line_number = line_number_all_ones then --r.in_flush='1' and r.fill_line_number=line_number_all_zeroes then
             w.state := idle;
             w.in_flush :='0';
@@ -675,13 +680,17 @@ begin
 
     if rising_edge(syscon.clk) then
       if syscon.rst='1' then
-        r.state <= idle;
+
         r.a_req <= '0';
         r.b_req <= '0';
         r.wr_conflict <= '0';
         r.misses<=0;
         r.flush_req<='0';
         r.in_flush<='0';
+        --r.fill_line_number := (others => '0');
+       -- r.flush_line_number := (others => '0');
+        --r.state <= flush;
+        r.state <= idle;
       else
         r <= w;
       end if;

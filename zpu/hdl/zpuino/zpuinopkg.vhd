@@ -61,7 +61,7 @@ package zpuinopkg is
   end record;
 
   type icache_in_type is record
-    address:        std_logic_vector(maxAddrBit downto 0);
+    address:        std_logic_vector(maxAddrBitBRAM downto 0);
     strobe:         std_logic;
     enable:         std_logic;
     flush:          std_logic;
