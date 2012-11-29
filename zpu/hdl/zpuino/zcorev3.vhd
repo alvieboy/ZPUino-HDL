@@ -490,10 +490,10 @@ begin
           sop.stackOper<=Stack_Same;
           sop.decoded<=Decoded_Loadb;
           sop.tosSource <= Tos_Source_LSU;
-        --elsif (tOpcode(5 downto 0)=OpCode_Loadh) then
-        --  sop.stackOper<=Stack_Same;
-        --  sop.decoded<=Decoded_Loadh;
-        --  sop.tosSource <= Tos_Source_LSU;
+        elsif (tOpcode(5 downto 0)=OpCode_Loadh) then
+          sop.stackOper<=Stack_Same;
+          sop.decoded<=Decoded_Loadh;
+          sop.tosSource <= Tos_Source_LSU;
         elsif (tOpcode(5 downto 0)=OpCode_Neqbranch) then
           sop.stackOper<=Stack_DualPop;
           sop.decoded<=Decoded_Neqbranch;
@@ -1203,6 +1203,9 @@ begin
            w.inInterrupt := '1';
            jump_address <= to_unsigned(32, maxAddrBit+1);
            decode_jump <= '1';
+           dci.b_we <='1';
+           dci.b_wmask <="1111";
+
            wroteback:='1';
            instruction_executed := '0';
            --w.state := State_WaitSPB;

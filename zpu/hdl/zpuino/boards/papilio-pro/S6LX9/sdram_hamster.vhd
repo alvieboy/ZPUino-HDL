@@ -317,7 +317,7 @@ begin
 
    pending <= '1' when r.wr_pending='1' or r.rd_pending='1' else '0';
 
-   process (r, rstate, address, req_read, rdata_write, req_write, addr_row, addr_bank, addr_col, data_in, captured)
+   process (r, rstate, address, req_read, rdata_write, req_write, addr_row, addr_bank, addr_col, data_in, captured, data_mask)
    begin
       -- copy the existing values
       n <= r;

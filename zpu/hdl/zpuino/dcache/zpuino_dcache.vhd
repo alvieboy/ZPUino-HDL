@@ -53,7 +53,8 @@ architecture behave of zpuino_dcache is
     writeback,
     write_after_fill,
     settle,
-    flush
+    flush,
+    abort
   );
 
   type regs_type is record
@@ -272,6 +273,9 @@ begin
     wr_conflict := '0';
 
     case r.state is
+      when abort =>
+        co.a_stall<='1';
+        co.b_stall<='1';
       when idle =>
 
         -- Now, after reading from tag memory....
@@ -311,7 +315,7 @@ begin
             -- synopsys translate_off
             report "Conflict" & hstr(tmem_dob) severity failure;
             -- synopsys translate_on
-
+            w.state := abort;
           end if;                               
         end if;
 
