@@ -755,6 +755,12 @@ begin
       -- Stack
       w.load := decode_load_sp;
 
+      if decr.op.decoded=Decoded_LoadSP or decr.op.decoded=decoded_AddSP then
+        dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
+      end if;
+
+
+
       if decode_load_sp='1' then
 
         pfu_busy <= '1';
@@ -763,7 +769,7 @@ begin
         w.spnext := sp_load(maxAddrBitBRAM downto 2);
         w.recompute_sp := '1';
 
-        dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
+        --dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
 
       else
 
@@ -782,14 +788,14 @@ begin
             case decr.op.decoded is
               when Decoded_LoadSP | decoded_AddSP =>
 
-                dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
+                --dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
                 --a_enable := '1';
                 a_strobe := '1';
               when others =>
             end case;
             w.abort := '0';
           else
-            dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
+            --dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
           end if;
 
           do_hold_dfu := exu_busy or (prefr.request and not dco.a_valid) or  (a_strobe and dco.a_stall);

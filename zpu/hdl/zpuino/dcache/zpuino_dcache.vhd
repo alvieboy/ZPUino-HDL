@@ -224,8 +224,8 @@ begin
     co.b_valid<='0';
     co.a_stall<='0';
     co.b_stall<='0';
-    a_miss <='0';
-    b_miss <='0';
+    a_miss <= DontCareValue;
+    b_miss <= DontCareValue;
     a_will_busy := '0';
     b_will_busy := '0';
 
@@ -304,6 +304,8 @@ begin
         end if;
 
         -- Conflict
+
+        -- synopsys translate_off
         if (r.a_req='1' and r.b_req='1') then
           -- We have a conflict if we're accessing the same line, but however
           -- the tags mismatch
@@ -312,15 +314,16 @@ begin
             --tmem_dob(tag_type'RANGE) /= tmem_doa(tag_type'RANGE) then
             address_to_tag(r.a_req_addr) /= address_to_tag(r.b_req_addr) then
 
-            -- synopsys translate_off
+
             report "Conflict" & hstr(tmem_dob) severity failure;
-            -- synopsys translate_on
+            
             w.state := abort;
           end if;                               
         end if;
+        -- synopsys translate_on
 
         -- Miss handling
-        if r.a_req='1' then
+        --if r.a_req='1' then
         if a_miss='1' then
           co.a_stall <= '1';
           --b_stall <= '1';
@@ -360,7 +363,7 @@ begin
             co.a_valid <= '1';
           end if;
         end if;
-        end if;
+        --end if;
 
 
 
