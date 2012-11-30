@@ -260,6 +260,7 @@ type prefetchregs_type is record
   request:        std_logic;
   pending:        std_logic;
   abort:          std_logic;
+  op_freeze:      std_logic;
 end record;
 
 type exuregs_type is record
@@ -734,6 +735,7 @@ begin
       variable a_strobe: std_logic;
       variable request_done: std_logic;
       variable do_hold_dfu: std_logic;
+      variable op_freeze: std_logic;  
     begin
 
       w := prefr;
@@ -836,24 +838,18 @@ begin
 
     -- Moved op_will_freeze from decoder to here
     case decr.op.decoded is
-      when Decoded_StoreSP
-          | Decoded_LoadB
-          | Decoded_Neqbranch
-          | Decoded_StoreB
-          | Decoded_Mult
-          | Decoded_Ashiftleft
-          | Decoded_Break
-          --| Decoded_Load
-          | Decoded_LoadH
-          | Decoded_Store
-          | Decoded_StoreH
-          | Decoded_PopSP
-          | Decoded_MultF16 =>
+      when Decoded_Ashiftleft |
+      Decoded_Mult |
+      Decoded_MultF16 |
+      Decoded_Store | Decoded_StoreB | Decoded_Storeh |
+      Decoded_Load | Decoded_Loadb | Decoded_Loadh |
+      Decoded_PopSP |
+      Decoded_Neqbranch =>
 
-        --i_op_freeze := '1';
+        op_freeze := '1';
 
       when others =>
-        --i_op_freeze := '0';
+        op_freeze := '0';
     end case;
 
     writeback:='0';
@@ -922,6 +918,7 @@ begin
       w.idim          := decr.idim;
       w.writeback     := writeback;
       w.readback      := readback;
+      w.op_freeze     := op_freeze;
     end if;
 
     if syscon.rst='1' then
@@ -1095,7 +1092,7 @@ begin
 
        if prefr_valid='1' then
 
-        exu_busy <= '0';
+        exu_busy <= prefr.op_freeze;
 
 
 
@@ -1147,8 +1144,6 @@ begin
 
           when Tos_Source_SP =>
             w.tos := (others => '0');
-            --w.tos(31) := '1'; -- Stack address
-            --w.tos(maxAddrBit downto spMaxBit+1) := prefr.spseg;
             w.tos(maxAddrBitBRAM downto 2) := prefr.sp;
 
           when Tos_Source_Add =>
@@ -1198,10 +1193,6 @@ begin
           when Tos_Source_Shift =>
             w.tos := exr.tos + exr.tos;
 
-          --when Tos_Source_LSU =>
-          --  if lsu_busy='0' then
-          --    w.tos := unsigned(lsu_data_read);
-          --  end if;
           when others =>
 
         end case;
@@ -1218,7 +1209,6 @@ begin
 
            wroteback:='1';
            instruction_executed := '0';
-           --w.state := State_WaitSPB;
 
           when Decoded_Im0 =>
 
@@ -1257,53 +1247,36 @@ begin
           when Decoded_PushSP =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
-
-            --stack_a_writeenable<=(others =>'1');
-            --w.nos := exr.tos;
             wroteback:='1';
 
           when Decoded_LoadSP =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
---            stack_a_writeenable <= (others =>'1');
-            --w.nos := exr.tos;
             wroteback:='1';
 
           when Decoded_DupStackB =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
-            --w.nos := exr.tos;
-            --stack_a_writeenable <= (others => '1');
             wroteback:='1';
 
           when Decoded_Dup =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
-            --w.nos := exr.tos;
-            --stack_a_writeenable<= (others =>'1');
             wroteback:='1';
 
           when Decoded_AddSP =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
 
---            stack_a_writeenable <= (others =>'1');
-
           when Decoded_StoreSP =>
             dci.b_we <='1';
             dci.b_wmask <="1111";
-            --w.nos := exr.tos;
-
---            stack_a_writeenable <= (others =>'1');
             b_strobe := '1';
             wroteback:='1';
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.sp + prefr.op.spOffset);
             instruction_executed := '0';
-            --w.state := State_WaitSPB;
 
           when Decoded_PopDown =>
-            --dci.b_we <='1';
-            --dci.b_wmask <="1111";
 
           when Decoded_PopDownDown =>
             dci.b_we <='1';
@@ -1313,20 +1286,18 @@ begin
             wroteback:='1';
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.sp + prefr.op.spOffset);
 
---            stack_a_writeenable<=(others =>'1');
-
           when Decoded_Pop =>
 
           when Decoded_Ashiftleft =>
-            exu_busy<='1';
+            --exu_busy<='1';
             w.state := State_Ashiftleft;
 
           when Decoded_Mult  =>
-            exu_busy<='1';
+            --exu_busy<='1';
             w.state := State_Mult;
 
           when Decoded_MultF16  =>
-            exu_busy<='1';
+            --exu_busy<='1';
             w.state := State_MultF16;
 
           when Decoded_Store | Decoded_StoreB | Decoded_StoreH =>
@@ -1399,19 +1370,14 @@ begin
 
             dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
             dci.b_data_in <= datawrite;
-            exu_busy <= '1';
+            --exu_busy <= '1';
 
           when Decoded_Load | Decoded_Loadb | Decoded_Loadh =>
 
-            --w.tos_save := exr.tos; -- Byte select
-
             instruction_executed := '0';
-            --wroteback := wroteback_q; -- Keep WB
-
-            --if inside_stack='1' then --exr.tos(wordSize-1)='1' then
 
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
-            exu_busy <= '1';
+            --exu_busy <= '1';
 
             if exr.tos(maxAddrBitIncIO)='0' then
               b_enable := '1';
@@ -1431,42 +1397,21 @@ begin
                 w.tos := unsigned(iowbi.dat);
 
                 if prefr.op.decoded=Decoded_Loadb then
-                  exu_busy<='1';
+                  --exu_busy<='1';
                   w.state:=State_Loadb;
                 elsif prefr.op.decoded=Decoded_Loadh then
-                  exu_busy<='1';
+                  --exu_busy<='1';
                   w.state:=State_Loadh;
                 else
                   instruction_executed:='1';
                   wroteback := '0';
-                  exu_busy <= '0';--w.state := State_Execute;
+                  exu_busy <= '0';
                 end if;
 
               end if;
 
             end if;
 
-            
-
-            --else
-            --  exu_busy <= lsu_busy;
-            --  lsu_req <= '1';
-            --  lsu_we  <= '0';
-            --  stack_a_enable <= '0';
-            --  stack_a_addr  <= (others => DontCareValue);
-            --  stack_a_write <= (others => DontCareValue);
-            --  stack_b_enable <= not lsu_busy;
-
-            --  if lsu_busy='0' then
-            --    if prefr.decodedOpcode=Decoded_Loadb then
-            --      exu_busy<='1';
-            --      w.state:=State_Loadb;
-            --    elsif prefr.decodedOpcode=Decoded_Loadh then
-            --      exu_busy<='1';
-            --      w.state:=State_Loadh;
-            --    end if;
-            --  end if;
-            --end if;
 
           when Decoded_PopSP =>
 
@@ -1475,7 +1420,7 @@ begin
             --dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2)+1);
             --b_enable := '1';
             --b_strobe := '1';
-            exu_busy <= '1';
+            --exu_busy <= '1';
             dci.b_we <='1';
             dci.b_wmask <="1111";
 
@@ -1495,7 +1440,7 @@ begin
             w.break := '1';
 
           when Decoded_Neqbranch =>
-            exu_busy <= '1';
+            --exu_busy <= '1';
             instruction_executed := '0';
             w.state := State_NeqBranch;
 
