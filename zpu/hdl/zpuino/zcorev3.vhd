@@ -763,6 +763,8 @@ begin
         w.spnext := sp_load(maxAddrBitBRAM downto 2);
         w.recompute_sp := '1';
 
+        dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
+
       else
 
         pfu_busy <= exu_busy or (not dco.a_valid) or prefr.abort;
@@ -786,6 +788,8 @@ begin
               when others =>
             end case;
             w.abort := '0';
+          else
+            dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
           end if;
 
           do_hold_dfu := exu_busy or (prefr.request and not dco.a_valid) or  (a_strobe and dco.a_stall);
