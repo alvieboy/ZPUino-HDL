@@ -140,7 +140,10 @@ void uart_write_data(unsigned int address,unsigned int val)
 		send(clientsockfd, &c, 1, 0);
 	} else {
 		uart_log(c);
+		if (c=='\n')
+			vte_terminal_feed(VTE_TERMINAL(vte),"\r",1);
 		vte_terminal_feed(VTE_TERMINAL(vte),(char*)&c,1);
+
 	}
 }
 

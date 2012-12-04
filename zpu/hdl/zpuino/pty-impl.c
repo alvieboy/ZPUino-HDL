@@ -87,7 +87,8 @@ int pty_receive()
 int pty_transmit(int t)
 {
 	unsigned char r = (unsigned)t & 0xff;
-	printf("TX data: %02x\n",r);
+	printf("%c",r);
+	fflush(stdout);
 	if (mastersockfd <0)
         return 0;
 

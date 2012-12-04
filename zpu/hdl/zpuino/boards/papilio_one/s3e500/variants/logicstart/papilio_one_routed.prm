@@ -1,0 +1,14 @@
+PROMGEN: Xilinx Prom Generator O.61xd
+Copyright (c) 1995-2011 Xilinx, Inc.  All rights reserved.
+
+promgen -w -spi -p bin -o papilio_one_routed.bin -s 1024 -u 0 papilio_one_routed.bit 
+
+PROM papilio_one_routed.prm map: Tue Jul 31 16:40:51 2012
+
+Format        Bin
+Size          1024K
+PROM start    00000000
+PROM end      000fffff
+
+        Addr1        Addr2                     Date File(s)
+     00000000     0004547f     Jul 31 16:40:46 2012 papilio_one_routed.bit

@@ -54,7 +54,8 @@ package zpu_config is
   constant minIOBit: integer := 2;
 
   constant stackSize_bits: integer := 9;
-
+  constant enable_fmul16: boolean := false;
+  constant Undefined: std_logic := '0';
 	
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words

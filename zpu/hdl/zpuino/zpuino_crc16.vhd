@@ -41,16 +41,16 @@ process(wb_adr_i,crc_q,poly_q, crcA_q, crcB_q)
 begin
   case wb_adr_i(4 downto 2) is
     when "000" =>
-      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(31 downto 16) <= (others => Undefined);
       wb_dat_o(15 downto 0) <= crc_q;
     when "001" =>
-      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(31 downto 16) <= (others => Undefined);
       wb_dat_o(15 downto 0) <= poly_q;
     when "100" =>
-      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(31 downto 16) <= (others => Undefined);
       wb_dat_o(15 downto 0) <= crcA_q;
     when "101" =>
-      wb_dat_o(31 downto 16) <= (others => '0');
+      wb_dat_o(31 downto 16) <= (others => Undefined);
       wb_dat_o(15 downto 0) <= crcB_q;
     when others =>
       wb_dat_o <= (others => DontCareValue);

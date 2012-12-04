@@ -232,13 +232,14 @@ begin
 
   process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data,uart_intx)
   begin
-    wb_dat_o <= (others => '0');
     case wb_adr_i(2) is
       when '1' =>
+        wb_dat_o <= (others => Undefined);
         wb_dat_o(0) <= not fifo_empty;
         wb_dat_o(1) <= uart_busy;
         wb_dat_o(2) <= uart_intx;
       when '0' =>
+        wb_dat_o <= (others => '0');
         wb_dat_o(7 downto 0) <= fifo_data;
       when others =>
         wb_dat_o <= (others => DontCareValue);

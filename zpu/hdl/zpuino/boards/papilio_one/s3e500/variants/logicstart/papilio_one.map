@@ -1,0 +1,211 @@
+Release 13.2 Map O.61xd (nt64)
+Xilinx Map Application Log File for Design 'papilio_one_top'
+
+Design Information
+------------------
+Command Line   : map -intstyle ise -p xc3s500e-vq100-4 -cm speed -detail -ir off
+-ignore_keep_hierarchy -pr b -register_duplication on -timing -ol high
+-logic_opt on -o papilio_one.ncd papilio_one.ngd papilio_one.pcf 
+Target Device  : xc3s500e
+Target Package : vq100
+Target Speed   : -4
+Mapper Version : spartan3e -- $Revision: 1.55 $
+Mapped Date    : Tue Jul 31 16:30:32 2012
+
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+INFO:Security:54 - 'xc3s500e' is a WebPack part.
+WARNING:Security:42 - Your software subscription period has lapsed. Your current
+version of Xilinx tools will continue to function, but you no longer qualify for
+Xilinx software updates or new releases.
+----------------------------------------------------------------------
+Mapping design into LUTs...
+Running directed packing...
+WARNING:Pack:504 - The I/O component SPI_SCK has conflicting SLEW property
+   values.  The symbol SPI_SCK has property value FAST.  The symbol
+   ospiclk/obufi has property value .  The system will use the property value
+   attached to symbol SPI_SCK.
+WARNING:Pack:501 - The I/O component SPI_SCK has conflicting DRIVE property
+   values.  The symbol SPI_SCK has property value 8.  The symbol ospiclk/obufi
+   has property value .  The system will use the property value attached to
+   symbol SPI_SCK.
+WARNING:Pack:504 - The I/O component TXD has conflicting SLEW property values. 
+   The symbol TXD has property value FAST.  The symbol obuftx/obufi has property
+   value .  The system will use the property value attached to symbol TXD.
+WARNING:Pack:501 - The I/O component TXD has conflicting DRIVE property values. 
+   The symbol TXD has property value 8.  The symbol obuftx/obufi has property
+   value .  The system will use the property value attached to symbol TXD.
+WARNING:Pack:504 - The I/O component WING_B<0> has conflicting SLEW property
+   values.  The symbol WING_B<0> has property value FAST.  The symbol
+   pin16/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<0>.
+WARNING:Pack:501 - The I/O component WING_B<0> has conflicting DRIVE property
+   values.  The symbol WING_B<0> has property value 8.  The symbol pin16/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<0>.
+WARNING:Pack:504 - The I/O component WING_B<1> has conflicting SLEW property
+   values.  The symbol WING_B<1> has property value FAST.  The symbol
+   pin17/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<1>.
+WARNING:Pack:501 - The I/O component WING_B<1> has conflicting DRIVE property
+   values.  The symbol WING_B<1> has property value 8.  The symbol pin17/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<1>.
+WARNING:Pack:504 - The I/O component WING_B<2> has conflicting SLEW property
+   values.  The symbol WING_B<2> has property value FAST.  The symbol
+   pin18/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<2>.
+WARNING:Pack:501 - The I/O component WING_B<2> has conflicting DRIVE property
+   values.  The symbol WING_B<2> has property value 8.  The symbol pin18/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<2>.
+WARNING:Pack:504 - The I/O component WING_B<3> has conflicting SLEW property
+   values.  The symbol WING_B<3> has property value FAST.  The symbol
+   pin19/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<3>.
+WARNING:Pack:501 - The I/O component WING_B<3> has conflicting DRIVE property
+   values.  The symbol WING_B<3> has property value 8.  The symbol pin19/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<3>.
+WARNING:Pack:504 - The I/O component WING_B<4> has conflicting SLEW property
+   values.  The symbol WING_B<4> has property value FAST.  The symbol
+   pin20/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<4>.
+WARNING:Pack:501 - The I/O component WING_B<4> has conflicting DRIVE property
+   values.  The symbol WING_B<4> has property value 8.  The symbol pin20/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<4>.
+WARNING:Pack:504 - The I/O component WING_B<5> has conflicting SLEW property
+   values.  The symbol WING_B<5> has property value FAST.  The symbol
+   pin21/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<5>.
+WARNING:Pack:501 - The I/O component WING_B<5> has conflicting DRIVE property
+   values.  The symbol WING_B<5> has property value 8.  The symbol pin21/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<5>.
+WARNING:Pack:504 - The I/O component WING_B<6> has conflicting SLEW property
+   values.  The symbol WING_B<6> has property value FAST.  The symbol
+   pin22/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<6>.
+WARNING:Pack:501 - The I/O component WING_B<6> has conflicting DRIVE property
+   values.  The symbol WING_B<6> has property value 8.  The symbol pin22/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<6>.
+WARNING:Pack:504 - The I/O component WING_B<7> has conflicting SLEW property
+   values.  The symbol WING_B<7> has property value FAST.  The symbol
+   pin23/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<7>.
+WARNING:Pack:501 - The I/O component WING_B<7> has conflicting DRIVE property
+   values.  The symbol WING_B<7> has property value 8.  The symbol pin23/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<7>.
+WARNING:Pack:504 - The I/O component WING_B<8> has conflicting SLEW property
+   values.  The symbol WING_B<8> has property value FAST.  The symbol
+   pin24/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<8>.
+WARNING:Pack:501 - The I/O component WING_B<8> has conflicting DRIVE property
+   values.  The symbol WING_B<8> has property value 8.  The symbol pin24/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<8>.
+WARNING:Pack:504 - The I/O component WING_B<9> has conflicting SLEW property
+   values.  The symbol WING_B<9> has property value FAST.  The symbol
+   pin25/obufi has property value .  The system will use the property value
+   attached to symbol WING_B<9>.
+WARNING:Pack:501 - The I/O component WING_B<9> has conflicting DRIVE property
+   values.  The symbol WING_B<9> has property value 8.  The symbol pin25/obufi
+   has property value .  The system will use the property value attached to
+   symbol WING_B<9>.
+WARNING:Pack:501 - The I/O component SPI_CS has conflicting DRIVE property
+   values.  The symbol SPI_CS has property value 8.  The symbol ospics/obufi has
+   property value .  The system will use the property value attached to symbol
+   SPI_CS.
+Running delay-based LUT packing...
+Updating timing models...
+Running timing-driven placement...
+Total REAL time at the beginning of Placer: 26 secs 
+Total CPU  time at the beginning of Placer: 22 secs 
+
+Phase 1.1  Initial Placement Analysis
+Phase 1.1  Initial Placement Analysis (Checksum:85456050) REAL time: 32 secs 
+
+Phase 2.7  Design Feasibility Check
+Phase 2.7  Design Feasibility Check (Checksum:85456050) REAL time: 32 secs 
+
+Phase 3.31  Local Placement Optimization
+Phase 3.31  Local Placement Optimization (Checksum:85456050) REAL time: 32 secs 
+
+Phase 4.2  Initial Clock and IO Placement
+
+Phase 4.2  Initial Clock and IO Placement (Checksum:aeacf4d9) REAL time: 35 secs 
+
+Phase 5.30  Global Clock Region Assignment
+Phase 5.30  Global Clock Region Assignment (Checksum:aeacf4d9) REAL time: 35 secs 
+
+Phase 6.36  Local Placement Optimization
+Phase 6.36  Local Placement Optimization (Checksum:aeacf4d9) REAL time: 35 secs 
+
+Phase 7.8  Global Placement
+............................
+.....................................................................................................................................
+.....
+........................................................................................................................................................
+................
+................
+........................................................................
+............................
+Phase 7.8  Global Placement (Checksum:bdd02385) REAL time: 2 mins 6 secs 
+
+Phase 8.5  Local Placement Optimization
+Phase 8.5  Local Placement Optimization (Checksum:bdd02385) REAL time: 2 mins 6 secs 
+
+Phase 9.18  Placement Optimization
+Phase 9.18  Placement Optimization (Checksum:504481ab) REAL time: 4 mins 45 secs 
+
+Phase 10.5  Local Placement Optimization
+Phase 10.5  Local Placement Optimization (Checksum:504481ab) REAL time: 4 mins 46 secs 
+
+Total REAL time to Placer completion: 4 mins 48 secs 
+Total CPU  time to Placer completion: 4 mins 25 secs 
+Running physical synthesis...
+..........
+Physical synthesis completed.
+Running post-placement packing...
+
+Design Summary
+--------------
+
+Design Summary:
+Number of errors:      0
+Number of warnings:   25
+Logic Utilization:
+  Number of Slice Flip Flops:         2,178 out of   9,312   23%
+  Number of 4 input LUTs:             3,705 out of   9,312   39%
+Logic Distribution:
+  Number of occupied Slices:          2,651 out of   4,656   56%
+    Number of Slices containing only related logic:   2,651 out of   2,651 100%
+    Number of Slices containing unrelated logic:          0 out of   2,651   0%
+      *See NOTES below for an explanation of the effects of unrelated logic.
+  Total Number of 4 input LUTs:       3,989 out of   9,312   42%
+    Number used as logic:             3,618
+    Number used as a route-thru:        284
+    Number used for Dual Port RAMs:      16
+      (Two LUTs used per Dual Port RAM)
+    Number used as Shift registers:      71
+
+  The Slice Logic Distribution report is not meaningful if the design is
+  over-mapped for a non-slice resource or if Placement fails.
+
+  Number of bonded IOBs:                 55 out of      66   83%
+    IOB Flip Flops:                      50
+  Number of RAMB16s:                     20 out of      20  100%
+  Number of BUFGMUXs:                     3 out of      24   12%
+  Number of DCMs:                         2 out of       4   50%
+  Number of MULT18X18SIOs:                3 out of      20   15%
+
+Average Fanout of Non-Clock Nets:                3.38
+
+Peak Memory Usage:  363 MB
+Total REAL time to MAP completion:  5 mins 6 secs 
+Total CPU time to MAP completion:   4 mins 42 secs 
+
+Mapping completed.
+See MAP report file "papilio_one.mrp" for details.

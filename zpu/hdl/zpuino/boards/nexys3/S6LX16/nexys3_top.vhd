@@ -92,7 +92,8 @@ architecture behave of nexys3_top is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
-    rstout: out std_logic
+    rstout: out std_logic;
+    locked: out std_logic
   );
   end component;
 
@@ -161,6 +162,8 @@ architecture behave of nexys3_top is
   signal rx: std_logic;
   signal tx: std_logic;
   signal sysclk_sram_we, sysclk_sram_wen: std_ulogic;
+  signal clklocked: std_logic;
+  signal tx_q: std_logic;
 
 begin
 
@@ -192,7 +195,8 @@ begin
     clkout  => sysclk,
     clkout1  => sysclk_sram_we,
     clkout2  => sysclk_sram_wen,
-    rstout  => clkgen_rst
+    rstout  => clkgen_rst,
+    locked  => clklocked
   );
 
   pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => JA(0) );
@@ -256,14 +260,21 @@ begin
   ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
 
-  oled0:    OPAD port map ( I => gpio_o(49), O => gpio_o(49),  PAD => LED(0));
-  oled1:    OPAD port map ( I => gpio_o(50), O => gpio_o(50),  PAD => LED(1));
-  oled2:    OPAD port map ( I => gpio_o(51), O => gpio_o(51),  PAD => LED(2));
-  oled3:    OPAD port map ( I => gpio_o(52), O => gpio_o(52),  PAD => LED(3));
-  oled4:    OPAD port map ( I => gpio_o(53), O => gpio_o(53),  PAD => LED(4));
-  oled5:    OPAD port map ( I => gpio_o(54), O => gpio_o(54),  PAD => LED(5));
-  oled6:    OPAD port map ( I => gpio_o(55), O => gpio_o(55),  PAD => LED(6));
-  oled7:    OPAD port map ( I => gpio_o(56), O => gpio_o(56),  PAD => LED(7));
+  oled0:    OPAD port map ( I => gpio_o(49), O => gpio_i(49),  PAD => LED(0));
+  oled1:    OPAD port map ( I => gpio_o(50), O => gpio_i(50),  PAD => LED(1));
+  oled2:    OPAD port map ( I => gpio_o(51), O => gpio_i(51),  PAD => LED(2));
+  oled3:    OPAD port map ( I => gpio_o(52), O => gpio_i(52),  PAD => LED(3));
+--  oled4:    OPAD port map ( I => gpio_o(53), O => gpio_o(53),  PAD => LED(4));
+  oled4:    OPAD port map ( I => rx, PAD => LED(4));
+--  oled5:    OPAD port map ( I => gpio_o(54), O => gpio_o(54),  PAD => LED(5));
+  oled5:    OPAD port map ( I => tx_q, PAD => LED(5));
+  --oled6:    OPAD port map ( I => gpio_o(55), O => gpio_o(55),  PAD => LED(6));
+  oled6:    OPAD port map ( I => wb_rst_i, PAD => LED(6));
+  --oled7:    OPAD port map ( I => gpio_o(56), O => gpio_o(56),  PAD => LED(7));
+  oled7:    OPAD port map ( I => clklocked, PAD => LED(7));
+
+  process(wb_clk_i) begin if rising_edge(wb_clk_i) then tx_q<=tx; end if; end process;
+
 
   pin57: IPAD port map(O => gpio_i(57),C => sysclk,PAD => SW(0));
   pin58: IPAD port map(O => gpio_i(58),C => sysclk,PAD => SW(1));

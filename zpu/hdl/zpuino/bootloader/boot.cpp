@@ -8,7 +8,6 @@
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
-#define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 #ifdef SIMULATION
 # define SPICODESIZE 0x1000
@@ -19,7 +18,7 @@
 # define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
-#define VERSION_LOW  0x08
+#define VERSION_LOW  0x09
 
 /* Commands for programmer */
 
@@ -57,10 +56,32 @@ static BDATA volatile unsigned int milisseconds;
 static BDATA unsigned int flash_id;
 
 struct bootloader_data_t {
-    unsigned int spiend;
+	unsigned int spiend;
+	unsigned int signature;
+	const unsigned char *vstring;
 };
 
 struct bootloader_data_t bdata BDATA;
+
+const unsigned char vstring[] = {
+	VERSION_HIGH,
+	VERSION_LOW,
+	SPIOFFSET>>16,
+	SPIOFFSET>>8,
+	SPIOFFSET&0xff,
+	SPICODESIZE>>16,
+	SPICODESIZE>>8,
+	SPICODESIZE&0xff,
+	CLK_FREQ >> 24,
+	CLK_FREQ >> 16,
+	CLK_FREQ >> 8,
+	CLK_FREQ,
+	BOARD_ID >> 24,
+	BOARD_ID >> 16,
+	BOARD_ID >> 8,
+	BOARD_ID
+};
+
 
 static void outbyte(int);
 
@@ -99,7 +120,8 @@ extern "C" void printhex(unsigned int c)
 	printhexbyte(c);
 }
 
-static void spi_copy();
+extern "C" void spi_copy() __attribute__((noreturn));
+extern "C" void start_sketch() __attribute__((noreturn));
 
 #ifdef DEBUG_SERIAL
 const unsigned char serialbuffer[] = {
@@ -142,8 +164,12 @@ void finishSend()
 	outbyte(HDLC_frameFlag);
 }
 
-unsigned int inbyte()
+static unsigned int inbyte()
 {
+#ifdef BOOT_IMMEDIATLY
+		spi_copy();
+#else
+
 	for (;;)
 	{
 #ifdef DEBUG_SERIAL
@@ -157,9 +183,6 @@ unsigned int inbyte()
 
 #endif
 
-#ifdef BOOT_IMMEDIATLY
-		spi_copy();
-#else
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
@@ -168,12 +191,11 @@ unsigned int inbyte()
 #endif
 			spi_copy();
 		}
-#endif
-
 	}
+#endif
 }
 
-void enableTimer()
+static void enableTimer()
 {
 #ifdef BOOT_IMMEDIATLY
 	return; // TEST
@@ -251,37 +273,30 @@ static inline unsigned int spiread(register_t base)
 	return *base;
 }
 
-static void spi_copy()
-{
-	// Make sure we are on top of stack. We can safely discard everything
-	__asm__("im %0\n"
-			"popsp\n"
-			"im spi_copy_impl\n"
-			"" // poppc will be provided by func
-			:
-			:"i"(STACKTOP)
-		   );
-	//while (1) {}
-}
-
-extern "C" void start()
+extern "C" void __attribute__((noreturn)) start()
 {
 	ivector = (void (*)(void))0x1010;
 	bootloaderdata = &bdata;
-	__asm__("nop\nim %0\n"
-			"popsp\n"
-			"im __sketch_start\n"
-			""
-			:
-			: "i" (STACKTOP));
+	start_sketch();
 }
 
-unsigned start_read_size(register_t spidata)
+static unsigned start_read_size(register_t spidata)
 {
 	spiwrite(spidata,0x0B);
 	spiwrite(spidata+4,SPIOFFSET);
 	spiwrite(spidata+4,0);
 	return spiread(spidata) & 0xffff;
+}
+
+extern "C" void copy_sketch(register_t spidata, unsigned crc16base, unsigned sketchsize, volatile unsigned *target)
+{
+	while (sketchsize--) {
+		for (int i=4;i!=0;i--) {
+			spiwrite(spidata,0);
+			REGISTER(crc16base,ROFF_CRC16APP)=spiread(spidata);
+		}
+		*target++ = spiread(spidata);
+	}
 }
 
 extern "C" void __attribute__((noreturn)) spi_copy_impl()
@@ -306,7 +321,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	spi_enable();
 	sketchsize=start_read_size(spidata);
 	bdata.spiend = (sketchsize<<2) + SPIOFFSET + 4;
-
+	bdata.signature = 0xb00110ad;
+	bdata.vstring=vstring;
 	spiwrite(spidata,0);
 	spiwrite(spidata,0);
 	sketchcrc= spiread(spidata) & 0xffff;
@@ -331,20 +347,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef VERBOSE_LOADER
 	//printstring("Filling\n");
 #endif
-	while (sketchsize--) {
-		for (int i=4;i!=0;i--) {
-			spiwrite(spidata,0);
-			REGISTER(crc16base,ROFF_CRC16APP)=spiread(spidata);
-		}
-        /*
-		spiwrite(0);
-		CRC16APP=spiread();
-		spiwrite(0);
-		CRC16APP=spiread();
-		spiwrite(0);
-		CRC16APP=spiread();*/
-		*target++ = spiread(spidata);
-	}
+    copy_sketch(spidata, crc16base, sketchsize, target);
 #ifdef VERBOSE_LOADER
    // printstring("Filled\n");
 #endif
@@ -403,12 +406,14 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt()
 {
 	milisseconds++;
+//	outbyte('I');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
-static int is_atmel_flash()
+static inline int is_atmel_flash()
 {
-	return ((flash_id & 0xff0000)==0x1f0000);
+	//return ((flash_id & 0xff0000)==0x1f0000);
+	return 0;
 }
 
 static void simpleReply(unsigned int r)
@@ -424,10 +429,11 @@ static int spi_read_status()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
-
+#if 0
 	if (is_atmel_flash())
 		spiwrite(spidata,0x57);
 	else
+#endif
 		spiwrite(spidata,0x05);
 
 	spiwrite(spidata,0x00);
@@ -534,7 +540,6 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	unsigned int txcount;
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
-
 #ifdef __SST_FLASH__
 
 	// buffer[1-2] is number of TX bytes
@@ -579,6 +584,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
 #endif
+
 }
 
 static void cmd_set_baudrate(unsigned char *buffer)
@@ -621,24 +627,6 @@ static void cmd_waitready(unsigned char *buffer)
 	finishSend();
 }
 
-const unsigned char vstring[] = {
-	VERSION_HIGH,
-	VERSION_LOW,
-	SPIOFFSET>>16,
-	SPIOFFSET>>8,
-	SPIOFFSET&0xff,
-	SPICODESIZE>>16,
-	SPICODESIZE>>8,
-	SPICODESIZE&0xff,
-	CLK_FREQ >> 24,
-	CLK_FREQ >> 16,
-	CLK_FREQ >> 8,
-	CLK_FREQ,
-	BOARD_ID >> 24,
-	BOARD_ID >> 16,
-	BOARD_ID >> 8,
-	BOARD_ID
-};
 
 static void cmd_version(unsigned char *buffer)
 {
@@ -695,6 +683,8 @@ void cmd_start(unsigned char *buffer)
 
 	spi_enable();
 	bdata.spiend = (start_read_size(spidata)<<2) + SPIOFFSET + 4;
+	bdata.signature = 0xb00110ad;
+	bdata.vstring=vstring;
 	spi_disable(spidata);
 	flush();
 	start();
@@ -778,7 +768,7 @@ inline void configure_pins()
 }
 #endif
 
-#ifdef __ZPUINO_PAPILIO_PLUS__
+#if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
@@ -806,13 +796,28 @@ extern "C" unsigned _bfunctions[];
 
 extern "C" void udivmodsi4(); /* Just need it's address */
 
+extern "C" int loadsketch(unsigned offset, unsigned size)
+{
+	register_t spidata = &SPIDATA; // Ensure this stays in stack
+	unsigned crc16base = CRC16BASE;
+	volatile unsigned int *target = (volatile unsigned int *)0x1000;
+	spi_disable(spidata);
+	spi_enable();
+	spiwrite(spidata,0x0b);
+	spiwrite(spidata+4,offset);
+	spiwrite(spidata,0x0);
+	copy_sketch(spidata, crc16base, size, target);
+	spi_disable(spidata);
+	flush();
+	start();
+}
 
 extern "C" int main(int argc,char**argv)
 {
 	inprogrammode = 0;
 	milisseconds = 0;
 	unsigned bufferpos = 0;
-    unsigned char buffer[256 + 32];
+	unsigned char buffer[256 + 32];
 	int syncSeen;
 	int unescaping;
 
@@ -822,10 +827,13 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
+#ifndef VERBOSE_LOADER
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;
 	_bfunctions[2] = (unsigned)&memset;
 	_bfunctions[3] = (unsigned)&strcmp;
+	_bfunctions[4] = (unsigned)&loadsketch;
+#endif
 
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
@@ -841,7 +849,7 @@ extern "C" int main(int argc,char**argv)
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 	// Reset flash
 	spi_reset(&SPIDATA);
-#ifdef __ZPUINO_PAPILIO_ONE__
+#ifdef __SST_FLASH__
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable(&SPIDATA);

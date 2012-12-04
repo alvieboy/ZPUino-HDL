@@ -199,7 +199,7 @@ void spi_execute(unsigned int v)
 
 	switch(cmd) {
 	case READ_FAST:
-		//fprintf(stderr,"Reading address 0x%08x\n",savereg);
+		//printf("Reading address 0x%08x\n",savereg);
 		if (savereg>mapped_size) {
 			fprintf(stderr,"SPI: out of bounds %08x (mapped %08x)\n", savereg, mapped_size);
 			shiftout(0);
@@ -289,7 +289,7 @@ void spiflash_write(unsigned int v)
 			break;
 		default:
 			fprintf(stderr,"Invalid SPI command 0x%02x\n",v);
-			abort();
+			//abort();
 		}
 		break;
 
@@ -352,7 +352,29 @@ unsigned int spi_read_ctrl(unsigned int address)
 unsigned int spi_read_data(unsigned int address)
 {
 	unsigned int r = spiflash_read();
-  //  fprintf(stderr,"SPI read, returning 0x%08x\n", r);
+	return r;
+}
+
+unsigned int spi_read_data16(unsigned int address)
+{
+	spiflash_read();
+	unsigned int r = spiflash_read();
+	return r;
+}
+
+unsigned int spi_read_data24(unsigned int address)
+{
+	spiflash_read();
+	spiflash_read();
+	unsigned int r = spiflash_read();
+	return r;
+}
+unsigned int spi_read_data32(unsigned int address)
+{
+	spiflash_read();
+	spiflash_read();
+	spiflash_read();
+	unsigned int r = spiflash_read();
 	return r;
 }
 
@@ -365,14 +387,35 @@ void spi_write_data(unsigned int address,unsigned int val)
 	spiflash_write(val);
 }
 
+void spi_write_data16(unsigned int address,unsigned int val)
+{
+	spiflash_write(val>>8);
+	spiflash_write(val);
+
+}
+
+void spi_write_data24(unsigned int address,unsigned int val)
+{
+	spiflash_write(val>>16);
+	spiflash_write(val>>8);
+	spiflash_write(val);
+}
+
+void spi_write_data32(unsigned int address,unsigned int val)
+{
+	spiflash_write(val>>24);
+	spiflash_write(val>>16);
+	spiflash_write(val>>8);
+	spiflash_write(val);
+}
+
 unsigned spi_io_read_handler(unsigned address)
 {
 	MAPREGR(0,spi_read_ctrl);
-#ifdef NEWSPIMULTISIZE
-	MAPREGR(4,spi_read_data);
-#else
 	MAPREGR(1,spi_read_data);
-#endif
+	MAPREGR(3,spi_read_data16);
+	MAPREGR(5,spi_read_data24);
+	MAPREGR(7,spi_read_data32);
 	ERRORREG();
 	return 0;
 }
@@ -380,11 +423,10 @@ unsigned spi_io_read_handler(unsigned address)
 void spi_io_write_handler(unsigned address, unsigned value)
 {
 	MAPREGW(0,spi_write_ctrl);
-#ifdef NEWSPIMULTISIZE
-	MAPREGW(4,spi_write_data);
-#else
 	MAPREGW(1,spi_write_data);
-#endif
+	MAPREGW(3,spi_write_data16);
+	MAPREGW(5,spi_write_data24);
+	MAPREGW(7,spi_write_data32);
 	ERRORREG();
 }
 

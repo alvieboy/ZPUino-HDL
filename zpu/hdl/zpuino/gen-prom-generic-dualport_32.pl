@@ -5,7 +5,7 @@ use POSIX qw(ceil);
 
 my $infile = $ARGV[0];
 my $force = $ARGV[1];
-
+my $entity = $ARGV[2] || "prom_generic_dualport";
 my @st = stat($infile) or die;
 
 my $size = $st[7];
@@ -54,7 +54,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all; 
 use ieee.numeric_std.all;
 
-entity prom_generic_dualport is
+entity ${entity} is
   port (
     CLK:              in std_logic;
     WEA:  in std_logic;
@@ -70,9 +70,9 @@ entity prom_generic_dualport is
     MASKB:    in std_logic_vector(3 downto 0);
     DOB:         out std_logic_vector(31 downto 0)
   );
-end entity prom_generic_dualport;
+end entity ${entity};
 
-architecture behave of prom_generic_dualport is
+architecture behave of ${entity} is
 
   subtype RAM_WORD is STD_LOGIC_VECTOR (7 downto 0);
   type RAM_TABLE is array (0 to $twcount) of RAM_WORD;

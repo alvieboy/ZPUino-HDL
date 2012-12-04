@@ -754,7 +754,7 @@ begin
      data_in3  => sigmadelta_raw,
      
      audio_out => platform_audio_sd
-     );
+     );  
 
 
   pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
@@ -827,7 +827,7 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_data(0) <= platform_audio_sd; -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(0) <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
     gpio_spp_data(1) <= timers_pwm(0);          -- PPS1 : TIMER0
     gpio_spp_data(2) <= timers_pwm(1);          -- PPS2 : TIMER1
     gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI

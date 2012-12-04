@@ -1,0 +1,10 @@
+# PROMGEN: Xilinx Prom Generator P.28xd
+# Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.
+
+SOFTWARE_VERSION P.28xd
+DATE            11/20/2012 - 00:16
+SOURCE          papilio_pro_routed.bin
+DEVICE          1024K
+DATA_WIDTH      1
+FILL_DATA       0xFF
+START_ADDRESS   0x00000000 END_ADDRESS 0x00053393 DIRECTION_UP   "papilio_pro_routed.bit" 6slx9tqg144

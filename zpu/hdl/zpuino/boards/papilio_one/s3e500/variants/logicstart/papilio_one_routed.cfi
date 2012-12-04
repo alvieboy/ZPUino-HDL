@@ -1,0 +1,10 @@
+# PROMGEN: Xilinx Prom Generator O.61xd
+# Copyright (c) 1995-2011 Xilinx, Inc.  All rights reserved.
+
+SOFTWARE_VERSION O.61xd
+DATE            07/31/2012 - 16:40
+SOURCE          papilio_one_routed.bin
+DEVICE          1024K
+DATA_WIDTH      1
+FILL_DATA       0xFF
+START_ADDRESS   0x00000000 END_ADDRESS 0x0004547F DIRECTION_UP   "papilio_one_routed.bit" 3s500evq100

@@ -122,13 +122,6 @@ void byebye()
 	sign(0);
 }
 
-extern int do_interrupt;
-
-void zpuino_request_interrupt(int line)
-{
-    do_interrupt = 1;
-}
-
 void zpuino_tick(unsigned v)
 {
 	GSList *i;
