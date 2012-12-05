@@ -765,7 +765,7 @@ begin
 
       if decode_load_sp='1' then
 
-        pfu_busy <= '1';
+        --pfu_busy <= '1';
         dfu_hold <= '1';
 
         w.spnext := sp_load(maxAddrBitBRAM downto 2);
@@ -775,7 +775,7 @@ begin
 
       else
 
-        pfu_busy <= exu_busy or (not dco.a_valid) or prefr.abort;
+        --pfu_busy <= exu_busy or (not dco.a_valid) or prefr.abort;
 
         if decr.valid='1' then
 
@@ -819,7 +819,7 @@ begin
 
 
           if pfu_invalidate='1' then
-            pfu_busy <= '0';
+            --pfu_busy <= '0';
             dfu_hold <= '0';
           end if;
 
@@ -867,7 +867,7 @@ begin
 
 
 
-    pfu_busy <= dco.a_stall and a_strobe;
+    --pfu_busy <= dco.a_stall and a_strobe;
 
     
 
@@ -939,6 +939,7 @@ begin
 
   end block; -- PFU
 
+  -- synopsys translate_off
   dbg: block
     signal dco_a_valid: std_logic;
     signal dco_b_valid: std_logic;
@@ -956,6 +957,7 @@ begin
     prefr_abort <= prefr.abort;
     prefr_pending <= prefr.pending;
   end block;
+  -- synopsys translate_on
 
 
 
@@ -1330,7 +1332,9 @@ begin
                   when "00" =>
                     datawrite(31 downto 24) := std_logic_vector(nos(7 downto 0))  ;
                     sel := "1000";
-                  when others =>
+
+                  when others => null;
+
                 end case;
               end if;
 

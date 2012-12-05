@@ -115,8 +115,11 @@ architecture behave of zpuino_dcache is
   -- Some helpers
   signal a_hit: std_logic;
   signal a_miss: std_logic;
+  --attribute keep : string;
   signal b_miss: std_logic;
-  signal a_b_conflict: std_logic;
+ -- attribute keep of a_miss : signal is "true";
+  --attribute keep of b_miss : signal is "true";
+  --signal a_b_conflict: std_logic;
   
   -- Connection to tag memory
 
@@ -229,7 +232,7 @@ begin
     a_will_busy := '0';
     b_will_busy := '0';
 
-    a_b_conflict <='0';
+    --a_b_conflict <='0';
     mwbo.cyc <= '0';
     mwbo.stb <= DontCareValue;
     mwbo.adr <= (others => DontCareValue);
@@ -262,14 +265,16 @@ begin
     co.a_data_out <= cmem_doa;
     co.b_data_out <= cmem_dob;
 
-    w.ack_b_write := '0';
+    --w.ack_b_write := '0';
     w.rvalid := '0';
-
+    -- synopsys translate_off
     dbg_a_valid <= tmem_doa(VALID);
     dbg_b_valid <= tmem_dob(VALID);
 
     dbg_a_dirty <= tmem_doa(DIRTY);
     dbg_b_dirty <= tmem_dob(DIRTY);
+    -- synopsys translate_on
+
     wr_conflict := '0';
 
     case r.state is
@@ -305,7 +310,6 @@ begin
 
         -- Conflict
 
-        -- synopsys translate_off
         if (r.a_req='1' and r.b_req='1') then
           -- We have a conflict if we're accessing the same line, but however
           -- the tags mismatch
@@ -314,13 +318,12 @@ begin
             --tmem_dob(tag_type'RANGE) /= tmem_doa(tag_type'RANGE) then
             address_to_tag(r.a_req_addr) /= address_to_tag(r.b_req_addr) then
 
-
+            -- synopsys translate_off
             report "Conflict" & hstr(tmem_dob) severity failure;
-            
+            -- synopsys translate_on
             w.state := abort;
           end if;                               
         end if;
-        -- synopsys translate_on
 
         -- Miss handling
         --if r.a_req='1' then
@@ -369,7 +372,7 @@ begin
 
         -- Miss handling (B)
         if r.b_req='1' then
-        if b_miss='1' and a_miss='0' then
+        if b_miss='1' then--and a_miss='0' then
           co.b_stall <= '1';
           w.misses := r.misses+1;
           --a_stall <= '1';
@@ -403,30 +406,8 @@ begin
           end if;
         else
           if a_miss='0' and b_miss='0' then
-
-
             -- Process writes, line is in cache
-            if r.b_req_we='1' then
-              --co.b_stall <= '1'; -- Stall everything.
-              --b_will_busy <= '1';
-
-              -- Now, we need to re-write tag so to set dirty to '1'
-              --tmem_addrb <= address_to_line_number(r.b_req_addr);
-              --tmem_dib(tag_type'RANGE) <=address_to_tag(r.b_req_addr);
-              --tmem_dib(VALID)<='1';
-              --tmem_dib(DIRTY)<='1';
-              --tmem_web<='1';
-              --tmem_enb<='1';
-
-              --cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
-              --cmem_dib <= r.b_req_data;
-              --cmem_web <= r.b_req_wmask;
-              --cmem_enb <= '1';
-
-              w.ack_b_write:='1';
-              --w.state := settle;
-
-            else
+            if r.b_req_we='0' then
               co.b_valid <= '1';
             end if;
           else
@@ -614,7 +595,7 @@ begin
         co.b_stall <= '1';
         co.a_valid <= '0'; -- ERROR
         co.b_valid <= '0'; -- ERROR
-        w.ack_b_write := '1';
+        --w.ack_b_write := '1';
         w.state := settle;
 
       when settle =>

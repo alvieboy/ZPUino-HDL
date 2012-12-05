@@ -393,7 +393,7 @@ int main(int argc,char **argv)
 
 	zpuino_interface_init();
 
-	trace_init(1024*1024*2);
+	trace_init(1024*2);
 
 	if (load_device_map("device.map")<0) {
 		fprintf(stderr,"SIMULATOR: Error loading device map\n");

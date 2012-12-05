@@ -8,7 +8,7 @@ zpuinosimulator_SOURCES=simple-simulator.c \
 	executor.S zpuinointerface.c io.c gui.c \
 	timer.c spiflash.c \
 	crc16_core.c gpio.c uart.c intr.c crc16.c vga.c vgazx.c vgacharram.c \
-	spisdcard.c
+	spisdcard.c bootloader.c
 
 zpuinogenflash_SOURCES=genflash.c crc16_core.c
 	
