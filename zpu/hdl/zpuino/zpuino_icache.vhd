@@ -26,7 +26,7 @@ end zpuino_icache;
 architecture behave of zpuino_icache is
   
   constant ADDRESS_LOW: integer := 0;
-  constant CACHE_MAX_BITS: integer := 13; -- 8 Kb
+  constant CACHE_MAX_BITS: integer := 12; -- 8 Kb
   constant CACHE_LINE_SIZE_BITS: integer := 6; -- 64 bytes
   constant CACHE_LINE_ID_BITS: integer := CACHE_MAX_BITS-CACHE_LINE_SIZE_BITS;
 

@@ -149,6 +149,7 @@ Decoded_Ashiftright,
 Decoded_Loadb,
 Decoded_Loadh,
 Decoded_Call,
+Decoded_Callpcrel,
 Decoded_Mult,
 Decoded_MultF16
 );
@@ -503,6 +504,10 @@ begin
           sop.decoded<=Decoded_Call;
           sop.stackOper<=Stack_Same;
           sop.tosSource<=Tos_Source_FetchPC;
+        elsif (tOpcode(5 downto 0)=OpCode_CallPCrel) then
+          sop.decoded<=Decoded_Callpcrel;
+          sop.stackOper<=Stack_Same;
+          sop.tosSource<=Tos_Source_FetchPC;
 
         elsif (tOpcode(5 downto 0)=OpCode_Eq) then
           sop.decoded<=Decoded_Eq;
@@ -522,10 +527,10 @@ begin
           sop.decoded<=Decoded_StoreB;
           sop.stackOper<=Stack_DualPop;
           sop.freeze<='1';
-        --elsif (tOpcode(5 downto 0)=OpCode_StoreH) then
-        --  sop.decoded<=Decoded_StoreH;
-        --  sop.stackOper<=Stack_DualPop;
-        --  sop.freeze<='1';
+        elsif (tOpcode(5 downto 0)=OpCode_StoreH) then
+          sop.decoded<=Decoded_StoreH;
+          sop.stackOper<=Stack_DualPop;
+          sop.freeze<='1';
         elsif (tOpcode(5 downto 0)=OpCode_Mult) then
           sop.decoded<=Decoded_Mult;
           sop.stackOper<=Stack_Pop;
@@ -555,7 +560,9 @@ begin
       case tOpcode(3 downto 0) is
         when OpCode_Break =>
           sop.decoded<=Decoded_Break;
-          sop.freeze <= '1';
+          sop.stackOper<=Stack_Push;
+          sop.tosSource<=Tos_Source_FetchPC;
+
         when OpCode_PushSP =>
           sop.stackOper <= Stack_Push;
           sop.decoded<=Decoded_PushSP;
@@ -1028,7 +1035,6 @@ begin
     dci.b_wmask <= "0000";
 
     exu_busy <= '0';
-    --exu_busy <= dco.b_stall;
 
     decode_jump <= '0';
 
@@ -1059,8 +1065,10 @@ begin
 
       when State_ResyncFromStoreStack =>
         exu_busy <= '1';
-        w.state := State_ResyncNos;
-        dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);--exr.tos(maxAddrBitBRAM downto 2)+1);
+        if dco.b_stall='0' then
+          w.state := State_ResyncNos;
+        end if;
+        dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);
         b_enable := '1';
         b_strobe := '1';
         wroteback := '0';
@@ -1073,7 +1081,7 @@ begin
         b_strobe := '1';
         exu_busy <= '1';
         wroteback := '0';
-        if dco.b_valid='1' then
+        if dco.b_valid='1' and dco.b_stall='0' then
           w.state := State_Resync2;
         end if;
 
@@ -1098,13 +1106,11 @@ begin
 
 
 
-        if true then
-
         wroteback := '0';
         w.nos_save := nos;
         w.tos_save := exr.tos;
         w.idim := prefr.idim;
-        w.break:= prefr.break;
+        --w.break:= prefr.break;
 
         instruction_executed := '1';
         begin_inst<='1';
@@ -1233,6 +1239,12 @@ begin
 
             decode_jump <= '1';
             jump_address <= exr.tos(maxAddrBit downto 0);
+            instruction_executed := '0';
+
+          when Decoded_CallPCRel =>
+
+            decode_jump <= '1';
+            jump_address <= exr.tos(maxAddrBit downto 0) + prefr.pc;
             instruction_executed := '0';
 
           when Decoded_Emulate =>
@@ -1420,48 +1432,31 @@ begin
           when Decoded_PopSP =>
 
             decode_load_sp <= '1';
-            w.state := State_ResyncFromStoreStack;
-            --dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2)+1);
-            --b_enable := '1';
-            --b_strobe := '1';
-            --exu_busy <= '1';
             dci.b_we <='1';
             dci.b_wmask <="1111";
-
-            --else
-              --report "Implement me" severity failure;
-            --  w.state := State_WriteBackStack;
-            --  stack_a_addr <= (others => '0');
-            --  w.fillspread := (others => '0');
-            --  w.fillspwrite := (others => '0');
-            --end if;
-
             instruction_executed := '0';
+            w.state := State_ResyncFromStoreStack;
             
 
           when Decoded_Break =>
 
-            w.break := '1';
+
+            dci.b_we <='1';
+            dci.b_wmask <="1111";
+            wroteback:='1';
+
+            decode_jump <= not dco.b_stall;
+            jump_address <= (others => '0');
+            instruction_executed := '0';
 
           when Decoded_Neqbranch =>
-            --exu_busy <= '1';
             instruction_executed := '0';
             w.state := State_NeqBranch;
 
           when others =>
 
         end case;
-      else -- freeze_all
-        --
-        -- Freeze the entire pipeline.
-        --
-        exu_busy<='1';
-        --dci.a_enable <= '0';
-        b_enable := '0';
-        --dci.a_address <= (others => DontCareValue);
-        dci.b_address <= (others => DontCareValue);
 
-       end if;
       else
         -- not valid
         dci.b_address <= (others => DontCareValue);
@@ -1571,11 +1566,8 @@ begin
 
         instruction_executed := '0';
 
-        --dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext);
-        --wroteback:='0';
-        --w.state := State_Resync2;
         w.state := State_ResyncNos;
-        dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);--exr.tos(maxAddrBitBRAM downto 2)+1);
+        dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);
         b_enable := '1';
         b_strobe := '1';
 
@@ -1632,6 +1624,18 @@ begin
       end if;
     end if;
 
+  end process;
+
+  process(syscon.clk)
+  begin
+    if rising_edge(syscon.clk) then
+      dbg_out.pc <= std_logic_vector(prefr.pc);
+      dbg_out.sp <= std_logic_vector(prefr.sp);
+      dbg_out.opcode <= prefr.op.opcode;
+      dbg_out.stacka <= std_logic_vector(exr.tos);
+      dbg_out.stackb <= std_logic_vector(exr.nos);
+      dbg_out.valid <= prefr_valid and not exu_busy;
+   end if;
   end process;
 
 end behave;

@@ -82,16 +82,6 @@ end entity papilio_pro_top;
 
 architecture behave of papilio_pro_top is
 
-  component zpuino_debug_jtag_spartan6 is
-  port (
-    jtag_data_chain_in: in std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_out: out std_logic_vector(11 downto 0)
-  );
-  end component;
-
-  signal jtag_data_chain_in: std_logic_vector(98 downto 0);
-  signal jtag_ctrl_chain_out: std_logic_vector(11 downto 0);
-
   component clkgen is
   port (
     clkin:  in std_logic;
@@ -206,6 +196,18 @@ architecture behave of papilio_pro_top is
   signal memory_enable: std_logic;
   signal syscon: wb_syscon_type;
 
+  signal tracebuf_wbi: wb_mosi_type;
+  signal tracebuf_wbo: wb_miso_type;
+
+  component tracebuffer is
+  port (
+    syscon:   in wb_syscon_type;
+    dbg_in:   in zpu_dbg_out_type;
+    wbo:      out wb_miso_type;
+    wbi:      in  wb_mosi_type
+  );
+  end component;
+
   component sdram_ctrl is
   port (
     wb_clk_i: in std_logic;
@@ -275,7 +277,8 @@ architecture behave of papilio_pro_top is
   );
   end component;
 
-
+  signal dbg_in:         zpu_dbg_in_type;
+  signal dbg_out:        zpu_dbg_out_type;
 begin
 
   syscon.clk <= sysclk;
@@ -385,10 +388,10 @@ begin
       rom_wbo          => rom_wbi,
 
       dma_wbi          => dma_wbi,
-      -- No debug unit connected
+      
       dbg_reset     => open,
-      jtag_data_chain_out => open,            --jtag_data_chain_in,
-      jtag_ctrl_chain_in  => (others => '0') --jtag_ctrl_chain_out
+      dbg_in        => dbg_in,
+      dbg_out       => dbg_out
       );
 
   memarb: wbarb2_1
@@ -477,6 +480,9 @@ begin
   --
 
   uart_inst: zpuino_uart
+  generic map (
+    bits => 4
+  )
   port map (
     wb_clk_i      => syscon.clk,
 	 	wb_rst_i      => syscon.rst,
@@ -770,19 +776,23 @@ slot9: zpuino_empty_device
   -- IO SLOT 14
   --
 
-  slot14: zpuino_empty_device
-  port map (
-    wb_clk_i      => syscon.clk,
-	 	wb_rst_i      => syscon.rst,
-    wb_dat_o      => slot_read(14),
-    wb_dat_i      => slot_write(14),
-    wb_adr_i      => slot_address(14),
-    wb_we_i       => slot_we(14),
-    wb_cyc_i      => slot_cyc(14),
-    wb_stb_i      => slot_stb(14),
-    wb_ack_o      => slot_ack(14),
-    wb_inta_o     => slot_interrupt(14)
-  );
+  tracebuf_wbi.adr(slot_address(14)'RANGE)  <= slot_address(14);
+  tracebuf_wbi.dat  <= slot_write(14);
+  tracebuf_wbi.cyc  <= slot_cyc(14);
+  tracebuf_wbi.stb  <= slot_stb(14);
+  tracebuf_wbi.we  <= slot_we(14);
+  slot_ack(14) <= tracebuf_wbo.ack;
+  slot_interrupt(14) <= '0';
+  slot_read(14) <= tracebuf_wbo.dat;
+  
+  dbg: tracebuffer
+    port map (
+      syscon  => syscon,
+      dbg_in  => dbg_out,
+      wbi     => tracebuf_wbi,
+      wbo     => tracebuf_wbo
+   );
+
 
   --
   -- IO SLOT 15 - do not use

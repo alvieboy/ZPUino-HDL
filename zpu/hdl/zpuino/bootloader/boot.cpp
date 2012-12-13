@@ -815,6 +815,8 @@ extern "C" int loadsketch(unsigned offset, unsigned size)
 	start();
 }
 
+extern "C" void testcase();
+
 extern "C" int main(int argc,char**argv)
 {
 	inprogrammode = 0;
@@ -823,6 +825,8 @@ extern "C" int main(int argc,char**argv)
 	unsigned char buffer[256 + 32];
 	int syncSeen;
 	int unescaping;
+
+	//testcase();
 
 	ivector = &_zpu_interrupt;
 

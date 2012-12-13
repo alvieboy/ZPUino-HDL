@@ -150,9 +150,8 @@ package zpuinopkg is
     rom_wbo:    out wb_mosi_type;
     rom_wbi:    in wb_miso_type;
 
-    jtag_data_chain_out: out std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
-
+    dbg_in:         in zpu_dbg_in_type;
+    dbg_out:        out zpu_dbg_out_type
   );
   end component;
 

@@ -21,7 +21,7 @@ run
 -bus_delimiter <>
 -case Maintain
 -slice_utilization_ratio 100
--bram_utilization_ratio 60
+-bram_utilization_ratio 100
 -fsm_extract Yes 
 -fsm_encoding Auto
 -safe_implementation No

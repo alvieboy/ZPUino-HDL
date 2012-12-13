@@ -72,29 +72,14 @@ entity zcorev3_top is
     rom_wbo:    out wb_mosi_type;
     rom_wbi:    in wb_miso_type;
 
-    jtag_data_chain_out: out std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+    dbg_in:         in zpu_dbg_in_type;
+    dbg_out:        out zpu_dbg_out_type
 
   );
 end entity zcorev3_top;
 
 architecture behave of zcorev3_top is
 
-
-  component zpuino_debug_core is
-  port (
-    clk: in std_logic;
-    rst: in std_logic;
-
-    dbg_in:         in zpu_dbg_out_type;
-    dbg_out:        out zpu_dbg_in_type;
-    dbg_reset:      out std_logic;
-
-    jtag_data_chain_out: out std_logic_vector(98 downto 0);
-    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
-
-  );
-  end component;
 
   --signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
@@ -147,23 +132,10 @@ begin
       dcache_flush   => dcache_flush,
       rwbi          => rwbi,
       rwbo          => rwbo,
-      dbg_in        => dbg_to_zpu,
-      dbg_out       => dbg_from_zpu
+      dbg_in        => dbg_in,
+      dbg_out       => dbg_out
     );
 
-
-  dbg: zpuino_debug_core
-    port map (
-      clk           => syscon.clk,
-      rst           => syscon.rst,
-      dbg_out       => dbg_to_zpu,
-      dbg_in        => dbg_from_zpu,
-      dbg_reset     => dbg_reset,
-
-      jtag_data_chain_out => jtag_data_chain_out,
-      jtag_ctrl_chain_in => jtag_ctrl_chain_in
-
-   );
 
   io: zpuino_io
     port map (

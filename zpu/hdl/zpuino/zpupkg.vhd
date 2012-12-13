@@ -61,7 +61,7 @@ package zpupkg is
   type zpu_dbg_out_type is record
     pc:         std_logic_vector(maxAddrBit downto 0);
     opcode:     std_logic_vector(7 downto 0);
-    sp:         std_logic_vector(10 downto 2);
+    sp:         std_logic_vector(maxAddrBit downto 2);
     brk:        std_logic;
     ready:      std_logic;
     idim:       std_logic;

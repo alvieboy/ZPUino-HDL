@@ -280,7 +280,10 @@ begin
     case r.state is
       when abort =>
         co.a_stall<='1';
+        cmem_ena <= '0';
         co.b_stall<='1';
+        cmem_enb <= '0';
+        tmem_enb <= '0';
       when idle =>
 
         -- Now, after reading from tag memory....
@@ -329,6 +332,7 @@ begin
         --if r.a_req='1' then
         if a_miss='1' then
           co.a_stall <= '1';
+
           --b_stall <= '1';
           co.a_valid <= '0';
           --b_valid <= '0';
@@ -374,6 +378,8 @@ begin
         if r.b_req='1' then
         if b_miss='1' then--and a_miss='0' then
           co.b_stall <= '1';
+          cmem_enb <= '0';
+          tmem_enb <='0';
           w.misses := r.misses+1;
           --a_stall <= '1';
           co.b_valid <= '0';
@@ -387,16 +393,17 @@ begin
           w.fill_r_done := '0';
           w.fill_is_b := '1';
 
+          tmem_enb <= '0';
+
           if tmem_dob(VALID)='1' then
             if tmem_dob(DIRTY)='1' then
-              -- need to recover data - we overwrote it ...
+            -- need to recover data - we overwrote it ...
               w.writeback_tag := tmem_dob(tag_type'RANGE);
 
               cmem_dib <= cmem_dob;
               cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
               cmem_web <= (others => '1');
               cmem_enb <= '1';
-
               w.state := writeback;
             else
               w.state := readline;
@@ -435,7 +442,7 @@ begin
           w.a_req := ci.a_strobe and ci.a_enable;
           if ci.a_strobe='1' and ci.a_enable='1' then
             a_have_request := '1';
-            w.a_req_addr := ci.a_address(address_type'RANGE);
+            w.a_req_addr(address_type'RANGE) := ci.a_address(address_type'RANGE);
           end if;
         end if;
 
@@ -446,7 +453,7 @@ begin
           w.b_req := ci.b_strobe and ci.b_enable;
           if ci.b_strobe='1' and ci.b_enable='1' then
             b_have_request := '1';
-            w.b_req_addr := ci.b_address(address_type'RANGE);
+            w.b_req_addr(address_type'RANGE) := ci.b_address(address_type'RANGE);
             w.b_req_we := ci.b_we;
             tmem_web <= ci.b_we;
             tmem_dib(VALID)<='1';
