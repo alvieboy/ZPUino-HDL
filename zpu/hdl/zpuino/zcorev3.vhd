@@ -106,7 +106,8 @@ State_ResyncFromStoreStack,
 State_Neqbranch,
 State_Ashiftleft,
 State_Mult,
-State_MultF16
+State_MultF16,
+State_PopSP
 );
 
 type DecodedOpcodeType is
@@ -750,6 +751,13 @@ begin
       dci.a_address <= (others => '0');
       dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + 2);
       a_enable := not exu_busy or not dco.a_valid;
+
+      --if exu_busy='0' or dco.a_valid='0' then
+      --  a_enable <= '1';
+      --else
+      --  a_enable <= '0';
+      --end if;
+
       a_strobe := '0';
       dfu_hold <= '0';
 
@@ -914,9 +922,9 @@ begin
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
 
-    if a_enable<='0' then
-      dci.a_address <= (others => DontCareValue);
-    end if;
+    --if a_enable='0' then
+    --  dci.a_address <= (others => DontCareValue);
+    --end if;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;
@@ -1211,7 +1219,7 @@ begin
 
            w.inInterrupt := '1';
            jump_address <= to_unsigned(32, maxAddrBit+1);
-           decode_jump <= '1';
+           decode_jump <= not dco.b_stall;
            dci.b_we <='1';
            dci.b_wmask <="1111";
 
@@ -1279,8 +1287,8 @@ begin
             wroteback:='1';
 
           when Decoded_AddSP =>
-            dci.b_we <='1';
-            dci.b_wmask <="1111";
+            --dci.b_we <='1';
+            --dci.b_wmask <="1111";
 
           when Decoded_StoreSP =>
             dci.b_we <='1';
@@ -1431,11 +1439,11 @@ begin
 
           when Decoded_PopSP =>
 
-            decode_load_sp <= '1';
+            --decode_load_sp <= not dco.b_stall;
             dci.b_we <='1';
             dci.b_wmask <="1111";
             instruction_executed := '0';
-            w.state := State_ResyncFromStoreStack;
+            w.state := State_PopSP;
             
 
           when Decoded_Break =>
@@ -1463,6 +1471,10 @@ begin
         dci.b_data_in <= (others => DontCareValue);
 
       end if; -- valid
+      when State_PopSP => -- Note, this should be optimized.
+        decode_load_sp <= '1';
+        exu_busy<='1';
+        w.state := State_ResyncFromStoreStack;
 
       when State_Ashiftleft =>
         exu_busy <= '1';

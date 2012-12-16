@@ -430,6 +430,9 @@ begin
           co.a_stall <= '1';
           b_will_busy :='1';
           co.b_stall <= '1';
+
+          cmem_enb <= '0';
+
           w.state := flush;
           w.fill_line_number := (others => '0');
           w.flush_line_number := (others => '0');
@@ -513,6 +516,7 @@ begin
               tmem_dib(DIRTY)<=r.b_req_we;
               tmem_web<='1';
               tmem_enb<='1';
+              tmem_ena<='0';
               if r.b_req_we='1' then
                 -- Perform write
                 w.state := write_after_fill;
@@ -524,6 +528,7 @@ begin
               tmem_dia(DIRTY)<='0';
               tmem_wea<='1';
               tmem_ena<='1';
+              tmem_enb<='0';
             end if;
           end if;
         end if;
@@ -692,6 +697,35 @@ begin
     end if;
 
   end process;
+
+
+
+  -- Performance helper
+  process(syscon.clk)
+    constant di: std_logic_vector(cmem_dia'RANGE) := (others => DontCareValue);
+    constant ai: std_logic_vector(cmem_addra'RANGE) := (others => DontCareValue);
+  begin
+  if rising_edge(syscon.clk) then
+    if syscon.rst='0' then
+      if cmem_wea="0000" and cmem_dia/=di then
+        --report "Optimization data" severity failure;
+      end if;
+      if cmem_ena='0' and cmem_addra/=ai then
+        --report "Optimization address" severity failure;
+      end if;
+    end if;
+  end if;
+  end process;
+
+
+
+
+
+
+
+
+
+
 
 
 end behave;
