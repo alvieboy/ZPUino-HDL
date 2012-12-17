@@ -922,9 +922,9 @@ begin
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
 
-    --if a_enable='0' then
-    --  dci.a_address <= (others => DontCareValue);
-    --end if;
+    if a_enable='0' then
+      dci.a_address <= (others => DontCareValue);
+    end if;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;
@@ -1024,6 +1024,7 @@ begin
     --variable a_strobe: std_logic;
     variable b_strobe: std_logic;
     variable b_enable: std_logic;
+    variable wmask: std_logic_vector(3 downto 0);
   begin
 
     w := exr;
@@ -1040,7 +1041,7 @@ begin
     b_strobe :='0';
 
     dci.b_we <= '0';
-    dci.b_wmask <= "0000";
+    wmask := "0000";
 
     exu_busy <= '0';
 
@@ -1221,7 +1222,7 @@ begin
            jump_address <= to_unsigned(32, maxAddrBit+1);
            decode_jump <= not dco.b_stall;
            dci.b_we <='1';
-           dci.b_wmask <="1111";
+           wmask :="1111";
 
            wroteback:='1';
            instruction_executed := '0';
@@ -1229,7 +1230,7 @@ begin
           when Decoded_Im0 =>
 
            dci.b_we <='1';
-           dci.b_wmask <="1111";
+           wmask :="1111";
            wroteback:='1';
 
           when Decoded_ImN =>
@@ -1262,37 +1263,35 @@ begin
             jump_address(9 downto 5) <= unsigned(prefr.op.opcode(4 downto 0));
 
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
 
             wroteback:='1';
 
           when Decoded_PushSP =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             wroteback:='1';
 
           when Decoded_LoadSP =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             wroteback:='1';
 
           when Decoded_DupStackB =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             wroteback:='1';
 
           when Decoded_Dup =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             wroteback:='1';
 
           when Decoded_AddSP =>
-            --dci.b_we <='1';
-            --dci.b_wmask <="1111";
 
           when Decoded_StoreSP =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             b_strobe := '1';
             wroteback:='1';
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.sp + prefr.op.spOffset);
@@ -1302,7 +1301,7 @@ begin
 
           when Decoded_PopDownDown =>
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             w.nos := exr.tos;
             b_strobe := '1';
             wroteback:='1';
@@ -1366,7 +1365,7 @@ begin
               b_enable := '1';
               b_strobe := '1';
               dci.b_we <='1';
-              dci.b_wmask <= sel;
+              wmask := sel;
 
               if dco.b_stall='0' then
                 w.state := State_ResyncFromStoreStack;
@@ -1377,7 +1376,7 @@ begin
               b_enable :='0';
               b_strobe :='0';
               dci.b_we <='0';
-              dci.b_wmask <= (others => '0');
+              wmask := (others => '0');
               w.wb_cyc := '1';
               w.wb_stb := '1';
               w.wb_we := '1';
@@ -1441,7 +1440,7 @@ begin
 
             --decode_load_sp <= not dco.b_stall;
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             instruction_executed := '0';
             w.state := State_PopSP;
             
@@ -1450,7 +1449,7 @@ begin
 
 
             dci.b_we <='1';
-            dci.b_wmask <="1111";
+            wmask :="1111";
             wroteback:='1';
 
             decode_jump <= not dco.b_stall;
@@ -1600,6 +1599,16 @@ begin
 
     dci.b_enable <= b_enable;
     dci.b_strobe <= b_strobe;
+    dci.b_wmask  <= wmask;
+
+    if b_enable='0' then
+      dci.b_address <= (others => DontCareValue);
+      dci.b_data_in <= (others => DontCareValue);
+    end if;
+
+    if wmask="0000" then
+      dci.b_data_in <= (others => DontCareValue);
+    end if;
 
     if rising_edge(syscon.clk) then
       if syscon.rst='1' then

@@ -486,12 +486,14 @@ begin
 
         if r.fill_is_b='1' then
           cmem_addrb <= r.fill_line_number & r.fill_offset_w;
+          cmem_addra <= (others => DontCareValue);
           cmem_enb <= '1';
           cmem_ena <= '0';
           cmem_web <= (others => mwbi.ack);
           cmem_dib <= mwbi.dat;
         else
           cmem_addra <= r.fill_line_number & r.fill_offset_w;
+          cmem_addrb <= (others => DontCareValue);
           cmem_ena <= '1';
           cmem_enb <= '0';
           cmem_wea <= (others =>mwbi.ack);
@@ -531,6 +533,9 @@ begin
               tmem_enb<='0';
             end if;
           end if;
+        else
+          cmem_dia <= (others => DontCareValue);
+          cmem_dib <= (others => DontCareValue);
         end if;
 
 
@@ -708,10 +713,17 @@ begin
   if rising_edge(syscon.clk) then
     if syscon.rst='0' then
       if cmem_wea="0000" and cmem_dia/=di then
-        --report "Optimization data" severity failure;
+        report "A: Optimization data" severity note;
       end if;
       if cmem_ena='0' and cmem_addra/=ai then
-        --report "Optimization address" severity failure;
+        report "A: Optimization address" severity note;
+      end if;
+
+      if cmem_web="0000" and cmem_dib/=di then
+        report "B: Optimization data" severity note;
+      end if;
+      if cmem_enb='0' and cmem_addrb/=ai then
+        report "B: Optimization address" severity note;
       end if;
     end if;
   end if;
