@@ -105,9 +105,10 @@ begin
           else
             level := intr_level_q(i);
             not_level := not intr_level_q(i);
-            if ( intr_in(i) = not_level and intr_in_q(i)=level) then -- edge detection
-              intr_detected_q(i) <= '1';
-            end if;
+            --if ( intr_in(i) = not_level and intr_in_q(i)=level) then -- edge detection
+            --  intr_detected_q(i) <= '1';
+            --end if;
+            intr_detected_q(i) <= intr_in(i);
           end if;
         end loop;
 
