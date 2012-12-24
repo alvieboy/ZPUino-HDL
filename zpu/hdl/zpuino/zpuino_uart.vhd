@@ -137,11 +137,13 @@ architecture behave of zpuino_uart is
   signal data_ready_dly_q: std_logic;
   signal fifo_rd: std_logic;
   signal enabled_q: std_logic;
+  signal do_interrupt: std_logic;
+  signal int_enabled: std_logic;
 
 begin
 
   enabled <= enabled_q;
-  wb_inta_o <= '0';
+  wb_inta_o <= do_interrupt;
   wb_ack_o <= wb_cyc_i and wb_stb_i;
 
   rx_inst: zpuino_uart_rx
@@ -170,7 +172,7 @@ begin
     );
 
   -- TODO: check multiple writes
-  uart_write <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(2)='0' else '0';
+  uart_write <= '1' when (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1') and wb_adr_i(3 downto 2)="00" else '0';
 
    -- Rx timing
   rx_timer: uart_brgen
@@ -228,17 +230,18 @@ begin
     );
   
 
-  fifo_rd<='1' when wb_adr_i(2)='0' and (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='0') else '0';
+  fifo_rd<='1' when wb_adr_i(3 downto 2)="00" and (wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='0') else '0';
 
-  process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data,uart_intx)
+  process(wb_adr_i, received_data, uart_busy, data_ready, fifo_empty, fifo_data,uart_intx, int_enabled)
   begin
-    case wb_adr_i(2) is
-      when '1' =>
+    case wb_adr_i(3 downto 2) is
+      when "01" =>
         wb_dat_o <= (others => Undefined);
         wb_dat_o(0) <= not fifo_empty;
         wb_dat_o(1) <= uart_busy;
         wb_dat_o(2) <= uart_intx;
-      when '0' =>
+        wb_dat_o(3) <= int_enabled;
+      when "00" =>
         wb_dat_o <= (others => '0');
         wb_dat_o(7 downto 0) <= fifo_data;
       when others =>
@@ -251,11 +254,24 @@ begin
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
         enabled_q<='0';
+        int_enabled <= '0';
+        do_interrupt<='0';
       else
         if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
-          if wb_adr_i(2)='1' then
-            divider_rx_q <= wb_dat_i(15 downto 0);
-            enabled_q  <= wb_dat_i(16);
+          case wb_adr_i(3 downto 2) is
+            when "01" =>
+              divider_rx_q <= wb_dat_i(15 downto 0);
+              enabled_q  <= wb_dat_i(16);
+            when "10" =>
+              int_enabled <= wb_dat_i(0);
+              do_interrupt <= '0';
+            when others =>
+              null;
+          end case;
+        else
+          if int_enabled='1' and fifo_empty='0' then
+            do_interrupt <= '1';
+            int_enabled <= '0';
           end if;
         end if;
       end if;
