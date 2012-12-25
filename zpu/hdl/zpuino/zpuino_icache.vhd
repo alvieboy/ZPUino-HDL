@@ -36,19 +36,19 @@ architecture behave of zpuino_icache is
 
 
 
-  alias line: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0)
-    is ci.address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
+  signal line: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0);
+--    is ci.address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
 
-  alias line_offset: std_logic_vector(CACHE_LINE_SIZE_BITS-1 downto 2)
-    is ci.address(CACHE_LINE_SIZE_BITS-1 downto 2);
+  signal line_offset: std_logic_vector(CACHE_LINE_SIZE_BITS-1 downto 2);
+--    is ci.address(CACHE_LINE_SIZE_BITS-1 downto 2);
 
-  alias tag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)
-    is ci.address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
+  signal tag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0);
+--    is ci.address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
 
   signal ctag: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS downto 0);
 
-  type validmemtype is ARRAY(0 to (2**line'LENGTH)-1) of std_logic;
-  shared variable valid_mem: validmemtype;
+--  type validmemtype is ARRAY(0 to (2**line'LENGTH)-1) of std_logic;
+--  shared variable valid_mem: validmemtype;
 
   signal tag_mem_wen: std_logic;
   signal miss: std_logic;
@@ -67,8 +67,8 @@ architecture behave of zpuino_icache is
   alias tag_save: std_logic_vector(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)
     is save_addr(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
 
-  alias line_save: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0)
-    is save_addr(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
+  signal line_save: std_logic_vector(CACHE_LINE_ID_BITS-1 downto 0);
+--    is save_addr(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
 
   signal access_i: std_logic;
   signal access_q: std_logic;
@@ -100,6 +100,12 @@ architecture behave of zpuino_icache is
   constant dignore: std_logic_vector(ctag'RANGE) := (others => DontCareValue);
   constant dignore32: std_logic_vector(31 downto 0) := (others => DontCareValue);
 begin
+
+  line_save(CACHE_LINE_ID_BITS-1 downto 0)      <= save_addr(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
+  line(CACHE_LINE_ID_BITS-1 downto 0)           <= ci.address(CACHE_MAX_BITS-1 downto CACHE_LINE_SIZE_BITS);
+  line_offset(CACHE_LINE_SIZE_BITS-1 downto 2)  <= ci.address(CACHE_LINE_SIZE_BITS-1 downto 2);
+  tag(ADDRESS_HIGH-CACHE_MAX_BITS-1 downto 0)   <= ci.address(ADDRESS_HIGH-1 downto CACHE_MAX_BITS);
+
 
   tagmem: generic_dp_ram
   generic map (
