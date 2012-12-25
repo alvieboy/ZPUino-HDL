@@ -293,6 +293,7 @@ signal pcnext:          unsigned(maxAddrBitBRAM downto 0);  -- Helper only. TODO
 signal sp_load:         unsigned(maxAddrBitBRAM downto 2);    -- SP value to load, coming from EXU into PFU
 signal decode_load_sp:  std_logic;                      -- Load SP signal from EXU to PFU
 signal exu_busy:        std_logic;                      -- EXU busy ( stalls PFU )
+signal exu_busy_test:   std_logic;                      -- EXU busy ( stalls PFU )
 signal pfu_busy:        std_logic;                      -- PFU busy ( stalls DFU )
 signal decode_jump:     std_logic;                      -- Jump signal from EXU to DFU
 signal jump_address:    unsigned(maxAddrBitBRAM downto 0);  -- Jump address from EXU to DFU
@@ -304,7 +305,7 @@ signal nos:                   unsigned(wordSize-1 downto 0); -- This is only a h
 signal dci: dcache_in_type;
 signal dco: dcache_out_type;
 signal dfu_hold: std_logic;
-signal prefr_valid: std_logic; -- Valid insn/prefetch data
+signal is_prefr_valid: std_logic; -- Valid insn/prefetch data
 
 begin
 
@@ -622,7 +623,7 @@ begin
 
     pcnext <= decr.fetchpc + 1;
 
-    process(decr, jump_address, decode_jump, syscon, sop, dfu_hold, ico, pcnext )
+    process(decr, decr.op, jump_address, decode_jump, syscon, sop, dfu_hold, ico, pcnext )
       variable w: decoderegs_type;
     begin
 
@@ -690,14 +691,11 @@ begin
     -- Reset handling
     --
     if syscon.rst='1' then
-      --w.pc      := (others => '0');
-      --w.pcint   := (others => '0');
       w.valid   := '0';
       w.fetchpc := (others => '0');
       w.im      :='0';
       w.im_emu  :='0';
       w.state   := State_Run;
-      --w.break   := '0';
     end if;
 
     if rising_edge(syscon.clk) then
@@ -725,16 +723,25 @@ begin
   pfu: block
     signal pfu_invalidate : std_logic;
     signal pfu_hold : std_logic;
-
-
   begin
 
     pfu_hold <= exu_busy;
     pfu_invalidate <= decode_jump;
 
+    -- TEST: dci a_address
+    process(decr.op.decoded, prefr.spnext, decr.op.spOffset)
+    begin
+      dci.a_address <= (others => '0');
+      dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + 2);
+
+      if decr.op.decoded=Decoded_LoadSP or decr.op.decoded=decoded_AddSP then
+        dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
+      end if;
+
+    end process;
 
     process(syscon,
-            dco, decr, prefr, exu_busy, decode_jump, sp_load,
+            dco, decr, decr.op, prefr, prefr.op, exu_busy, decode_jump, sp_load,
             decode_load_sp, pfu_hold, pfu_invalidate)
       variable w: prefetchregs_type;
       variable writeback: std_logic;
@@ -748,15 +755,9 @@ begin
 
       w := prefr;
 
-      dci.a_address <= (others => '0');
-      dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + 2);
+--      dci.a_address <= (others => '0');
+--      dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + 2);
       a_enable := not exu_busy or not dco.a_valid;
-
-      --if exu_busy='0' or dco.a_valid='0' then
-      --  a_enable <= '1';
-      --else
-      --  a_enable <= '0';
-      --end if;
 
       a_strobe := '0';
       dfu_hold <= '0';
@@ -772,9 +773,9 @@ begin
       -- Stack
       w.load := decode_load_sp;
 
-      if decr.op.decoded=Decoded_LoadSP or decr.op.decoded=decoded_AddSP then
-        dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
-      end if;
+      --if decr.op.decoded=Decoded_LoadSP or decr.op.decoded=decoded_AddSP then
+      --  dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
+      --end if;
 
 
 
@@ -904,7 +905,7 @@ begin
 
     -- If we were halted and we were not able to place
     -- request, reset valid.
-    prefr_valid <= prefr.valid and request_done and not prefr.abort;
+    is_prefr_valid <= prefr.valid and request_done and not prefr.abort;
 
     if prefr.pending='1' and pfu_hold='1' then
       -- This is buggy - we can miss instructions here.
@@ -922,9 +923,9 @@ begin
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
 
-    if a_enable='0' then
-      dci.a_address <= (others => DontCareValue);
-    end if;
+    --if a_enable='0' then
+    --  dci.a_address <= (others => DontCareValue);
+    --end if;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;
@@ -954,35 +955,12 @@ begin
 
   end block; -- PFU
 
-  -- synopsys translate_off
-  dbg: block
-    signal dco_a_valid: std_logic;
-    signal dco_b_valid: std_logic;
-    signal dco_a_stall: std_logic;
-    signal dco_b_stall: std_logic;
-    signal prefr_valid: std_logic;
-    signal prefr_abort: std_logic;
-    signal prefr_pending: std_logic;
-  begin
-    dco_a_valid <= dco.a_valid;
-    dco_b_valid <= dco.b_valid;
-    dco_a_stall <= dco.a_stall;
-    dco_b_stall <= dco.b_stall;
-    prefr_valid <= prefr.valid;
-    prefr_abort <= prefr.abort;
-    prefr_pending <= prefr.pending;
-  end block;
-  -- synopsys translate_on
-
-
-
-  process(prefr,exr,nos)
+  process(prefr,exr,nos,prefr.op)
   begin
         trace_pc <= (others => '0');
         trace_pc(maxAddrBit downto 0) <= std_logic_vector(prefr.pc);
         trace_opcode <= prefr.op.opcode;
         trace_sp <= (others => '0');
-        --trace_sp(maxAddrBit downto spMaxBit+1) <= std_logic_vector(prefr.spseg);
         trace_sp(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.sp);
         trace_topOfStack <= std_logic_vector( exr.tos );
         trace_topOfStackB <= std_logic_vector( nos );
@@ -992,36 +970,28 @@ begin
   iowbo.cyc <= exr.wb_cyc;
   iowbo.stb <= exr.wb_stb;
   iowbo.we <= exr.wb_we;
+
   process(exr.wb_adr)
   begin
     iowbo.adr <= (others => '0');
     iowbo.adr(maxAddrBitIncIO downto 2) <= exr.wb_adr;
   end process;
   iowbo.dat <= exr.wb_dat;
-  --wb_cyc_o    <= exr.wb_cyc;
-  --wb_stb_o    <= exr.wb_stb;
-  --wb_we_o     <= exr.wb_we;
-  --lsu_data_write <= std_logic_vector( nos );
-
-  --freeze_all  <= dbg_in.freeze;
 
   process(exr, syscon, pcnext, dco,
           do_interrupt,
-          exr, prefr, prefr_valid,
+          exr, prefr, is_prefr_valid, prefr.op,
           nos,
           iowbi,
           lshifter_done,
           lshifter_output
           )
 
-    --variable spOffset: unsigned(4 downto 0);
     variable w: exuregs_type;
     variable instruction_executed: std_logic;
     variable wroteback: std_logic;
     variable datawrite: std_logic_vector(wordSize-1 downto 0);
     variable sel: std_logic_vector(3 downto 0);
-    --variable stackptrfull: unsigned(spMaxBit downto 2):= (others => '1');
-    --variable a_strobe: std_logic;
     variable b_strobe: std_logic;
     variable b_enable: std_logic;
     variable wmask: std_logic_vector(3 downto 0);
@@ -1109,7 +1079,7 @@ begin
 
        instruction_executed:='0';
 
-       if prefr_valid='1' then
+       if is_prefr_valid='1' then
 
         exu_busy <= prefr.op_freeze;
 
@@ -1393,6 +1363,7 @@ begin
 
             dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
             dci.b_data_in <= datawrite;
+
             --exu_busy <= '1';
 
           when Decoded_Load | Decoded_Loadb | Decoded_Loadh =>
@@ -1400,7 +1371,6 @@ begin
             instruction_executed := '0';
 
             dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
-            --exu_busy <= '1';
 
             if exr.tos(maxAddrBitIncIO)='0' then
               b_enable := '1';
@@ -1550,17 +1520,17 @@ begin
         w.tos := unsigned( dco.b_data_out );
 
         if dco.b_valid='1' then
-        if prefr.op.decoded=Decoded_Loadb then
-          exu_busy<='1';
-          w.state:=State_Loadb;
-        elsif prefr.op.decoded=Decoded_Loadh then
-          exu_busy<='1';
-          w.state:=State_Loadh;
-        else
-          instruction_executed:='1';
-          wroteback := '0';
-          w.state := State_Execute;
-        end if;
+          if prefr.op.decoded=Decoded_Loadb then
+            exu_busy<='1';
+            w.state:=State_Loadb;
+          elsif prefr.op.decoded=Decoded_Loadh then
+            exu_busy<='1';
+            w.state:=State_Loadh;
+          else
+            instruction_executed:='1';
+            wroteback := '0';
+            w.state := State_Execute;
+          end if;
         else
           exu_busy<='1';
         end if;
@@ -1570,10 +1540,9 @@ begin
           decode_jump <= '1';
           jump_address <= exr.tos(maxAddrBit downto 0) + prefr.pc;
           poppc_inst <= '1';
-          exu_busy <= '1';
-        else
-          exu_busy <='1';
         end if;
+
+        exu_busy <= '1';
 
         instruction_executed := '0';
 
@@ -1645,6 +1614,50 @@ begin
       end if;
     end if;
 
+    -- New test for exu_busy
+
+    exu_busy_test<='0';
+    if b_enable='1' and b_strobe='1' and dco.b_stall='1' then
+      exu_busy_test<='1';
+    end if;
+
+    if lshifter_enable='1' and lshifter_done='0' then
+      exu_busy_test<='1';
+    end if;
+
+    if exr.state=State_PopSP
+        or exr.state=State_ResyncFromStoreStack
+        or exr.state=State_ResyncNos
+        or exr.state=State_Neqbranch
+        then
+      exu_busy_test<='1';
+    end if;
+
+
+    if exr.state=State_Execute and prefr.valid='1' then
+      if prefr.op_freeze='1' then
+        exu_busy_test<='1';
+      end if;
+    end if;
+
+    --if exr.state=State_Load then
+      if iowbi.ack='1' then
+        if prefr.op.decoded = Decoded_Load or
+           prefr.op.decoded = Decoded_LoadH or
+           prefr.op.decoded = Decoded_LoadB then
+        exu_busy_test<='0';
+        end if;
+      end if;
+    --end if;
+
+    if rising_edge(syscon.clk) then
+      if syscon.rst='0' then
+      if exu_busy/=exu_busy_test then
+        report "Mismatch" severity note;
+      end if;
+      end if;
+    end if;
+
   end process;
 
   process(syscon.clk)
@@ -1655,7 +1668,7 @@ begin
       dbg_out.opcode <= prefr.op.opcode;
       dbg_out.stacka <= std_logic_vector(exr.tos);
       dbg_out.stackb <= std_logic_vector(exr.nos);
-      dbg_out.valid <= prefr_valid and not exu_busy;
+      dbg_out.valid <= is_prefr_valid and not exu_busy;
    end if;
   end process;
 
