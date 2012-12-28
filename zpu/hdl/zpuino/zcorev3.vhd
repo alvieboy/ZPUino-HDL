@@ -728,7 +728,6 @@ begin
     pfu_hold <= exu_busy;
     pfu_invalidate <= decode_jump;
 
-    -- TEST: dci a_address
     process(decr.op.decoded, prefr.spnext, decr.op.spOffset)
     begin
       dci.a_address <= (others => '0');
@@ -755,8 +754,6 @@ begin
 
       w := prefr;
 
---      dci.a_address <= (others => '0');
---      dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + 2);
       a_enable := not exu_busy or not dco.a_valid;
 
       a_strobe := '0';
@@ -770,28 +767,16 @@ begin
         request_done := not prefr.pending;
       end if;
 
-      -- Stack
       w.load := decode_load_sp;
-
-      --if decr.op.decoded=Decoded_LoadSP or decr.op.decoded=decoded_AddSP then
-      --  dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
-      --end if;
-
-
 
       if decode_load_sp='1' then
 
-        --pfu_busy <= '1';
         dfu_hold <= '1';
 
         w.spnext := sp_load(maxAddrBitBRAM downto 2);
         w.recompute_sp := '1';
 
-        --dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
-
       else
-
-        --pfu_busy <= exu_busy or (not dco.a_valid) or prefr.abort;
 
         if decr.valid='1' then
 
@@ -805,15 +790,10 @@ begin
 
             case decr.op.decoded is
               when Decoded_LoadSP | decoded_AddSP =>
-
-                --dci.a_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext + decr.op.spOffset);
-                --a_enable := '1';
                 a_strobe := '1';
               when others =>
             end case;
             w.abort := '0';
-          else
-            --dci.a_address(maxAddrBitBRAM downto 2) <= (others => DontCareValue);
           end if;
 
           do_hold_dfu := exu_busy or (prefr.request and not dco.a_valid) or  (a_strobe and dco.a_stall);
@@ -832,10 +812,7 @@ begin
 
           end if;
 
-
-
           if pfu_invalidate='1' then
-            --pfu_busy <= '0';
             dfu_hold <= '0';
           end if;
 
@@ -881,12 +858,6 @@ begin
       when others =>
     end case;
 
-
-
-    --pfu_busy <= dco.a_stall and a_strobe;
-
-    
-
     if prefr.request='0' then
       w.request := (a_strobe and a_enable) and not dco.a_stall;
     else
@@ -895,37 +866,24 @@ begin
       end if;
     end if;
 
-   --if pfu_hold='0' then
-      if a_strobe='1' and a_enable='1' and dco.a_stall='1' then
-        w.pending:='1';
-      else
-        w.pending:='0';
-      end if;
-   --end if;
+    if a_strobe='1' and a_enable='1' and dco.a_stall='1' then
+      w.pending:='1';
+    else
+      w.pending:='0';
+    end if;
 
     -- If we were halted and we were not able to place
     -- request, reset valid.
     is_prefr_valid <= prefr.valid and request_done and not prefr.abort;
 
     if prefr.pending='1' and pfu_hold='1' then
-      -- This is buggy - we can miss instructions here.
       w.abort := '1';
       w.pending := '0';
---      report "Pending request and holding at same time!" severity note;
-      --w.pending := '0';
-      --w.request := '0';
-      --a_enable  := '0';
-      --a_strobe:='0';
-      --w.valid := '0';
     end if;
 
 
     dci.a_enable <= a_enable;
     dci.a_strobe <= a_strobe;
-
-    --if a_enable='0' then
-    --  dci.a_address <= (others => DontCareValue);
-    --end if;
 
     if exu_busy='0' and request_done='1' then
       w.op            := decr.op;
@@ -1364,8 +1322,6 @@ begin
             dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(exr.tos(maxAddrBitBRAM downto 2));
             dci.b_data_in <= datawrite;
 
-            --exu_busy <= '1';
-
           when Decoded_Load | Decoded_Loadb | Decoded_Loadh =>
 
             instruction_executed := '0';
@@ -1390,10 +1346,8 @@ begin
                 w.tos := unsigned(iowbi.dat);
 
                 if prefr.op.decoded=Decoded_Loadb then
-                  --exu_busy<='1';
                   w.state:=State_Loadb;
                 elsif prefr.op.decoded=Decoded_Loadh then
-                  --exu_busy<='1';
                   w.state:=State_Loadh;
                 else
                   instruction_executed:='1';
@@ -1408,7 +1362,6 @@ begin
 
           when Decoded_PopSP =>
 
-            --decode_load_sp <= not dco.b_stall;
             dci.b_we <='1';
             wmask :="1111";
             instruction_executed := '0';
