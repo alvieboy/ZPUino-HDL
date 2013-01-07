@@ -3,13 +3,13 @@
 .text
 .globl spi_copy
 spi_copy:
-       im STACKTOP
+	im STACKTOP
         popsp 
         im spi_copy_impl
         poppc
 .globl start_sketch
 start_sketch:
-       im STACKTOP
+	im STACKTOP
         popsp
         im __sketch_start
         poppc

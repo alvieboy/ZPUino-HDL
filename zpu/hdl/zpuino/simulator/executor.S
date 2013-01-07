@@ -4,11 +4,13 @@
         C calling standard
 */
 
-#undef TRACE
+#define TRACE
         
         .globl execute
 
-#define STACKMASK 0x7FF
+#define STACKMASK 0x1FFF
+#define MEMMASK 0x3FFFFF
+#define STACKPAGEMASK (MEMMASK ^ STACKMASK)
 
 #define MAXADDRBITINCIO $27
 
@@ -34,7 +36,10 @@ execute:
         movl %eax, _currenttickgranularity
         
         // Preload stack top
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx
+        pop %esi
         bswap %ebx
 .loop:
         
@@ -84,7 +89,11 @@ execute:
         jnz .cannot_halt
         /* Go back to "C" */
         bswap %ebx
+
+        push %esi
+        and $STACKMASK, %esi
         movl %ebx, _stack(%esi)
+	pop %esi 
         
         movl %esi, _usp
         movl %edi, _upc
@@ -100,7 +109,10 @@ execute:
         // Write back
         movl %ebx, %eax
         bswap %eax
+        push %esi
+        and $STACKMASK, %esi
         movl %eax, _stack(%esi)
+        pop %esi
         subl $4,%esi
         movl %edi, %ebx
         movl $0x20, %edi
@@ -112,7 +124,10 @@ zpu_nop:
         incl %edi
         jmp .opcode_return
 zpu_fmul16:
+	push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         bswap %eax
         addl $4, %esi
         incl %edi
@@ -124,6 +139,14 @@ zpu_fmul16:
         jmp .opcode_return
 
 zpu_ibreak:
+        bswap %ebx
+        push %esi
+        and $STACKMASK, %esi
+        movl %ebx, _stack(%esi)
+        pop  %esi
+        movl %esi, _usp
+        movl %edi, _upc
+
         popa
         movl $1, %eax
         ret /* Will go back to C */
@@ -132,7 +155,10 @@ zpu_pushsp:
         // Write back
         movl %ebx,%eax
         bswap %eax
+        push %esi
+        and $STACKMASK, %esi
         movl %eax, _stack(%esi)
+        pop %esi
         movl %esi, %ebx
         orl $0x80000000, %ebx
         subl $4,%esi
@@ -142,13 +168,19 @@ zpu_pushsp:
 zpu_poppc:
         movl %ebx, %edi
         addl $4, %esi
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx
+        pop %esi
         bswap %ebx
         jmp .opcode_return
 
 .align 16
 zpu_add:
+	push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         bswap %eax
         addl $4, %esi
         incl %edi
@@ -156,7 +188,10 @@ zpu_add:
         jmp .opcode_return
 
 zpu_or:
+	push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         bswap %eax
         orl %eax, %ebx
         addl $4, %esi
@@ -164,7 +199,10 @@ zpu_or:
         jmp .opcode_return
 
 zpu_and:
+	push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         bswap %eax
         addl $4, %esi
         incl %edi
@@ -211,7 +249,10 @@ zpu_flip:
 zpu_storeb:
         // Address in %ebx
         addl $4, %esi
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ecx //value
+        pop %esi
         bswap %ecx
         addl $4, %esi
         bt MAXADDRBITINCIO, %ebx
@@ -221,14 +262,21 @@ zpu_storeb:
 
         and $STACKMASK, %ebx
         movb %cl, _stack(%ebx)
-        movl _stack(%esi), %ebx // Reload stack top
+        
+        push %esi
+        and $STACKMASK, %esi
+	movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
 
 storeb_to_memory:
         movb %cl, _memory(%ebx)
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
@@ -238,7 +286,10 @@ storeb_to_memory:
 zpu_store:
         // Address in %ebx
         addl $4, %esi
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ecx //value
+        pop %esi
         addl $4, %esi
         bt MAXADDRBITINCIO, %ebx
         jc store_external
@@ -247,14 +298,21 @@ zpu_store:
 
         and $STACKMASK, %ebx
         movl %ecx, _stack(%ebx)
+        
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
 
 store_to_memory:
         movl %ecx, _memory(%ebx)
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
@@ -276,7 +334,11 @@ store_external:
         call *%eax
         add $8, %esp
         pop %edx
+        
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx // Reload stack top
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
@@ -335,7 +397,10 @@ load_external:
         jmp .opcode_return      
         
 .macro addspX off
+	push %esi
+        and $STACKMASK, %esi
         movl _stack+\off(%esi), %eax   // Load
+        pop %esi
         bswap %eax
         addl %eax, %ebx
         incl %edi
@@ -381,7 +446,10 @@ zpu_addsp15:
 .macro emulateX off
         // Write back
         bswap %ebx
+        push %esi
+        and $STACKMASK, %esi
         movl %ebx, _stack(%esi)
+        pop %esi
         subl $4, %esi
         incl %edi
         movl %edi, %ebx
@@ -403,7 +471,10 @@ zpu_emulate5:            // 37 Lessthanorequal
         emulateX 5
 zpu_emulate6:            // 38 Ulessthan
         // emulateX 6
+        push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         addl $4, %esi
         bswap %eax
         incl %edi
@@ -432,7 +503,10 @@ zpu_emulate13:           // 45 Call
         mov %edi, %eax
         incl %eax
         bswap %eax
+        push %esi
+        and $STACKMASK, %esi
         movl %eax, _stack(%esi)
+        pop %esi
         
         incl %edi
         movl %edi, %ebx  // Return address in stack
@@ -445,7 +519,10 @@ zpu_emulate13:           // 45 Call
 
 zpu_emulate14:           // 46 Eq
         //emulateX 14
+        push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         addl $4, %esi
         bswap %eax
         incl %edi
@@ -477,17 +554,26 @@ zpu_emulate24:           // 56 Neqbranch
         // emulateX 24
         // PC is in %ebx
         
+        push %esi
+        and $STACKMASK, %esi
         movl _stack+4(%esi), %eax
+        pop %esi
         addl $8, %esi
         test %eax, %eax
         jz .no_jump
         add %ebx, %edi
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx
+        pop %esi
         bswap %ebx
         jmp .opcode_return
 .no_jump:
-        incl %edi
+        incl %edi              
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx
+        pop %esi
         bswap %ebx
 
         jmp .opcode_return
@@ -511,22 +597,72 @@ zpu_popsp:
         // Write back
         movl %ebx, %eax
         bswap %eax
-        movl %eax, _stack(%esi)
+        push %esi
+        andl $STACKMASK, %esi
 
-        and  $STACKMASK, %ebx
+        movl %eax, _stack(%esi)
+        pop %esi
+        // Check if we're on a different page
+        push %ebx
+        movl %esi, %eax
+    	andl  $STACKPAGEMASK, %ebx
+        andl  $STACKPAGEMASK, %esi
+        cmp  %esi, %ebx
+        
+        jz	.stack_same_page
+        
+.globl not_same_page
+not_same_page:
+        // Ok, we have to writeback current stack
+        // Original address is in %eax
+        push 	%esi
+        push 	%edi
+        andl	$STACKPAGEMASK, %eax
+        addl	$_memory, %eax
+        movl	%eax, %edi
+        
+        movl  	$_stack, %esi
+        cld
+        movl  	$2040, %ecx
+        rep 	movsd
+        // Ok, now load from memory, from %ebx 
+        movl  	$2040, %ecx
+        movl 	%ebx, %esi
+        andl	$STACKPAGEMASK, %esi
+        addl	$_memory, %esi
+        movl  	$_stack, %edi
+        rep	movsd
+        pop	%edi
+        pop	%esi
+	
+.stack_same_page:
+
+        pop %ebx
+        and $MEMMASK, %ebx
+	
         movl %ebx, %esi    // EBX ->> stack pointer
 
+	push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx  // Load new SP value to TOS
-
+        pop %esi
+        
         bswap %ebx
         incl %edi
         jmp .opcode_return
         
 .macro storespX off
         bswap %ebx
+        push %esi
+        and $STACKMASK, %esi
+
         movl %ebx, _stack+\off*4(%esi)
+        pop %esi
         addl $4, %esi
+        push %esi
+        and $STACKMASK, %esi
         movl _stack(%esi), %ebx
+        pop %esi
         bswap %ebx
         incl %edi
         jmp .opcode_return
@@ -601,8 +737,12 @@ zpu_storesp31:
 .macro loadspX off
         // Write back
         bswap %ebx
+        
+        push %esi
+        and $STACKMASK, %esi
         movl %ebx, _stack(%esi)
         movl _stack+(\off*4)(%esi), %ebx
+        pop %esi
         bswap %ebx
         subl $4, %esi
         incl %edi
@@ -677,7 +817,11 @@ zpu_loadsp31:
 .macro firstimX val
         // Write back
         bswap %ebx
+        push %esi
+        and $STACKMASK, %esi
+
         movl %ebx, _stack(%esi)
+	pop %esi
         subl $4, %esi
         movl $\val, %ebx
         incl %edi
@@ -1262,7 +1406,7 @@ dispatchtable:
         .long zpu_emulate17 /* opcode 31 */
         .long zpu_emulate18 /* opcode 32 */
         .long zpu_emulate19 /* opcode 33 */
-        .long zpu_storeb//zpu_emulate20 /* opcode 34 */
+        .long zpu_storeb    /* opcode 34 */
         .long zpu_emulate21 /* opcode 35 */
         .long zpu_emulate22 /* opcode 36 */
         .long zpu_emulate23 /* opcode 37 */
