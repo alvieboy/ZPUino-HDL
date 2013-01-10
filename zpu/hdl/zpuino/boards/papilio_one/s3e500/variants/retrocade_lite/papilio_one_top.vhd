@@ -477,7 +477,7 @@ begin
     A_BUFFERS           => true,
     B_TSCENABLED        => false,
     B_PWMCOUNT          => 1,
-    B_WIDTH             => 24,
+    B_WIDTH             => 8,
     B_PRESCALER_ENABLED => false,
     B_BUFFERS           => false
   )
