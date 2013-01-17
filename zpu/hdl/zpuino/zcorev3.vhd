@@ -307,6 +307,22 @@ signal dco: dcache_out_type;
 signal dfu_hold: std_logic;
 signal is_prefr_valid: std_logic; -- Valid insn/prefetch data
 
+component lsu is
+  port (
+    syscon:     in wb_syscon_type;
+
+    mwbi:       in wb_miso_type;
+    mwbo:       out wb_mosi_type;
+
+    wbi:        in wb_mosi_type;
+    wbo:        out wb_miso_type;
+    tt:         in std_logic_vector(1 downto 0) -- Transaction type
+  );
+end component;
+
+  signal lmwbi:           wb_miso_type;
+  signal lmwbo:           wb_mosi_type;
+
 begin
 
   shl: lshifter
@@ -357,15 +373,30 @@ begin
 
   dcache: zpuino_dcache
   generic map (
-      ADDRESS_HIGH    => maxAddrBitBRAM
+      ADDRESS_HIGH    => maxAddrBitBRAM,
+      CACHE_MAX_BITS  => 15,
+      CACHE_LINE_SIZE_BITS => 6
   )
   port map (
     syscon  => syscon,
     ci      => dci,
     co      => dco,
-    mwbi    => mwbi,
-    mwbo    => mwbo
+    mwbi    => lmwbi,
+    mwbo    => lmwbo
   );
+
+  mylsu: lsu
+  port map (
+    syscon    => syscon,
+
+    mwbi      => mwbi,
+    mwbo      => mwbo,
+
+    wbi       => lmwbo,
+    wbo       => lmwbi,
+    tt        => "11" -- 11=Write-Combine
+  );
+
 
   dci.flush <= dcache_flush;
 
@@ -1006,6 +1037,7 @@ begin
           w.state := State_ResyncNos;
         end if;
         dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);
+        dci.b_data_in <= (others => DontCareValue);
         b_enable := '1';
         b_strobe := '1';
         wroteback := '0';
@@ -1014,6 +1046,7 @@ begin
 
         w.nos := unsigned( dco.b_data_out );
         dci.b_address(maxAddrBitBRAM downto 2)  <= std_logic_vector(prefr.spnext);
+        dci.b_data_in <= (others => DontCareValue);
         b_enable := '1';
         b_strobe := '1';
         exu_busy <= '1';
@@ -1023,7 +1056,8 @@ begin
         end if;
 
       when State_Resync2 =>
-
+        dci.b_data_in <= (others => DontCareValue);
+        dci.b_address <= (others => DontCareValue);
         w.tos := unsigned( dco.b_data_out );
         instruction_executed := '1';
         wroteback := '0';
@@ -1301,7 +1335,7 @@ begin
               end if;
 
             else
-              b_enable :='0';
+              --b_enable :='0';
               b_strobe :='0';
               dci.b_we <='0';
               wmask := (others => '0');
@@ -1331,11 +1365,11 @@ begin
             if exr.tos(maxAddrBitIncIO)='0' then
               b_enable := '1';
               b_strobe := '1';
-              if dco.b_stall='0' then
+              --if dco.b_stall='0' then
                 w.state := State_LoadStack;
-              end if;
+              --end if;
             else
-              b_enable := '0';
+              --b_enable := '0';
               b_strobe := '0';
 
               w.wb_cyc:='1';
@@ -1501,7 +1535,7 @@ begin
 
         w.state := State_ResyncNos;
         dci.b_address(maxAddrBitBRAM downto 2) <= std_logic_vector(prefr.spnext+1);
-        b_enable := '1';
+        --b_enable := '1';
         b_strobe := '1';
 
       when others =>
@@ -1523,14 +1557,14 @@ begin
     dci.b_strobe <= b_strobe;
     dci.b_wmask  <= wmask;
 
-    if b_enable='0' then
-      dci.b_address <= (others => DontCareValue);
-      dci.b_data_in <= (others => DontCareValue);
-    end if;
+    --if b_enable='0' then
+    --  dci.b_address <= (others => DontCareValue);
+    --  dci.b_data_in <= (others => DontCareValue);
+    --end if;
 
-    if wmask="0000" then
-      dci.b_data_in <= (others => DontCareValue);
-    end if;
+    --if wmask="0000" then
+    --  dci.b_data_in <= (others => DontCareValue);
+    --end if;
 
     if rising_edge(syscon.clk) then
       if syscon.rst='1' then
@@ -1606,7 +1640,7 @@ begin
     if rising_edge(syscon.clk) then
       if syscon.rst='0' then
       if exu_busy/=exu_busy_test then
-        report "Mismatch" severity note;
+        --report "Mismatch" severity note;
       end if;
       end if;
     end if;
