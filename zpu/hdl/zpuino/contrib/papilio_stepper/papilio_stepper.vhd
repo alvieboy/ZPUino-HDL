@@ -164,14 +164,12 @@ begin
 	 if rising_edge(wb_clk_i) then  -- Synchronous to the rising edge of the clock
 		if(wb_rst_i='1') then
 			PrescaleCnt <= (others => '0');
-		elsif  (wb_clk_i='1' and wb_clk_i'event) then
+		else
 			if (Control_reg(8)='1') then
-				PrescaleCnt <= PrescaleCnt+1;
 				if (PrescaleCnt=Timebase_reg) then
 					PrescaleCnt <= "0000000000000001";
-					--prescale_o <= '1';
 				else
-					--prescale_o <= '0';
+					PrescaleCnt <= PrescaleCnt+1;
 				end if;
 			end if;
 		end if; 
@@ -184,15 +182,12 @@ begin
 	 if rising_edge(wb_clk_i) then  -- Synchronous to the rising edge of the clock
 		if  (wb_rst_i='1') then
 			HalfPeriodCnt <= (others => '0');
---		elsif (prescale_o='1' and prescale_o'event) then
 		elsif (PrescaleCnt="0000000000000001") then
 			if (Control_reg(8)='1') then
-				HalfPeriodCnt <= HalfPeriodCnt+1;
 				if (HalfPeriodCnt=('0'&Period_reg(15 downto 1))) then
 					HalfPeriodCnt <= "0000000000000001";
---					halfperiod_o <= '1';
 				else
---					halfperiod_o <= '0';
+					HalfPeriodCnt <= HalfPeriodCnt+1;
 				end if;
 			end if; 
 		end if;
@@ -206,7 +201,6 @@ begin
 		if (wb_rst_i='1') then
 			step_o <= '1';
 			Steps_reg <= (others => '0');
---		elsif  (halfperiod_o='1' and halfperiod_o'event) then
 		elsif  (HalfPeriodCnt="0000000000000001" and PrescaleCnt="0000000000000001") then
 			if (Control_reg(8)='1') then
 				step_o <= not step_o;
