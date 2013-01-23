@@ -14,9 +14,9 @@ library ieee;
   use ieee.std_logic_arith.all;
   use ieee.std_logic_unsigned.all;
 library work;
-  use work.zpuino_config.all;
-  use work.zpu_config.all;
-  use work.zpupkg.all;
+--  use work.zpuino_config.all;
+--  use work.zpu_config.all;
+--  use work.zpupkg.all;
 
 entity papilio_stepper is
 	Generic (
@@ -26,9 +26,9 @@ entity papilio_stepper is
   port (
     wb_clk_i:   in  std_logic;                     -- Wishbone clock
     wb_rst_i:   in  std_logic;                     -- Wishbone reset (synchronous)
-    wb_dat_o:   out std_logic_vector(wordSize-1 downto 0); -- Wishbone data output (32 bits)
-    wb_dat_i:   in  std_logic_vector(wordSize-1 downto 0); -- Wishbone data input  (32 bits)
-    wb_adr_i:   in  std_logic_vector(maxIOBit downto minIOBit); -- Wishbone address input  (32 bits)
+    wb_dat_o:   out std_logic_vector(31 downto 0); -- Wishbone data output (32 bits)
+    wb_dat_i:   in  std_logic_vector(31 downto 0); -- Wishbone data input  (32 bits)
+    wb_adr_i:   in  std_logic_vector(26 downto 2); -- Wishbone address input  (32 bits)
     wb_we_i:    in  std_logic;                     -- Wishbone write enable signal
     wb_cyc_i:   in  std_logic;                     -- Wishbone cycle signal
     wb_stb_i:   in  std_logic;                     -- Wishbone strobe signal

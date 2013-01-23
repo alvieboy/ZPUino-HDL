@@ -25,7 +25,7 @@ architecture sim of tb is
     wb_rst_i:   in  std_logic;                     -- Wishbone reset (synchronous)
     wb_dat_o:   out std_logic_vector(31 downto 0); -- Wishbone data output (32 bits)
     wb_dat_i:   in  std_logic_vector(31 downto 0); -- Wishbone data input  (32 bits)
-    wb_adr_i:   in  std_logic_vector(31 downto 0); -- Wishbone address input  (32 bits)
+    wb_adr_i:   in  std_logic_vector(26 downto 2); -- Wishbone address input  (32 bits)
     wb_we_i:    in  std_logic;                     -- Wishbone write enable signal
     wb_cyc_i:   in  std_logic;                     -- Wishbone cycle signal
     wb_stb_i:   in  std_logic;                     -- Wishbone strobe signal
@@ -47,7 +47,7 @@ architecture sim of tb is
 
   signal wb_dat_o:   std_logic_vector(31 downto 0);
   signal wb_dat_i:   std_logic_vector(31 downto 0);
-  signal wb_adr_i:   std_logic_vector(31 downto 0);
+  signal wb_adr_i:   std_logic_vector(26 downto 2);
   signal wb_we_i:    std_logic := '0';
   signal wb_cyc_i:   std_logic := '0';
   signal wb_stb_i:   std_logic := '0';
@@ -124,7 +124,7 @@ begin
       wb_stb_i<='1';
       wb_we_i<='1';
       wb_dat_i<=d;
-      wb_adr_i<=a;
+      wb_adr_i<=a(26 downto 2);
       wait until rising_edge(clk);
       wait until wb_ack_o='1';
       wait until rising_edge(clk);
@@ -138,7 +138,7 @@ begin
       wb_cyc_i<='1';
       wb_stb_i<='1';
       wb_we_i<='0';
-      wb_adr_i<=a;
+      wb_adr_i<=a(26 downto 2);
       wait until rising_edge(clk);
       wait until wb_ack_o='1';
       wait until rising_edge(clk);
