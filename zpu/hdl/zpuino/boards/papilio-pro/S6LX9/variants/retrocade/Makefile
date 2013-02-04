@@ -38,4 +38,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit}
-	$(MAKE) -C ../../../bootloader clean
+	#$(MAKE) -C ../../../bootloader clean
