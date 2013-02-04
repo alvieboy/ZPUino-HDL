@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<symbol version="7" name="papilio_stepper">
+    <symboltype>BLOCK</symboltype>
+    <timestamp>2013-2-3T23:24:1</timestamp>
+    <pin polarity="Output" x="464" y="-544" name="st_dir" />
+    <pin polarity="Output" x="464" y="-480" name="st_ms2" />
+    <pin polarity="Output" x="464" y="-416" name="st_ms1" />
+    <pin polarity="Output" x="464" y="-352" name="st_rst" />
+    <pin polarity="Output" x="464" y="-288" name="st_step" />
+    <pin polarity="Output" x="464" y="-224" name="st_enable" />
+    <pin polarity="Output" x="464" y="-160" name="st_sleep" />
+    <pin polarity="Output" x="464" y="-96" name="st_irq" />
+    <pin polarity="Input" x="80" y="-672" name="wb_clk_i" />
+    <pin polarity="Output" x="112" y="-672" name="wb_dat_o(31:0)" />
+    <pin polarity="Input" x="128" y="-672" name="wb_dat_i(31:0)" />
+    <pin polarity="Input" x="96" y="-672" name="wb_rst_i" />
+    <pin polarity="Input" x="144" y="-672" name="wb_adr_i(26:2)" />
+    <pin polarity="Input" x="160" y="-672" name="wb_we_i" />
+    <pin polarity="Input" x="176" y="-672" name="wb_cyc_i" />
+    <pin polarity="Input" x="192" y="-672" name="wb_stb_i" />
+    <pin polarity="Output" x="208" y="-672" name="wb_ack_o" />
+    <pin polarity="Input" x="0" y="-544" name="st_home" />
+    <graph>
+        <rect width="336" x="64" y="-640" height="640" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-544" type="pin st_dir" />
+        <line x2="464" y1="-544" y2="-544" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-480" type="pin st_ms2" />
+        <line x2="464" y1="-480" y2="-480" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-416" type="pin st_ms1" />
+        <line x2="464" y1="-416" y2="-416" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-352" type="pin st_rst" />
+        <line x2="464" y1="-352" y2="-352" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-288" type="pin st_step" />
+        <line x2="464" y1="-288" y2="-288" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-224" type="pin st_enable" />
+        <line x2="464" y1="-224" y2="-224" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-160" type="pin st_sleep" />
+        <line x2="464" y1="-160" y2="-160" x1="400" />
+        <attrtext style="alignment:RIGHT;fontsize:24;fontname:Arial" attrname="PinName" x="392" y="-96" type="pin st_irq" />
+        <line x2="464" y1="-96" y2="-96" x1="400" />
+        <attrtext style="alignment:BCENTER;fontsize:56;fontname:Arial" attrname="SymbolName" x="236" y="64" type="symbol" />
+        <line x2="80" y1="-672" y2="-640" x1="80" />
+        <line x2="112" y1="-672" y2="-640" x1="112" />
+        <line x2="128" y1="-672" y2="-640" x1="128" />
+        <line x2="96" y1="-672" y2="-640" x1="96" />
+        <line x2="144" y1="-672" y2="-640" x1="144" />
+        <line x2="160" y1="-672" y2="-640" x1="160" />
+        <line x2="176" y1="-672" y2="-640" x1="176" />
+        <line x2="192" y1="-672" y2="-640" x1="192" />
+        <line x2="208" y1="-672" y2="-640" x1="208" />
+        <attrtext style="fontsize:24;fontname:Arial" attrname="PinName" x="72" y="-544" type="pin st_home" />
+        <line x2="0" y1="-544" y2="-544" x1="64" />
+    </graph>
+</symbol>

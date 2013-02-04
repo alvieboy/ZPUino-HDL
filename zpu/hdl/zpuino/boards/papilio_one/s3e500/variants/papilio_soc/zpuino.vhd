@@ -46,7 +46,7 @@ use work.pad.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity papilio_one_top is
+entity ZPUino is
   port (
     CLK:        in std_logic;
     --RST:        in std_logic; -- No reset on papilio
@@ -61,12 +61,120 @@ entity papilio_one_top is
     WING_C:     inout std_logic_vector(15 downto 0);
 
     TXD:        out std_logic;
-    RXD:        in std_logic
+    RXD:        in std_logic;
+	 
+	 --Wishbone Slot 5
+    wb_clk_i5: out std_logic;
+	 wb_rst_i5: out std_logic;
+    wb_dat_o5: in std_logic_vector(31 downto 0);
+    wb_dat_i5: out std_logic_vector(31 downto 0);
+    wb_adr_i5: out std_logic_vector(26 downto 2);
+    wb_we_i5:  out std_logic;
+    wb_cyc_i5: out std_logic;
+    wb_stb_i5: out std_logic;
+    wb_ack_o5: in std_logic;
+    wb_inta_o5:in std_logic;
+	 
+	 --Wishbone Slot 8
+    wb_clk_i8: out std_logic;
+	 wb_rst_i8: out std_logic;
+    wb_dat_o8: in std_logic_vector(31 downto 0);
+    wb_dat_i8: out std_logic_vector(31 downto 0);
+    wb_adr_i8: out std_logic_vector(26 downto 2);
+    wb_we_i8:  out std_logic;
+    wb_cyc_i8: out std_logic;
+    wb_stb_i8: out std_logic;
+    wb_ack_o8: in std_logic;
+    wb_inta_o8:in std_logic;
+
+	 --Wishbone Slot 9
+    wb_clk_i9: out std_logic;
+	 wb_rst_i9: out std_logic;
+    wb_dat_o9: in std_logic_vector(31 downto 0);
+    wb_dat_i9: out std_logic_vector(31 downto 0);
+    wb_adr_i9: out std_logic_vector(26 downto 2);
+    wb_we_i9:  out std_logic;
+    wb_cyc_i9: out std_logic;
+    wb_stb_i9: out std_logic;
+    wb_ack_o9: in std_logic;
+    wb_inta_o9:in std_logic;
+
+	 --Wishbone Slot 10
+    wb_clk_i10: out std_logic;
+	 wb_rst_i10: out std_logic;
+    wb_dat_o10: in std_logic_vector(31 downto 0);
+    wb_dat_i10: out std_logic_vector(31 downto 0);
+    wb_adr_i10: out std_logic_vector(26 downto 2);
+    wb_we_i10:  out std_logic;
+    wb_cyc_i10: out std_logic;
+    wb_stb_i10: out std_logic;
+    wb_ack_o10: in std_logic;
+    wb_inta_o10:in std_logic;
+
+	 --Wishbone Slot 11
+    wb_clk_i11: out std_logic;
+	 wb_rst_i11: out std_logic;
+    wb_dat_o11: in std_logic_vector(31 downto 0);
+    wb_dat_i11: out std_logic_vector(31 downto 0);
+    wb_adr_i11: out std_logic_vector(26 downto 2);
+    wb_we_i11:  out std_logic;
+    wb_cyc_i11: out std_logic;
+    wb_stb_i11: out std_logic;
+    wb_ack_o11: in std_logic;
+    wb_inta_o11:in std_logic;
+
+	 --Wishbone Slot 12
+    wb_clk_i12: out std_logic;
+	 wb_rst_i12: out std_logic;
+    wb_dat_o12: in std_logic_vector(31 downto 0);
+    wb_dat_i12: out std_logic_vector(31 downto 0);
+    wb_adr_i12: out std_logic_vector(26 downto 2);
+    wb_we_i12:  out std_logic;
+    wb_cyc_i12: out std_logic;
+    wb_stb_i12: out std_logic;
+    wb_ack_o12: in std_logic;
+    wb_inta_o12:in std_logic;
+
+	 --Wishbone Slot 13
+    wb_clk_i13: out std_logic;
+	 wb_rst_i13: out std_logic;
+    wb_dat_o13: in std_logic_vector(31 downto 0);
+    wb_dat_i13: out std_logic_vector(31 downto 0);
+    wb_adr_i13: out std_logic_vector(26 downto 2);
+    wb_we_i13:  out std_logic;
+    wb_cyc_i13: out std_logic;
+    wb_stb_i13: out std_logic;
+    wb_ack_o13: in std_logic;
+    wb_inta_o13:in std_logic;
+
+	 --Wishbone Slot 14
+    wb_clk_i14: out std_logic;
+	 wb_rst_i14: out std_logic;
+    wb_dat_o14: in std_logic_vector(31 downto 0);
+    wb_dat_i14: out std_logic_vector(31 downto 0);
+    wb_adr_i14: out std_logic_vector(26 downto 2);
+    wb_we_i14:  out std_logic;
+    wb_cyc_i14: out std_logic;
+    wb_stb_i14: out std_logic;
+    wb_ack_o14: in std_logic;
+    wb_inta_o14:in std_logic;
+
+	 --Wishbone Slot 15
+    wb_clk_i15: out std_logic;
+	 wb_rst_i15: out std_logic;
+    wb_dat_o15: in std_logic_vector(31 downto 0);
+    wb_dat_i15: out std_logic_vector(31 downto 0);
+    wb_adr_i15: out std_logic_vector(26 downto 2);
+    wb_we_i15:  out std_logic;
+    wb_cyc_i15: out std_logic;
+    wb_stb_i15: out std_logic;
+    wb_ack_o15: in std_logic;
+    wb_inta_o15:in std_logic	 
 
   );
-end entity papilio_one_top;
+end entity ZPUino;
 
-architecture behave of papilio_one_top is
+architecture behave of ZPUino is
 
   component clkgen is
   port (
@@ -218,76 +326,210 @@ architecture behave of papilio_one_top is
   );
   end component;
 
-  component wb_sid6581 is
-  port (
-    wb_clk_i: in std_logic;
-    wb_rst_i: in std_logic;
-    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
-    wb_we_i:  in std_logic;
-    wb_cyc_i: in std_logic;
-    wb_stb_i: in std_logic;
-    wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic;
-
-    clk_1MHZ: in std_logic;
-    audio_data: out std_logic_vector(17 downto 0)
-
-  );
-  end component wb_sid6581;
-  
-	COMPONENT zpuino_io_YM2149
-	PORT(
-		wb_clk_i : IN std_logic;
-		wb_rst_i : IN std_logic;
-		wb_dat_i : IN std_logic_vector(31 downto 0);
-		wb_adr_i : IN std_logic_vector(26 downto 2);
-		wb_we_i : IN std_logic;
-		wb_cyc_i : IN std_logic;
-		wb_stb_i : IN std_logic;          
-		wb_dat_o : OUT std_logic_vector(31 downto 0);
-		wb_ack_o : OUT std_logic;
-		wb_inta_o : OUT std_logic;
-		data_out : OUT std_logic_vector(7 downto 0)
-		);
-	END COMPONENT;
-
-	COMPONENT zpuino_io_audiomixer
-	PORT(
-		clk : IN std_logic;
-		rst : IN std_logic;
-		ena : IN std_logic;
-		data_in1 : IN std_logic_vector(17 downto 0);
-		data_in2 : IN std_logic_vector(17 downto 0);
-		data_in3 : IN std_logic_vector(17 downto 0);          
-		audio_out : OUT std_logic
-		);
-	END COMPONENT;	
-
-  signal sid_audio_data, ym2149_audio_dac: std_logic_vector(17 downto 0);
-  signal sid_audio: std_logic;
-  
-  signal ym2149_audio_data, pokey_audio_data: std_logic_vector(7 downto 0);
-  signal platform_audio_sd: std_logic; 
-
-  component simple_sigmadelta is
-  generic (
-    BITS: integer := 8
-  );
-	port (
-    clk:      in std_logic;
-    rst:      in std_logic;
-    data_in:  in std_logic_vector(BITS-1 downto 0);
-    data_out: out std_logic
-    );
-  end component simple_sigmadelta;
+--  component wb_sid6581 is
+--  port (
+--    wb_clk_i: in std_logic;
+--    wb_rst_i: in std_logic;
+--    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+--    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+--    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+--    wb_we_i:  in std_logic;
+--    wb_cyc_i: in std_logic;
+--    wb_stb_i: in std_logic;
+--    wb_ack_o: out std_logic;
+--    wb_inta_o:out std_logic;
+--
+--    clk_1MHZ: in std_logic;
+--    audio_data: out std_logic_vector(17 downto 0)
+--
+--  );
+--  end component wb_sid6581;
+--  
+--	COMPONENT zpuino_io_YM2149
+--	PORT(
+--		wb_clk_i : IN std_logic;
+--		wb_rst_i : IN std_logic;
+--		wb_dat_i : IN std_logic_vector(31 downto 0);
+--		wb_adr_i : IN std_logic_vector(26 downto 2);
+--		wb_we_i : IN std_logic;
+--		wb_cyc_i : IN std_logic;
+--		wb_stb_i : IN std_logic;          
+--		wb_dat_o : OUT std_logic_vector(31 downto 0);
+--		wb_ack_o : OUT std_logic;
+--		wb_inta_o : OUT std_logic;
+--		data_out : OUT std_logic_vector(7 downto 0)
+--		);
+--	END COMPONENT;
+--
+--	COMPONENT zpuino_io_audiomixer
+--	PORT(
+--		clk : IN std_logic;
+--		rst : IN std_logic;
+--		ena : IN std_logic;
+--		data_in1 : IN std_logic_vector(17 downto 0);
+--		data_in2 : IN std_logic_vector(17 downto 0);
+--		data_in3 : IN std_logic_vector(17 downto 0);          
+--		audio_out : OUT std_logic
+--		);
+--	END COMPONENT;	
+--
+--  signal sid_audio_data, ym2149_audio_dac: std_logic_vector(17 downto 0);
+--  signal sid_audio: std_logic;
+--  
+--  signal ym2149_audio_data, pokey_audio_data: std_logic_vector(7 downto 0);
+--  signal platform_audio_sd: std_logic; 
+--
+--  component simple_sigmadelta is
+--  generic (
+--    BITS: integer := 8
+--  );
+--	port (
+--    clk:      in std_logic;
+--    rst:      in std_logic;
+--    data_in:  in std_logic_vector(BITS-1 downto 0);
+--    data_out: out std_logic
+--    );
+--  end component simple_sigmadelta;
 
 
 begin
 
   wb_clk_i <= sysclk;
   wb_rst_i <= sysrst;
+  
+  --Wishbone 5
+  wb_clk_i5 <= sysclk;
+  wb_rst_i5 <= sysrst;
+  slot_read(5) <= wb_dat_o5;
+  wb_dat_i5 <= slot_write(5);
+  wb_adr_i5 <= slot_address(5);
+  wb_we_i5 <= slot_we(5);
+  wb_cyc_i5 <= slot_cyc(5);
+  wb_stb_i5 <= slot_stb(5);
+  slot_ack(5) <= wb_ack_o5;
+  slot_interrupt(5) <= wb_inta_o5;
+  
+  --Wishbone 8
+  wb_clk_i8 <= sysclk;
+  wb_rst_i8 <= sysrst;
+  slot_read(8) <= wb_dat_o8;
+  wb_dat_i8 <= slot_write(8);
+  wb_adr_i8 <= slot_address(8);
+  wb_we_i8 <= slot_we(8);
+  wb_cyc_i8 <= slot_cyc(8);
+  wb_stb_i8 <= slot_stb(8);
+  slot_ack(8) <= wb_ack_o8;
+  slot_interrupt(8) <= wb_inta_o8;
+
+  --Wishbone 9
+  wb_clk_i9 <= sysclk;
+  wb_rst_i9 <= sysrst;
+  slot_read(9) <= wb_dat_o9;
+  wb_dat_i9 <= slot_write(9);
+  wb_adr_i9 <= slot_address(9);
+  wb_we_i9 <= slot_we(9);
+  wb_cyc_i9 <= slot_cyc(9);
+  wb_stb_i9 <= slot_stb(9);
+  slot_ack(9) <= wb_ack_o9;
+  slot_interrupt(9) <= wb_inta_o9;
+
+  --Wishbone 10
+  wb_clk_i10 <= sysclk;
+  wb_rst_i10 <= sysrst;
+  slot_read(10) <= wb_dat_o10;
+  wb_dat_i10 <= slot_write(10);
+  wb_adr_i10 <= slot_address(10);
+  wb_we_i10 <= slot_we(10);
+  wb_cyc_i10 <= slot_cyc(10);
+  wb_stb_i10 <= slot_stb(10);
+  slot_ack(10) <= wb_ack_o10;
+  slot_interrupt(10) <= wb_inta_o10;
+
+  --Wishbone 11
+  wb_clk_i11 <= sysclk;
+  wb_rst_i11 <= sysrst;
+  slot_read(11) <= wb_dat_o11;
+  wb_dat_i11 <= slot_write(11);
+  wb_adr_i11 <= slot_address(11);
+  wb_we_i11 <= slot_we(11);
+  wb_cyc_i11 <= slot_cyc(11);
+  wb_stb_i11 <= slot_stb(11);
+  slot_ack(11) <= wb_ack_o11;
+  slot_interrupt(11) <= wb_inta_o11;
+
+  --Wishbone 12
+  wb_clk_i12 <= sysclk;
+  wb_rst_i12 <= sysrst;
+  slot_read(12) <= wb_dat_o12;
+  wb_dat_i12 <= slot_write(12);
+  wb_adr_i12 <= slot_address(12);
+  wb_we_i12 <= slot_we(12);
+  wb_cyc_i12 <= slot_cyc(12);
+  wb_stb_i12 <= slot_stb(12);
+  slot_ack(12) <= wb_ack_o12;
+  slot_interrupt(12) <= wb_inta_o12;
+
+  --Wishbone 13
+  wb_clk_i13 <= sysclk;
+  wb_rst_i13 <= sysrst;
+  slot_read(13) <= wb_dat_o13;
+  wb_dat_i13 <= slot_write(13);
+  wb_adr_i13 <= slot_address(13);
+  wb_we_i13 <= slot_we(13);
+  wb_cyc_i13 <= slot_cyc(13);
+  wb_stb_i13 <= slot_stb(13);
+  slot_ack(13) <= wb_ack_o13;
+  slot_interrupt(13) <= wb_inta_o13;
+
+  --Wishbone 14
+  wb_clk_i14 <= sysclk;
+  wb_rst_i14 <= sysrst;
+  slot_read(14) <= wb_dat_o14;
+  wb_dat_i14 <= slot_write(14);
+  wb_adr_i14 <= slot_address(14);
+  wb_we_i14 <= slot_we(14);
+  wb_cyc_i14 <= slot_cyc(14);
+  wb_stb_i14 <= slot_stb(14);
+  slot_ack(14) <= wb_ack_o14;
+  slot_interrupt(14) <= wb_inta_o14;
+
+  --Wishbone 15
+  wb_clk_i15 <= sysclk;
+  wb_rst_i15 <= sysrst;
+  slot_read(15) <= wb_dat_o15;
+  wb_dat_i15 <= slot_write(15);
+  wb_adr_i15 <= slot_address(15);
+  wb_we_i15 <= slot_we(15);
+  wb_cyc_i15 <= slot_cyc(15);
+  wb_stb_i15 <= slot_stb(15);
+  slot_ack(15) <= wb_ack_o15;
+  slot_interrupt(15) <= wb_inta_o15;  
+  
+  
+  
+  --    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i    => wb_rst_i,
+--    wb_dat_o      => slot_read(5),
+--    wb_dat_i     => slot_write(5),
+--    wb_adr_i   => slot_address(5),
+--    wb_we_i        => slot_we(5),
+--    wb_cyc_i        => slot_cyc(5),
+--    wb_stb_i        => slot_stb(5),
+--    wb_ack_o      => slot_ack(5),
+--    wb_inta_o => slot_interrupt(5),
+  
+  
+--      wb_clk_i5: out std_logic;
+--	 wb_rst_i5: out std_logic;
+--	 
+--    wb_dat_o5: in std_logic_vector(wordSize-1 downto 0);
+--    wb_dat_i5: out std_logic_vector(wordSize-1 downto 0);
+--    wb_adr_i5: out std_logic_vector(maxIObit downto minIObit);
+--    wb_we_i5:  out std_logic;
+--    wb_cyc_i5: out std_logic;
+--    wb_stb_i5: out std_logic;
+--    wb_ack_o5: in std_logic;
+--    wb_inta_o5:in std_logic
 
   rstgen: zpuino_serialreset
     generic map (
@@ -506,25 +748,25 @@ begin
   --
   -- IO SLOT 5
   --
-
-  sigmadelta_inst: zpuino_sigmadelta
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(5),
-    wb_dat_i     => slot_write(5),
-    wb_adr_i   => slot_address(5),
-    wb_we_i        => slot_we(5),
-    wb_cyc_i        => slot_cyc(5),
-    wb_stb_i        => slot_stb(5),
-    wb_ack_o      => slot_ack(5),
-    wb_inta_o => slot_interrupt(5),
-
-    raw_out => sigmadelta_raw,
-	 spp_data  => sigmadelta_spp_data,
-    spp_en    => sigmadelta_spp_en,
-    sync_in   => '1'
-  );
+--
+--  sigmadelta_inst: zpuino_sigmadelta
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i    => wb_rst_i,
+--    wb_dat_o      => slot_read(5),
+--    wb_dat_i     => slot_write(5),
+--    wb_adr_i   => slot_address(5),
+--    wb_we_i        => slot_we(5),
+--    wb_cyc_i        => slot_cyc(5),
+--    wb_stb_i        => slot_stb(5),
+--    wb_ack_o      => slot_ack(5),
+--    wb_inta_o => slot_interrupt(5),
+--
+--    raw_out => sigmadelta_raw,
+--	 spp_data  => sigmadelta_spp_data,
+--    spp_en    => sigmadelta_spp_en,
+--    sync_in   => '1'
+--  );
 
   --
   -- IO SLOT 6
@@ -573,158 +815,158 @@ begin
   -- IO SLOT 8 (optional)
   --
 
-  adc_inst: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(8),
-    wb_dat_i     => slot_write(8),
-    wb_adr_i   => slot_address(8),
-    wb_we_i    => slot_we(8),
-    wb_cyc_i      => slot_cyc(8),
-    wb_stb_i      => slot_stb(8),
-    wb_ack_o      => slot_ack(8),
-    wb_inta_o =>  slot_interrupt(8)
-  );
-
-  --
-  -- IO SLOT 9
-  --
-
-  slot9: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(9),
-    wb_dat_i     => slot_write(9),
-    wb_adr_i   => slot_address(9),
-    wb_we_i        => slot_we(9),
-    wb_cyc_i        => slot_cyc(9),
-    wb_stb_i        => slot_stb(9),
-    wb_ack_o      => slot_ack(9),
-    wb_inta_o => slot_interrupt(9)
-  );
-
-  --
-  -- IO SLOT 10
-  --
-
-  slot10: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(10),
-    wb_dat_i     => slot_write(10),
-    wb_adr_i   => slot_address(10),
-    wb_we_i        => slot_we(10),
-    wb_cyc_i        => slot_cyc(10),
-    wb_stb_i        => slot_stb(10),
-    wb_ack_o      => slot_ack(10),
-    wb_inta_o => slot_interrupt(10)
-  );
-
-  --
-  -- IO SLOT 11
-  --
-
-  slot11: zpuino_uart
-  generic map (
-    bits => 4
-  )
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(11),
-    wb_dat_i     => slot_write(11),
-    wb_adr_i   => slot_address(11),
-    wb_we_i      => slot_we(11),
-    wb_cyc_i       => slot_cyc(11),
-    wb_stb_i       => slot_stb(11),
-    wb_ack_o      => slot_ack(11),
-
-    wb_inta_o => slot_interrupt(11),
-
-    tx        => uart2_tx,
-    rx        => uart2_rx
-  );
-
-  --
-  -- IO SLOT 12
-  --
-
-  slot12: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(12),
-    wb_dat_i     => slot_write(12),
-    wb_adr_i   => slot_address(12),
-    wb_we_i        => slot_we(12),
-    wb_cyc_i        => slot_cyc(12),
-    wb_stb_i        => slot_stb(12),
-    wb_ack_o      => slot_ack(12),
-    wb_inta_o => slot_interrupt(12)
-  );
-
-  --
-  -- IO SLOT 13
-  --
-
-  slot13: zpuino_io_YM2149
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(13),
-    wb_dat_i     => slot_write(13),
-    wb_adr_i   => slot_address(13),
-    wb_we_i        => slot_we(13),
-    wb_cyc_i        => slot_cyc(13),
-    wb_stb_i        => slot_stb(13),
-    wb_ack_o      => slot_ack(13),
-    wb_inta_o => slot_interrupt(13),
-
-    data_out => ym2149_audio_data
-  );
-
-  --
-  -- IO SLOT 14
-  --
-
-  slot14: wb_sid6581
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(14),
-    wb_dat_i     => slot_write(14),
-    wb_adr_i   => slot_address(14),
-    wb_we_i        => slot_we(14),
-    wb_cyc_i        => slot_cyc(14),
-    wb_stb_i        => slot_stb(14),
-    wb_ack_o      => slot_ack(14),
-    wb_inta_o => slot_interrupt(14),
-
-    clk_1MHZ    => sysclk_1mhz,
-    audio_data  => sid_audio_data
-
-  );
-
-  --
-  -- IO SLOT 15
-  --
-
-  slot15: zpuino_empty_device
-  port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(15),
-    wb_dat_i     => slot_write(15),
-    wb_adr_i   => slot_address(15),
-    wb_we_i        => slot_we(15),
-    wb_cyc_i        => slot_cyc(15),
-    wb_stb_i        => slot_stb(15),
-    wb_ack_o      => slot_ack(15),
-    wb_inta_o => slot_interrupt(15)
-  );
+--  adc_inst: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i    => wb_rst_i,
+--    wb_dat_o      => slot_read(8),
+--    wb_dat_i     => slot_write(8),
+--    wb_adr_i   => slot_address(8),
+--    wb_we_i    => slot_we(8),
+--    wb_cyc_i      => slot_cyc(8),
+--    wb_stb_i      => slot_stb(8),
+--    wb_ack_o      => slot_ack(8),
+--    wb_inta_o =>  slot_interrupt(8)
+--  );
+--
+--  --
+--  -- IO SLOT 9
+--  --
+--
+--  slot9: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(9),
+--    wb_dat_i     => slot_write(9),
+--    wb_adr_i   => slot_address(9),
+--    wb_we_i        => slot_we(9),
+--    wb_cyc_i        => slot_cyc(9),
+--    wb_stb_i        => slot_stb(9),
+--    wb_ack_o      => slot_ack(9),
+--    wb_inta_o => slot_interrupt(9)
+--  );
+--
+--  --
+--  -- IO SLOT 10
+--  --
+--
+--  slot10: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(10),
+--    wb_dat_i     => slot_write(10),
+--    wb_adr_i   => slot_address(10),
+--    wb_we_i        => slot_we(10),
+--    wb_cyc_i        => slot_cyc(10),
+--    wb_stb_i        => slot_stb(10),
+--    wb_ack_o      => slot_ack(10),
+--    wb_inta_o => slot_interrupt(10)
+--  );
+--
+--  --
+--  -- IO SLOT 11
+--  --
+--
+--  slot11: zpuino_empty_device
+----  generic map (
+----    bits => 4
+----  )
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i    => wb_rst_i,
+--    wb_dat_o      => slot_read(11),
+--    wb_dat_i     => slot_write(11),
+--    wb_adr_i   => slot_address(11),
+--    wb_we_i      => slot_we(11),
+--    wb_cyc_i       => slot_cyc(11),
+--    wb_stb_i       => slot_stb(11),
+--    wb_ack_o      => slot_ack(11),
+--
+--    wb_inta_o => slot_interrupt(11)
+--
+----    tx        => uart2_tx,
+----    rx        => uart2_rx
+--  );
+--
+--  --
+--  -- IO SLOT 12
+--  --
+--
+--  slot12: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(12),
+--    wb_dat_i     => slot_write(12),
+--    wb_adr_i   => slot_address(12),
+--    wb_we_i        => slot_we(12),
+--    wb_cyc_i        => slot_cyc(12),
+--    wb_stb_i        => slot_stb(12),
+--    wb_ack_o      => slot_ack(12),
+--    wb_inta_o => slot_interrupt(12)
+--  );
+--
+--  --
+--  -- IO SLOT 13
+--  --
+--
+--  slot13: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(13),
+--    wb_dat_i     => slot_write(13),
+--    wb_adr_i   => slot_address(13),
+--    wb_we_i        => slot_we(13),
+--    wb_cyc_i        => slot_cyc(13),
+--    wb_stb_i        => slot_stb(13),
+--    wb_ack_o      => slot_ack(13),
+--    wb_inta_o => slot_interrupt(13)
+--
+----    data_out => ym2149_audio_data
+--  );
+--
+--  --
+--  -- IO SLOT 14
+--  --
+--
+--  slot14: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(14),
+--    wb_dat_i     => slot_write(14),
+--    wb_adr_i   => slot_address(14),
+--    wb_we_i        => slot_we(14),
+--    wb_cyc_i        => slot_cyc(14),
+--    wb_stb_i        => slot_stb(14),
+--    wb_ack_o      => slot_ack(14),
+--    wb_inta_o => slot_interrupt(14)
+--
+----    clk_1MHZ    => sysclk_1mhz,
+----    audio_data  => sid_audio_data
+--
+--  );
+--
+--  --
+--  -- IO SLOT 15
+--  --
+--
+--  slot15: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i       => wb_rst_i,
+--    wb_dat_o      => slot_read(15),
+--    wb_dat_i     => slot_write(15),
+--    wb_adr_i   => slot_address(15),
+--    wb_we_i        => slot_we(15),
+--    wb_cyc_i        => slot_cyc(15),
+--    wb_stb_i        => slot_stb(15),
+--    wb_ack_o      => slot_ack(15),
+--    wb_inta_o => slot_interrupt(15)
+--  );
 
 
 --  -- Audio for SID
@@ -741,20 +983,20 @@ begin
 
  -- Audio output for devices
 
-	ym2149_audio_dac <= ym2149_audio_data & "0000000000";
-
-   mixer: zpuino_io_audiomixer
-         port map (
-     clk     => wb_clk_i,
-     rst     => wb_rst_i,
-     ena     => '1',
-     
-     data_in1  => sid_audio_data,
-     data_in2  => ym2149_audio_dac,
-     data_in3  => sigmadelta_raw,
-     
-     audio_out => platform_audio_sd
-     );
+--	ym2149_audio_dac <= ym2149_audio_data & "0000000000";
+--
+--   mixer: zpuino_io_audiomixer
+--         port map (
+--     clk     => wb_clk_i,
+--     rst     => wb_rst_i,
+--     ena     => '1',
+--     
+--     data_in1  => sid_audio_data,
+--     data_in2  => ym2149_audio_dac,
+--     data_in3  => sigmadelta_raw,
+--     
+--     audio_out => platform_audio_sd
+--     );
 
 
   pin00: IOPAD port map(I => gpio_o(0), O => gpio_i(0), T => gpio_t(0), C => sysclk,PAD => WING_A(0) );
@@ -827,16 +1069,16 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_data(0) <= platform_audio_sd; -- PPS0 : SIGMADELTA DATA
+--    gpio_spp_data(0) <= platform_audio_sd; -- PPS0 : SIGMADELTA DATA
     gpio_spp_data(1) <= timers_pwm(0);          -- PPS1 : TIMER0
     gpio_spp_data(2) <= timers_pwm(1);          -- PPS2 : TIMER1
     gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
     gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
-    gpio_spp_data(5) <= platform_audio_sd; -- PPS5 : SIGMADELTA1 DATA
+--    gpio_spp_data(5) <= platform_audio_sd; -- PPS5 : SIGMADELTA1 DATA
     gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
-    gpio_spp_data(8) <= platform_audio_sd;
+--    gpio_spp_data(8) <= platform_audio_sd;
     spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
-    uart2_rx <= gpio_spp_read(1);              -- PPS0 : USPI MISO
+--    uart2_rx <= gpio_spp_read(1);              -- PPS0 : USPI MISO
 
   end process;
 

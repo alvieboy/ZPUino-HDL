@@ -1,0 +1,21 @@
+MODULE papilio_SOC_schematic
+	SUBMODULE papilio_stepper
+		INSTANCE XLXI_3
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_10
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_11
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_12
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_13
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_14
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_15
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_16
+	SUBMODULE zpuino_empty_device
+		INSTANCE XLXI_17
+	SUBMODULE ZPUino
+		INSTANCE XLXI_18
