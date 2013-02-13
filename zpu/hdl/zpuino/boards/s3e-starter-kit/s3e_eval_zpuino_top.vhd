@@ -107,9 +107,20 @@ entity s3e_eval_zpuino is
     DRAM_WE_N     : OUT   STD_LOGIC;
     DRAM_CK_FB    : IN STD_LOGIC
   );
+
 end entity s3e_eval_zpuino;
 
 architecture behave of s3e_eval_zpuino is
+
+  component wb_bootloader is
+  port (
+    syscon:     in wb_syscon_type;
+    wb1i:       in wb_mosi_type;
+    wb1o:       out wb_miso_type;
+    wb2i:       in wb_mosi_type;
+    wb2o:       out wb_miso_type
+  );
+  end component;
 
   component clkgen is
   port (
@@ -264,10 +275,30 @@ architecture behave of s3e_eval_zpuino is
   signal adc_seln:  std_logic;
   signal adc_enabled: std_logic;
 
-  signal wb_clk_i: std_logic;
-  signal wb_rst_i: std_logic;
 
   signal clk270, clk90: std_logic;
+
+  signal ram_wbi: wb_miso_type;
+  signal ram_wbo: wb_mosi_type;
+  signal dma_wbi: wb_mosi_type;
+
+  signal sram_wbi:      wb_mosi_type;
+  signal sram_wbo:      wb_miso_type;
+
+  signal rom_wbi:      wb_mosi_type;
+  signal rom_wbo:      wb_miso_type;
+
+  signal rommux_wbi:      wb_miso_type;
+  signal rommux_wbo:      wb_mosi_type;
+
+  signal prom_wbi:      wb_mosi_type;
+  signal prom_wbo:      wb_miso_type;
+
+  signal promio_wbi:      wb_mosi_type;
+  signal promio_wbo:      wb_miso_type;
+
+  signal memory_enable: std_logic;
+  signal syscon: wb_syscon_type;
 
   signal dram_wb_ack_o:       std_logic;
   signal dram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
@@ -278,50 +309,15 @@ architecture behave of s3e_eval_zpuino is
   signal dram_wb_we_i:        std_logic;
   signal dram_wb_stall_o:     std_logic;
 
-  signal ram_wb_ack_o:       std_logic;
-  signal ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
-  signal ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
-  signal ram_wb_cyc_i:       std_logic;
-  signal ram_wb_stb_i:       std_logic;
-  signal ram_wb_we_i:        std_logic;
-  signal ram_wb_stall_o:     std_logic;
+  signal dbg_in:         zpu_dbg_in_type;
+  signal dbg_out:        zpu_dbg_out_type;
 
-  signal rom_wb_ack_o:       std_logic;
-  signal rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
-  signal rom_wb_cyc_i:       std_logic;
-  signal rom_wb_stb_i:       std_logic;
-  signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
-  signal rom_wb_stall_o:     std_logic;
-
-  component wb_rom_ram is
-  port (
-    ram_wb_clk_i:       in std_logic;
-    ram_wb_rst_i:       in std_logic;
-    ram_wb_ack_o:       out std_logic;
-    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
-    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
-    ram_wb_cyc_i:       in std_logic;
-    ram_wb_stb_i:       in std_logic;
-    ram_wb_we_i:        in std_logic;
-
-    rom_wb_clk_i:       in std_logic;
-    rom_wb_rst_i:       in std_logic;
-    rom_wb_ack_o:       out std_logic;
-    rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
-    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
-    rom_wb_cyc_i:       in std_logic;
-    rom_wb_stb_i:       in std_logic;
-    rom_wb_cti_i:       in std_logic_vector(2 downto 0)
-  );
-  end component wb_rom_ram;
+  signal noid: slot_id_type:= (others => (others => '0'));
 
 begin
 
-  wb_clk_i <= sysclk;
-  wb_rst_i <= sysrst;
+  syscon.clk <= sysclk;
+  syscon.rst <= sysrst;
 
   rstgen: zpuino_serialreset
     generic map (
@@ -427,10 +423,10 @@ begin
   --misopad:IPAD  port map ( spi_pf_miso,  C => sysclk, PAD => SPI_MISO );
   spi_pf_miso <= SPI_MISO;
 
-  zpuino:zpuino_top
+  zpuino: zcorev3_top
     port map (
-      clk           => sysclk,
-	 	  rst           => sysrst,
+      syscon        => syscon,
+
       slot_cyc      => slot_cyc,
       slot_we       => slot_we,
       slot_stb      => slot_stb,
@@ -440,38 +436,79 @@ begin
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
 
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
-      m_wb_ack_o    => open,
+      memory_enable => memory_enable,
 
-      ram_wb_ack_i      => ram_wb_ack_o,
-      ram_wb_stall_i    => '0',--np_ram_wb_stall_o,
-      ram_wb_dat_o      => ram_wb_dat_i,
-      ram_wb_dat_i      => ram_wb_dat_o,
-      ram_wb_adr_o      => ram_wb_adr_i(maxAddrBit downto 0),
-      ram_wb_cyc_o      => ram_wb_cyc_i,
-      ram_wb_stb_o      => ram_wb_stb_i,
-      ram_wb_we_o       => ram_wb_we_i,
+      ram_wbi          => ram_wbi,
+      ram_wbo          => ram_wbo,
 
-      rom_wb_ack_i      => rom_wb_ack_o,
-      rom_wb_stall_i      => rom_wb_stall_o,
-      rom_wb_dat_i      => rom_wb_dat_o,
-      rom_wb_adr_o      => rom_wb_adr_i(maxAddrBit downto 0),
-      rom_wb_cyc_o      => rom_wb_cyc_i,
-      rom_wb_stb_o      => rom_wb_stb_i,
+      rom_wbi          => rom_wbo,
+      rom_wbo          => rom_wbi,
 
-      jtag_ctrl_chain_in => (others => '0')
+      --dma_wbi          => dma_wbi,
+      slot_id       => noid,
+      
+      dbg_reset     => open,
+      dbg_in        => dbg_in,
+      dbg_out       => dbg_out
+      );
+
+  memarb: wbarb2_1
+  generic map (
+    ADDRESS_HIGH => maxAddrBit,
+    ADDRESS_LOW => 2
+  )
+  port map (
+    syscon        => syscon,
+
+    m0wbi         => ram_wbo,
+    m0wbo         => ram_wbi,
+
+    m1wbi         => rommux_wbo,
+    m1wbo         => rommux_wbi,
+
+    s0wbi         => sram_wbo,
+    s0wbo         => sram_wbi
+  );
+
+
+  -- This muxer selects (for ROM) if whether we access RAM,
+  -- or we access the hardcoded bootloader code.
+
+  bootmux: wbbootloadermux
+  generic map (
+    address_high  => maxAddrBitBRAM
+  )
+  port map (
+    syscon        => syscon,
+    sel           => memory_enable,
+
+    -- Master 
+    mwbi          => rom_wbi,
+    mwbo          => rom_wbo,
+
+    s0wbi         => rommux_wbi,
+    s0wbo         => rommux_wbo,
+
+    s1wbi         => prom_wbo,
+    s1wbo         => prom_wbi
+  );
+
+  -- PROM
+
+  prom: wb_bootloader
+    port map (
+      syscon     => syscon,
+      wb1i       => prom_wbi,
+      wb1o       => prom_wbo,
+      wb2i       => promio_wbi,
+      wb2o       => promio_wbo
     );
 
-  --
-  --
-  -- ----------------  I/O connection to devices --------------------
-  --
-  --
+  slot_read(15) <=  promio_wbo.dat;
+  promio_wbi.adr(slot_address(15)'RANGE) <= slot_address(15);
+  promio_wbi.cyc <= slot_cyc(15);
+  promio_wbi.stb  <= slot_stb(15);
+  slot_ack(15)<=promio_wbo.ack;
 
   --
   -- IO SLOT 0
@@ -479,8 +516,8 @@ begin
 
   slot0: zpuino_spi
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(0),
     wb_dat_i     => slot_write(0),
     wb_adr_i   => slot_address(0),
@@ -501,9 +538,12 @@ begin
   --
 
   uart_inst: zpuino_uart
+  generic map (
+    bits => 4
+  )
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(1),
     wb_dat_i     => slot_write(1),
     wb_adr_i   => slot_address(1),
@@ -528,8 +568,8 @@ begin
     gpio_count => zpuino_gpio_count
   )
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(2),
     wb_dat_i     => slot_write(2),
     wb_adr_i   => slot_address(2),
@@ -567,8 +607,8 @@ begin
     B_BUFFERS           => false
   )
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(3),
     wb_dat_i     => slot_write(3),
     wb_adr_i   => slot_address(3),
@@ -594,8 +634,8 @@ begin
 
   sigmadelta_inst: zpuino_sigmadelta
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(5),
     wb_dat_i     => slot_write(5),
     wb_adr_i   => slot_address(5),
@@ -616,8 +656,8 @@ begin
 
   slot1: zpuino_spi
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(6),
     wb_dat_i     => slot_write(6),
     wb_adr_i   => slot_address(6),
@@ -641,8 +681,8 @@ begin
 
   crc16_inst: zpuino_crc16
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o     => slot_read(7),
     wb_dat_i     => slot_write(7),
     wb_adr_i   => slot_address(7),
@@ -659,8 +699,8 @@ begin
 
   adc_inst: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i    => syscon.rst,
     wb_dat_o      => slot_read(8),
     wb_dat_i     => slot_write(8),
     wb_adr_i   => slot_address(8),
@@ -677,8 +717,8 @@ begin
 
   slot9: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(9),
     wb_dat_i     => slot_write(9),
     wb_adr_i   => slot_address(9),
@@ -695,8 +735,8 @@ begin
 
   slot10: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(10),
     wb_dat_i     => slot_write(10),
     wb_adr_i   => slot_address(10),
@@ -713,8 +753,8 @@ begin
 
   slot11: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(11),
     wb_dat_i     => slot_write(11),
     wb_adr_i   => slot_address(11),
@@ -731,8 +771,8 @@ begin
 
   slot12: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(12),
     wb_dat_i     => slot_write(12),
     wb_adr_i   => slot_address(12),
@@ -749,8 +789,8 @@ begin
 
   slot13: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(13),
     wb_dat_i     => slot_write(13),
     wb_adr_i   => slot_address(13),
@@ -767,8 +807,8 @@ begin
 
   slot14: zpuino_empty_device
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i       => syscon.clk,
+	 	wb_rst_i       => syscon.rst,
     wb_dat_o      => slot_read(14),
     wb_dat_i     => slot_write(14),
     wb_adr_i   => slot_address(14),
@@ -780,49 +820,13 @@ begin
   );
 
   --
-  -- IO SLOT 15
+  -- IO SLOT 15 - do not use!
   --
 
-
-  npnadapt: wb_master_np_to_slave_p
-  generic map (
-    ADDRESS_HIGH  => maxAddrBitIncIO-1,
-    ADDRESS_LOW   => 2
-  )
-  port map (
-    wb_clk_i    => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-
-    -- Master signals
-
-    m_wb_dat_o  => slot_read(15),
-    m_wb_dat_i  => slot_write(15),
-    m_wb_adr_i  => slot_address(15)(maxAddrBitIncIO-1 downto 2),
-    m_wb_sel_i  => (others => '1'),
-    m_wb_cti_i  => CTI_CYCLE_CLASSIC,
-    m_wb_we_i   => slot_we(15),
-    m_wb_cyc_i  => slot_cyc(15),
-    m_wb_stb_i  => slot_stb(15),
-    m_wb_ack_o  => slot_ack(15),
-
-    -- Slave signals
-
-    s_wb_dat_i  => dram_wb_dat_o,
-    s_wb_dat_o  => dram_wb_dat_i,
-    s_wb_adr_o  => dram_wb_adr_i(maxAddrBitIncIO-1 downto 2),
-    s_wb_sel_o  => open,
-    s_wb_cti_o  => open,
-    s_wb_we_o   => dram_wb_we_i,
-    s_wb_cyc_o  => dram_wb_cyc_i,
-    s_wb_stb_o  => dram_wb_stb_i,
-    s_wb_ack_i  => dram_wb_ack_o,
-    s_wb_stall_i => dram_wb_stall_o
-  );
-
-  dram_wb_adr_i(31 downto maxAddrBitIncIO)<=(others => '0');
   ddr: ddr_sdram
   GENERIC map (
-    MHZ => 75
+    MHZ => 98,
+    HIGH_BIT => 24
   )
   PORT map (
     clk         => sysclk,
@@ -847,38 +851,15 @@ begin
     --wb_clk_i: in std_logic;
 	 	--wb_rst_i: in std_logic;
 
-    wb_dat_o    => dram_wb_dat_o,
-    wb_dat_i    => dram_wb_dat_i,
-    wb_adr_i    => dram_wb_adr_i,
-    wb_we_i     => dram_wb_we_i,
-    wb_cyc_i    => dram_wb_cyc_i,
-    wb_stb_i    => dram_wb_stb_i,
-    wb_ack_o    => dram_wb_ack_o,
-    wb_stall_o  => dram_wb_stall_o
+    wb_dat_o    => sram_wbo.dat,
+    wb_dat_i    => sram_wbi.dat,
+    wb_adr_i    => sram_wbi.adr,
+    wb_we_i     => sram_wbi.we,
+    wb_cyc_i    => sram_wbi.cyc,
+    wb_stb_i    => sram_wbi.stb,
+    wb_ack_o    => sram_wbo.ack,
+    wb_stall_o  => sram_wbo.stall
    );
-
-  memory: wb_rom_ram
-  port map (
-    ram_wb_clk_i      => sysclk,
-    ram_wb_rst_i      => sysrst,
-    ram_wb_ack_o      => ram_wb_ack_o,
-    ram_wb_dat_i      => ram_wb_dat_i,
-    ram_wb_dat_o      => ram_wb_dat_o,
-    ram_wb_adr_i      => ram_wb_adr_i(maxAddrBitIncIO downto 0),
-    ram_wb_cyc_i      => ram_wb_cyc_i,
-    ram_wb_stb_i      => ram_wb_stb_i,
-    ram_wb_we_i       => ram_wb_we_i,
-
-    rom_wb_clk_i      => sysclk,
-    rom_wb_rst_i      => sysrst,
-    rom_wb_ack_o      => rom_wb_ack_o,
-    rom_wb_dat_o      => rom_wb_dat_o,
-    rom_wb_adr_i      => rom_wb_adr_i(maxAddrBitIncIO downto 0),
-    rom_wb_cyc_i      => rom_wb_cyc_i,
-    rom_wb_stb_i      => rom_wb_stb_i,
-    rom_wb_cti_i      => rom_wb_cti_i
-  );
-
 
   process(gpio_spp_read, 
           sigmadelta_spp_data,timers_pwm,

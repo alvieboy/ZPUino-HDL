@@ -117,7 +117,7 @@ int poll_add(int fd, short events, poll_callback_t c)
 	struct polldata *p = g_new0(struct polldata,1);
 	p->channel=ch;
 	p->tag=tag;
-    p->fd= fd;
+	p->fd= fd;
 
 	g_hash_table_insert(polllist,(gpointer)fd, p);
 	return 0;

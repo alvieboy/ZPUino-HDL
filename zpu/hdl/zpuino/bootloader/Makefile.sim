@@ -16,7 +16,7 @@ DHRYSRC=.
 
 SKETCHBIN?=InvalidSketch.bin
 
-OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o loader-sim.o
+OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o loader-sim.o ../accel/memcpy.o ../accel/memset.o
 #crt0.o
 
 #-nostartfiles -nostdlib

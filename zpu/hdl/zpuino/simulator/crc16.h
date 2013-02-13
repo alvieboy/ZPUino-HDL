@@ -20,6 +20,8 @@
 #ifndef __CRC16_H__
 #define __CRC16_H__
 
+#include <inttypes.h>
+
 unsigned int crc16_read_data(unsigned int address);
 unsigned int crc16_read_data_dly1(unsigned int address);
 unsigned int crc16_read_data_dly2(unsigned int address);
@@ -27,5 +29,6 @@ unsigned int crc16_read_poly(unsigned int address);
 void crc16_write_data(unsigned int address,unsigned int val);
 void crc16_write_poly(unsigned int address,unsigned int val);
 void crc16_write_accumulate(unsigned int address,unsigned int val);
+void crc16_update(uint8_t data, unsigned *crc, unsigned int crc_poly);
 
 #endif

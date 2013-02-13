@@ -31,6 +31,7 @@ entity vga_zxspectrum is
     mi_wb_cyc_o: out std_logic;
     mi_wb_stb_o: out std_logic;
     mi_wb_ack_i: in std_logic;
+    mi_wb_stall_i: in std_logic;
 
     -- VGA signals
     vgaclk:     in std_logic;
@@ -132,29 +133,29 @@ architecture behave of vga_zxspectrum is
 --ModeLine "640x480"    36.0  640  696  752  832    480  481  484  509 -hsync -vsync
 
 
-  constant VGA_H_BORDER: integer := 64;
-  constant VGA_H_SYNC: integer := 40;
-  constant VGA_H_FRONTPORCH: integer := 24+VGA_H_BORDER;
-  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
-  constant VGA_H_BACKPORCH: integer := 128+VGA_H_BORDER;
+--  constant VGA_H_BORDER: integer := 64;
+--  constant VGA_H_SYNC: integer := 40;
+--  constant VGA_H_FRONTPORCH: integer := 24+VGA_H_BORDER;
+--  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
+--  constant VGA_H_BACKPORCH: integer := 128+VGA_H_BORDER;
 
-  constant VGA_V_BORDER: integer := 48;
-  constant VGA_V_FRONTPORCH: integer := 29+VGA_V_BORDER;
-  constant VGA_V_SYNC: integer := 2;
-  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
-  constant VGA_V_BACKPORCH: integer := 9+VGA_V_BORDER;
-
---  constant VGA_H_BORDER: integer := 0;
---  constant VGA_H_SYNC: integer := 2;
---  constant VGA_H_FRONTPORCH: integer := 2;
---  constant VGA_H_DISPLAY: integer := 128;
---  constant VGA_H_BACKPORCH: integer := 2;
-
---  constant VGA_V_BORDER: integer := 0;
---  constant VGA_V_FRONTPORCH: integer := 2;
+--  constant VGA_V_BORDER: integer := 48;
+--  constant VGA_V_FRONTPORCH: integer := 29+VGA_V_BORDER;
 --  constant VGA_V_SYNC: integer := 2;
---  constant VGA_V_DISPLAY: integer := 192;
---  constant VGA_V_BACKPORCH: integer := 2;
+--  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
+--  constant VGA_V_BACKPORCH: integer := 9+VGA_V_BORDER;
+
+  constant VGA_H_BORDER: integer := 0;
+  constant VGA_H_SYNC: integer := 2;
+  constant VGA_H_FRONTPORCH: integer := 2;
+  constant VGA_H_DISPLAY: integer := 128;
+  constant VGA_H_BACKPORCH: integer := 2;
+
+  constant VGA_V_BORDER: integer := 0;
+  constant VGA_V_FRONTPORCH: integer := 2;
+  constant VGA_V_SYNC: integer := 2;
+  constant VGA_V_DISPLAY: integer := 192;
+  constant VGA_V_BACKPORCH: integer := 2;
 
 
   constant VGA_HCOUNT: integer :=
@@ -608,8 +609,8 @@ begin
 
   myfifo: gh_fifo_async_rrd_sr_wf
   generic map (
-    data_width => 4,
-    add_width => 4
+    data_width => 16,
+    add_width => 6
   )
   port map (
 		clk_WR  => wb_clk_i,

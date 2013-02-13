@@ -5,16 +5,16 @@
 static unsigned int crc,crc_dly1,crc_dly2;
 static unsigned int poly;
 
-void crc16_update(uint8_t data)
+void crc16_update(uint8_t data, unsigned int *crcval, unsigned int crc_poly)
 {
 	uint8_t i;
-	crc ^= data;
+	*crcval = *crcval ^ data;
 	for (i = 0; i < 8; ++i)
 	{
-		if (crc & 1)
-			crc = (crc >> 1) ^ poly;
+		if ((*crcval) & 1)
+			*crcval = ((*crcval) >> 1) ^ crc_poly;
 		else
-			crc = (crc >> 1);
+			*crcval = ((*crcval) >> 1);
 	}
 }
 
@@ -58,6 +58,6 @@ void crc16_write_accumulate(unsigned int address,unsigned int val)
 {
 	crc_dly2 = crc_dly1;
 	crc_dly1 = crc;
-	crc16_update(val&0xff);
+	crc16_update(val&0xff, &crc, poly);
  //   printf("CRC: update %02x, will read %04x\n",val&0xff,crc);
 }

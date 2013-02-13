@@ -171,8 +171,9 @@ void test()
 
 extern "C" int main(int argc,char**argv)
 {
-	test();
+//	memset((void*)0x1001,0xde,0x23);
 
+//	while (1){}
 	ivector = &_zpu_interrupt;
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;

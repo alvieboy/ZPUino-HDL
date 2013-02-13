@@ -45,38 +45,40 @@ NET WING_A(12)    LOC="P88"  | IOSTANDARD=LVTTL;                                
 NET WING_A(13)    LOC="P93"  | IOSTANDARD=LVTTL;                                # A13
 NET WING_A(14)    LOC="P98"  | IOSTANDARD=LVTTL;                                # A14
 NET WING_A(15)    LOC="P100" | IOSTANDARD=LVTTL;                                # A15
-NET WING_B(0)     LOC="P99"  | IOSTANDARD=LVTTL;                                # B0
-NET WING_B(1)     LOC="P97"  | IOSTANDARD=LVTTL;                                # B1
-NET WING_B(2)     LOC="P92"  | IOSTANDARD=LVTTL;                                # B2
-NET WING_B(3)     LOC="P87"  | IOSTANDARD=LVTTL;                                # B3
-NET WING_B(4)     LOC="P84"  | IOSTANDARD=LVTTL;                                # B4
-NET WING_B(5)     LOC="P82"  | IOSTANDARD=LVTTL;                                # B5
-NET WING_B(6)     LOC="P80"  | IOSTANDARD=LVTTL;                                # B6
-NET WING_B(7)     LOC="P78"  | IOSTANDARD=LVTTL;                                # B7
-NET WING_B(8)     LOC="P74"  | IOSTANDARD=LVTTL;                                # B8
-NET WING_B(9)     LOC="P95"  | IOSTANDARD=LVTTL;                                # B9
-NET WING_B(10)    LOC="P62"  | IOSTANDARD=LVTTL;                                # B10
-NET WING_B(11)    LOC="P59"  | IOSTANDARD=LVTTL;                                # B11
-NET WING_B(12)    LOC="P57"  | IOSTANDARD=LVTTL;                                # B12
-NET WING_B(13)    LOC="P55"  | IOSTANDARD=LVTTL;                                # B13
-NET WING_B(14)    LOC="P50"  | IOSTANDARD=LVTTL;                                # B14
-NET WING_B(15)    LOC="P47"  | IOSTANDARD=LVTTL;                                # B15
-NET WING_C(0)     LOC="P114" | IOSTANDARD=LVTTL;                                # C0
-NET WING_C(1)     LOC="P115" | IOSTANDARD=LVTTL;                                # C1
-NET WING_C(2)     LOC="P116" | IOSTANDARD=LVTTL;                                # C2
-NET WING_C(3)     LOC="P117" | IOSTANDARD=LVTTL;                                # C3
-NET WING_C(4)     LOC="P118" | IOSTANDARD=LVTTL;                                # C4
-NET WING_C(5)     LOC="P119" | IOSTANDARD=LVTTL;                                # C5
-NET WING_C(6)     LOC="P120" | IOSTANDARD=LVTTL;                                # C6
-NET WING_C(7)     LOC="P121" | IOSTANDARD=LVTTL;                                # C7
-NET WING_C(8)     LOC="P123" | IOSTANDARD=LVTTL;                                # C8
-NET WING_C(9)     LOC="P124" | IOSTANDARD=LVTTL;                                # C9
-NET WING_C(10)    LOC="P126" | IOSTANDARD=LVTTL;                                # C10
-NET WING_C(11)    LOC="P127" | IOSTANDARD=LVTTL;                                # C11
-NET WING_C(12)    LOC="P131" | IOSTANDARD=LVTTL;                                # C12
-NET WING_C(13)    LOC="P132" | IOSTANDARD=LVTTL;                                # C13
-NET WING_C(14)    LOC="P133" | IOSTANDARD=LVTTL;                                # C14
-NET WING_C(15)    LOC="P134" | IOSTANDARD=LVTTL;                                # C15
+
+NET HSYNC     LOC="P99"  | IOSTANDARD=LVTTL;                                # B0
+NET VSYNC     LOC="P97"  | IOSTANDARD=LVTTL;                                # B1
+NET BLUE(0)     LOC="P92"  | IOSTANDARD=LVTTL;                                # B2
+NET BLUE(1)     LOC="P87"  | IOSTANDARD=LVTTL;                                # B3
+NET BLUE(2)     LOC="P84"  | IOSTANDARD=LVTTL;                                # B4
+NET BLUE(3)     LOC="P82"  | IOSTANDARD=LVTTL;                                # B5
+NET GREEN(0)     LOC="P80"  | IOSTANDARD=LVTTL;                                # B6
+NET GREEN(1)     LOC="P78"  | IOSTANDARD=LVTTL;                                # B7
+NET GREEN(2)     LOC="P74"  | IOSTANDARD=LVTTL;                                # B8
+NET GREEN(3)     LOC="P95"  | IOSTANDARD=LVTTL;                                # B9
+NET JOY_FIRE2    LOC="P62"  | IOSTANDARD=LVTTL;                                # B10
+NET JOY_LEFT    LOC="P59"  | IOSTANDARD=LVTTL;                                # B11
+NET JOY_RIGHT    LOC="P57"  | IOSTANDARD=LVTTL;                                # B12
+NET JOY_SEL     LOC="P55"  | IOSTANDARD=LVTTL;                                # B13
+NET JOY_UP      LOC="P50"  | IOSTANDARD=LVTTL;                                # B14
+NET JOY_DOWN     LOC="P47"  | IOSTANDARD=LVTTL;                                # B15
+
+NET AUDIO(0)      LOC="P114" | IOSTANDARD=LVTTL;                                # C0
+NET AUDIO(1)      LOC="P115" | IOSTANDARD=LVTTL;                                # C1
+NET PS2CLK2       LOC="P116" | IOSTANDARD=LVTTL;                                # C2
+NET PS2DAT2       LOC="P117" | IOSTANDARD=LVTTL;                                # C3
+NET PS2CLK1       LOC="P118" | IOSTANDARD=LVTTL;                                # C4
+NET PS2DAT1       LOC="P119" | IOSTANDARD=LVTTL;                                # C5
+NET RED(0)        LOC="P120" | IOSTANDARD=LVTTL;                                # C6
+NET RED(1)     LOC="P121" | IOSTANDARD=LVTTL;                                # C7
+NET RED(2)     LOC="P123" | IOSTANDARD=LVTTL;                                # C8
+NET RED(3)     LOC="P124" | IOSTANDARD=LVTTL;                                # C9
+NET RESET    LOC="P126" | IOSTANDARD=LVTTL;                                # C10
+NET JOY_FIRE1    LOC="P127" | IOSTANDARD=LVTTL;                                # C11
+NET SD_NCS    LOC="P131" | IOSTANDARD=LVTTL;                                # C12
+NET SD_DI    LOC="P132" | IOSTANDARD=LVTTL;                                # C13
+NET SD_SCK    LOC="P133" | IOSTANDARD=LVTTL;                                # C14
+NET SD_DO    LOC="P134" | IOSTANDARD=LVTTL;                                # C15
 
 NET DRAM_ADDR(0)  LOC="P140" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR0
 NET DRAM_ADDR(1)  LOC="P139" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR1
@@ -128,3 +130,4 @@ NET SPI_MOSI    LOC="P64"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # 
 NET SPI_MISO    LOC="P65"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | PULLUP; # FLASH_SO   OK
 
 NET LED LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW; # LED
+NET "clkgen_inst/clkvga_i" TIG;

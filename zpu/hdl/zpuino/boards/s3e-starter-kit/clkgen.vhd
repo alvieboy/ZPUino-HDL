@@ -176,8 +176,8 @@ begin
 DCM_inst : DCM -- Generate a 32MHz clock
   generic map (
     CLKDV_DIVIDE => 2.0,          -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
-    CLKFX_DIVIDE => 6,--12,--25,--8,            -- Can be any integer from 1 to 32
-    CLKFX_MULTIPLY => 9,--23,--16,--23,          -- Can be any integer from 1 to 32
+    CLKFX_DIVIDE => 12,--25,--8,            -- Can be any integer from 1 to 32
+    CLKFX_MULTIPLY => 23,--16,--23,          -- Can be any integer from 1 to 32
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
     CLKIN_PERIOD => 20.00,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE

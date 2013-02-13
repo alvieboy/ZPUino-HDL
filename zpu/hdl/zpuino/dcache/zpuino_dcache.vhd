@@ -17,7 +17,7 @@ use work.txt_util.all;
 entity zpuino_dcache is
   generic (
       ADDRESS_HIGH: integer := 26;
-      CACHE_MAX_BITS: integer := 13; -- 8 Kb
+      CACHE_MAX_BITS: integer := 18; -- 8 Kb
       CACHE_LINE_SIZE_BITS: integer := 6 -- 64 bytes
   );
   port (
@@ -53,8 +53,7 @@ architecture behave of zpuino_dcache is
     writeback,
     write_after_fill,
     settle,
-    flush,
-    abort
+    flush
   );
 
   type regs_type is record
@@ -220,13 +219,17 @@ begin
     variable b_have_request: std_logic;
     variable a_will_busy: std_logic;
     variable b_will_busy: std_logic;
+    variable a_valid: std_logic;
+    variable b_valid: std_logic;
+    variable a_stall: std_logic;
+    variable b_stall: std_logic;
     variable wr_conflict: std_logic;
   begin
     w := r;
-    co.a_valid<='0';
-    co.b_valid<='0';
-    co.a_stall<='0';
-    co.b_stall<='0';
+    a_valid :='0';
+    b_valid :='0';
+    a_stall:='0';
+    b_stall:='0';
     a_miss <= DontCareValue;
     b_miss <= DontCareValue;
     a_will_busy := '0';
@@ -252,15 +255,19 @@ begin
 
     tmem_dia <= (others => DontCareValue);
 
+    -- content memory comes after the tag memory.
 
-    cmem_addra <= ci.a_address(CACHE_MAX_BITS-1 downto 2);
-    cmem_addrb <= ci.b_address(CACHE_MAX_BITS-1 downto 2);
-    cmem_ena <= ci.a_enable;
+    cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);
+    cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
+    cmem_ena <= not a_miss;--ci.a_enable;
     cmem_wea <= (others =>'0');
-    cmem_web <= ci.b_wmask;--(others =>'0');  -- NOTE: or with we?
-    cmem_enb <= ci.b_enable;
+
+    cmem_web <= r.b_req_wmask;--ci.b_wmask;
+
+    cmem_enb <= r.b_req and not b_miss; --ci.b_enable;
+
     cmem_dia <= (others => DontCareValue); -- No writes on port A
-    cmem_dib <= ci.b_data_in;--(others => DontCareValue);
+    cmem_dib <= r.b_req_data;--ci.b_data_in;--(others => DontCareValue);
 
     co.a_data_out <= cmem_doa;
     co.b_data_out <= cmem_dob;
@@ -278,12 +285,7 @@ begin
     wr_conflict := '0';
 
     case r.state is
-      when abort =>
-        co.a_stall<='1';
-        cmem_ena <= '0';
-        co.b_stall<='1';
-        cmem_enb <= '0';
-        tmem_enb <= '0';
+
       when idle =>
 
         -- Now, after reading from tag memory....
@@ -311,30 +313,13 @@ begin
           b_miss<='0';
         end if;
 
-        -- Conflict
-
-        if (r.a_req='1' and r.b_req='1') then
-          -- We have a conflict if we're accessing the same line, but however
-          -- the tags mismatch
-
-          if address_to_line_number(r.a_req_addr) = address_to_line_number(r.b_req_addr) and
-            --tmem_dob(tag_type'RANGE) /= tmem_doa(tag_type'RANGE) then
-            address_to_tag(r.a_req_addr) /= address_to_tag(r.b_req_addr) then
-
-            -- synopsys translate_off
-            report "Conflict" & hstr(tmem_dob) severity failure;
-            -- synopsys translate_on
-            w.state := abort;
-          end if;                               
-        end if;
-
         -- Miss handling
         --if r.a_req='1' then
         if a_miss='1' then
-          co.a_stall <= '1';
+          a_stall := '1';
 
           --b_stall <= '1';
-          co.a_valid <= '0';
+          a_valid := '0';
           --b_valid <= '0';
           w.misses := r.misses+1;
           w.fill_tag := address_to_tag(r.a_req_addr);
@@ -359,17 +344,18 @@ begin
           end if;
         else
           -- if we're writing to a similar address, delay for one clock cycle
-          --if r.b_req='1' and r.b_req_we='1' and address_to_line_offset(r.b_req_addr)=address_to_line_offset(r.a_req_addr) then
-          if r.wr_conflict='1' then
-            co.a_valid<='0';
-            co.a_stall<='1';
-            a_will_busy :='1';
-            cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
-            tmem_addra <= address_to_line_number(r.a_req_addr);
-          else
-            co.a_valid <= '1';
-          end if;
+
+            a_valid := '1';
+
         end if;
+        --end if;
+
+        --if r.wr_conflict='1' then
+        --  co.a_valid<='0';
+        --  co.a_stall<='1';
+        --  a_will_busy :='1';
+        --  cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);--r.fill_tag & r.fill_line_number & r.fill_offset_w;
+        --  tmem_addra <= address_to_line_number(r.a_req_addr);
         --end if;
 
 
@@ -377,12 +363,12 @@ begin
         -- Miss handling (B)
         if r.b_req='1' then
         if b_miss='1' then--and a_miss='0' then
-          co.b_stall <= '1';
+          b_valid := '1';
           cmem_enb <= '0';
           tmem_enb <='0';
           w.misses := r.misses+1;
           --a_stall <= '1';
-          co.b_valid <= '0';
+          b_valid := '0';
           b_will_busy :='1';
           --a_valid <= '0';
 
@@ -415,11 +401,11 @@ begin
           if a_miss='0' and b_miss='0' then
             -- Process writes, line is in cache
             if r.b_req_we='0' then
-              co.b_valid <= '1';
+              b_valid := '1';
             end if;
           else
             b_will_busy :='1';
-            co.b_stall <= '1';
+            b_stall := '1';
           end if;
         end if;
         end if;
@@ -585,6 +571,7 @@ begin
           cmem_addrb <= r.fill_line_number & r.fill_offset_w;
           cmem_enb <= not mwbi.stall or not r.rvalid;
           cmem_ena <= '0';
+          cmem_addra <= (others => DontCareValue);
           cmem_web <= (others=>'0');
 
         else
@@ -592,6 +579,7 @@ begin
           cmem_addra <= r.fill_line_number & r.fill_offset_w;
           cmem_ena <= not mwbi.stall or not r.rvalid;
           cmem_enb <= '0';
+          cmem_addrb <= (others => DontCareValue);
           cmem_wea <= (others=>'0');
         end if;
 
@@ -601,17 +589,17 @@ begin
 
 
       when write_after_fill =>
-        --cmem_addra <= r.a_req_addr(CACHE_MAX_BITS-1 downto 2);
+
         cmem_addra <= (others => DontCareValue);
         cmem_addrb <= r.b_req_addr(CACHE_MAX_BITS-1 downto 2);
         cmem_dib <= r.b_req_data;
         cmem_web <= r.b_req_wmask;
         cmem_enb <= '1';
 
-        co.a_stall <= '1';
-        co.b_stall <= '1';
-        co.a_valid <= '0'; -- ERROR
-        co.b_valid <= '0'; -- ERROR
+        a_stall := '1';
+        b_stall := '1';
+        a_valid := '0'; -- ERROR
+        b_valid := '0'; -- ERROR
         --w.ack_b_write := '1';
         w.state := settle;
 
@@ -621,20 +609,20 @@ begin
         cmem_web <= (others => '0');
         tmem_addra <= address_to_line_number(r.a_req_addr);
         tmem_addrb <= address_to_line_number(r.b_req_addr);
-        co.a_stall <= '1';
-        co.b_stall <= '1';--not r.ack_b_write;--'1';
+        a_stall := '1';
+        b_stall := '1';
 
-        co.a_valid <= '0'; -- ERROR
-        co.b_valid <= '0';--r.ack_b_write; -- ERROR -- note: don't ack writes
+        a_valid := '0'; -- ERROR
+        b_valid := '0';--r.ack_b_write; -- ERROR -- note: don't ack writes
         w.state := idle;
 
       when flush =>
-        co.a_stall<='1';
-        co.b_stall<='1';
-        co.a_valid<='0';
-        co.b_valid<='0';
 
-        --tmem_addrb <= r.fill_line_number;
+        a_stall:='1';
+        b_stall:='1';
+        a_valid:='0';
+        b_valid:='0';
+
         tmem_addrb <= r.flush_line_number;
         tmem_addra <= (others => DontCareValue);
         tmem_ena <='0';
@@ -651,7 +639,7 @@ begin
         cmem_addrb <= (others => DontCareValue);
         cmem_dia <= (others => DontCareValue);
         cmem_dib <= (others => DontCareValue);
-        --w.fill_line_number := r.fill_line_number+1;
+        
         w.flush_line_number := r.flush_line_number+1;
 
         w.fill_offset_r := (others => '0');
@@ -696,48 +684,17 @@ begin
        -- r.flush_line_number := (others => '0');
         --r.state <= flush;
         r.state <= idle;
+        co.a_valid <= '0';
+        co.a_stall <= '0';
       else
+        co.a_valid <= a_valid;
+        co.b_valid <= b_valid;
+        co.a_stall <= a_stall;
+        co.b_stall <= b_stall;
         r <= w;
       end if;
     end if;
 
   end process;
-
-
-
-  -- Performance helper
-  process(syscon.clk)
-    constant di: std_logic_vector(cmem_dia'RANGE) := (others => DontCareValue);
-    constant ai: std_logic_vector(cmem_addra'RANGE) := (others => DontCareValue);
-  begin
-  if rising_edge(syscon.clk) then
-    if syscon.rst='0' then
-      if cmem_wea="0000" and cmem_dia/=di then
-        report "A: Optimization data" severity note;
-      end if;
-      if cmem_ena='0' and cmem_addra/=ai then
-        report "A: Optimization address" severity note;
-      end if;
-
-      if cmem_web="0000" and cmem_dib/=di then
-        report "B: Optimization data" severity note;
-      end if;
-      if cmem_enb='0' and cmem_addrb/=ai then
-        report "B: Optimization address" severity note;
-      end if;
-    end if;
-  end if;
-  end process;
-
-
-
-
-
-
-
-
-
-
-
 
 end behave;

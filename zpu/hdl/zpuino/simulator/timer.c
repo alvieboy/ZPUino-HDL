@@ -36,7 +36,7 @@ void *timer_runner(void *data)
 		if (ctrl &BIT(TCTLIEN)) {
 			ctrl |= BIT(TCTLIF);
 		  //  printf("Timer: Interrupting\n");
-			zpuino_request_interrupt(0);
+			zpuino_request_interrupt(3);
 		}
 	}
 }

@@ -20,10 +20,36 @@ architecture sim of tb is
     SPI_MOSI:   out std_logic;
     SPI_CS:     out std_logic;
 
+    HSYNC:      out std_logic;
+    VSYNC:      out std_logic;
+    RED:        out std_logic_vector(3 downto 0);
+    GREEN:      out std_logic_vector(3 downto 0);
+    BLUE:       out std_logic_vector(3 downto 0);
+    AUDIO:      out std_logic_vector(1 downto 0);
+
+    PS2CLK2:    inout std_logic;
+    PS2CLK1:    inout std_logic;
+    PS2DAT2:    inout std_logic;
+    PS2DAT1:    inout std_logic;
+
+    RESET:      in std_logic;
+    JOY_FIRE1:  in std_logic;
+    JOY_FIRE2:  in std_logic;
+    JOY_UP:     in std_logic;
+    JOY_DOWN:   in std_logic;
+    JOY_LEFT:   in std_logic;
+    JOY_RIGHT:  in std_logic;
+    JOY_SEL:    in std_logic;
+
+    SD_NCS:     out std_logic;
+    SD_DI:      out std_logic;
+    SD_DO:      in std_logic;
+    SD_SCK:     out std_logic;
+
     -- WING connections
     WING_A:     inout std_logic_vector(15 downto 0);
-    WING_B:     inout std_logic_vector(15 downto 0);
-    WING_C:     inout std_logic_vector(15 downto 0);
+    --WING_B:     inout std_logic_vector(15 downto 0);
+    --WING_C:     inout std_logic_vector(15 downto 0);
 
     -- UART (FTDI) connection
     TXD:        out std_logic;
@@ -189,6 +215,17 @@ begin
     SPI_MOSI => spi_mosi,
     SPI_SCK => spi_sck,
     SPI_CS   => spi_cs,
+
+    RESET     => '0',
+    JOY_FIRE1 => '0',
+    JOY_FIRE2 => '0',
+    JOY_UP    => '0',
+    JOY_DOWN  => '0',
+    JOY_LEFT  => '0',
+    JOY_RIGHT => '0',
+    JOY_SEL   => '0',
+
+    SD_DO     => '0',
 
     DRAM_ADDR   => DRAM_ADDR,
     DRAM_BA     => DRAM_BA,

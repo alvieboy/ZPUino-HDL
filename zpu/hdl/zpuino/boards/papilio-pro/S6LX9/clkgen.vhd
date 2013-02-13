@@ -48,6 +48,7 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
+    clkvga: out  std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -66,6 +67,7 @@ signal clk0: std_ulogic;
 signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
+signal clkvga_i: std_logic;
 
 begin
 
@@ -99,6 +101,12 @@ begin
       I =>  clkin,
       O =>  clkin_i
     );
+
+  clkvga_inst: BUFG
+    port map (
+      I =>  clkvga_i,
+      O =>  clkvga
+    );
    
   clkfb_inst: BUFG
     port map (
@@ -115,7 +123,7 @@ pll_base_inst : PLL_ADV
     CLK_FEEDBACK         => "CLKFBOUT",
     COMPENSATION         => "SYSTEM_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 30, --31, --30,
+    CLKFBOUT_MULT        => 26, --31, --30,
     CLKFBOUT_PHASE       => 0.000,
     CLKOUT0_DIVIDE       => 10, --11, --10,
     CLKOUT0_PHASE        => 0.000,
@@ -126,6 +134,9 @@ pll_base_inst : PLL_ADV
     CLKOUT2_DIVIDE       => 10, --11,--10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
+    CLKOUT3_DIVIDE       => 30, --11,--10,
+    CLKOUT3_PHASE        => 0.0,
+    CLKOUT3_DUTY_CYCLE   => 0.500,
     CLKIN1_PERIOD         => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
@@ -135,7 +146,7 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => clk0,
     CLKOUT1             => clk1,
     CLKOUT2             => clk2,
-    CLKOUT3             => open,
+    CLKOUT3             => clkvga_i,
     CLKOUT4             => open,
     CLKOUT5             => open,
     LOCKED              => dcmlocked,

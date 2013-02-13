@@ -52,7 +52,8 @@ package zpuinopkg is
   type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
   subtype address_type     is std_logic_vector(maxIObit downto minIObit);
   type slot_address_type   is array(0 to num_devices-1) of address_type;
-
+  subtype id_type          is std_logic_vector(31 downto 0);
+  type slot_id_type        is array(0 to num_devices-1) of id_type;
 
   type icache_out_type is record
     valid:          std_logic;
@@ -66,6 +67,22 @@ package zpuinopkg is
     enable:         std_logic;
     flush:          std_logic;
   end record;
+
+  constant VENDOR_ZPUINO: std_logic_vector(15 downto 0) := x"2032";
+  constant VENDOR_NONE: std_logic_vector(15 downto 0) := x"0000";
+
+  constant PRODUCT_NONE: std_logic_vector(15 downto 0) := x"0000";
+
+  constant PRODUCT_ZPUINO_SPI: std_logic_vector(15 downto 0) := x"0001";
+  constant PRODUCT_ZPUINO_UART: std_logic_vector(15 downto 0) := x"0002";
+  constant PRODUCT_ZPUINO_TIMER: std_logic_vector(15 downto 0) := x"0003";
+  constant PRODUCT_ZPUINO_INTR: std_logic_vector(15 downto 0) := x"0004";
+  constant PRODUCT_ZPUINO_SIGMADELTA: std_logic_vector(15 downto 0) := x"0005";
+  constant PRODUCT_ZPUINO_GPIO: std_logic_vector(15 downto 0) := x"0006";
+  constant PRODUCT_ZPUINO_BOOTLOADER: std_logic_vector(15 downto 0) := x"0007";
+  constant PRODUCT_ZPUINO_CRC16: std_logic_vector(15 downto 0) := x"0008";
+
+  constant PRODUCT_ZPUINO_VGA640480: std_logic_vector(15 downto 0) := x"0010";
 
 
   component zpuino_top_icache is
@@ -135,12 +152,13 @@ package zpuinopkg is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
+    slot_id:      in slot_id_type;
 
     dbg_reset:  out std_logic;
     memory_enable: out std_logic;
 
-    dma_wbo:    out wb_miso_type;
-    dma_wbi:    in wb_mosi_type;
+    --dma_wbo:    out wb_miso_type;
+    --dma_wbi:    in wb_mosi_type;
 
     -- Memory connection
     ram_wbo:    out wb_mosi_type;
@@ -218,7 +236,8 @@ package zpuinopkg is
       slot_write: out slot_cpuword_type;
       slot_address:  out slot_address_type;
       slot_ack:   in slot_std_logic_type;
-      slot_interrupt: in slot_std_logic_type
+      slot_interrupt: in slot_std_logic_type;
+      slot_id:    in slot_id_type
 
     );
   end component zpuino_io;
@@ -362,6 +381,7 @@ package zpuinopkg is
     icache_flush: out std_logic;
     dcache_flush: out std_logic;
     memory_enable: out std_logic;
+    slot_id:      in slot_id_type;
 
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
     intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0)

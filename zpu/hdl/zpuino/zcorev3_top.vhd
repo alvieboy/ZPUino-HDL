@@ -57,12 +57,13 @@ entity zcorev3_top is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
+    slot_id:      in slot_id_type;
 
     dbg_reset:  out std_logic;
     memory_enable: out std_logic;
 
-    dma_wbo:    out wb_miso_type;
-    dma_wbi:    in wb_mosi_type;
+    --dma_wbo:    out wb_miso_type;
+    --dma_wbi:    in wb_mosi_type;
 
     -- Memory connection
     ram_wbo:    out wb_mosi_type;
@@ -162,8 +163,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
-
+      slot_interrupt=> slot_interrupt,
+      slot_id       => slot_id
     );
 
     rom_wbo <= rwbo;

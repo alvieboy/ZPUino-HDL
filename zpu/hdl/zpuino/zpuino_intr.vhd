@@ -35,6 +35,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all;
 
 library work;
 use work.zpu_config.all;
@@ -56,6 +57,7 @@ entity zpuino_intr is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    slot_id:      in slot_id_type;
 
     poppc_inst:in std_logic;
 
@@ -197,8 +199,10 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
                            else '0';
 
 process(wb_adr_i,mask_q,ien_q,intr_served_q,intr_cfglvl,intr_level_q)
+  variable sindex: integer;
 begin
   wb_dat_o <= (others => Undefined);
+  if wb_adr_i(7)='0' then
   case wb_adr_i(3 downto 2) is
     when "00" =>
       --wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
@@ -216,6 +220,10 @@ begin
     when others =>
       wb_dat_o <= (others => DontCareValue);
   end case;
+  else
+    sindex := conv_integer( wb_adr_i(5 downto 2) );
+    wb_dat_o <= slot_id(sindex);
+  end if;
 end process;
 
     

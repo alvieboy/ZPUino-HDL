@@ -129,7 +129,11 @@ unsigned int uart_read_data(unsigned int address)
 void uart_write_ctrl(unsigned int address,unsigned int val)
 {
 	printf("UART: set CTL 0x%08x\n",val);
-	uart_interrupt_enabled = (val >> 17) & 1;
+}
+
+void uart_write_int(unsigned int address,unsigned int val)
+{
+	uart_interrupt_enabled = val & 1;
 }
 
 void uart_write_data(unsigned int address,unsigned int val)
@@ -350,6 +354,7 @@ void uart_io_write_handler(unsigned address, unsigned value)
 {
 	MAPREGW(0,uart_write_data);
 	MAPREGW(1,uart_write_ctrl);
+	MAPREGW(2,uart_write_int);
 	ERRORREG();
 }
 

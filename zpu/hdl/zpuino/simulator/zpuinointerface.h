@@ -58,6 +58,8 @@ zpuino_device_t *zpuino_find_device_by_name(const char*name);
 #define IOBASE 0x8000000
 #define MAXBITINCIO 27
 #define IOSLOT_BITS 4
+#define MAXADDRBITINCIO MAXBITINCIO
+
 
 #define IOREG(x) (((x) & ((1<<(MAXBITINCIO-1-IOSLOT_BITS))-1))>>2)
 
@@ -70,5 +72,9 @@ zpuino_device_t *zpuino_find_device_by_name(const char*name);
 #define ERRORREG(x) \
 	fprintf(stderr, "%s: invalid register access %d\n",__FUNCTION__,IOREG(address)); \
 	byebye();
+
+extern io_read_func_t io_read_table[1<<(IOSLOT_BITS)];
+extern io_write_func_t io_write_table[1<<(IOSLOT_BITS)];
+
 
 #endif

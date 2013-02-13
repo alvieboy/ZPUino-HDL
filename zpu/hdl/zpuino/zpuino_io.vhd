@@ -67,8 +67,8 @@ entity zpuino_io is
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type := (others => '1');
-    slot_interrupt: in slot_std_logic_type := (others => '0' )
-
+    slot_interrupt: in slot_std_logic_type := (others => '0' );
+    slot_id:    in slot_id_type
   );
 end entity zpuino_io;
 
@@ -103,7 +103,7 @@ architecture behave of zpuino_io is
   signal slot_address_i:  slot_address_type;
   signal slot_ack_i:   slot_std_logic_type;
   signal slot_interrupt_i: slot_std_logic_type;
-
+  signal slot_id_i:     slot_id_type;
 
   signal timer_read:  std_logic_vector(wordSize-1 downto 0);
   signal timer_ack: std_logic;
@@ -118,7 +118,7 @@ begin
   slot_address  <= slot_address_i;
   slot_ack_i      <= slot_ack;
   slot_interrupt_i <= slot_interrupt;
-
+  slot_id_i         <= slot_id;
 
 
   -- Ack generator  (We have an hack for slot4 here)
@@ -299,7 +299,8 @@ begin
     dcache_flush => dcache_flush,
     memory_enable => memory_enable,
     intr_in     => ivecs,
-    intr_cfglvl => "110000000000000000"
+    intr_cfglvl => "110000000000000000",
+    slot_id     => slot_id_i
   );
 
 end behave;

@@ -13,3 +13,4 @@ Current board listing
 | 0xA4040F00 | GF Papilioplus| S6 LX9   | 32Kb                                |
 | 0x84010F00 | Nexys2        | S3E1200  | 32Kb                                |
 | 0xA4031800 | GF PapilioPro | S6 LX9   | 8MB (8K Inst Cache) 		      |
+| 0xB4031800 | GF PapilioPro | S6 LX9   | 8MB (8K Inst Cache) / ZCoreV3       |

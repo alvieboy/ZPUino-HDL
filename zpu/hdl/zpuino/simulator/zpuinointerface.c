@@ -99,7 +99,7 @@ unsigned int zpuino_io_read_dummy(unsigned int address)
 {
 	fprintf(stderr,"ERROR: Invalid IO read, address 0x%08x (slot %d)\n",address,(address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
 	byebye();
-	trace_dump();
+	//trace_dump();
 	return 0;
 }
 
@@ -107,7 +107,7 @@ void zpuino_io_write_dummy(unsigned int address,unsigned int val)
 {
 	printf("ERROR: Invalid IO write, address 0x%08x = 0x%08x (slot %d)\n",address,val, (address>>(MAXBITINCIO-IOSLOT_BITS))&0xf);
 	byebye();
-	trace_dump();
+	//trace_dump();
 }
 
 

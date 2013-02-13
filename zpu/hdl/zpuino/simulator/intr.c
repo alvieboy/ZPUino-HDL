@@ -86,7 +86,7 @@ unsigned intr_read_mask(unsigned address)
 
 unsigned intr_read_line(unsigned address)
 {
-	return int_line;
+	return 1<<int_line;
 }
 
 
@@ -95,7 +95,7 @@ unsigned intr_io_read_handler(unsigned address)
 	//printf("INTR read @ 0x%08x\n",address);
 	MAPREGR(0,intr_read_status);
 	MAPREGR(1,intr_read_mask);
-	MAPREGR(3,intr_read_line);
+	MAPREGR(2,intr_read_line);
 	ERRORREG();
 	return 0;
 }

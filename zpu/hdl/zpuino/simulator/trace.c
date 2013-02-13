@@ -3,10 +3,12 @@
 #include "defs.h"
 #include <malloc.h>
 #include <stdlib.h>
+#include "zpuinointerface.h"
+#include <inttypes.h>
 
 static unsigned tracebufsize;
 static unsigned tracelow=0, tracehigh=0;
-extern unsigned char _memory[], _stack[];
+extern volatile unsigned char _memory[];
 
 extern unsigned zpuino_get_tick_count();
 
@@ -27,13 +29,20 @@ void trace_append(unsigned int pc, unsigned int sp, unsigned int top)
 	if (tracelow>=tracebufsize)
 		tracelow=0;
 
-	unsigned int *spalign  = (unsigned int*)&_stack[0];
+	uint32_t *spalign  = (uint32_t*)&_memory[0];
+
 	entry->pc = pc;
 	entry->opcode = _memory[pc];
 	entry->sp = sp;
 	entry->tos = top;
-	entry->nos = bswap_32(spalign[ (( ( sp & (STACK_SIZE-1) ) >>2) + 1 )] );
+	entry->nos = bswap_32(spalign[  ( (sp & MEMMASK) >>2) + 1 ]);
+	//printf("READ < %08x = %08x\n", (( (sp & MEMMASK) >>2) + 1)*4,entry->nos);
+
 	entry->tick = zpuino_get_tick_count();
+
+	/*if (entry->pc >= 0x0053e0e0) {
+		abort();
+	} */
 
 //	if (entry->tick>=tracebufsize-10)
 	//		abort();
@@ -67,7 +76,8 @@ extern unsigned _usp;
 
 void mem_dump()
 {
-    int is_stack = 0;
+#if 0
+	int is_stack = 0;
     unsigned stack_offset=0;
 	FILE *tf = fopen("mem.txt","w");
 	if (!tf)
@@ -75,17 +85,17 @@ void mem_dump()
 	
 
 	unsigned *_raw_mem = (unsigned*)&_memory[0];
-	unsigned spoffset = _usp & ~(STACK_SIZE-1);
+	unsigned spoffset = _usp & MEMMASK;
 	fprintf(tf,"Stack pointer at 0x%08x (from 0x%08x)\n", spoffset, _usp);
 	int i;
 	for (i=0;i<MEMSIZE/4;i++) {
 		unsigned v = bswap_32(_raw_mem[i]);
 		is_stack=0;
-		if ( ((i<<2)& ~(STACK_SIZE-1)) == spoffset) {
+		if ( ((i<<2)& MEMMASK) == spoffset) {
 
 			unsigned *_raw_stack = (unsigned*)&_stack[0];
 
-			stack_offset = i & ((STACK_SIZE-1)>>2);
+			stack_offset = i & (MEMMASK>>2);
 
 			unsigned sread = _raw_stack[ stack_offset ];
 
@@ -105,6 +115,7 @@ void mem_dump()
 		}
 	}
 	fclose(tf);
+#endif
 }
 
 void trace_dump()

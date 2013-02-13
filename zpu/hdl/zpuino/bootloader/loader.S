@@ -7,6 +7,7 @@
 .balign 16 /* Ensure we don't have a cache miss on this code */
 
 .globl __flush
+.type __flush,@function
 __flush:
         /* poppc */
         im         4                        ; Flush dcache, enable SRAM
@@ -26,9 +27,11 @@ __flush:
         nop
         poppc
         breakpoint
+.size __flush, . - __flush
 
-/* .balign 64 */
+.section .text.__sys_load
 .globl __sys_load
+.type __sys_load, @function
 __sys_load:
 
 
@@ -137,6 +140,7 @@ testcase:
 #endif        
         im        __flush
         poppc
+.size __sys_load, . - __sys_load
 
 /*        
 .globl __tests

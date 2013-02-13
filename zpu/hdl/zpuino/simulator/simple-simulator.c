@@ -19,10 +19,8 @@
 #include "defs.h"
 #include "trace.h"
 
-#define MEMMASK 0x3FFFFF
-
 unsigned char _memory[MEMSIZE];
-unsigned char _stack[STACK_SIZE];
+//unsigned char _stack[STACK_SIZE];
 
 unsigned _usp= MEMSIZE - 8;
 
@@ -94,18 +92,12 @@ void debug_stack_writeback(unsigned to, unsigned from)
 void warn_lowmem_access(unsigned val, unsigned pc,unsigned addr)
 {
 #if 0
-	if (addr<0x1000){
+	if (addr<0x1000 && pc>0x1000){
 		fprintf(stderr,"WARNING: low memory access write at 0x%08x, pc 0x%08x\n", addr, pc);
-		if (addr == 0) {
+		if (pc>0x000144e8){
 			trace_dump();
 			abort();
 		}
-	}
-
-	if (addr==0x0011029) {
-		fprintf(stderr,"WARNING: TARGET write at 0x%08x, pc 0x%08x, value 0x%08x\n", addr, pc, val);
-		trace_dump();
-		abort();
 	}
 #endif
 }
@@ -127,14 +119,14 @@ void trace(unsigned int pc, unsigned int sp, unsigned int top)
 	 }
 	 */
 	trace_append(pc,sp,top);
-    /*
+
 	printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
 		   _memory[pc], sp,
 		   top,
-		   bswap_32(spalign[ (( ( sp & (STACK_SIZE-1) ) >>2) + 1 )] ),
+		   bswap_32(_memory[ (( ( sp & MEMMASK )>>2 ) + 1 )] ),
 		   zpuino_get_tick_count()
 		   );
-           */
+
 	//fflush(stdout);
 	//	}
 }
@@ -393,7 +385,7 @@ int main(int argc,char **argv)
 
 	zpuino_interface_init();
 
-	trace_init(1024*2);
+	trace_init(1024*256);
 
 	if (load_device_map("device.map")<0) {
 		fprintf(stderr,"SIMULATOR: Error loading device map\n");
