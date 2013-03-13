@@ -78,7 +78,7 @@ entity zpuino_io_YM2149 is
   wb_stb_i:   in std_logic;
   wb_ack_o:   out std_logic;
   wb_inta_o:  out std_logic;
-
+  id:         out slot_id;
   data_out:   out std_logic_vector(7 downto 0)
   );
 end;
@@ -144,6 +144,7 @@ begin
   TEST_tone1<=tone_gen_op(2);
   TEST_tone2<=tone_gen_op(3);
 
+  id <= x"02" & x"01"; -- Vendor: FPGAArcade  Product: YM2149
   -- wishbone signals  
   wb_ack_o <= wb_cyc_i and wb_stb_i;
   wb_inta_o <= '0';

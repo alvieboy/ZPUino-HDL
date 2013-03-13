@@ -69,7 +69,7 @@ entity zpuino_timers is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
-    
+    id:       out slot_id;
     pwm_A_out: out std_logic_vector(A_PWMCOUNT-1 downto 0);
     pwm_B_out: out std_logic_vector(B_PWMCOUNT-1 downto 0)
   );
@@ -118,6 +118,7 @@ architecture behave of zpuino_timers is
 
 begin
 
+  id <= x"08" & x"13"; -- Vendor: ZPUino  Device: Dual Basic Timers
   wb_inta_o <= timer0_interrupt;
   wb_intb_o <= timer1_interrupt;
 

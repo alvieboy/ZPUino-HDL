@@ -70,6 +70,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+library work;
+use work.zpuinopkg.all;
 
 entity i2c_master_top is
     generic(
@@ -88,7 +90,7 @@ entity i2c_master_top is
             wb_cyc_i      : in  std_logic;                    -- Valid bus cycle input
             wb_ack_o      : out std_logic;                    -- Bus cycle acknowledge output
             wb_inta_o     : out std_logic;                    -- interrupt request output signal
-
+            id            : out slot_id;
             -- i2c lines
             scl_pad_i     : in  std_logic;                    -- i2c clock line input
             scl_pad_o     : out std_logic;                    -- i2c clock line output
@@ -168,6 +170,8 @@ architecture structural of i2c_master_top is
     signal i2c_al, al    : std_logic;                -- arbitration lost
 
 begin
+    id <= x"04" & x"01"; -- Vendor: OpenCores  Product: I2C Master
+
     -- generate internal reset signal
     rst_i <= arst_i xor ARST_LVL;
 

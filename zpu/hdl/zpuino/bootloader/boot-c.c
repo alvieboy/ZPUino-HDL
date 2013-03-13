@@ -25,7 +25,7 @@ void ___zpu_interrupt_vector()
 
 extern unsigned char __ram_start,__data_start,__data_end;
 
-void __copy_data(void)
+static void __copy_data(void)
 {
 	unsigned int *cptr;
 	cptr = (unsigned int*)&__ram_start;
@@ -44,13 +44,5 @@ void _premain()
 {
  //   __copy_data();
 	main(0,0);
-}
-
-void __attribute__((noreturn)) _opcode_swap()
-{
-	asm ("loadsp 0\n"
-		 "im _opcode_swap_c\n"
-		 "poppc\n");
-	while (1);
 }
 

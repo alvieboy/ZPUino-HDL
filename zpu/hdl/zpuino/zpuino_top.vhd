@@ -58,6 +58,13 @@ entity zpuino_top is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
+    slot_id:    in slot_id_type;
+
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:   in ppsininfotype;
+    pps_out_slot: in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype;
 
     dbg_reset:  out std_logic;
 
@@ -409,6 +416,11 @@ begin
       wb_we_i       => io_we,
       wb_inta_o     => interrupt,
 
+      pps_in_slot   => pps_in_slot,
+      pps_in_pin    => pps_in_pin,
+      pps_out_slot  => pps_out_slot,
+      pps_out_pin   => pps_out_pin,
+
       intready      => poppc_inst,
 
       slot_cyc      => slot_cyc,
@@ -418,7 +430,8 @@ begin
       slot_write    => slot_write,
       slot_address  => slot_address,
       slot_ack      => slot_ack,
-      slot_interrupt=> slot_interrupt
+      slot_interrupt=> slot_interrupt,
+      slot_id       => slot_id
 
     );
 

@@ -58,6 +58,7 @@ entity zpuino_sigmadelta is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     sync_in:  in std_logic;
 
@@ -96,6 +97,7 @@ signal extsync_q: std_logic;
 
 begin
 
+  id <= x"08" & x"14"; -- Vendor: ZPUino  Device: 16-Bit Dual SigmaDelta
   wb_dat_o <= (others => DontCareValue);
   wb_inta_o <= '0';
   wb_ack_o <= wb_cyc_i and wb_stb_i;

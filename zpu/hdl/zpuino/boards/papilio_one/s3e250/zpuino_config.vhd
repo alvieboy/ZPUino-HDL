@@ -73,4 +73,9 @@ package zpuino_config is
 
   constant zpuino_number_io_select_bits: integer := 4;
 
+  -- Set this to the max. number of output pps on the system
+  constant PPSCOUNT_OUT: integer := 6;
+  -- Set this to the max. number of input pps on the system
+  constant PPSCOUNT_IN: integer := 1;
+
 end package zpuino_config;

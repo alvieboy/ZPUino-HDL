@@ -65,6 +65,7 @@ entity zpuino_io_POKEY is
 	wb_stb_i:		in std_logic;
 	wb_ack_o:   	out std_logic;
 	wb_inta_o:   	out std_logic;
+  id:           out slot_id;
 
 	data_out: 		out std_logic_vector(7 downto 0)  
   );
@@ -145,6 +146,7 @@ architecture RTL of zpuino_io_POKEY is
   signal predivcnt: integer;  
 begin
 
+  id <= x"02" & x"02"; -- Vendor: FPGAArcade  Product: POKEY
   -- wishbone signals	
   wb_ack_o <= wb_cyc_i and wb_stb_i;
   wb_inta_o <= '0';

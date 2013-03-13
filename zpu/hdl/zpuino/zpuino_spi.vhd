@@ -54,6 +54,7 @@ entity zpuino_spi is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     mosi:     out std_logic;
     miso:     in std_logic;
@@ -63,7 +64,6 @@ entity zpuino_spi is
 end entity zpuino_spi;
 
 architecture behave of zpuino_spi is
-
 
   component spi is
     port (
@@ -115,6 +115,8 @@ architecture behave of zpuino_spi is
   signal spi_transfersize_q: std_logic_vector(1 downto 0);
   signal trans: std_logic;
 begin
+
+  id <= x"08" & x"10"; -- Vendor: ZPUino  Device: SPI
 
   zspi: spi
     port map (

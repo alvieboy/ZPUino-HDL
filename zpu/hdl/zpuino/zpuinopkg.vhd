@@ -46,11 +46,16 @@ package zpuinopkg is
 
   constant num_devices: integer := (2**zpuino_number_io_select_bits);
 
-  type slot_std_logic_type is array(0 to num_devices-1) of std_logic;
+  type slot_std_logic_type is array(1 to num_devices-1) of std_logic;
   subtype cpuword_type     is std_logic_vector(31 downto 0);
-  type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
+  type slot_cpuword_type   is array(1 to num_devices-1) of cpuword_type;
   subtype address_type     is std_logic_vector(maxIObit downto minIObit);
-  type slot_address_type   is array(0 to num_devices-1) of address_type;
+  type slot_address_type   is array(1 to num_devices-1) of address_type;
+  subtype slot_id          is std_logic_vector(15 downto 0);
+  type slot_id_type        is array(1 to num_devices-1) of slot_id;
+
+  type ppsoutinfotype is array(PPSCOUNT_OUT-1 downto 0) of integer;
+  type ppsininfotype is array(PPSCOUNT_IN-1 downto 0) of integer;
 
   component zpuino_top is
   port (
@@ -67,7 +72,7 @@ package zpuinopkg is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
-
+    slot_id:    in slot_id_type;
     -- Wishbone MASTER interface (for DMA)
     m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
     m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
@@ -76,6 +81,11 @@ package zpuinopkg is
     m_wb_cyc_i: in std_logic;
     m_wb_stb_i: in std_logic;
     m_wb_ack_o: out std_logic;
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:  in ppsininfotype;
+    pps_out_slot:  in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype;
 
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
@@ -107,8 +117,14 @@ package zpuinopkg is
       slot_write: out slot_cpuword_type;
       slot_address:  out slot_address_type;
       slot_ack:   in slot_std_logic_type;
-      slot_interrupt: in slot_std_logic_type
+      slot_interrupt: in slot_std_logic_type;
+      slot_id:    in slot_id_type;
 
+      -- PPS information
+      pps_in_slot:  in ppsininfotype;
+      pps_in_pin:  in ppsininfotype;
+      pps_out_slot:  in ppsoutinfotype;
+      pps_out_pin:  in ppsoutinfotype
     );
   end component zpuino_io;
 
@@ -123,7 +139,8 @@ package zpuinopkg is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
+    wb_inta_o:out std_logic;
+    id:       out slot_id
   );
   end component zpuino_empty_device;
 
@@ -139,6 +156,7 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     mosi:     out std_logic;
     miso:     in std_logic;
@@ -163,6 +181,7 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     enabled:  out std_logic;
     tx:       out std_logic;
@@ -185,16 +204,17 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
-    spp_data: in std_logic_vector(gpio_count-1 downto 0);
-    spp_read: out std_logic_vector(gpio_count-1 downto 0);
+    spp_data: in std_logic_vector(PPSCOUNT_OUT-1 downto 0);
+    spp_read: out std_logic_vector(PPSCOUNT_IN-1 downto 0);
 
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_i:   in std_logic_vector(gpio_count-1 downto 0);
 
     spp_cap_in:  in std_logic_vector(gpio_count-1 downto 0); -- SPP capable pin for INPUT
-    spp_cap_out:  in std_logic_vector(gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
+    spp_cap_out: in std_logic_vector(gpio_count-1 downto 0) -- SPP capable pin for OUTPUT
   );
   end component zpuino_gpio;
 
@@ -224,14 +244,15 @@ package zpuinopkg is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
-    
+    id:       out slot_id;
+
     pwm_A_out: out std_logic_vector(A_PWMCOUNT-1 downto 0);
     pwm_B_out: out std_logic_vector(B_PWMCOUNT-1 downto 0)
   );
   end component zpuino_timers;
 
 
-  component zpuino_intr is
+  component zpuino_sysctl is
   generic (
     INTERRUPT_LINES: integer := 16
   );
@@ -247,12 +268,18 @@ package zpuinopkg is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
 
-    poppc_inst:in std_logic;
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:  in ppsininfotype;
+    pps_out_slot:  in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype;
 
+    poppc_inst:in std_logic;
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
-    intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0)
+    intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0);
+    slot_id:    in slot_id_type
   );
-  end component zpuino_intr;
+  end component zpuino_sysctl;
 
   component zpuino_sigmadelta is
 	port (
@@ -266,6 +293,7 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     sync_in:  in std_logic;
 
@@ -287,7 +315,8 @@ package zpuinopkg is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
+    wb_inta_o:out std_logic;
+    id:       out slot_id
   );
   end component zpuino_crc16;
 
@@ -303,7 +332,7 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-
+    id:       out slot_id;
     sample:   in std_logic;
     -- GPIO SPI pins
 
@@ -329,6 +358,8 @@ package zpuinopkg is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
+    id:       out slot_id;
+
     clk_we: in std_logic;
     clk_wen: in std_logic;
 
@@ -361,6 +392,7 @@ package zpuinopkg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     segdata:  out std_logic_vector(6 downto 0);
     dot:      out std_logic;

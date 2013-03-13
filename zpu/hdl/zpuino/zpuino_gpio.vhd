@@ -58,9 +58,10 @@ entity zpuino_gpio is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
-    spp_data: in std_logic_vector(gpio_count-1 downto 0);
-    spp_read: out std_logic_vector(gpio_count-1 downto 0);
+    spp_data: in std_logic_vector(PPSCOUNT_OUT-1 downto 0);
+    spp_read: out std_logic_vector(PPSCOUNT_IN-1 downto 0);
 
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
@@ -89,6 +90,8 @@ signal gpio_tris_r_i:    std_logic_vector(127 downto 0);
 signal gpio_i_q: std_logic_vector(127 downto 0);
 
 begin
+
+id <= x"08" & x"12"; -- Vendor: ZPUino  Device: GPIO
 
 wb_ack_o <= wb_cyc_i and wb_stb_i;
 wb_inta_o <= '0';
@@ -125,7 +128,9 @@ spprgen: for i in 0 to gpio_count-1 generate
 
   process( gpio_i_q(i), output_mapper_q(i) )
   begin
-    spp_read(i) <= gpio_i_q( output_mapper_q(i) );
+    if i<PPSCOUNT_IN then
+      spp_read(i) <= gpio_i_q( output_mapper_q(i) );
+    end if;
   end process;
 
 end generate;

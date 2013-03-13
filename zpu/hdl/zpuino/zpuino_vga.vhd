@@ -148,6 +148,8 @@ begin
   wb_inta_o <= '0';
   wb_intb_o <= '0';
 
+  id <= x"08" & x"18"; -- Vendor: ZPUino  Product: HQVGA 8-bit
+
   process(wb_clk_i)
   begin
     if rising_edge(wb_clk_i) then
