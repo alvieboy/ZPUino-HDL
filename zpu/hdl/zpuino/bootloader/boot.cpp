@@ -826,12 +826,6 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-	_bfunctions[0] = (unsigned)&udivmodsi4;
-	_bfunctions[1] = (unsigned)&memcpy;
-	_bfunctions[2] = (unsigned)&memset;
-	_bfunctions[3] = (unsigned)&strcmp;
-	_bfunctions[4] = (unsigned)&loadsketch;
-
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
 
