@@ -49,7 +49,7 @@
 
 #define BDATA /*__attribute__((section(".bdata")))*/
 
-extern "C" void (*ivector)(void);
+extern "C" void (*ivector)(int);
 extern "C" void *bootloaderdata;
 
 static BDATA int inprogrammode;
@@ -276,7 +276,7 @@ static inline unsigned int spiread(register_t base)
 
 extern "C" void start()
 {
-	ivector = (void (*)(void))0x1010;
+	ivector = (void (*)(int))0x1010;
 	bootloaderdata = &bdata;
     start_sketch();
 }
@@ -404,7 +404,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 }
 
 
-extern "C" void _zpu_interrupt()
+extern "C" void _zpu_interrupt(int line)
 {
 	milisseconds++;
 	TMR0CTL &= ~(BIT(TCTLIF));
