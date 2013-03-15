@@ -795,7 +795,7 @@ extern "C" unsigned _bfunctions[];
 
 extern "C" void udivmodsi4(); /* Just need it's address */
 
-extern "C" int loadsketch(unsigned offset, unsigned size)
+extern "C" void loadsketch(unsigned offset, unsigned size)
 {
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	unsigned crc16base = CRC16BASE;
@@ -803,10 +803,10 @@ extern "C" int loadsketch(unsigned offset, unsigned size)
 	spi_disable(spidata);
 	spi_enable();
 	spiwrite(spidata,0x0b);
-    spiwrite(spidata+4,offset);
+	spiwrite(spidata+4,offset);
 	spiwrite(spidata,0x0);
 	copy_sketch(spidata, crc16base, size, target);
-    spi_disable(spidata);
+	spi_disable(spidata);
 	flush();
 	start();
 }

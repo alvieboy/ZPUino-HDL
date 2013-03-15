@@ -1,3 +1,5 @@
+#include "register.h"
+
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 .text
@@ -8,11 +10,36 @@ spi_copy:
         im spi_copy_impl
         poppc
 .globl start_sketch
+
 start_sketch:
        im STACKTOP
         popsp
         im __sketch_start
         poppc
+
+/* Interrupt handling */
+
+.globl ___zpu_interrupt_vector
+.type ___zpu_interrupt_vector, @function
+___zpu_interrupt_vector:
+	im _memreg
+        load
+        /* Get current interrupt */
+        im SYSCTLBASE
+        load
+	im ivector
+        load
+        call
+        storesp 0
+        im _memreg
+        store
+        /* Re-enable interrupts */
+        im 1
+        nop
+        im SYSCTLBASE
+        store
+        poppc
+.size ___zpu_interrupt_vector, . - ___zpu_interrupt_vector
 
 .section ".boots", ""
 
