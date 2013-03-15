@@ -447,12 +447,6 @@ static unsigned int spi_read_id()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
-    /*
-	spiwrite(spidata,0x9F);
-	spiwrite(spidata,0x00);
-	spiwrite(spidata,0x00);
-	spiwrite(spidata,0x00);
-	*/
 	spiwrite(spidata+6, 0x9f000000);
 	ret = spiread(spidata);
 	spi_disable(spidata);
@@ -836,7 +830,7 @@ extern "C" int main(int argc,char**argv)
 
 	enableTimer();
 
-	CRC16POLY = 0x8408; // CRC16-CCITT
+	CRC16POLY = 0xFFFF8408; // CRC16-CCITT
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 	// Reset flash
 	spi_reset(&SPIDATA);
@@ -874,7 +868,7 @@ extern "C" int main(int argc,char**argv)
 		} else {
 			if (i==HDLC_frameFlag) {
 				bufferpos=0;
-				CRC16ACC=0xFFFF;
+				CRC16ACC=0xFFFFFFFF;
 				syncSeen=1;
 				unescaping=0;
 			} else {
