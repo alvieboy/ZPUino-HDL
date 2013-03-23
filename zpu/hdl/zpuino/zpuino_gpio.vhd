@@ -126,6 +126,11 @@ spprgen: for i in 0 to gpio_count-1 generate
 
   gpio_i_q(i) <= gpio_i(i) when spp_cap_in(i)='1' else DontCareValue;
 
+end generate;
+
+
+spprgen2: for i in 0 to PPSCOUNT_IN-1 generate
+
   process( gpio_i_q(i), output_mapper_q(i) )
   begin
     if i<PPSCOUNT_IN then
@@ -134,6 +139,7 @@ spprgen: for i in 0 to gpio_count-1 generate
   end process;
 
 end generate;
+
 
 ilink1: for i in 0 to gpio_count-1 generate
   gpio_r_i(i) <= gpio_i(i);
