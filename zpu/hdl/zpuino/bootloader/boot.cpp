@@ -786,6 +786,7 @@ inline void configure_pins()
 
 extern "C" int _syscall(int *foo, int ID, ...);
 extern "C" unsigned _bfunctions[];
+extern "C" const unsigned _bfunctionsconst[];
 
 extern "C" void udivmodsi4(); /* Just need it's address */
 
@@ -810,11 +811,12 @@ extern "C" int main(int argc,char**argv)
 	inprogrammode = 0;
 	milisseconds = 0;
 	unsigned bufferpos = 0;
-    unsigned char buffer[256 + 32];
+	unsigned char buffer[256 + 32];
 	int syncSeen;
 	int unescaping;
 
 	ivector = &_zpu_interrupt;
+	memcpy(_bfunctions, _bfunctionsconst, 5*4);
 
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 

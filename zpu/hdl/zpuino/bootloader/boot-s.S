@@ -67,6 +67,10 @@ _memreg:
         .org 0x0028
         .globl _bfunctions
 _bfunctions:
+
+.section ".rodata"
+.global _bfunctionsconst
+_bfunctionsconst:
 	.long udivmodsi4
 	.long memcpy
 	.long memset
