@@ -139,6 +139,7 @@ unsigned int bytemask[] = { 0xff00000, 0x00ff0000, 0x0000ff00, 0x000000ff };
 
 extern "C" unsigned _bfunctions[];
 extern "C" void udivmodsi4(); /* Just need it's address */
+extern "C" void loadsketch() {}
 
 extern "C" int main(int argc,char**argv)
 {
