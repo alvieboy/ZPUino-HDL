@@ -203,8 +203,8 @@ begin
     elsif wb_stb_i='1' and wb_cyc_i='1' and wb_we_i='1' then
       case wb_adr_i(10 downto 9) is
         when "00" =>
-          case wb_adr_i(5 downto 4) is
-            when "00" =>
+          case wb_adr_i(6 downto 4) is
+            when "000" =>
               case wb_adr_i(3 downto 2) is
                 when "00" =>
                   gpio_q(31 downto 0) <= wb_dat_i;
@@ -216,7 +216,7 @@ begin
                   gpio_q(127 downto 96) <= wb_dat_i;
                 when others =>
               end case;
-            when "01" =>
+            when "001" =>
               case wb_adr_i(3 downto 2) is
                 when "00" =>
                   gpio_tris_q(31 downto 0) <= wb_dat_i;
@@ -228,7 +228,7 @@ begin
                   gpio_tris_q(127 downto 96) <= wb_dat_i;
                 when others =>
               end case;
-            when "10" =>
+            when "010" =>
               if zpuino_pps_enabled then
                 case wb_adr_i(3 downto 2) is
                   when "00" =>
@@ -242,6 +242,42 @@ begin
                   when others =>
                 end case;
               end if;
+				when "100" =>		-- set bits
+              case wb_adr_i(3 downto 2) is
+                when "00" =>
+                  gpio_q(31 downto 0) <= gpio_q(31 downto 0) or wb_dat_i;
+                when "01" =>
+                  gpio_q(63 downto 32) <= gpio_q(63 downto 32) or wb_dat_i;
+                when "10" =>
+                  gpio_q(95 downto 64) <= gpio_q(95 downto 64) or wb_dat_i;
+                when "11" =>
+                  gpio_q(127 downto 96) <= gpio_q(127 downto 96) or wb_dat_i;
+                when others =>
+              end case;				
+				when "101" =>		-- clear bits
+              case wb_adr_i(3 downto 2) is
+                when "00" =>
+                  gpio_q(31 downto 0) <= gpio_q(31 downto 0) and not wb_dat_i;
+                when "01" =>
+                  gpio_q(63 downto 32) <= gpio_q(63 downto 32) and not wb_dat_i;
+                when "10" =>
+                  gpio_q(95 downto 64) <= gpio_q(95 downto 64) and not wb_dat_i;
+                when "11" =>
+                  gpio_q(127 downto 96) <= gpio_q(127 downto 96) and not wb_dat_i;
+                when others =>
+              end case;						
+				when "110" =>		-- toggle bits
+              case wb_adr_i(3 downto 2) is
+                when "00" =>
+                  gpio_q(31 downto 0) <= gpio_q(31 downto 0) xor wb_dat_i;
+                when "01" =>
+                  gpio_q(63 downto 32) <= gpio_q(63 downto 32) xor wb_dat_i;
+                when "10" =>
+                  gpio_q(95 downto 64) <= gpio_q(95 downto 64) xor wb_dat_i;
+                when "11" =>
+                  gpio_q(127 downto 96) <= gpio_q(127 downto 96) xor wb_dat_i;
+                when others =>
+              end case;							  
             when others =>
 
           end case;
