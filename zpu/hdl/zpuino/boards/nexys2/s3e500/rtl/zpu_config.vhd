@@ -44,23 +44,22 @@ package zpu_config is
 	constant wordPower			: integer := 5;
 	-- during simulation, set this to '0' to get matching trace.txt 
 	constant	DontCareValue		: std_logic := 'X';
-  constant  Undefined: std_logic := '0';
 	-- Clock frequency in MHz.
 	constant	ZPU_Frequency		: std_logic_vector(7 downto 0) := x"32";
 	-- This is the msb address bit. bytes=2^(maxAddrBitIncIO+1)
 	constant 	maxAddrBitIncIO		: integer := 27;
-	constant 	maxAddrBitBRAM		: integer := 13;
+	constant 	maxAddrBitBRAM		: integer := 14;
 
   constant maxIOBit: integer := maxAddrBitIncIO - 1;
   constant minIOBit: integer := 2;
+  constant Undefined: std_logic := '0';
 
   constant stackSize_bits: integer := 9;
+  constant enable_fmul16: boolean := false;
 	
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words
 	constant 	spStart				: std_logic_vector(maxAddrBitIncIO downto 0) :=
     conv_std_logic_vector((2**(maxAddrBitBRAM+1))-8, maxAddrBitIncIO+1);
-
-  constant enable_fmul16: boolean := false;
 
 end zpu_config;
