@@ -61,6 +61,16 @@ typedef volatile unsigned int* register_t;
 #define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(128 + x))
 #define GPIOPPSIN(x)  REGISTER(GPIOBASE,(256 + x))
 
+// for direct pin access
+#define GPIOSET(x)	REGISTER(GPIOBASE,(16+x))
+#define GPIOCLR(x)	REGISTER(GPIOBASE,(20+x))
+#define GPIOTGL(x)	REGISTER(GPIOBASE,(24+x))
+
+#define PINSET(x) GPIOSET((x>>5))=(1<<(x&0x1F))
+#define PINCLR(x) GPIOCLR((x>>5))=(1<<(x&0x1F))
+#define PINTGL(x) GPIOTGL((x>>5))=(1<<(x&0x1F))
+
+
 #define ROFF_TMR0CTL  0
 #define ROFF_TMR0CNT  1
 #define ROFF_TMR0CMP  2
