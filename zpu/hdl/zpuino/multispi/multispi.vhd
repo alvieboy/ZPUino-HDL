@@ -3,7 +3,7 @@
 -- 
 --  Copyright 2010 Alvaro Lopes <alvieboy@alvie.com>
 -- 
---  Version: 1.0
+--  Version: 1.1
 -- 
 --  The FreeBSD license
 --  
@@ -48,7 +48,8 @@ use work.txt_util.all;
 
 entity multispi is
   generic (
-    spicount: integer := 10
+    spicount: integer := 10,
+    memorymapping: boolean := true
   );
   port (
     wb_clk_i: in std_logic;
@@ -78,7 +79,7 @@ entity multispi is
     lmosi:     out std_logic_vector(spicount-1 downto 0);
     lsck:      out std_logic_vector(spicount-1 downto 0);
 
-    -- SPI flash
+    -- SPI flash -- not used if memory mapping
     fmosi:      out std_logic;
     fmiso:      in std_logic;
     fsck:       out std_logic;
@@ -145,6 +146,8 @@ architecture behave of multispi is
     state: statetype;
     spibaseaddr: unsigned(23 downto 0);
     membaseaddr: unsigned(31 downto 0);
+    mem2baseaddr: unsigned(31 downto 0); -- for mapping
+
     nsel: std_logic; -- Flash nsel
 
     -- flash controller signals (registered)
@@ -166,7 +169,6 @@ architecture behave of multispi is
     directspi: std_logic; -- Direct access to SPI flash
     lpres: std_logic_vector(2 downto 0);
     fpres: std_logic_vector(2 downto 0);
-    memoryspi: std_logic;
 
     testcounter: unsigned(31 downto 0);
 
@@ -261,6 +263,7 @@ begin
               do_start := wb_dat_i(0);
             when "001" =>
               w.spibaseaddr := unsigned(wb_dat_i(23 downto 0));
+              w.mem2baseaddr := unsigned(wb_dat_i); 
             when "010" =>
               w.membaseaddr := unsigned(wb_dat_i);
             when "011" =>
@@ -270,7 +273,6 @@ begin
 
               w.lpres := wb_dat_i(4 downto 2);
               w.fpres := wb_dat_i(7 downto 5);
-              w.memoryspi := wb_dat_i(8);
 
             when others =>
             end case;
@@ -288,25 +290,11 @@ begin
     case r.state is
       when idle =>
         if do_start='1' then
-          if r.memoryspi='1' then
-
-            --w.maddr := std_logic_vector(unsigned() + unsigned(r.spibaseaddr));
-            -- Load data from memory, not SPI
-            --mi_wb_cyc_o <= '1';
-            --mi_wb_stb_o <= '1';
-            --w.rgb := mi_wb_dat_i(31 downto 8);
-
-            --if mi_wb_ack_i='1' then
-
-            --end if;
-
-          else
             w.state := waitsel;
             w.nsel := '0';
             w.seldly := "11";
             w.ledcnt := r.nleds;
             w.testcounter:=(others =>'0');
-          end if;
         end if;
 
       when waitsel =>
@@ -407,7 +395,6 @@ begin
       w.directspi := '0';
       w.lpres := "101";
       w.fpres := "100";
-      w.memoryspi := '0';
     end if;
 
     if rising_edge(wb_clk_i) then
@@ -421,10 +408,15 @@ begin
 
   end process;
 
+  fl1: if memorymapping generate
+    flash_en <= '0';
+  end generate;
 
-  flash_din <= r.fdin when r.directspi='0' else df_din;
-  flash_tsize <= r.ftsize when r.directspi='0' else df_tsize;
-  flash_en <= r.fen   when r.directspi='0' else df_en;
+  fl2: if not memorymapping generate
+    flash_din <= r.fdin;-- when r.directspi='0' else df_din;
+    flash_tsize <= r.ftsize;-- when r.directspi='0' else df_tsize;
+    flash_en <= r.fen;--   when r.directspi='0' else df_en;
+  end generate;
 
   -- Flash controller
   fspi: spi
