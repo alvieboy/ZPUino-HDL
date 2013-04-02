@@ -50,6 +50,11 @@ package zpuino_config is
 
   constant zpuinocore: zpu_core_type := small;
 
+  -- Number of GPIO to map (number of FPGA pins)
+  constant zpuino_gpio_count: integer := 54;
+
+  -- Peripheral Pin Select
+  constant zpuino_pps_enabled: boolean := true;
 
   -- Set iobusyinput to 'true' to allow registered input to IO core. This also allows for IO
   -- to become busy without needing to register its inputs. However, an extra clock-cycle is
@@ -60,14 +65,10 @@ package zpuino_config is
   -- For SPI blocking operation, you need to define also iobusyinput
   constant zpuino_spiblocking: boolean := true;
 
-  -- Number of GPIO to map (number of FPGA pins)
-  constant zpuino_gpio_count: integer := 49;
-
-  -- Peripheral Pin Select
-  constant zpuino_pps_enabled: boolean := true;
-
   -- Internal SPI ADC
   constant zpuino_adc_enabled: boolean := false;
+
+  -- Number of IO select bits. Maps to maximum number of IO devices
 
   constant zpuino_number_io_select_bits: integer := 4;
 

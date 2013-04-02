@@ -4,7 +4,7 @@
         C calling standard
 */
 
-// #define TRACE
+#undef TRACE
         
         .globl execute
 
@@ -111,6 +111,18 @@ execute:
 zpu_nop:
         incl %edi
         jmp .opcode_return
+zpu_fmul16:
+        movl _stack+4(%esi), %eax
+        bswap %eax
+        addl $4, %esi
+        incl %edi
+        push %edx
+        imull %ebx
+        shrd   $0x10,%edx,%eax
+        movl %eax, %ebx
+        pop %edx
+        jmp .opcode_return
+
 zpu_ibreak:
         popa
         movl $1, %eax
@@ -195,7 +207,34 @@ zpu_flip:
         movl   %eax, %ebx
         incl   %edi
         jmp .opcode_return
-        
+
+zpu_storeb:
+        // Address in %ebx
+        addl $4, %esi
+        movl _stack(%esi), %ecx //value
+        bswap %ecx
+        addl $4, %esi
+        bt MAXADDRBITINCIO, %ebx
+        jc abort
+        bt $31, %ebx
+        jnc storeb_to_memory
+
+        and $STACKMASK, %ebx
+        movb %cl, _stack(%ebx)
+        movl _stack(%esi), %ebx // Reload stack top
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+
+storeb_to_memory:
+        movb %cl, _memory(%ebx)
+        movl _stack(%esi), %ebx // Reload stack top
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+
+
+
 zpu_store:
         // Address in %ebx
         addl $4, %esi
@@ -241,7 +280,27 @@ store_external:
         bswap %ebx
         incl %edi
         jmp .opcode_return
-        
+
+zpu_loadb:
+        bt MAXADDRBITINCIO, %ebx
+        jc abort
+        bt $31, %ebx
+        jc loadb_stack
+        movb _memory(%ebx), %bl
+        and $0xff, %ebx
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+
+loadb_stack:
+        and $STACKMASK, %ebx
+        movb _stack(%ebx), %bl
+        and $0xff, %ebx
+        bswap %ebx
+        incl %edi
+        jmp .opcode_return
+
+
 zpu_load:
         bt MAXADDRBITINCIO, %ebx
         jc load_external
@@ -1152,7 +1211,7 @@ idimflag:
 .section ".rodata"
 dispatchtable:
         .long zpu_ibreak /* opcode 00 */
-        .long zpu_ibreak /* opcode 01 */
+        .long zpu_fmul16 /* opcode 01 */
         .long zpu_pushsp /* opcode 02 */
         .long zpu_ibreak /* opcode 03 */
         .long zpu_poppc /* opcode 04 */
@@ -1203,7 +1262,7 @@ dispatchtable:
         .long zpu_emulate17 /* opcode 31 */
         .long zpu_emulate18 /* opcode 32 */
         .long zpu_emulate19 /* opcode 33 */
-        .long zpu_emulate20 /* opcode 34 */
+        .long zpu_storeb//zpu_emulate20 /* opcode 34 */
         .long zpu_emulate21 /* opcode 35 */
         .long zpu_emulate22 /* opcode 36 */
         .long zpu_emulate23 /* opcode 37 */

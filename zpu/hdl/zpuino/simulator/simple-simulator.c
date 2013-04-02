@@ -40,7 +40,7 @@ static unsigned int do_exit=0;
 
 pthread_cond_t zpu_halted_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t zpu_halted_lock = PTHREAD_MUTEX_INITIALIZER;
-static unsigned int zpu_halted_flag;
+static unsigned int zpu_halted_flag=0;
 
 pthread_cond_t zpu_resume_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t zpu_resume_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -76,6 +76,7 @@ void tick(unsigned int delta)
 
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
+    unsigned int *spalign  = (unsigned int*)&_stack[0];
 		//	if (pc < 0x40 || pc >=0x400) {
 		if (sp > sizeof(_stack)) {
 				printf("Access beyond end of stack 0x%08x\n",sp);
@@ -85,7 +86,7 @@ void trace(unsigned int pc, unsigned int sp, unsigned int top)
 		printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
 			   _memory[pc], sp,
 			   top,
-			   bswap_32(*(unsigned int*)&_stack[sp+4]),
+			   bswap_32(spalign[ (sp/4) + 1] ),//*(unsigned int*)&_stack[sp+4]),
 			   zpuino_get_tick_count()
 			  );
 		fflush(stdout);
@@ -118,10 +119,15 @@ void *zpu_thread(void*data)
 			pthread_mutex_unlock(&zpu_halted_lock);
 			pthread_cond_broadcast(&zpu_halted_cond);
 			// Wait for resume
+			printf("ZPU core halted\n");
 			pthread_mutex_lock(&zpu_resume_lock);
 			while (!zpu_resume_flag)
 				pthread_cond_wait(&zpu_resume_cond,&zpu_resume_lock);
 			zpu_resume_flag=0;
+			pthread_mutex_lock(&zpu_halted_lock);
+			zpu_halted_flag=0;
+			pthread_mutex_unlock(&zpu_halted_lock);
+			
 			pthread_mutex_unlock(&zpu_resume_lock);
 			if (do_exit)
 				return NULL;
@@ -136,13 +142,15 @@ void *zpu_thread(void*data)
 
 void zpu_halt()
 {
-	request_halt=1;
+	printf("Requesting halt\n");
 	pthread_mutex_lock(&zpu_halted_lock);
+	request_halt=1;
+
 	while (!zpu_halted_flag)
 		pthread_cond_wait(&zpu_halted_cond, &zpu_halted_lock);
 
 	// TODO - improve this.
-
+    printf("cond wait on halt\n");
 	//zpu_halted_flag=0;
 	request_halt=0;
 

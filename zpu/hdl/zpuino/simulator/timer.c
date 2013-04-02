@@ -78,7 +78,7 @@ void timer_tick(unsigned delta)
 					//printf("Timer match %04x\n",timer_cnt);
 
 					if (ctrl & BIT(TCTLIEN) ) {
-						//  printf("# Interrupting\n");
+						//printf("# Interrupting\n");
 						ctrl |= BIT(TCTLIF);
 						//do_interrupt=1;
 						zpuino_request_interrupt(0);

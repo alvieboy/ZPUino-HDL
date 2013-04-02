@@ -240,7 +240,7 @@ begin
 
   process(wb_adr_i, spi_ready, spi_read, spi_clk_pres,cpol,spi_samprise,spi_enable_q,spi_txblock_q,spi_transfersize_q)
   begin
-    wb_dat_o <= (others =>'0');
+    wb_dat_o <= (others =>Undefined);
     case wb_adr_i(2) is
       when '0' =>
         wb_dat_o(0) <= spi_ready;

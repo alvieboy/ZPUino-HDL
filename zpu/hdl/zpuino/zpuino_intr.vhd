@@ -191,7 +191,7 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
 
 process(wb_adr_i,mask_q,ien_q,intr_served_q,intr_cfglvl,intr_level_q)
 begin
-  wb_dat_o <= (others => '0');
+  wb_dat_o <= (others => Undefined);
   case wb_adr_i(3 downto 2) is
     when "00" =>
       wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;

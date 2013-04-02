@@ -105,22 +105,22 @@ begin
       O =>  clkin_i_2
     );
    
-  clkfb_inst: BUFG
-    port map (
-      I=> clk0,
-      O=> clkfb
-    );
+  --clkfb_inst: BUFG
+  --  port map (
+  --    I=> clk0,
+  --    O=> clkfb
+  --  );
 
 
 DCM_inst : DCM
   generic map (
     CLKDV_DIVIDE => 2.0,          -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
-    CLKFX_DIVIDE => 1,--8,            -- Can be any integer from 1 to 32
-    CLKFX_MULTIPLY => 3,--23,          -- Can be any integer from 1 to 32
+    CLKFX_DIVIDE => 8,            -- Can be any integer from 1 to 32
+    CLKFX_MULTIPLY => 23,          -- Can be any integer from 1 to 32
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
     CLKIN_PERIOD => 31.25,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
-    CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
+    CLK_FEEDBACK => "NONE",       -- Specify clock feedback of NONE, 1X or 2X
     DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
     DFS_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for frequency synthesis
     DLL_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for DLL
@@ -130,7 +130,7 @@ DCM_inst : DCM
     STARTUP_WAIT => FALSE                   -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
     ) 
   port map (
-    CLK0 => clk0, -- 0 degree DCM CLK ouptput
+    CLK0 => open,--clk0, -- 0 degree DCM CLK ouptput
     CLK180 => open, -- 180 degree DCM CLK output
     CLK270 => open, -- 270 degree DCM CLK output
     CLK2X => open, -- 2X DCM CLK output
@@ -142,7 +142,7 @@ DCM_inst : DCM
     LOCKED => dcmlocked, -- DCM LOCK status output
     PSDONE => open, -- Dynamic phase adjust done output
     STATUS => open, -- 8-bit DCM status bits output
-    CLKFB => clkfb, -- DCM clock feedback
+    CLKFB => '0',--clkfb, -- DCM clock feedback
     CLKIN => clkin_i, -- Clock input (from IBUFG, BUFG or DCM)
     PSCLK => '0', -- Dynamic phase adjust clock input
     PSEN => '0', -- Dynamic phase adjust enable input
@@ -156,11 +156,11 @@ DCM_inst : DCM
       O =>  vgaclkout
     );
 
-  vgaclkfb_inst: BUFG
-    port map (
-      I=> vgaclk_0_b,
-      O=> vgaclk_fb
-    );
+  --vgaclkfb_inst: BUFG
+  --  port map (
+  --    I=> vgaclk_0_b,
+  --    O=> vgaclk_fb
+  --  );
 
 
   VGADCM_inst : DCM -- Generate 50Mhz
@@ -171,7 +171,7 @@ DCM_inst : DCM
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
     CLKIN_PERIOD => 31.25,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
-    CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
+    CLK_FEEDBACK => "NONE",       -- Specify clock feedback of NONE, 1X or 2X
     DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
     DFS_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for frequency synthesis
     DLL_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for DLL
@@ -181,7 +181,7 @@ DCM_inst : DCM
     STARTUP_WAIT => FALSE                   -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
     ) 
   port map (
-    CLK0 => vgaclk_0_b, -- 0 degree DCM CLK ouptput
+    CLK0 => open,--vgaclk_0_b, -- 0 degree DCM CLK ouptput
     CLK180 => open, -- 180 degree DCM CLK output
     CLK270 => open, -- 270 degree DCM CLK output
     CLK2X => open, -- 2X DCM CLK output
@@ -193,7 +193,7 @@ DCM_inst : DCM
     LOCKED => open,--dcmlocked_b, -- DCM LOCK status output
     PSDONE => open, -- Dynamic phase adjust done output
     STATUS => open, -- 8-bit DCM status bits output
-    CLKFB => vgaclk_fb, -- DCM clock feedback
+    CLKFB => '0',--vgaclk_fb, -- DCM clock feedback
     CLKIN => clkin_i_2, -- Clock input (from IBUFG, BUFG or DCM)
     PSCLK => '0', -- Dynamic phase adjust clock input
     PSEN => '0', -- Dynamic phase adjust enable input

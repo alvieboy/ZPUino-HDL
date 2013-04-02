@@ -233,7 +233,7 @@ begin
   );
 
   FPGA_INIT_B<='0';
-  SF_CE0<='0';
+  SF_CE0<='1';
 
   VGA_BLUE  <= '0';
   VGA_GREEN <= '0';
@@ -261,7 +261,7 @@ begin
   pin14:  IPAD port map ( O => gpio_i(14),  C => sysclk, PAD => SW(2) );
   pin15:  IPAD port map ( O => gpio_i(15),  C => sysclk, PAD => SW(3) );
 
-  pin16:  OPAD port map ( I => gpio_o(16), PAD => SPI_CS );
+  pin16:  OPAD port map ( I => gpio_o(16), O => gpio_i(16), PAD => SPI_CS );
 
   pin17:  IOPAD port map ( I => gpio_o(17), O => gpio_i(17), T => gpio_t(17), C => sysclk, PAD => FX2_IO(21) );
   pin18:  IOPAD port map ( I => gpio_o(18), O => gpio_i(18), T => gpio_t(18), C => sysclk, PAD => FX2_IO(22) );
@@ -280,37 +280,38 @@ begin
   pin30:  IOPAD port map ( I => gpio_o(30), O => gpio_i(30), T => gpio_t(30), C => sysclk, PAD => FX2_IO(34) );
   pin31:  IOPAD port map ( I => gpio_o(31), O => gpio_i(31), T => gpio_t(31), C => sysclk, PAD => FX2_IO(35) );
 
-  pin32:  OPAD  port map ( I => gpio_o(32), PAD => LED(0) );
-  pin33:  OPAD  port map ( I => gpio_o(33), PAD => LED(1) );
-  pin34:  OPAD  port map ( I => gpio_o(34), PAD => LED(2) );
-  pin35:  OPAD  port map ( I => gpio_o(35), PAD => LED(3) );
-  pin36:  OPAD  port map ( I => gpio_o(36), PAD => LED(4) );
-  pin37:  OPAD  port map ( I => gpio_o(37), PAD => LED(5) );
-  pin38:  OPAD  port map ( I => gpio_o(38), PAD => LED(6) );
-  pin39:  OPAD  port map ( I => gpio_o(39), PAD => LED(7) );
+  pin32:  OPAD  port map ( I => gpio_o(32), O => gpio_i(32), PAD => LED(0) );
+  pin33:  OPAD  port map ( I => gpio_o(33), O => gpio_i(33), PAD => LED(1) );
+  pin34:  OPAD  port map ( I => gpio_o(34), O => gpio_i(34), PAD => LED(2) );
+  pin35:  OPAD  port map ( I => gpio_o(35), O => gpio_i(35), PAD => LED(3) );
+  pin36:  OPAD  port map ( I => gpio_o(36), O => gpio_i(36), PAD => LED(4) );
+  pin37:  OPAD  port map ( I => gpio_o(37), O => gpio_i(37), PAD => LED(5) );
+  pin38:  OPAD  port map ( I => gpio_o(38), O => gpio_i(38), PAD => LED(6) );
+  pin39:  OPAD  port map ( I => gpio_o(39), O => gpio_i(39), PAD => LED(7) );
 
   pin40:  IOPAD port map ( I => gpio_o(40), O => gpio_i(40), T => gpio_t(40), C => sysclk, PAD => LCD_DB(4) );
   pin41:  IOPAD port map ( I => gpio_o(41), O => gpio_i(41), T => gpio_t(41), C => sysclk, PAD => LCD_DB(5) );
   pin42:  IOPAD port map ( I => gpio_o(42), O => gpio_i(42), T => gpio_t(42), C => sysclk, PAD => LCD_DB(6) );
   pin43:  IOPAD port map ( I => gpio_o(43), O => gpio_i(43), T => gpio_t(43), C => sysclk, PAD => LCD_DB(7) );
-  pin44:  OPAD  port map ( I => gpio_o(44), PAD => LCD_RS );
-  pin45:  OPAD  port map ( I => gpio_o(45), PAD => LCD_RW );
-  pin46:  OPAD  port map ( I => gpio_o(46), PAD => LCD_E );
-  pin47:  OPAD  port map ( I => gpio_o(47), PAD => AMP_SHDN );
+  pin44:  OPAD  port map ( I => gpio_o(44), O => gpio_i(44), PAD => LCD_RS );
+  pin45:  OPAD  port map ( I => gpio_o(45), O => gpio_i(45), PAD => LCD_RW );
+  pin46:  OPAD  port map ( I => gpio_o(46), O => gpio_i(46), PAD => LCD_E );
+  pin47:  OPAD  port map ( I => gpio_o(47), O => gpio_i(47), PAD => AMP_SHDN );
 
   pin48:  IPAD  port map ( O => gpio_i(48),  C => sysclk, PAD => ROT_A );
   pin49:  IPAD  port map ( O => gpio_i(49),  C => sysclk, PAD => ROT_B );
   pin50:  IPAD  port map ( O => gpio_i(50),  C => sysclk, PAD => ROT_CENTER );
 
-  pin51:  OPAD  port map ( I => gpio_o(51), PAD => AD_CONV );
-  pin52:  OPAD  port map ( I => gpio_o(52), PAD => DAC_CS );
-  pin53:  OPAD  port map ( I => gpio_o(53), PAD => AMP_CS );
+  pin51:  OPAD  port map ( I => gpio_o(51), O => gpio_i(51), PAD => AD_CONV );
+  pin52:  OPAD  port map ( I => gpio_o(52), O => gpio_i(52), PAD => DAC_CS );
+  pin53:  OPAD  port map ( I => gpio_o(53), O => gpio_i(53), PAD => AMP_CS );
 
   ibufrx: IPAD  port map ( O => rx, C => sysclk, PAD => UART_RX );
   obuftx: OPAD  port map ( I => tx, PAD => UART_TX );
   sckpad: OPAD  port map ( I => spi_pf_sck,   PAD => SPI_SCK );
   mosipad:OPAD  port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
-  misopad:IPAD  port map ( spi_pf_miso,  C => sysclk, PAD => SPI_MISO );
+  --misopad:IPAD  port map ( spi_pf_miso,  C => sysclk, PAD => SPI_MISO );
+  spi_pf_miso <= SPI_MISO;
 
   zpuino:zpuino_top
     port map (

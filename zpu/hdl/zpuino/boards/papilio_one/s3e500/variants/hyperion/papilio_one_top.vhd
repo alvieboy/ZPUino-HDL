@@ -68,6 +68,21 @@ end entity papilio_one_top;
 
 architecture behave of papilio_one_top is
 
+  component wb_char_ram_8x8_sp is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic
+  );
+  end component;
+
   component clkgen is
   port (
     clkin:  in std_logic;
@@ -80,7 +95,7 @@ architecture behave of papilio_one_top is
 
   component zpuino_serialreset is
   generic (
-    SYSTEM_CLOCK_MHZ: integer := 96
+    SYSTEM_CLOCK_MHZ: integer := 92
   );
   port (
     clk:      in std_logic;
@@ -219,6 +234,26 @@ architecture behave of papilio_one_top is
   );
   end component;
 
+  component zpuino_io_YM2149 is
+  generic (
+    FREQMHZ: integer := 96
+  );
+  port (
+  wb_clk_i:   in std_logic;
+  wb_rst_i:   in std_logic;
+  wb_dat_i:   in std_logic_vector(wordSize-1 downto 0);
+  wb_dat_o:   out std_logic_vector(wordSize-1 downto 0);
+  wb_adr_i:   in std_logic_vector(maxIOBit downto minIOBit);
+  wb_we_i:    in std_logic;
+  wb_cyc_i:   in std_logic;
+  wb_stb_i:   in std_logic;
+  wb_ack_o:   out std_logic;
+  wb_inta_o:  out std_logic;
+
+  data_out:   out std_logic_vector(7 downto 0)
+  );
+  end component;
+
   component wb_sid6581 is
   port (
     wb_clk_i: in std_logic;
@@ -287,6 +322,7 @@ architecture behave of papilio_one_top is
   signal VGA_HSYNC: std_logic;
   signal VGA_VSYNC: std_logic;
 
+  signal ym2149_data_out: std_logic_vector(7 downto 0);
 begin
 
   wb_clk_i <= sysclk;
@@ -416,6 +452,9 @@ begin
   --
 
   uart_inst: zpuino_uart
+  generic map (
+    bits => 4
+  )
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -586,6 +625,20 @@ begin
     wb_inta_o =>  slot_interrupt(8)
   );
 
+--  slot9: zpuino_empty_device
+--  port map (
+--    wb_clk_i       => wb_clk_i,
+--	 	wb_rst_i    => wb_rst_i,
+--    wb_dat_o      => slot_read(9),
+--    wb_dat_i     => slot_write(9),
+--    wb_adr_i   => slot_address(9),
+--    wb_we_i    => slot_we(9),
+--    wb_cyc_i      => slot_cyc(9),
+--    wb_stb_i      => slot_stb(9),
+--    wb_ack_o      => slot_ack(9),
+--    wb_inta_o =>  slot_interrupt(9)
+--  );
+
   --
   -- IO SLOT 9
   --
@@ -599,12 +652,12 @@ begin
 	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(9),
     wb_dat_i     => slot_write(9),
-    wb_adr_i   => slot_address(9),
+   wb_adr_i   => slot_address(9),
     wb_we_i        => slot_we(9),
     wb_cyc_i        => slot_cyc(9),
     wb_stb_i        => slot_stb(9),
     wb_ack_o      => slot_ack(9),
-    wb_inta_o => slot_interrupt(9),
+   wb_inta_o => slot_interrupt(9),
 
     vgaclk    => vgaclk,
     vga_hsync => vga_hsync,
@@ -613,6 +666,7 @@ begin
     vga_g     => vga_green(3 downto 1),
     vga_b     => vga_blue(3 downto 2)
   );
+
   vga_blue(0) <= '0';
   vga_blue(1) <= '0';
   vga_red(0) <= '0';
@@ -622,10 +676,10 @@ begin
   -- IO SLOT 10
   --
 
-  slot10: zpuino_empty_device
+  slot10: wb_char_ram_8x8_sp
   port map (
     wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(10),
     wb_dat_i     => slot_write(10),
     wb_adr_i   => slot_address(10),
@@ -640,9 +694,9 @@ begin
   -- IO SLOT 11
   --
 
-  slot11: zpuino_uart
+  slot11: zpuino_io_YM2149
   generic map (
-    bits => 4
+    FREQMHZ => 92
   )
   port map (
     wb_clk_i       => wb_clk_i,
@@ -656,9 +710,8 @@ begin
     wb_ack_o      => slot_ack(11),
 
     wb_inta_o => slot_interrupt(11),
+    data_out => ym2149_data_out
 
-    tx        => uart2_tx,
-    rx        => uart2_rx
   );
 
   --
@@ -701,7 +754,7 @@ begin
   -- IO SLOT 14
   --
 
-  slot14: wb_sid6581
+  slot14: zpuino_empty_device
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i       => wb_rst_i,
@@ -712,10 +765,11 @@ begin
     wb_cyc_i        => slot_cyc(14),
     wb_stb_i        => slot_stb(14),
     wb_ack_o      => slot_ack(14),
-    wb_inta_o => slot_interrupt(14),
+    wb_inta_o => slot_interrupt(14)
+    --,
 
-    clk_1MHZ    => sysclk_1mhz,
-    audio_data  => sid_audio_data
+    --clk_1MHZ    => sysclk_1mhz,
+    --audio_data  => sid_audio_data
 
   );
 
@@ -738,15 +792,15 @@ begin
   );
 
 
-  -- Audio for SID
-  sid_sd: simple_sigmadelta 
+  -- Audio
+  ym_sd: simple_sigmadelta
   generic map (
-    BITS => 18
+    BITS => 8
   )
 	port map (
     clk       => wb_clk_i,
     rst       => wb_rst_i,
-    data_in   => sid_audio_data,
+    data_in   => ym2149_data_out,
     data_out  => sid_audio
     );
 
@@ -838,7 +892,7 @@ begin
   spi_pf_miso <= SPI_MISO;
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
   ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
-  ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
+  ospics:   OPAD port map ( I => gpio_o(48), O => gpio_i(48),  PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 

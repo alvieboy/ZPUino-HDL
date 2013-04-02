@@ -74,7 +74,7 @@ architecture behave of vga_zxspectrum is
 --  signal readclk: std_logic:='0';
   signal fifo_clear: std_logic:='0';
   signal read_enable: std_logic:='0';
-  signal fifo_write, read: std_logic_vector(2 downto 0);
+  signal fifo_write, read: std_logic_vector(3 downto 0);
   signal fifo_empty: std_logic;
 
 
@@ -251,7 +251,7 @@ begin
 
     variable vdisp_char:  std_logic_vector(2 downto 0); -- Vertical offset in char (0 to 7)
 
-    variable pixel: std_logic_vector(2 downto 0);
+    variable pixel: std_logic_vector(3 downto 0);
     variable hmax: integer range 0 to 7;
 
   begin
@@ -335,9 +335,9 @@ begin
 
           case r.chars(31) is
             when '1' =>
-              pixel := current_pallete(2 downto 0);
+              pixel := current_pallete(6) & current_pallete(2 downto 0);
             when '0' =>
-              pixel := current_pallete(5 downto 3);
+              pixel := current_pallete(6) & current_pallete(5 downto 3);
             when others =>
           end case;
 
@@ -562,10 +562,12 @@ begin
           vga_b <= '0';
           vga_r <= '0';
           vga_g <= '0';
+          vga_bright <= '0';
       else
           vga_b <= read(0);
           vga_r <= read(1);
           vga_g <= read(2);
+          vga_bright <= read(3);
       end if;
     end if;
   end process;
@@ -606,7 +608,7 @@ begin
 
   myfifo: gh_fifo_async_rrd_sr_wf
   generic map (
-    data_width => 3,
+    data_width => 4,
     add_width => 4
   )
   port map (

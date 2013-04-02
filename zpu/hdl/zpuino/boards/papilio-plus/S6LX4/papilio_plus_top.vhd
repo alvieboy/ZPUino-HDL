@@ -83,10 +83,11 @@ architecture behave of papilio_plus_top is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
-    vgaclkout: out std_logic;
+    clkout1: out std_logic;
+    clkout2: out std_logic;
     rstout: out std_logic
   );
-  end component clkgen;
+  end component;
 
   component zpuino_serialreset is
   generic (
@@ -156,6 +157,7 @@ architecture behave of papilio_plus_top is
   -- UART signals
   signal rx: std_logic;
   signal tx: std_logic;
+  signal sysclk_sram_we, sysclk_sram_wen: std_ulogic;
 
 begin
 
@@ -178,7 +180,8 @@ begin
     clkin   => clk,
     rstin   => '0'  ,
     clkout  => sysclk,
-    vgaclkout => open,
+    clkout1  => sysclk_sram_we,
+    clkout2  => sysclk_sram_wen,
     rstout  => clkgen_rst
   );
 
@@ -473,7 +476,9 @@ begin
       sram_ce     => sram_ce,
       sram_we     => sram_we,
       sram_oe     => sram_oe,
-      sram_be     => sram_be
+      sram_be     => sram_be,
+      clk_we      =>sysclk_sram_we,
+      clk_wen     =>sysclk_sram_wen
     );
 
   --

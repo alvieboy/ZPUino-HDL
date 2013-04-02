@@ -64,6 +64,9 @@ library work;
   use work.zpupkg.all;
   
 entity zpuino_io_YM2149 is
+  generic (
+    FREQMHZ: integer := 96
+  );
   port (
   wb_clk_i:   in std_logic;
   wb_rst_i:   in std_logic;
@@ -132,7 +135,7 @@ architecture RTL of zpuino_io_YM2149 is
 
   signal divclken: std_logic := '0';
   signal predivcnt: integer;
-  constant PRE_CLOCK_DIVIDER: integer := 47;
+  constant PRE_CLOCK_DIVIDER: integer := (FREQMHZ/2)-1;
 
 begin
 

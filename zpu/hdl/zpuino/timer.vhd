@@ -163,9 +163,10 @@ end generate;
   -- Read
   process(wb_adr_i, tmrr,TSC_q)
   begin
-    wb_dat_o <= (others => '0');
+
     case wb_adr_i(1 downto 0) is
       when "00" =>
+        wb_dat_o <= (others => Undefined);
         wb_dat_o(0) <= tmrr.en;
         wb_dat_o(1) <= tmrr.ccm;
         wb_dat_o(2) <= tmrr.dir;
@@ -175,11 +176,14 @@ end generate;
         wb_dat_o(10 downto 9) <= tmrr.updp;
 
       when "01" =>
+        wb_dat_o <= (others => '0');
         wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cnt);
       when "10" =>
+        wb_dat_o <= (others => '0');
         wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cmp);
       when others =>
         if TSCENABLED then
+          wb_dat_o <= (others => '0');
           wb_dat_o <= std_logic_vector(TSC_q);
         else
           wb_dat_o <= (others => DontCareValue );

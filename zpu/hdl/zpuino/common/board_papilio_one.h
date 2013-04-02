@@ -1,7 +1,9 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
+#ifndef CLK_FREQ
 #define CLK_FREQ 96000000UL
+#endif
 
 #if defined(__S3E_250__)
 #define SPIOFFSET 0x00042000 /* To be atmel-compatible */
@@ -15,11 +17,12 @@
 #error Undefined board memory size
 #endif
 
-#define BOARD_SPI_DIVIDER /*BIT(SPICP0)*/0
+#define BOARD_SPI_DIVIDER BIT(SPICP0)
 
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
 
+#define __SST_FLASH__
 
 // Wing1 Column A
 #define FPGA_PIN_P18 0
