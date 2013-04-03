@@ -375,71 +375,12 @@ architecture behave of papilio_pro_top is
     rstout: out std_logic
   );
   end component clkgen_sid;	
-  
-  component zpuino_wb_audiomixer is
-  generic (
-    INSIZE: integer := 8;
-    VOLUMEBITS: integer := 8;
-    INPUTS: integer := 16;
-    OUTPUTS: integer := 4;
-    REGISTERED_INPUTS: boolean := false;
-    ROUNDUP: boolean := true
-  );
-  port (
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i: in std_logic_vector(maxIOBit downto minIOBit);
-    wb_we_i:  in std_logic;
-    wb_cyc_i: in std_logic;
-    wb_stb_i: in std_logic;
-    wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic;
-
-    input0:   in signed(INSIZE-1 downto 0);
-    input1:   in signed(INSIZE-1 downto 0);
-    input2:   in signed(INSIZE-1 downto 0);
-    input3:   in signed(INSIZE-1 downto 0);
-    input4:   in signed(INSIZE-1 downto 0);
-    input5:   in signed(INSIZE-1 downto 0);
-    input6:   in signed(INSIZE-1 downto 0);
-    input7:   in signed(INSIZE-1 downto 0);
-    input8:   in signed(INSIZE-1 downto 0);
-    input9:   in signed(INSIZE-1 downto 0);
-    input10:  in signed(INSIZE-1 downto 0);
-    input11:  in signed(INSIZE-1 downto 0);
-    input12:  in signed(INSIZE-1 downto 0);
-    input13:  in signed(INSIZE-1 downto 0);
-    input14:  in signed(INSIZE-1 downto 0);
-    input15:  in signed(INSIZE-1 downto 0);
-
-    output0:  out signed(INSIZE-1 downto 0);
-    output1:  out signed(INSIZE-1 downto 0);
-    output2:  out signed(INSIZE-1 downto 0);
-    output3:  out signed(INSIZE-1 downto 0)
-  );
-end component zpuino_wb_audiomixer;
-
-component simple_sigmadelta is
-  generic (
-    BITS: integer := 18
-  );
-	port (
-    clk:      in std_logic;
-    rst:      in std_logic;
-    data_in:  in std_logic_vector(BITS-1 downto 0);
-    data_out: out std_logic
-    );
-end component simple_sigmadelta;
 
   signal sid_audio_data, ym2149_audio_dac: std_logic_vector(17 downto 0);
   signal sid_audio: std_logic;
   
   signal ym2149_audio_data, pokey_audio_data: std_logic_vector(7 downto 0);
-  signal mixer_out1, mixer_out2, mixer_out3, mixer_out4: signed(7 downto 0);
-  signal dummy: signed(7 downto 0) := "00000000";
-  signal platform_audio_sd1, platform_audio_sd2, platform_audio_sd3, platform_audio_sd4: std_logic;  
+  signal platform_audio_sd: std_logic; 
   signal sigmadelta_raw: std_logic_vector(17 downto 0);  
   
   signal uart2_tx, uart2_rx: std_logic;  
@@ -960,15 +901,7 @@ begin
   -- IO SLOT 8
   --
 
-  slot8: zpuino_wb_audiomixer
-  generic map (
-    INSIZE => 8,
-    VOLUMEBITS => 8,
-    INPUTS => 16,
-    OUTPUTS => 4,
-    REGISTERED_INPUTS => false,
-    ROUNDUP => true
-  )  
+  slot8: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -979,29 +912,7 @@ begin
     wb_cyc_i      => slot_cyc(8),
     wb_stb_i      => slot_stb(8),
     wb_ack_o      => slot_ack(8),
-    wb_inta_o     => slot_interrupt(8),
-	
-    input0 		=> signed(sid_audio_data(7 downto 0)),
-    input1 		=> signed(ym2149_audio_dac(7 downto 0)),
-    input2 		=> signed(sigmadelta_raw(7 downto 0)),
-	input3 		=> dummy,
-	input4		=> dummy,
-	input5 		=> dummy,
-	input6 		=> dummy,
-	input7 		=> dummy,
-	input8 		=> dummy,
-	input9 		=> dummy,
-	input10 	=> dummy,
-	input11 	=> dummy,
-	input12		=> dummy,
-	input13		=> dummy,
-	input14		=> dummy,
-	input15		=> dummy,
-
-    output0		=> mixer_out1,
-    output1		=> mixer_out2,
-    output2		=> mixer_out3,
-    output3		=> mixer_out4
+    wb_inta_o     => slot_interrupt(8)
   );
 
   sram_inst: sdram_ctrl
@@ -1177,29 +1088,18 @@ slot9: zpuino_empty_device
 
 	ym2149_audio_dac <= ym2149_audio_data & "0000000000";
 
-   -- mixer: zpuino_io_audiomixer
-         -- port map (
-     -- clk     => wb_clk_i,
-     -- rst     => wb_rst_i,
-     -- ena     => '1',
+   mixer: zpuino_io_audiomixer
+         port map (
+     clk     => wb_clk_i,
+     rst     => wb_rst_i,
+     ena     => '1',
      
-     -- data_in1  => sid_audio_data,
-     -- data_in2  => ym2149_audio_dac,
-     -- data_in3  => sigmadelta_raw,
+     data_in1  => sid_audio_data,
+     data_in2  => ym2149_audio_dac,
+     data_in3  => sigmadelta_raw,
      
-     -- audio_out => platform_audio_sd
-     -- );  
-	 
-	sdo: simple_sigmadelta
-	generic map (
-		BITS =>  8
-	)
-	port map (
-		clk       => wb_clk_i,
-		rst       => wb_rst_i,
-		data_in   => std_logic_vector(mixer_out1),
-		data_out  => platform_audio_sd1
-	);	 
+     audio_out => platform_audio_sd
+     );  
 
   process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
           sigmadelta_spp_data,timers_pwm,
@@ -1214,12 +1114,9 @@ slot9: zpuino_empty_device
     gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
     gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
-    --gpio_spp_data(5)  <= platform_audio_sd;   -- PPS5 : SIGMADELTA1 DATA
+    gpio_spp_data(5)  <= platform_audio_sd;   -- PPS5 : SIGMADELTA1 DATA
     gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
-    gpio_spp_data(8) <= platform_audio_sd1;	
-	-- gpio_spp_data(9) <= platform_audio_sd2;	
-	-- gpio_spp_data(10) <= platform_audio_sd3;	
-	-- gpio_spp_data(11) <= platform_audio_sd4;	
+    gpio_spp_data(8) <= platform_audio_sd;	
 
     -- PPS inputs
     spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
