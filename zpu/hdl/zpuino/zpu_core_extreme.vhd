@@ -186,7 +186,8 @@ Decoded_Ashiftright,
 Decoded_Loadb,
 Decoded_Call,
 Decoded_Mult,
-Decoded_MultF16
+Decoded_MultF16,
+Decoded_PushSPAdd
 );
 
 constant spMaxBit: integer := 10;
@@ -240,6 +241,7 @@ type tosSourceType is
   Tos_Source_Shift,
   Tos_Source_Ulessthan,
   Tos_Source_Lessthan,
+  Tos_Source_PushSPAdd,
   Tos_Source_None
 );
 
@@ -509,6 +511,10 @@ begin
           sampledDecodedOpcode<=Decoded_Ashiftleft;
           sampledStackOperation<=Stack_Pop;
           sampledOpWillFreeze<='1';
+        elsif (tOpcode(5 downto 0)=OpCode_PushSPAdd) then
+          sampledDecodedOpcode<=Decoded_PushSPAdd;
+          sampledStackOperation<=Stack_Same;
+          sampledTosSource <= Tos_Source_PushSPAdd;
         else
           sampledDecodedOpcode<=Decoded_Emulate;
           sampledStackOperation<=Stack_Push; -- will push PC
@@ -895,7 +901,7 @@ begin
     variable w: exuregs_type;
     variable instruction_executed: std_logic;
     variable wroteback: std_logic;
-
+    variable spadj: unsigned(31 downto 0);
   begin
 
     w := exr;
@@ -1016,6 +1022,12 @@ begin
             w.tos := (others => '0');
             w.tos(31) := '1'; -- Stack address
             w.tos(10 downto 2) := prefr.sp;
+
+          when Tos_Source_PushSPAdd =>
+            spadj := (others => '0');
+            spadj(10 downto 2) := prefr.sp;
+            w.tos := ( exr.tos(29 downto 0) & "00" ) + spadj;
+            w.tos(31) := '1'; -- Stack address
 
           when Tos_Source_Add =>
             w.tos := exr.tos + nos;
