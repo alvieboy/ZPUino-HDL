@@ -16,15 +16,13 @@
 #include <dlfcn.h>
 #include "zpuinointerface.h"
 #include <ctype.h>
-
-#define MEMSIZE 32768
-#define STACK_SIZE 2048
-
-unsigned _usp=0;
+#include "defs.h"
+#include "trace.h"
 
 unsigned char _memory[MEMSIZE];
 unsigned char _stack[STACK_SIZE];
 
+unsigned _usp= MEMSIZE - 8;
 
 unsigned _tickgranularity=32;
 unsigned _currenttickgranularity;
@@ -76,21 +74,26 @@ void tick(unsigned int delta)
 
 void trace(unsigned int pc, unsigned int sp, unsigned int top)
 {
-    unsigned int *spalign  = (unsigned int*)&_stack[0];
-		//	if (pc < 0x40 || pc >=0x400) {
-		if (sp > sizeof(_stack)) {
-				printf("Access beyond end of stack 0x%08x\n",sp);
-				fflush(stdout);
-				abort();
-		}
-		printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
-			   _memory[pc], sp,
-			   top,
-			   bswap_32(spalign[ (sp/4) + 1] ),//*(unsigned int*)&_stack[sp+4]),
-			   zpuino_get_tick_count()
-			  );
-		fflush(stdout);
-//	}
+	//unsigned int *spalign  = (unsigned int*)&_stack[0];
+	//	if (pc < 0x40 || pc >=0x400) {
+	/*
+	 if (sp > sizeof(_stack)) {
+	 printf("Access beyond end of stack 0x%08x\n",sp);
+	 fflush(stdout);
+	 abort();
+	 }
+	 */
+	trace_append(pc,sp,top);
+    /*
+	printf("0x%07X 0x%02X 0x%08X 0x%08X 0x%08X 0x?u 0x%016x\n", pc,
+		   _memory[pc], sp,
+		   top,
+		   bswap_32(spalign[ (( ( sp & (STACK_SIZE-1) ) >>2) + 1 )] ),
+		   zpuino_get_tick_count()
+		   );
+           */
+	//fflush(stdout);
+	//	}
 }
 
 void perform_io()
@@ -134,7 +137,23 @@ void *zpu_thread(void*data)
 		} else {
 			// We caught a BREAK instruction
 			printf("BREAK instruction, PC %08x SP %08x\n",_upc,_usp);
-			abort();
+			trace_dump();
+			//abort();
+			pthread_mutex_lock(&zpu_halted_lock);
+			zpu_halted_flag=1;
+			pthread_mutex_unlock(&zpu_halted_lock);
+			pthread_cond_broadcast(&zpu_halted_cond);
+			// Wait for resume
+			printf("ZPU core halted\n");
+			pthread_mutex_lock(&zpu_resume_lock);
+			while (!zpu_resume_flag)
+				pthread_cond_wait(&zpu_resume_cond,&zpu_resume_lock);
+			zpu_resume_flag=0;
+			pthread_mutex_lock(&zpu_halted_lock);
+			zpu_halted_flag=0;
+			pthread_mutex_unlock(&zpu_halted_lock);
+			
+			pthread_mutex_unlock(&zpu_resume_lock);
 		}
 	} while(1);
 	return NULL;
@@ -173,7 +192,7 @@ void zpu_resume()
 
 unsigned get_initial_stack_location()
 {
-	return STACK_SIZE - 8;//0x7FF8;
+	return MEMSIZE - 8;
 }
 
 void zpu_reset()
@@ -308,6 +327,10 @@ int load_device_map(const char *file)
 	return 0;
 }
 
+void mem_init()
+{
+	memset(_memory,0,sizeof(_memory));
+}
 
 int main(int argc,char **argv)
 {
@@ -319,11 +342,15 @@ int main(int argc,char **argv)
 		return help();
 	}
 
+	mem_init();
+
 	poll_init();
 
 	gui_init();
 
 	zpuino_interface_init();
+
+	trace_init(1024);
 
 	if (load_device_map("device.map")<0) {
 		fprintf(stderr,"SIMULATOR: Error loading device map\n");
@@ -331,7 +358,7 @@ int main(int argc,char **argv)
 	}
 
 	int infile = open(argv[1],O_RDONLY);
-	read(infile,_memory,32768);
+	read(infile,_memory,MEMSIZE);
 	close(infile);
 
 	zpuino_io_post_init();

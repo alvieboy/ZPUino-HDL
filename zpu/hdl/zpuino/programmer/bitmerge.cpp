@@ -118,11 +118,11 @@ int handleargv(char *arg)
 		unsigned char sdata[4];
 		unsigned short tcrc = 0xffff;
 
-		sdata[0] = ((realsize/4)>>8) & 0xff;
-		sdata[1] = (realsize/4) & 0xff;
+		sdata[0] = bitRevTable[ ((realsize/4)>>8) & 0xff ];
+		sdata[1] = bitRevTable[ (realsize/4) & 0xff ];
 
 		// Go, compute cksum
-        int i;
+		int i;
 		for (i=0;i<realsize;i++) {
 
 			crc16_update(&tcrc,bufp[i]);
@@ -130,11 +130,18 @@ int handleargv(char *arg)
 
 		fprintf(stderr,"Final CRC: %04x\n",tcrc);
 
-		sdata[2] = (tcrc>>8) & 0xff;
-		sdata[3] = tcrc & 0xff;
+		sdata[2] = bitRevTable[ (tcrc>>8) & 0xff ];
+		sdata[3] = bitRevTable[ tcrc & 0xff ];
 
 
 		entry.content.append((char*)sdata,4);
+
+		{
+			int i;
+			for (i=0; i<realsize; i++)
+				bufp[i] = bitRevTable[ bufp[i] ];
+		}
+        fprintf(stderr,"Appending\n");
 		entry.content.append((char*)bufp, realsize);
         plist.push_back(entry);
 		//entry.content. = std::string( realsize + sizeof(uint32_t) );
@@ -156,13 +163,13 @@ int handleargv(char *arg)
 		entry.start = st;
 
 		entry.content = std::string( (char*)bf.getData(), bf.getLength()/8 );
-
+                                      /*
 		if (filestyle==STYLE_BIT || filestyle==STYLE_BIN) {
 			int i;
 			for (i=0; i<bf.getLength()/8; i++)
 				entry.content[i] = bitRevTable[bf.getData()[i]];
 		}
-
+                            */
 		plist.push_back(entry);
 
 	}
@@ -245,11 +252,17 @@ int dump(FILE *outfile)
 		/* Write contents */
 
 		if (ISBITFILE) { //  BIT
+			fprintf(stderr,"outputting %d\n", i->content.length());
 
 			unsigned size = i->content.length();
+			fprintf(stderr,"Alloc %d\n", size);
+
 			unsigned char *temp = (unsigned char*)malloc(size);
-            const unsigned char *src = (const unsigned char*)i->content.c_str();
+
+			const unsigned char *src = (const unsigned char*)i->content.c_str();
+
 			// Reverse bits
+            fprintf(stderr,"Reverse...\n");
 			int zi;
 			for (zi=0; zi<size; zi++)
 				temp[zi] = bitRevTable[ src[zi] ];
@@ -257,9 +270,10 @@ int dump(FILE *outfile)
 			fwrite( temp, size, 1, outfile);
 
 		} else {
+
 			fwrite( i->content.c_str(), i->content.length(), 1, outfile);
 		}
-
+        fprintf(stderr,"Wrote chunk\n");
 		current_offset+=i->content.length();
 	}
 }
