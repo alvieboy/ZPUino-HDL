@@ -48,7 +48,7 @@ use work.txt_util.all;
 
 entity multispi is
   generic (
-    spicount: integer := 10,
+    spicount: integer := 10;
     memorymapping: boolean := true
   );
   port (
@@ -146,6 +146,7 @@ architecture behave of multispi is
     state: statetype;
     spibaseaddr: unsigned(23 downto 0);
     membaseaddr: unsigned(31 downto 0);
+    mindex: unsigned(31 downto 0);
     mem2baseaddr: unsigned(31 downto 0); -- for mapping
 
     nsel: std_logic; -- Flash nsel
@@ -156,7 +157,6 @@ architecture behave of multispi is
     ftsize: std_logic_vector(1 downto 0);
     fen: std_logic;
     seldly: unsigned(1 downto 0);
-    maddr: std_logic_vector(31 downto 0);
     ctrln: std_logic_vector(3 downto 0); -- Controller number for this led
     rgb: std_logic_vector(23 downto 0);
     rgbseq: unsigned(1 downto 0);
@@ -171,6 +171,11 @@ architecture behave of multispi is
     fpres: std_logic_vector(2 downto 0);
 
     testcounter: unsigned(31 downto 0);
+
+    -- Registered WB output/master
+    wb_addr: std_logic_vector(31 downto 0);
+    wb_cyc: std_logic;
+    wb_stb: std_logic;
 
   end record;
 
@@ -210,10 +215,12 @@ begin
 
   fnsel <= r.nsel;
 
-  mi_wb_adr_o(maxAddrBitIncIO downto 0) <= r.maddr(maxAddrBitIncIO downto 0);
+  mi_wb_adr_o(maxAddrBitIncIO downto 0) <= r.wb_addr(maxAddrBitIncIO downto 0);
   mi_wb_sel_o <= (others =>'1');
   mi_wb_dat_o <= (others =>DontCareValue);
   mi_wb_we_o <= '0';
+  mi_wb_cyc_o <= r.wb_cyc;
+  mi_wb_stb_o <= r.wb_stb;
 
   wb_ack_o <= r.ack;
 
@@ -242,16 +249,20 @@ begin
     w:=r;
 
     w.fen :='0';
-    mi_wb_cyc_o <= '0';
-    mi_wb_stb_o <= DontCareValue;
+    w.wb_cyc := '0';
 
     ictrldata(31 downto 24) <= (others =>'0');
     ictrldata(23 downto 0) <= r.rgb;
 
     do_start := '0';
 
+    --mi_wb_adr_o(maxAddrBitIncIO downto 0) <= (others => DontCareValue);
+
+    --mi_wb_adr_o(maxAddrBitIncIO downto 0) <= r.maddr(maxAddrBitIncIO downto 0);
     -- Wishbone access
     w.ack := '0';
+
+
 
     if wb_cyc_i='1' and wb_stb_i='1' then
 
@@ -289,6 +300,18 @@ begin
 
     case r.state is
       when idle =>
+
+      if memorymapping then
+        w.wb_addr := std_logic_vector(r.mem2baseaddr);
+        w.mindex := (others => '0');
+        if do_start='1' then
+          w.wb_cyc := '1';
+          w.wb_stb := '1';
+          w.ledcnt := r.nleds;
+          w.testcounter:=(others =>'0');
+          w.state := waitload3;
+        end if;
+      else
         if do_start='1' then
             w.state := waitsel;
             w.nsel := '0';
@@ -296,6 +319,7 @@ begin
             w.ledcnt := r.nleds;
             w.testcounter:=(others =>'0');
         end if;
+      end if;
 
       when waitsel =>
 
@@ -304,7 +328,6 @@ begin
         else
           w.seldly:=r.seldly-1;
         end if;
-
       when seek =>
         --
         w.fdin(31 downto 24) := x"0b";
@@ -333,29 +356,47 @@ begin
 
       when waitload3 =>
         w.fdout := fdout;
-                                  -- 15 downto 0 -> offset into memory table
-        moff(15 downto 0) := fdout(15 downto 0);
-        moff(31 downto 16) := (others => '0');
-        --moff := std_logic_vector(r.testcounter);
-        
 
-        w.maddr := std_logic_vector(unsigned(moff) + unsigned(r.membaseaddr));
+        -- 15 downto 0 -> offset into memory table
+        if memorymapping then
+          moff(15 downto 0) := mi_wb_dat_i(15 downto 0);
+          moff(31 downto 16) := (others => '0');
+        else
+          moff(15 downto 0) := fdout(15 downto 0);
+          moff(31 downto 16) := (others => '0');
+        end if;
 
-        w.ctrln := fdout(19 downto 16); -- Save controller number
-        --w.ctrln := "000";
+        if mi_wb_ack_i='1' then
+          w.wb_addr := std_logic_vector(unsigned(moff) + unsigned(r.membaseaddr));
+        else
+          w.wb_cyc := '1';
+        end if;
 
+        if memorymapping then
+          w.ctrln := mi_wb_dat_i(19 downto 16);
+        else
+          w.ctrln := fdout(19 downto 16); -- Save controller number
+        end if;
+
+        if memorymapping then
+          if (memorymapping and mi_wb_ack_i='1') then
+            w.state := memory;
+          end if;
+        else
         if fready='1' then
           w.state := memory;
           w.ftsize := "10";
           w.testcounter := r.testcounter + 4;
         end if;
+        end if;
 
       when memory =>
-        mi_wb_cyc_o <= '1';
-        mi_wb_stb_o <= '1';
+        w.wb_cyc := '1';
+        w.wb_stb := '1';
 
         if mi_wb_ack_i='1' then
           w.rgb := mi_wb_dat_i(31 downto 8);
+          w.wb_cyc := '0';
           --w.rgb := "100000010011110010101010";
           w.state := processrgb;
         end if;
@@ -366,6 +407,7 @@ begin
         if ctrlready='1' then
           w.ctrlen := '1';
           w.state := leave;
+          w.mindex := r.mindex + 4; -- Next mem position
         end if;
 
       when leave =>
@@ -375,7 +417,12 @@ begin
           w.state := flush;
         else
           w.ledcnt := r.ledcnt - 1;
-          w.state := waitload;
+          if memorymapping then
+            w.wb_addr := std_logic_vector(r.mem2baseaddr + r.mindex);
+            w.state := waitload3;
+          else
+            w.state := waitload;
+          end if;
         end if;
 
       when flush =>
@@ -400,7 +447,7 @@ begin
     if rising_edge(wb_clk_i) then
     -- synopsys translate_off
       if r.state=leave then
-        report "LED " & hstr(std_logic_vector(r.ledcnt)) & " ctrl " & hstr(r.ctrln) & " address 0x" & hstr(r.maddr) & " offset 0x" & hstr(fdout(15 downto 0)) & " data 0x" & hstr(r.rgb);
+        report "LED " & hstr(std_logic_vector(r.ledcnt)) & " ctrl " & hstr(r.ctrln) & " address 0x" & hstr(r.wb_addr) & " offset 0x" & hstr(fdout(15 downto 0)) & " data 0x" & hstr(r.rgb);
       end if;
     -- synopsys translate_on
       r <= w;

@@ -76,6 +76,7 @@ package zpuinopkg is
     m_wb_cyc_i: in std_logic;
     m_wb_stb_i: in std_logic;
     m_wb_ack_o: out std_logic;
+    m_wb_stall_o: out std_logic;
 
     memory_enable:      out std_logic;
     -- Memory connection

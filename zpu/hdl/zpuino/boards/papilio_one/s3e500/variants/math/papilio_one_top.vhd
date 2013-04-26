@@ -335,7 +335,7 @@ architecture behave of papilio_one_top is
 
   signal extspi_fmosi:      std_logic;
   signal extspi_fmiso:      std_logic;
-  signal   extspi_fsck:     std_logic;
+  signal extspi_fsck:       std_logic;
   signal extspi_fnsel:      std_logic;
 
 
