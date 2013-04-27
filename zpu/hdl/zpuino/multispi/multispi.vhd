@@ -419,6 +419,8 @@ begin
           w.ledcnt := r.ledcnt - 1;
           if memorymapping then
             w.wb_addr := std_logic_vector(r.mem2baseaddr + r.mindex);
+            w.wb_cyc := '1';
+            w.wb_stb := '1';
             w.state := waitload3;
           else
             w.state := waitload;

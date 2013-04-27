@@ -77,7 +77,7 @@ entity zpuino_top_icache is
     -- Memory connection
 
     ram_wb_ack_i:       in std_logic;
-    ram_wb_stall_i:     in std_logic;
+    --ram_wb_stall_i:     in std_logic;
     ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
     ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
     ram_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
@@ -488,7 +488,7 @@ begin
     s0_wb_cyc_o   => ram_wb_cyc_o,
     s0_wb_stb_o   => ram_wb_stb_o,
     s0_wb_ack_i   => ram_wb_ack_i,
-    s0_wb_stall_i => ram_wb_stall_i
+    s0_wb_stall_i => '0'--ram_wb_stall_i
   );
 
 
