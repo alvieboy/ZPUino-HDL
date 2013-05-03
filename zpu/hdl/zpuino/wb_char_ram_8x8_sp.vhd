@@ -54,8 +54,8 @@ entity wb_char_ram_8x8_sp is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
-    id:       out slot_id;
+    wb_inta_o:out std_logic;
+    id:       out slot_id
   );
 end entity wb_char_ram_8x8_sp;
 
