@@ -62,7 +62,7 @@ entity zpuino_vga is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
-
+    id:       out slot_id;
     -- VGA interface
     vgaclk:     in std_logic;
 
