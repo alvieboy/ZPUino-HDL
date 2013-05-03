@@ -191,7 +191,7 @@ end generate;
     end case;
   end process;
 
-  process(wb_clk_i, tmrr, wb_rst_i,wb_cyc_i,wb_stb_i,wb_we_i,wb_adr_i,wb_dat_i,tmrr)
+  process(wb_clk_i, tmrr, wb_rst_i,wb_cyc_i,wb_stb_i,wb_we_i,wb_adr_i,wb_dat_i,tmrr,do_interrupt,tmr0_prescale_event)
     variable w: timerregs;
     variable write_ctrl: std_logic;
     variable write_cmp: std_logic;

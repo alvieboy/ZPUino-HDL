@@ -347,7 +347,7 @@ begin
       rom_wb_cyc_o  => rom_wb_cyc_i,
       rom_wb_stb_o  => rom_wb_stb_i,
       rom_wb_cti_o  => rom_wb_cti_i,
-
+      rom_wb_stall_i => '0',
       dbg_in        => dbg_to_zpu,
       dbg_out       => dbg_from_zpu
     );

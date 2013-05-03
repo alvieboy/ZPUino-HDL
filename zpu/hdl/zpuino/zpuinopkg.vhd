@@ -57,7 +57,7 @@ package zpuinopkg is
   type ppsoutinfotype is array(PPSCOUNT_OUT-1 downto 0) of integer;
   type ppsininfotype is array(PPSCOUNT_IN-1 downto 0) of integer;
 
-  component zpuino_top is
+  component zpuino_top_icache is
   port (
     clk:      in std_logic;
 	 	rst:      in std_logic;
@@ -87,12 +87,69 @@ package zpuinopkg is
     pps_out_slot:  in ppsoutinfotype;
     pps_out_pin:  in ppsoutinfotype;
 
+    memory_enable:      out std_logic;
+    -- Memory connection
+
+    ram_wb_ack_i:       in std_logic;
+    ram_wb_stall_i:     in std_logic;
+    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    ram_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    ram_wb_cyc_o:       out std_logic;
+    ram_wb_stb_o:       out std_logic;
+    ram_wb_sel_o:       out std_logic_vector(3 downto 0);
+    ram_wb_we_o:        out std_logic;
+
+    rom_wb_ack_i:       in std_logic;
+    rom_wb_stall_i:     in std_logic;
+    rom_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    rom_wb_cyc_o:       out std_logic;
+    rom_wb_cti_o:       out std_logic_vector(2 downto 0);
+    rom_wb_stb_o:       out std_logic;
+
     dbg_reset: out std_logic;
     jtag_data_chain_out: out std_logic_vector(98 downto 0);
     jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
 
   );
-  end component zpuino_top;
+  end component zpuino_top_icache;
+
+  component zpuino_top is
+  port (
+    clk:      in std_logic;
+	 	rst:      in std_logic;
+
+    -- Connection to board IO module
+
+    slot_cyc:   out slot_std_logic_type;
+    slot_we:    out slot_std_logic_type;
+    slot_stb:   out slot_std_logic_type;
+    slot_read:  in slot_cpuword_type;
+    slot_write: out slot_cpuword_type;
+    slot_address:  out slot_address_type;
+    slot_ack:   in slot_std_logic_type;
+    slot_interrupt: in slot_std_logic_type;
+
+    dbg_reset:  out std_logic;
+
+    -- Memory accesses (for DMA)
+    -- This is a master interface
+
+    m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+
+    jtag_data_chain_out: out std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+
+  );
+  end component;
+
 
 
   component zpuino_io is
@@ -109,6 +166,8 @@ package zpuinopkg is
       wb_inta_o:out std_logic;
 
       intready: in std_logic;
+      cache_flush: out std_logic;
+      memory_enable: out std_logic;
 
       slot_cyc:   out slot_std_logic_type;
       slot_we:    out slot_std_logic_type;
@@ -275,6 +334,9 @@ package zpuinopkg is
     pps_out_pin:  in ppsoutinfotype;
 
     poppc_inst:in std_logic;
+    cache_flush: out std_logic;
+    memory_enable: out std_logic;
+
     intr_in:    in std_logic_vector(INTERRUPT_LINES-1 downto 0);
     intr_cfglvl:in std_logic_vector(INTERRUPT_LINES-1 downto 0);
     slot_id:    in slot_id_type
@@ -353,11 +415,13 @@ package zpuinopkg is
     wb_dat_i: in std_logic_vector(31 downto 0);
     wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
     --wb_sel_i: in std_logic_vector(3 downto 0);
-    wb_cti_i: in std_logic_vector(2 downto 0);
+    --wb_cti_i: in std_logic_vector(2 downto 0);
     wb_we_i:  in std_logic;
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
+    wb_stall_o: out std_logic;
+
     id:       out slot_id;
 
     clk_we: in std_logic;
@@ -400,6 +464,181 @@ package zpuinopkg is
     enable:   out std_logic_vector((2**BITS)-1 downto 0)
   );
   end component;
+
+  component wbarb2_1 is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master 0 signals
+
+    m0_wb_dat_o: out std_logic_vector(31 downto 0);
+    m0_wb_dat_i: in std_logic_vector(31 downto 0);
+    m0_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m0_wb_sel_i: in std_logic_vector(3 downto 0);
+    m0_wb_cti_i: in std_logic_vector(2 downto 0);
+    m0_wb_we_i:  in std_logic;
+    m0_wb_cyc_i: in std_logic;
+    m0_wb_stb_i: in std_logic;
+    m0_wb_ack_o: out std_logic;
+    m0_wb_stall_o: out std_logic;
+
+    -- Master 1 signals
+
+    m1_wb_dat_o: out std_logic_vector(31 downto 0);
+    m1_wb_dat_i: in std_logic_vector(31 downto 0);
+    m1_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m1_wb_sel_i: in std_logic_vector(3 downto 0);
+    m1_wb_cti_i: in std_logic_vector(2 downto 0);
+    m1_wb_we_i:  in std_logic;
+    m1_wb_cyc_i: in std_logic;
+    m1_wb_stb_i: in std_logic;
+    m1_wb_ack_o: out std_logic;
+    m1_wb_stall_o: out std_logic;
+
+    -- Slave signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic;
+    s0_wb_stall_i: in std_logic
+  );
+  end component;
+
+  component wbbootloadermux is
+  generic (
+    address_high: integer:=31;
+    address_low: integer:=2
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    sel:        in std_logic;
+    -- Master 
+
+    m_wb_dat_o: out std_logic_vector(31 downto 0);
+    m_wb_dat_i: in std_logic_vector(31 downto 0);
+    m_wb_adr_i: in std_logic_vector(address_high downto address_low);
+    m_wb_sel_i: in std_logic_vector(3 downto 0);
+    m_wb_cti_i: in std_logic_vector(2 downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+    m_wb_stall_o: out std_logic;
+
+    -- Slave 0 signals
+
+    s0_wb_dat_i: in std_logic_vector(31 downto 0);
+    s0_wb_dat_o: out std_logic_vector(31 downto 0);
+    s0_wb_adr_o: out std_logic_vector(address_high downto address_low);
+    s0_wb_sel_o: out std_logic_vector(3 downto 0);
+    s0_wb_cti_o: out std_logic_vector(2 downto 0);
+    s0_wb_we_o:  out std_logic;
+    s0_wb_cyc_o: out std_logic;
+    s0_wb_stb_o: out std_logic;
+    s0_wb_ack_i: in std_logic;
+    s0_wb_stall_i: in std_logic;
+
+    -- Slave 1 signals
+
+    s1_wb_dat_i: in std_logic_vector(31 downto 0);
+    s1_wb_dat_o: out std_logic_vector(31 downto 0);
+    s1_wb_adr_o: out std_logic_vector(11 downto 2);
+    s1_wb_sel_o: out std_logic_vector(3 downto 0);
+    s1_wb_cti_o: out std_logic_vector(2 downto 0);
+    s1_wb_we_o:  out std_logic;
+    s1_wb_cyc_o: out std_logic;
+    s1_wb_stb_o: out std_logic;
+    s1_wb_ack_i: in std_logic;
+    s1_wb_stall_i: in std_logic
+
+  );
+  end component wbbootloadermux;
+
+  component wb_master_np_to_slave_p is
+  generic (
+    ADDRESS_HIGH: integer := maxIObit;
+    ADDRESS_LOW: integer := maxIObit
+  );
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    -- Master signals
+
+    m_wb_dat_o: out std_logic_vector(31 downto 0);
+    m_wb_dat_i: in std_logic_vector(31 downto 0);
+    m_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    m_wb_sel_i: in std_logic_vector(3 downto 0);
+    m_wb_cti_i: in std_logic_vector(2 downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+
+    -- Slave signals
+
+    s_wb_dat_i: in std_logic_vector(31 downto 0);
+    s_wb_dat_o: out std_logic_vector(31 downto 0);
+    s_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
+    s_wb_sel_o: out std_logic_vector(3 downto 0);
+    s_wb_cti_o: out std_logic_vector(2 downto 0);
+    s_wb_we_o:  out std_logic;
+    s_wb_cyc_o: out std_logic;
+    s_wb_stb_o: out std_logic;
+    s_wb_ack_i: in std_logic;
+    s_wb_stall_i: in std_logic
+  );
+  end component;
+
+  component generic_sp_ram is
+  generic (
+    address_bits: integer := 8;
+    data_bits: integer := 32
+  );
+  port (
+    clka:             in std_logic;
+    ena:              in std_logic;
+    wea:              in std_logic;
+    addra:            in std_logic_vector(address_bits-1 downto 0);
+    dia:              in std_logic_vector(data_bits-1 downto 0);
+    doa:              out std_logic_vector(data_bits-1 downto 0)
+  );
+  end component;
+
+  component generic_dp_ram is
+  generic (
+    address_bits: integer := 8;
+    data_bits: integer := 32
+  );
+  port (
+    clka:             in std_logic;
+    ena:              in std_logic;
+    wea:              in std_logic;
+    addra:            in std_logic_vector(address_bits-1 downto 0);
+    dia:              in std_logic_vector(data_bits-1 downto 0);
+    doa:              out std_logic_vector(data_bits-1 downto 0);
+    clkb:             in std_logic;
+    enb:              in std_logic;
+    web:              in std_logic;
+    addrb:            in std_logic_vector(address_bits-1 downto 0);
+    dib:              in std_logic_vector(data_bits-1 downto 0);
+    dob:              out std_logic_vector(data_bits-1 downto 0)
+  );
+
+  end component generic_dp_ram;
 
 
 end package zpuinopkg;

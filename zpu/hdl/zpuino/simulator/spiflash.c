@@ -289,7 +289,7 @@ void spiflash_write(unsigned int v)
 			break;
 		default:
 			fprintf(stderr,"Invalid SPI command 0x%02x\n",v);
-			abort();
+			//abort();
 		}
 		break;
 

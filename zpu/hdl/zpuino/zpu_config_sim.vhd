@@ -49,7 +49,7 @@ package zpu_config is
 	constant	ZPU_Frequency		: std_logic_vector(7 downto 0) := x"32";
 	-- This is the msb address bit. bytes=2^(maxAddrBitIncIO+1)
 	constant 	maxAddrBitIncIO		: integer := 27;
-	constant 	maxAddrBitBRAM		: integer := 13;
+	constant 	maxAddrBitBRAM		: integer := 18;
 
   constant maxIOBit: integer := maxAddrBitIncIO - 1;
   constant minIOBit: integer := 2;
@@ -63,4 +63,6 @@ package zpu_config is
 					  conv_std_logic_vector((2**(maxAddrBitBRAM+1))-8, maxAddrBitIncIO+1);
 
   constant enable_fmul16: boolean := true;
+  constant Undefined: std_logic:='0';
+
 end zpu_config;

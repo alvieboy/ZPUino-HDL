@@ -22,11 +22,12 @@ entity sram_ctrl is
     wb_dat_i: in std_logic_vector(31 downto 0);
     wb_adr_i: in std_logic_vector(maxIOBit downto minIOBit);
 --    wb_sel_i: in std_logic_vector(3 downto 0);
-    wb_cti_i: in std_logic_vector(2 downto 0);
+--    wb_cti_i: in std_logic_vector(2 downto 0);
     wb_we_i:  in std_logic;
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
+    wb_stall_o: out std_logic;
     -- extra clocking
     clk_we: in std_logic;
     clk_wen: in std_logic;
@@ -49,10 +50,8 @@ signal out_write_enable: std_logic;
 
 type state_type is (
   idle,
-  waitburst,
-  operation,
-  finish,
-  waitfinish
+  stage1,
+  stage2
 );
 
 signal state: state_type;
@@ -65,36 +64,64 @@ signal sram_data_read: std_logic_vector(15 downto 0);
 signal sram_data_write_i: std_logic_vector(15 downto 0);
 
 signal sram_data_read_q: std_logic_vector(31 downto 0);
+signal out_addr: std_logic_vector(maxIOBit downto minIOBit);
+signal addr_save_q: std_logic_vector(maxIOBit downto minIOBit);
+signal write_save_q: std_logic;
+signal stall: std_logic;
+
+signal ack_q, ack_q_q, ack_q_q_q: std_logic;
+
+signal sram_ce_i: std_logic :='1';
+signal sram_we_i: std_logic :='1';
+signal sram_be_i: std_logic :='0';
+signal sram_oe_i: std_logic :='1';
 
 attribute IOB : string;
 attribute IOB of sram_data_write: signal is "FORCE";
---attribute IOB of sram_ce: signal is "FORCE";
---attribute IOB of sram_we: signal is "FORCE";
---attribute IOB of sram_oe: signal is "FORCE";
---attribute IOB of sram_be: signal is "FORCE";
-attribute IOB of sram_addr_q: signal is "FORCE";
+attribute IOB of sram_ce_i: signal is "FORCE";
+--attribute IOB of sram_we_i: signal is "FORCE";
+attribute IOB of sram_oe_i: signal is "FORCE";
+--attribute IOB of sram_be_i: signal is "FORCE";
+--attribute IOB of sram_addr_q: signal is "FORCE";
 
+--attribute keep: string;
+--attribute keep of sram_addr_q: signal is "true";
+--attribute keep of out_addr: signal is "true";
+--attribute keep of strobe_addr: signal is "true";
 
 begin
 
-sram_be <= '0';
+sram_be_i <= '0';
 
---bus_tristate<='0' when wb_we_i='1' and wb_cyc_i='1' else '0';
+sram_ce <= sram_ce_i;
+sram_we <= sram_we_i;
+sram_be <= sram_be_i;
+sram_oe <= sram_oe_i;
+
+wb_stall_o <= stall;
 
 sram_data <= sram_data_write_i when wb_we_i='1' and wb_cyc_i='1' else (others => 'Z');
 
 sram_data_write_i <= transport sram_data_write after 1.7 ns;
---outbuffers: block
---  begin
--- sramdatabuf: for i in 0 to 15 generate
---    dbuf: BUFT
---      port map (
---        I => sram_data_write(i),
---        O => sram_data(i),
---        T => bus_tristate
---      );
---  end generate;
---end block;
+
+
+process(state,wb_cyc_i,wb_stb_i,wb_we_i,write_save_q)
+begin
+  case state is
+    when idle =>
+      if wb_cyc_i='1' and wb_stb_i='1' then
+        out_write_enable <= not wb_we_i;
+      else
+        out_write_enable <= '1';
+      end if;
+    when stage1 | stage2 =>
+      out_write_enable <= not write_save_q;
+  end case;
+end process;
+
+sram_addr <= sram_addr_q;
+
+sram_data_read <= transport sram_data after 3 ns;
 
 ODDR2_nWE : ODDR2
    generic map(
@@ -102,7 +129,7 @@ ODDR2_nWE : ODDR2
       INIT          => '1',     -- Sets initial state of the Q output to '0' or '1'
       SRTYPE        => "ASYNC") -- Specifies "SYNC" or "ASYNC" set/reset
    port map (
-      Q  => sram_we,              -- 1-bit output data
+      Q  => sram_we_i,              -- 1-bit output data
       C0 => clk_we,              -- 1-bit clock input
       C1 => wb_clk_i,--clk_wen,             -- 1-bit clock input
       CE => '1',                  -- 1-bit clock enable input
@@ -113,135 +140,167 @@ ODDR2_nWE : ODDR2
    );
 
 
-
-process(state,wb_cyc_i,wb_stb_i,wb_we_i)
-begin
-  if (state=idle or state=waitburst) and wb_cyc_i='1' and wb_stb_i='1' then
-    out_write_enable <= not wb_we_i;
-  else
-    out_write_enable <= '1';
-  end if;
-end process;
-
-sram_addr <= sram_addr_q;
-
-sram_data_read <= transport sram_data after 3 ns;
-
 saq: for index in 1 to 18 generate
-  addrff: FDE
+  addrff: ODDR2
+    generic map (
+      DDR_ALIGNMENT => "NONE",  
+      INIT          => '0',
+      SRTYPE        => "ASYNC") 
     port map (
-      D => wb_adr_i(index+1),
+      D0 => out_addr(index+1),
       Q => sram_addr_q(index),
-      C => wb_clk_i,
-      CE => strobe_addr
+      C0 => wb_clk_i,
+      D1 => '0',
+      C1 => '0',
+      CE => strobe_addr,
+      R  => '0',
+      S  => '0'
     );
 
 end generate;
 
-  sram_addr_q_0: FDE
+  sram_addr_q_0: ODDR2
     generic map (
-      INIT => '1'
-    )
+      DDR_ALIGNMENT => "NONE",  
+      INIT          => '0',
+      SRTYPE        => "ASYNC") 
     port map (
-      D => even_odd,
+      D0 => even_odd,
+      D1 => '0',
       Q => sram_addr_q(0),
-      C => wb_clk_i,
-      CE => strobe_addr
+      C0 => wb_clk_i,
+      C1 => '0',
+      CE => strobe_addr,
+      R => '0',
+      S => '0'
     );
 
-process(state,wb_cyc_i,wb_stb_i)
+process(state,wb_cyc_i,wb_stb_i,wb_adr_i,addr_save_q)
 begin
   strobe_addr <='0';
   even_odd <= DontCareValue;
   case state is
-    when idle =>
+    when idle | stage2=>
       if wb_cyc_i='1' and wb_stb_i='1' then
+        out_addr <= wb_adr_i;
         strobe_addr<='1';
         even_odd <= '0';
+      else
+        out_addr <= (others => DontCareValue);
       end if;
-    when waitburst =>
+    when stage1 =>
+      out_addr <= addr_save_q;
       strobe_addr<='1';
       even_odd <= '1';
     when others =>
+      out_addr <= (others => DontCareValue);
   end case;
 end process;
 
 
-process(clk_wen)
+process(wb_clk_i)
 begin
-  if rising_edge(clk_wen) then
+  if falling_edge(wb_clk_i) then
     sram_data_read_q(31 downto 16) <= sram_data_read;
     sram_data_read_q(15 downto 0) <= sram_data_read_q(31 downto 16);
   end if;
 end process;
 
+--process(clk_wen)
+--begin
+--  if rising_edge(clk_wen) then
+--    sram_data_read_q(31 downto 16) <= sram_data_read;
+--    sram_data_read_q(15 downto 0) <= sram_data_read_q(31 downto 16);
+--  end if;
+--end process;
+
+process(state, wb_cyc_i, wb_stb_i)
+begin
+  case state is
+    when idle =>
+      --if wb_cyc_i='1' and wb_stb_i='1' then
+      --  _stall <= '1';
+      --else
+      stall <= '0';
+      --end if;
+    when stage1 =>
+      stall <= '1';
+    when others =>
+      stall <= '0';
+  end case;
+end process;
+
+
+process(wb_clk_i)
+begin
+  if rising_edge(wb_clk_i) then
+    if wb_stb_i='1' and stall<='0' then
+      addr_save_q <= wb_adr_i;
+      write_save_q <= wb_we_i;
+    end if;
+
+    wb_dat_o <= sram_data_read_q;
+
+  end if;
+end process;
+
+wb_ack_o <= ack_q_q;
+
 process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
     if wb_rst_i='1' then
-      wb_ack_o <= '0';
       state <= idle;
       --out_write_enable<='1';
       --sram_we <= '1';
-      sram_ce <= '1';
-      sram_oe <= '1';
+      sram_ce_i <= '1';
+      sram_oe_i <= '1';
+      ack_q_q_q <= '0';
+      ack_q_q   <= '0';
+--      ack_q     <= '0';
+      sram_data_write <= (others => DontCareValue);
     else
+      sram_ce_i <= '1';
+      sram_oe_i <= '1';
+      sram_data_write <= (others => DontCareValue);
+      ack_q_q_q <= '0';
+      ack_q_q <= ack_q_q_q;
+--      ack_q <= ack_q_q;
 
-      wb_ack_o <= '0';
       case state is
 
         when idle =>
           if wb_cyc_i='1' and wb_stb_i='1' then
 
-            --sram_addr_q <= unsigned(wb_adr_i(19 downto 2)) & '0';
             sram_data_write <= wb_dat_i(15 downto 0);
-            --out_write_enable <= not wb_we_i;
-            sram_oe <= wb_we_i;
-            sram_ce <= '0';
+            sram_oe_i <= wb_we_i;
+            sram_ce_i <= '0';
 
-            --if wb_we_i='1' then
-            --  state <= operation;
-            --else
-              state <= waitburst;
-            --end if;
+            state <= stage1;
+
           end if;
 
-        when waitburst =>
-          --sram_addr_q(0) <= '1';
+        when stage1 =>
+
           sram_data_write <= wb_dat_i(31 downto 16);
-          sram_oe <= wb_we_i;
-          --out_write_enable <= not wb_we_i;
-          sram_ce <= '0';
+          sram_oe_i <= write_save_q;
+          sram_ce_i <= '0';
+          state <= stage2;
 
-          if wb_we_i='1' then
-            wb_ack_o<='1';
-            state <= finish;
+        when stage2 =>
+
+          if wb_stb_i='1' then
+            sram_data_write <= wb_dat_i(15 downto 0);
+            sram_oe_i <= wb_we_i;
+            sram_ce_i <= '0';
+            state <= stage1;
           else
-            state <= operation;
-          end if;
-        when operation =>
-          
-          --wb_dat_o(31 downto 16) <= sram_data_read;
-          --out_write_enable<='1';
-          --if wb_cti_i = CTI_CYCLE_INCRADDR then
-          --  sram_addr_q <= sram_addr_q + 1;
-          --  state <= waitburst;
-          --else
-            state <= finish;
-          --end if;
-        when finish =>
-          --out_write_enable <= '1';
-          wb_dat_o <= sram_data_read_q;
-          sram_oe <= '1';
-          sram_ce <= '1';
-          if wb_we_i='0' then
-            wb_ack_o<='1';
-            state <= waitfinish;
-          else
+            sram_oe_i <= '1';
+            sram_ce_i <= '1';
             state <= idle;
           end if;
-        when waitfinish =>
-          state <= idle;
+          ack_q_q_q <= '1';
+
         when others =>
       end case;
     end if;

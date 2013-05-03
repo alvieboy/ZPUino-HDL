@@ -24,6 +24,7 @@ entity wbarb2_1 is
     m0_wb_we_i:  in std_logic;
     m0_wb_cyc_i: in std_logic;
     m0_wb_stb_i: in std_logic;
+    m0_wb_stall_o: out std_logic;
     m0_wb_ack_o: out std_logic;
 
     -- Master 1 signals
@@ -37,6 +38,7 @@ entity wbarb2_1 is
     m1_wb_cyc_i: in std_logic;
     m1_wb_stb_i: in std_logic;
     m1_wb_ack_o: out std_logic;
+    m1_wb_stall_o: out std_logic;
 
     -- Slave signals
 
@@ -48,7 +50,8 @@ entity wbarb2_1 is
     s0_wb_we_o:  out std_logic;
     s0_wb_cyc_o: out std_logic;
     s0_wb_stb_o: out std_logic;
-    s0_wb_ack_i: in std_logic
+    s0_wb_ack_i: in std_logic;
+    s0_wb_stall_i: in std_logic
   );
 end entity wbarb2_1;
 
@@ -130,5 +133,8 @@ m1_wb_dat_o <= s0_wb_dat_i;
 
 m0_wb_ack_o <= s0_wb_ack_i when current_master='0' else '0';
 m1_wb_ack_o <= s0_wb_ack_i when current_master='1' else '0';
+
+m0_wb_stall_o <= s0_wb_stall_i when current_master='0' else '1';
+m1_wb_stall_o <= s0_wb_stall_i when current_master='1' else '1';
 
 end behave;

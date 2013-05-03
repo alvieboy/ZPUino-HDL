@@ -42,6 +42,7 @@ use work.zpuinopkg.all;
 use work.zpuino_config.all;
 use work.zpu_config.all;
 use work.pad.all;
+use work.wishbonepkg.all;
 
 library UNISIM;
 use UNISIM.VCOMPONENTS.all;
@@ -90,7 +91,21 @@ entity s3e_eval_zpuino is
     -- Rotary signals
     ROT_A:        in std_logic;
     ROT_B:        in std_logic;
-    ROT_CENTER:   in std_logic
+    ROT_CENTER:   in std_logic;
+
+    DRAM_ADDR     : OUT   STD_LOGIC_VECTOR (12 downto 0);
+    DRAM_BA       : OUT   STD_LOGIC_VECTOR (1 downto 0);
+    DRAM_CAS_N    : OUT   STD_LOGIC;
+    DRAM_CKE      : OUT   STD_LOGIC;
+    DRAM_CLK      : OUT   STD_LOGIC;
+    DRAM_CLK_N    : OUT   STD_LOGIC;
+    DRAM_CS_N     : OUT   STD_LOGIC;
+    DRAM_DQ       : INOUT STD_LOGIC_VECTOR(15 downto 0);
+    DRAM_DQM      : OUT   STD_LOGIC_VECTOR(1 downto 0);
+    DRAM_DQS      : INOUT STD_LOGIC_VECTOR(1 downto 0);
+    DRAM_RAS_N    : OUT   STD_LOGIC;
+    DRAM_WE_N     : OUT   STD_LOGIC;
+    DRAM_CK_FB    : IN STD_LOGIC
   );
 end entity s3e_eval_zpuino;
 
@@ -101,6 +116,10 @@ architecture behave of s3e_eval_zpuino is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
+    clkddr: out std_logic;
+    clkout_90: out std_logic;
+    clkout_270: out std_logic;
+    clkfb: in std_logic;
     rstout: out std_logic
   );
   end component clkgen;
@@ -117,10 +136,51 @@ architecture behave of s3e_eval_zpuino is
   );
   end component zpuino_serialreset;
 
+  component ddr_sdram is
+  generic (
+    HIGH_BIT: integer := 24;
+    MHZ: integer := 96;
+    tOPD: time := 2.388 ns;
+    tIPD: time := 2.388 ns
+  );
+  PORT (
+    clk: in std_logic;
+    clk270: in std_logic;
+    clk90: in std_logic;
+    clkddr:in std_logic;
+    rst: in std_logic;
+
+    DRAM_ADDR     : OUT   STD_LOGIC_VECTOR (12 downto 0);
+    DRAM_BA       : OUT   STD_LOGIC_VECTOR (1 downto 0);
+    DRAM_CAS_N    : OUT   STD_LOGIC;
+    DRAM_CKE      : OUT   STD_LOGIC;
+    DRAM_CLK      : OUT   STD_LOGIC;
+    DRAM_CLK_N    : OUT   STD_LOGIC;
+    DRAM_CS_N     : OUT   STD_LOGIC;
+    DRAM_DQ       : INOUT STD_LOGIC_VECTOR(15 downto 0);
+    DRAM_DQM      : OUT   STD_LOGIC_VECTOR(1 downto 0);
+    DRAM_DQS      : INOUT STD_LOGIC_VECTOR(1 downto 0);
+    DRAM_RAS_N    : OUT   STD_LOGIC;
+    DRAM_WE_N     : OUT   STD_LOGIC;
+
+    --wb_clk_i: in std_logic;
+	 	--wb_rst_i: in std_logic;
+
+    wb_dat_o: out std_logic_vector(31 downto 0);
+    wb_dat_i: in std_logic_vector(31 downto 0);
+    wb_adr_i: in std_logic_vector(31 downto 0);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_stall_o: out std_logic
+   );
+  end component;
 
 
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
+  signal clkddr:      std_logic;
   signal clkgen_rst:  std_logic;
 
   signal gpio_o: std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -207,6 +267,56 @@ architecture behave of s3e_eval_zpuino is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
+  signal clk270, clk90: std_logic;
+
+  signal dram_wb_ack_o:       std_logic;
+  signal dram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal dram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal dram_wb_adr_i:       std_logic_vector(31 downto 0);
+  signal dram_wb_cyc_i:       std_logic;
+  signal dram_wb_stb_i:       std_logic;
+  signal dram_wb_we_i:        std_logic;
+  signal dram_wb_stall_o:     std_logic;
+
+  signal ram_wb_ack_o:       std_logic;
+  signal ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal ram_wb_cyc_i:       std_logic;
+  signal ram_wb_stb_i:       std_logic;
+  signal ram_wb_we_i:        std_logic;
+  signal ram_wb_stall_o:     std_logic;
+
+  signal rom_wb_ack_o:       std_logic;
+  signal rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal rom_wb_cyc_i:       std_logic;
+  signal rom_wb_stb_i:       std_logic;
+  signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal rom_wb_stall_o:     std_logic;
+
+  component wb_rom_ram is
+  port (
+    ram_wb_clk_i:       in std_logic;
+    ram_wb_rst_i:       in std_logic;
+    ram_wb_ack_o:       out std_logic;
+    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    ram_wb_cyc_i:       in std_logic;
+    ram_wb_stb_i:       in std_logic;
+    ram_wb_we_i:        in std_logic;
+
+    rom_wb_clk_i:       in std_logic;
+    rom_wb_rst_i:       in std_logic;
+    rom_wb_ack_o:       out std_logic;
+    rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_cyc_i:       in std_logic;
+    rom_wb_stb_i:       in std_logic;
+    rom_wb_cti_i:       in std_logic_vector(2 downto 0)
+  );
+  end component wb_rom_ram;
 
 begin
 
@@ -215,7 +325,7 @@ begin
 
   rstgen: zpuino_serialreset
     generic map (
-      SYSTEM_CLOCK_MHZ  => 96
+      SYSTEM_CLOCK_MHZ  => 75
     )
     port map (
       clk       => sysclk,
@@ -229,6 +339,10 @@ begin
     clkin   => clk,
     rstin   => rst,
     clkout  => sysclk,
+    clkddr  => clkddr,
+    clkout_90  => clk90,
+    clkout_270  => clk270,
+    clkfb => DRAM_CK_FB,
     rstout  => clkgen_rst
   );
 
@@ -333,6 +447,22 @@ begin
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
       m_wb_ack_o    => open,
+
+      ram_wb_ack_i      => ram_wb_ack_o,
+      ram_wb_stall_i    => '0',--np_ram_wb_stall_o,
+      ram_wb_dat_o      => ram_wb_dat_i,
+      ram_wb_dat_i      => ram_wb_dat_o,
+      ram_wb_adr_o      => ram_wb_adr_i(maxAddrBit downto 0),
+      ram_wb_cyc_o      => ram_wb_cyc_i,
+      ram_wb_stb_o      => ram_wb_stb_i,
+      ram_wb_we_o       => ram_wb_we_i,
+
+      rom_wb_ack_i      => rom_wb_ack_o,
+      rom_wb_stall_i      => rom_wb_stall_o,
+      rom_wb_dat_i      => rom_wb_dat_o,
+      rom_wb_adr_o      => rom_wb_adr_i(maxAddrBit downto 0),
+      rom_wb_cyc_o      => rom_wb_cyc_i,
+      rom_wb_stb_o      => rom_wb_stb_i,
 
       jtag_ctrl_chain_in => (others => '0')
     );
@@ -653,18 +783,100 @@ begin
   -- IO SLOT 15
   --
 
-  slot15: zpuino_empty_device
+
+  npnadapt: wb_master_np_to_slave_p
+  generic map (
+    ADDRESS_HIGH  => maxAddrBitIncIO-1,
+    ADDRESS_LOW   => 2
+  )
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
-    wb_dat_o      => slot_read(15),
-    wb_dat_i     => slot_write(15),
-    wb_adr_i   => slot_address(15),
-    wb_we_i        => slot_we(15),
-    wb_cyc_i        => slot_cyc(15),
-    wb_stb_i        => slot_stb(15),
-    wb_ack_o      => slot_ack(15),
-    wb_inta_o => slot_interrupt(15)
+    wb_clk_i    => wb_clk_i,
+	 	wb_rst_i    => wb_rst_i,
+
+    -- Master signals
+
+    m_wb_dat_o  => slot_read(15),
+    m_wb_dat_i  => slot_write(15),
+    m_wb_adr_i  => slot_address(15)(maxAddrBitIncIO-1 downto 2),
+    m_wb_sel_i  => (others => '1'),
+    m_wb_cti_i  => CTI_CYCLE_CLASSIC,
+    m_wb_we_i   => slot_we(15),
+    m_wb_cyc_i  => slot_cyc(15),
+    m_wb_stb_i  => slot_stb(15),
+    m_wb_ack_o  => slot_ack(15),
+
+    -- Slave signals
+
+    s_wb_dat_i  => dram_wb_dat_o,
+    s_wb_dat_o  => dram_wb_dat_i,
+    s_wb_adr_o  => dram_wb_adr_i(maxAddrBitIncIO-1 downto 2),
+    s_wb_sel_o  => open,
+    s_wb_cti_o  => open,
+    s_wb_we_o   => dram_wb_we_i,
+    s_wb_cyc_o  => dram_wb_cyc_i,
+    s_wb_stb_o  => dram_wb_stb_i,
+    s_wb_ack_i  => dram_wb_ack_o,
+    s_wb_stall_i => dram_wb_stall_o
+  );
+
+  dram_wb_adr_i(31 downto maxAddrBitIncIO)<=(others => '0');
+  ddr: ddr_sdram
+  GENERIC map (
+    MHZ => 75
+  )
+  PORT map (
+    clk         => sysclk,
+    clk270      => clk270,
+    clk90       => clk90,
+    clkddr      => clkddr,
+    rst         => sysrst,
+
+    DRAM_ADDR   => DRAM_ADDR,
+    DRAM_BA     => DRAM_BA,
+    DRAM_CAS_N  => DRAM_CAS_N,
+    DRAM_CKE    => DRAM_CKE,
+    DRAM_CLK    => DRAM_CLK,
+    DRAM_CLK_N  => DRAM_CLK_N,
+    DRAM_CS_N   => DRAM_CS_N,
+    DRAM_DQ     => DRAM_DQ,
+    DRAM_DQM    => DRAM_DQM,
+    DRAM_DQS    => DRAM_DQS,
+    DRAM_RAS_N  => DRAM_RAS_N,
+    DRAM_WE_N   => DRAM_WE_N,
+
+    --wb_clk_i: in std_logic;
+	 	--wb_rst_i: in std_logic;
+
+    wb_dat_o    => dram_wb_dat_o,
+    wb_dat_i    => dram_wb_dat_i,
+    wb_adr_i    => dram_wb_adr_i,
+    wb_we_i     => dram_wb_we_i,
+    wb_cyc_i    => dram_wb_cyc_i,
+    wb_stb_i    => dram_wb_stb_i,
+    wb_ack_o    => dram_wb_ack_o,
+    wb_stall_o  => dram_wb_stall_o
+   );
+
+  memory: wb_rom_ram
+  port map (
+    ram_wb_clk_i      => sysclk,
+    ram_wb_rst_i      => sysrst,
+    ram_wb_ack_o      => ram_wb_ack_o,
+    ram_wb_dat_i      => ram_wb_dat_i,
+    ram_wb_dat_o      => ram_wb_dat_o,
+    ram_wb_adr_i      => ram_wb_adr_i(maxAddrBitIncIO downto 0),
+    ram_wb_cyc_i      => ram_wb_cyc_i,
+    ram_wb_stb_i      => ram_wb_stb_i,
+    ram_wb_we_i       => ram_wb_we_i,
+
+    rom_wb_clk_i      => sysclk,
+    rom_wb_rst_i      => sysrst,
+    rom_wb_ack_o      => rom_wb_ack_o,
+    rom_wb_dat_o      => rom_wb_dat_o,
+    rom_wb_adr_i      => rom_wb_adr_i(maxAddrBitIncIO downto 0),
+    rom_wb_cyc_i      => rom_wb_cyc_i,
+    rom_wb_stb_i      => rom_wb_stb_i,
+    rom_wb_cti_i      => rom_wb_cti_i
   );
 
 

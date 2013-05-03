@@ -56,6 +56,8 @@ entity zpuino_io is
     wb_inta_o:  out std_logic;
 
     intready:   in std_logic;
+    cache_flush: out std_logic;
+    memory_enable: out std_logic;
 
     slot_cyc:   out slot_std_logic_type;
     slot_we:    out slot_std_logic_type;
@@ -318,6 +320,8 @@ begin
     pps_out_pin  => pps_out_pin,
 
     poppc_inst=> intready,
+    cache_flush => cache_flush,
+    memory_enable => memory_enable,
     intr_in     => ivecs,
     intr_cfglvl => "110000000000000000"
   );

@@ -41,6 +41,7 @@ use work.zpuino_config.all;
 use work.zpu_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+use work.wishbonepkg.all;
 
 entity tb_zpuino is
 end entity;
@@ -296,6 +297,31 @@ architecture behave of tb_zpuino is
   );
   end component tap;
 
+  component wb_rom_ram is
+  port (
+    ram_wb_clk_i:       in std_logic;
+    ram_wb_rst_i:       in std_logic;
+    ram_wb_ack_o:       out std_logic;
+    ram_wb_stall_o:     out std_logic;
+    ram_wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    ram_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    ram_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    ram_wb_cyc_i:       in std_logic;
+    ram_wb_stb_i:       in std_logic;
+    ram_wb_we_i:        in std_logic;
+
+    rom_wb_clk_i:       in std_logic;
+    rom_wb_rst_i:       in std_logic;
+    rom_wb_ack_o:       out std_logic;
+    rom_wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    rom_wb_adr_i:       in std_logic_vector(maxAddrBitIncIO downto 0);
+    rom_wb_cyc_i:       in std_logic;
+    rom_wb_stb_i:       in std_logic;
+    rom_wb_stall_o:     out std_logic;
+    rom_wb_cti_i:       in std_logic_vector(2 downto 0)
+  );
+  end component wb_rom_ram;
+
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
@@ -323,6 +349,32 @@ architecture behave of tb_zpuino is
 
   signal gpio_spp_data: std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_spp_read: std_logic_vector(zpuino_gpio_count-1 downto 0);
+
+  signal ram_wb_ack_o:       std_logic;
+  signal ram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal ram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal ram_wb_cyc_i:       std_logic;
+  signal ram_wb_stb_i:       std_logic;
+  signal ram_wb_we_i:        std_logic;
+  signal ram_wb_stall_o:     std_logic;
+
+  signal sram_wb_ack_o:       std_logic;
+  signal sram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal sram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal sram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal sram_wb_cyc_i:       std_logic;
+  signal sram_wb_stb_i:       std_logic;
+  signal sram_wb_we_i:        std_logic;
+  signal sram_wb_stall_o:     std_logic;
+
+  signal rom_wb_ack_o:       std_logic;
+  signal rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal rom_wb_cyc_i:       std_logic;
+  signal rom_wb_stb_i:       std_logic;
+  signal rom_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal rom_wb_stall_o:     std_logic;
 
 begin
 
@@ -395,10 +447,93 @@ begin
       m_wb_stb_i    => '0',
       m_wb_ack_o    => open,
 
+      ram_wb_ack_i      => ram_wb_ack_o,
+      ram_wb_stall_i    => ram_wb_stall_o,
+      ram_wb_dat_o      => ram_wb_dat_i,
+      ram_wb_dat_i      => ram_wb_dat_o,
+      ram_wb_adr_o      => ram_wb_adr_i(maxAddrBit downto 0),
+      ram_wb_cyc_o      => ram_wb_cyc_i,
+      ram_wb_stb_o      => ram_wb_stb_i,
+      ram_wb_we_o       => ram_wb_we_i,
+
+      rom_wb_ack_i      => rom_wb_ack_o,
+      rom_wb_stall_i      => rom_wb_stall_o,
+      rom_wb_dat_i      => rom_wb_dat_o,
+      rom_wb_adr_o      => rom_wb_adr_i(maxAddrBit downto 0),
+      rom_wb_cyc_o      => rom_wb_cyc_i,
+      rom_wb_stb_o      => rom_wb_stb_i,
 
       jtag_ctrl_chain_in => (others => '0'),--jtag_ctrl_chain_in,
       jtag_data_chain_out => jtag_data_chain_out
     );
+
+  memarb: wbarb2_1
+  generic map (
+    ADDRESS_HIGH => maxAddrBit,
+    ADDRESS_LOW => 0
+  )
+  port map (
+    wb_clk_i      => wb_clk_i,
+	 	wb_rst_i      => wb_rst_i,
+
+    m0_wb_dat_o   => ram_wb_dat_o,
+    m0_wb_dat_i   => ram_wb_dat_i,
+    m0_wb_adr_i   => ram_wb_adr_i(maxAddrBit downto 0),
+    m0_wb_sel_i   => (others => '1'),
+    m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m0_wb_we_i    => ram_wb_we_i,
+    m0_wb_cyc_i   => ram_wb_cyc_i,
+    m0_wb_stb_i   => ram_wb_stb_i,
+    m0_wb_ack_o   => ram_wb_ack_o,
+    m0_wb_stall_o => ram_wb_stall_o,
+
+    m1_wb_dat_o   => rom_wb_dat_o,
+    m1_wb_dat_i   => (others => DontCareValue),
+    m1_wb_adr_i   => rom_wb_adr_i(maxAddrBit downto 0),
+    m1_wb_sel_i   => (others => '1'),
+    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m1_wb_we_i    => '0',--rom_wb_we_i,
+    m1_wb_cyc_i   => rom_wb_cyc_i,
+    m1_wb_stb_i   => rom_wb_stb_i,
+    m1_wb_ack_o   => rom_wb_ack_o,
+    m1_wb_stall_o => rom_wb_stall_o,
+
+    s0_wb_dat_i   => sram_wb_dat_o,
+    s0_wb_dat_o   => sram_wb_dat_i,
+    s0_wb_adr_o   => sram_wb_adr_i(maxAddrBit downto 0),
+    s0_wb_sel_o   => open,
+    s0_wb_cti_o   => open,
+    s0_wb_we_o    => sram_wb_we_i,
+    s0_wb_cyc_o   => sram_wb_cyc_i,
+    s0_wb_stb_o   => sram_wb_stb_i,
+    s0_wb_ack_i   => sram_wb_ack_o,
+    s0_wb_stall_i => sram_wb_stall_o
+  );
+
+
+--  memory: wb_rom_ram
+--  port map (
+--    ram_wb_clk_i      => wb_clk_i,
+--    ram_wb_rst_i      => wb_rst_i,
+--    ram_wb_ack_o      => ram_wb_ack_o,
+--    ram_wb_dat_i      => ram_wb_dat_i,
+--    ram_wb_dat_o      => ram_wb_dat_o,
+--    ram_wb_adr_i      => ram_wb_adr_i,
+--    ram_wb_cyc_i      => ram_wb_cyc_i,
+--    ram_wb_stb_i      => ram_wb_stb_i,
+--    ram_wb_we_i       => ram_wb_we_i,
+--    ram_wb_stall_o    => ram_wb_stall_o,
+
+--    rom_wb_clk_i      => wb_clk_i,
+--    rom_wb_rst_i      => wb_rst_i,
+--    rom_wb_ack_o      => rom_wb_ack_o,
+--    rom_wb_dat_o      => rom_wb_dat_o,
+--    rom_wb_adr_i      => rom_wb_adr_i,
+--    rom_wb_cyc_i      => rom_wb_cyc_i,
+--   rom_wb_stb_i      => rom_wb_stb_i,
+--    rom_wb_cti_i      => rom_wb_cti_i,
+--    rom_wb_stall_o    => rom_wb_stall_o
+--  );
 
   dbgport: zpuino_debug_jtag
     port map (

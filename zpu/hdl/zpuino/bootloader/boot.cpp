@@ -8,7 +8,6 @@
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
-#define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 #ifdef SIMULATION
 # define SPICODESIZE 0x1000
@@ -165,7 +164,7 @@ void finishSend()
 	outbyte(HDLC_frameFlag);
 }
 
-unsigned int inbyte()
+static unsigned int inbyte()
 {
 #ifdef BOOT_IMMEDIATLY
 		spi_copy();
@@ -196,7 +195,7 @@ unsigned int inbyte()
 #endif
 }
 
-void enableTimer()
+static void enableTimer()
 {
 #ifdef BOOT_IMMEDIATLY
 	return; // TEST
@@ -274,14 +273,14 @@ static inline unsigned int spiread(register_t base)
 	return *base;
 }
 
-extern "C" void start()
+extern "C" void __attribute__((noreturn)) start()
 {
 	ivector = (void (*)(int))0x1010;
 	bootloaderdata = &bdata;
-    start_sketch();
+	start_sketch();
 }
 
-unsigned start_read_size(register_t spidata)
+static unsigned start_read_size(register_t spidata)
 {
 	spiwrite(spidata,0x0B);
 	spiwrite(spidata+4,SPIOFFSET);
@@ -407,6 +406,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 extern "C" void _zpu_interrupt(int line)
 {
 	milisseconds++;
+//	outbyte('I');
 	TMR0CTL &= ~(BIT(TCTLIF));
 }
 
@@ -429,10 +429,11 @@ static int spi_read_status()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
-
+#if 0
 	if (is_atmel_flash())
 		spiwrite(spidata,0x57);
 	else
+#endif
 		spiwrite(spidata,0x05);
 
 	spiwrite(spidata,0x00);
@@ -533,7 +534,6 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	unsigned int txcount;
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
-
 #ifdef __SST_FLASH__
 
 	// buffer[1-2] is number of TX bytes
@@ -578,6 +578,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
 #endif
+
 }
 
 static void cmd_set_baudrate(unsigned char *buffer)
@@ -761,7 +762,7 @@ inline void configure_pins()
 }
 #endif
 
-#ifdef __ZPUINO_PAPILIO_PLUS__
+#if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
@@ -822,6 +823,14 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
+#ifndef VERBOSE_LOADER
+	_bfunctions[0] = (unsigned)&udivmodsi4;
+	_bfunctions[1] = (unsigned)&memcpy;
+	_bfunctions[2] = (unsigned)&memset;
+	_bfunctions[3] = (unsigned)&strcmp;
+	_bfunctions[4] = (unsigned)&loadsketch;
+#endif
+
 	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
 	INTRCTL=1;
 
@@ -836,7 +845,7 @@ extern "C" int main(int argc,char**argv)
 	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
 	// Reset flash
 	spi_reset(&SPIDATA);
-#ifdef __ZPUINO_PAPILIO_ONE__
+#ifdef __SST_FLASH__
 	spi_enable();
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable(&SPIDATA);
