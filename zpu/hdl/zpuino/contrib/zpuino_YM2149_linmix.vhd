@@ -62,6 +62,7 @@ library work;
   use work.zpuino_config.all;
   use work.zpu_config.all;
   use work.zpupkg.all;
+  use work.zpuinopkg.all;
   
 entity zpuino_io_YM2149 is
   generic (
