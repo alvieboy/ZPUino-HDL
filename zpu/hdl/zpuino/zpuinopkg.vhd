@@ -130,6 +130,13 @@ package zpuinopkg is
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type;
     slot_interrupt: in slot_std_logic_type;
+    slot_id:    in slot_id_type;
+
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:  in ppsininfotype;
+    pps_out_slot:  in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype;
 
     dbg_reset:  out std_logic;
 
