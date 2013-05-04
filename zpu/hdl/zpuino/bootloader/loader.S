@@ -2,7 +2,7 @@
 
 .text
 
-#undef PRELOADED 
+//#undef PRELOADED 
 
 .balign 16 /* Ensure we don't have a cache miss on this code */
 
@@ -11,7 +11,11 @@ __flush:
         /* poppc */
         im         2                        ; Flush cache, enable SRAM
         nop
+#ifdef ZPU20
+	im        IO_SLOT(0) + 16
+#else
         im        IO_SLOT(4) + 16
+#endif
         store
         nop
         nop
