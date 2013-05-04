@@ -986,11 +986,11 @@ begin
     ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
 
     gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
-    ppsout_info_slot(1) <= 3; -- Slot 5
+    ppsout_info_slot(1) <= 3; -- Slot 3
     ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
 
     gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
-    ppsout_info_slot(2) <= 5; -- Slot 5
+    ppsout_info_slot(2) <= 3; -- Slot 3
     ppsout_info_pin(2) <= 1;  -- PPS OUT pin 1 (TIMER 0)
 
     gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
