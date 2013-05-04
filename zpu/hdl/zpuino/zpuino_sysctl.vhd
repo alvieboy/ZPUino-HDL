@@ -203,60 +203,72 @@ interrupt_active<='1' when masked_ivecs(0)='1' or
                            masked_ivecs(31)='1'
                            else '0';
 
-process(wb_adr_i,mask_q,ien_q,intr_served_q,intr_cfglvl,intr_level_q)
+process(wb_adr_i,mask_q,ien_q,intr_served_q,intr_cfglvl,intr_level_q,slot_id)
   variable idx: integer;
   variable v: integer;
 begin
   wb_dat_o <= (others => '0');
-  case wb_adr_i(8 downto 2) is
-    when "0000000" =>
-      --wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
-      wb_dat_o(0) <= ien_q; 
-    when "0000001" =>
-      wb_dat_o(INTERRUPT_LINES-1 downto 0) <= mask_q;
-    when "0000010" =>
-      wb_dat_o(4 downto 0) <= intr_served_q;
-    when "0000011" =>
-      for i in 0 to INTERRUPT_LINES-1 loop
-        if intr_cfglvl(i)='1' then
-          wb_dat_o(i) <= intr_level_q(i);
-        end if;
-      end loop;
-    when "0010000" => wb_dat_o(15 downto 0) <= x"08" & x"01"; -- Vendor: ZPUino  Product: System Controller
-    when "0010001" => wb_dat_o(15 downto 0) <= slot_id(1);
-    when "0010010" => wb_dat_o(15 downto 0) <= slot_id(2);
-    when "0010011" => wb_dat_o(15 downto 0) <= slot_id(3);
-    when "0010100" => wb_dat_o(15 downto 0) <= slot_id(4);
-    when "0010101" => wb_dat_o(15 downto 0) <= slot_id(5);
-    when "0010110" => wb_dat_o(15 downto 0) <= slot_id(6);
-    when "0010111" => wb_dat_o(15 downto 0) <= slot_id(7);
-    when "0011000" => wb_dat_o(15 downto 0) <= slot_id(8);
-    when "0011001" => wb_dat_o(15 downto 0) <= slot_id(9);
-    when "0011010" => wb_dat_o(15 downto 0) <= slot_id(10);
-    when "0011011" => wb_dat_o(15 downto 0) <= slot_id(11);
-    when "0011100" => wb_dat_o(15 downto 0) <= slot_id(12);
-    when "0011101" => wb_dat_o(15 downto 0) <= slot_id(13);
-    when "0011110" => wb_dat_o(15 downto 0) <= slot_id(14);
-    when "0011111" => wb_dat_o(15 downto 0) <= slot_id(15);
-    when "010----" => wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned( PPSCOUNT_OUT, 8 ));
-    when "011----" => wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned( PPSCOUNT_IN,  8 ));
-    when "1------" => -- Up to 64 PPS pins, 32 IN, 32 OUT
-      idx := to_integer( unsigned(wb_adr_i(7 downto 2)) );
-      wb_dat_o <= (others => DontCareValue);
 
-      if (idx < PPSCOUNT_OUT) then
-        wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned(pps_out_slot(idx),8));
-        wb_dat_o(15 downto 8) <= std_logic_vector(to_unsigned(pps_out_pin(idx),8));
-      end if;
-      if (idx < PPSCOUNT_IN) then
-        wb_dat_o(23 downto 16) <= std_logic_vector(to_unsigned(pps_in_slot(idx),8));
-        wb_dat_o(31 downto 24) <= std_logic_vector(to_unsigned(pps_in_pin(idx),8));
-      end if;
+  if wb_adr_i(8)='1' then
+    idx := to_integer( unsigned(wb_adr_i(7 downto 2)) );
+    wb_dat_o <= (others => '0');
 
-
-    when others =>
-      wb_dat_o <= (others => DontCareValue);
-  end case;
+    if (idx < PPSCOUNT_OUT) then
+      wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned(pps_out_slot(idx),8));
+      wb_dat_o(15 downto 8) <= std_logic_vector(to_unsigned(pps_out_pin(idx),8));
+    end if;
+    if (idx < PPSCOUNT_IN) then
+      wb_dat_o(23 downto 16) <= std_logic_vector(to_unsigned(pps_in_slot(idx),8));
+      wb_dat_o(31 downto 24) <= std_logic_vector(to_unsigned(pps_in_pin(idx),8));
+    end if;
+  else
+    case wb_adr_i(7 downto 6) is
+      when "00" =>
+        case wb_adr_i(5 downto 2) is
+          when "0000" =>
+            --wb_dat_o(INTERRUPT_LINES-1 downto 0) <= intr_served_q;
+            wb_dat_o(0) <= ien_q; 
+          when "0001" =>
+            wb_dat_o(INTERRUPT_LINES-1 downto 0) <= mask_q;
+          when "0010" =>
+            wb_dat_o(4 downto 0) <= intr_served_q;
+          when "0011" =>
+            for i in 0 to INTERRUPT_LINES-1 loop
+              if intr_cfglvl(i)='1' then
+                wb_dat_o(i) <= intr_level_q(i);
+              end if;
+            end loop;
+          when others =>
+            wb_dat_o <= (others => DontCareValue);
+        end case;
+      when "01" =>
+        case wb_adr_i(5 downto 2) is
+          when "0000" => wb_dat_o(15 downto 0) <= x"08" & x"01"; -- Vendor: ZPUino  Product: System Controller
+          when "0001" => wb_dat_o(15 downto 0) <= slot_id(1);
+          when "0010" => wb_dat_o(15 downto 0) <= slot_id(2);
+          when "0011" => wb_dat_o(15 downto 0) <= slot_id(3);
+          when "0100" => wb_dat_o(15 downto 0) <= slot_id(4);
+          when "0101" => wb_dat_o(15 downto 0) <= slot_id(5);
+          when "0110" => wb_dat_o(15 downto 0) <= slot_id(6);
+          when "0111" => wb_dat_o(15 downto 0) <= slot_id(7);
+          when "1000" => wb_dat_o(15 downto 0) <= slot_id(8);
+          when "1001" => wb_dat_o(15 downto 0) <= slot_id(9);
+          when "1010" => wb_dat_o(15 downto 0) <= slot_id(10);
+          when "1011" => wb_dat_o(15 downto 0) <= slot_id(11);
+          when "1100" => wb_dat_o(15 downto 0) <= slot_id(12);
+          when "1101" => wb_dat_o(15 downto 0) <= slot_id(13);
+          when "1110" => wb_dat_o(15 downto 0) <= slot_id(14);
+          when "1111" => wb_dat_o(15 downto 0) <= slot_id(15);
+          when others => wb_dat_o<=(others => DontCareValue);
+        end case;
+      when "10" =>
+        wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned( PPSCOUNT_OUT, 8 ));
+      when "11" =>
+        wb_dat_o(7 downto 0) <= std_logic_vector(to_unsigned( PPSCOUNT_IN,  8 ));
+      when others =>
+        wb_dat_o <= (others => DontCareValue);
+    end case;
+  end if;
 end process;
 
     
