@@ -130,9 +130,14 @@ architecture behave of papilio_one_top is
   signal spi2_sck:  std_logic;
 
   signal uart_enabled:  std_logic;
+  signal uart_tx:       std_logic;
+  signal uart_rx:       std_logic;
+
+  -- SPP signals
 
   signal gpio_spp_data: std_logic_vector(PPSCOUNT_OUT-1 downto 0);
   signal gpio_spp_read: std_logic_vector(PPSCOUNT_IN-1 downto 0);
+
   signal ppsout_info_slot: ppsoutinfotype := (others => -1);
   signal ppsout_info_pin:  ppsoutinfotype;
   signal ppsin_info_slot: ppsininfotype := (others => -1);
@@ -147,8 +152,6 @@ architecture behave of papilio_one_top is
   signal spi_pf_miso: std_logic;
   signal spi_pf_mosi: std_logic;
   signal spi_pf_sck: std_logic;
-  signal uart_tx: std_logic;
-  signal uart_rx: std_logic;
 
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
@@ -255,18 +258,17 @@ begin
 
   uart_inst: zpuino_uart
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o      => slot_read(1),
-    wb_dat_i     => slot_write(1),
-    wb_adr_i   => slot_address(1),
-    wb_we_i      => slot_we(1),
-    wb_cyc_i       => slot_cyc(1),
-    wb_stb_i       => slot_stb(1),
-    wb_ack_o      => slot_ack(1),
-    id            => slot_id(1),
-
+    wb_clk_i  => wb_clk_i,
+    wb_rst_i  => wb_rst_i,
+    wb_dat_o  => slot_read(1),
+    wb_dat_i  => slot_write(1),
+    wb_adr_i  => slot_address(1),
+    wb_we_i   => slot_we(1),
+    wb_cyc_i  => slot_cyc(1),
+    wb_stb_i  => slot_stb(1),
+    wb_ack_o  => slot_ack(1),
     wb_inta_o => slot_interrupt(1),
+    id        => slot_id(1),
 
     enabled   => uart_enabled,
     tx        => uart_tx,
@@ -335,7 +337,6 @@ begin
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
-
     pwm_a_out   => timers_pwm(0 downto 0),
     pwm_b_out   => timers_pwm(1 downto 1)
   );
@@ -367,7 +368,7 @@ begin
   -- IO SLOT 6
   --
 
-  slot1: zpuino_spi
+  slot6: zpuino_spi
   port map (
     wb_clk_i       => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -381,10 +382,10 @@ begin
     wb_inta_o => slot_interrupt(6),
     id        => slot_id(6),
 
-    mosi      => spi2_mosi,
-    miso      => spi2_miso,
-    sck       => spi2_sck,
-    enabled   => spi2_enabled
+    mosi      => spi2_mosi, -- PPS OUT PIN 0
+    miso      => spi2_miso, -- PPS IN  PIN 0
+    sck       => spi2_sck,  -- PPS OUT PIN 1
+    enabled   => open
   );
 
 
@@ -644,35 +645,34 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    gpio_spp_data(0)  <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
+    gpio_spp_data(0) <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
     ppsout_info_slot(0) <= 5; -- Slot 5
     ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
 
-    gpio_spp_data(1)  <= timers_pwm(0);          -- PPS1 : TIMER0
+    gpio_spp_data(1) <= timers_pwm(0);          -- PPS1 : TIMER0
     ppsout_info_slot(1) <= 3; -- Slot 3
     ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER0)
 
-    gpio_spp_data(2)  <= timers_pwm(1);          -- PPS2 : TIMER1
+    gpio_spp_data(2) <= timers_pwm(1);          -- PPS2 : TIMER1
     ppsout_info_slot(2) <= 3; -- Slot 3
     ppsout_info_pin(2) <= 1;  -- PPS OUT pin 0 (TIMER0)
 
-    gpio_spp_data(3)  <= spi2_mosi;              -- PPS3 : USPI MOSI
+    gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
     ppsout_info_slot(3) <= 6; -- Slot 6
     ppsout_info_pin(3) <= 0;  -- PPS OUT pin 0 (MOSI)
 
-    gpio_spp_data(4)  <= spi2_sck;               -- PPS4 : USPI SCK
+    gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
     ppsout_info_slot(4) <= 6; -- Slot 6
     ppsout_info_pin(4) <= 1;  -- PPS OUT pin 1 (SCK)
 
-    gpio_spp_data(5)  <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
+    gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
     ppsout_info_slot(5) <= 5; -- Slot 5
     ppsout_info_pin(5) <= 1;  -- PPS OUT pin 0 (Channel 1)
 
-    spi2_miso         <= gpio_spp_read(0);       -- PPS7 : USPI MISO
+    spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
     ppsin_info_slot(0) <= 6;                    -- USPI is in slot 6
-    ppsin_info_pin(0) <= 0;
+    ppsin_info_pin(0) <= 0;                     -- PPS pin of USPI is 0
 
   end process;
-
 
 end behave;
