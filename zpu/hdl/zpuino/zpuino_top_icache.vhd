@@ -129,7 +129,7 @@ architecture behave of zpuino_top_icache is
   signal wb_we:       std_logic;
   signal wb_ack:     std_logic;
 
-  signal interrupt:  std_logic;
+  --signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
 
   signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);
@@ -329,7 +329,7 @@ begin
       wb_stb_i      => io_stb,
       wb_ack_o      => io_ack,
       wb_we_i       => io_we,
-      wb_inta_o     => interrupt,
+      wb_inta_o     => cpu_wb_inta_i,
 
       intready      => poppc_inst,
       cache_flush   => cache_flush,
