@@ -374,8 +374,8 @@ architecture behave of papilio_pro_top is
   );
   end component;
 
-  signal lmosi: std_logic_vector(15 downto 0);
-  signal lsck: std_logic_vector(15 downto 0);
+  signal lmosi: std_logic_vector(11 downto 0);
+  signal lsck: std_logic_vector(11 downto 0);
 
   signal extspi_fmosi:      std_logic;
   signal extspi_fmiso:      std_logic;
@@ -403,6 +403,9 @@ architecture behave of papilio_pro_top is
   signal   p_m_wb_stb_i:  std_logic;
   signal   p_m_wb_ack_o:  std_logic;
   signal   p_m_wb_stall_o:  std_logic;
+
+  signal bt_miso, bt_mosi, bt_clk: std_logic;
+  signal bt_cs, codec_cs: std_logic;
 
 begin
 
@@ -457,14 +460,14 @@ begin
 
 
   pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) ); -- Midi IN
-  pin21: OPAD port map(I => gpio_o(21),O => gpio_i(21), C => sysclk,PAD => WING_B(5) ); -- Flash CS
-  pin22: IPAD port map(I => bt_miso, C => sysclk, PAD => WING_B(6) ); -- BT MISO
-  pin23: OPAD port map(I => bt_cs,  PAD => WING_B(7) ); -- BT CS
+  pin21: OPAD port map(I => gpio_o(21),O => gpio_i(21),PAD => WING_B(5) ); -- Flash CS
+  pin22: IPAD port map(O => bt_miso, C => sysclk, PAD => WING_B(6) ); -- BT MISO
+  pin23: OPAD port map(I => gpio_o(23), O => gpio_i(23), PAD => WING_B(7) ); -- BT CS
   pin24: OPAD port map(I => bt_clk, PAD => WING_B(8) ); -- BT CLK
   pin25: OPAD port map(I => bt_mosi, PAD => WING_B(9) ); -- BT MOSI
-  pin26: OPAD port map(I => gpio_o(26), I => gpio_i(26), C => sysclk, PAD => WING_B(10) ); -- BT RESET
+  pin26: OPAD port map(I => gpio_o(26), O => gpio_i(26), PAD => WING_B(10) ); -- BT RESET
 
-  pin27: OPAD port map(I => codec_cs, PAD => WING_B(11) );
+  pin27: OPAD port map(I => gpio_o(27), O => gpio_i(27), PAD => WING_B(11) );
   pin28: OPAD port map(I => lsck(0),  PAD => WING_B(12) );
   pin29: OPAD port map(I => lmosi(0), PAD => WING_B(13) );
   pin30: OPAD port map(I => lsck(1),  PAD => WING_B(14) );
@@ -893,7 +896,7 @@ begin
   -- IO SLOT 8
   --
 
-  slot8: zpuino_empty_device
+  slot8: zpuino_spi
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -904,7 +907,10 @@ begin
     wb_cyc_i      => slot_cyc(8),
     wb_stb_i      => slot_stb(8),
     wb_ack_o      => slot_ack(8),
-    wb_inta_o     => slot_interrupt(8)
+    wb_inta_o     => slot_interrupt(8),
+    mosi          => bt_mosi,
+    miso          => bt_miso,
+    sck           => bt_sck
   );
 
   sram_inst: sdram_ctrl
