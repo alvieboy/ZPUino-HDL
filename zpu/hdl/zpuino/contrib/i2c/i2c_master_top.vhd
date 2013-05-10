@@ -100,39 +100,39 @@ entity i2c_master_top is
 end entity i2c_master_top;
 
 architecture structural of i2c_master_top is
-    component i2c_master_byte_ctrl is
-    port (
-          clk    : in std_logic;
-          rst    : in std_logic; -- synchronous active high reset (WISHBONE compatible)
-          nReset : in std_logic; -- asynchornous active low reset (FPGA compatible)
-          ena    : in std_logic; -- core enable signal
+  component i2c_master_byte_ctrl is
+	port (
+		clk    : in std_logic;
+		rst    : in std_logic; -- synchronous active high reset (WISHBONE compatible)
+		nReset : in std_logic;	-- asynchornous active low reset (FPGA compatible)
+		ena    : in std_logic; -- core enable signal
 
-          clk_cnt : in unsigned(15 downto 0); -- 4x SCL
+		clk_cnt : in unsigned(15 downto 0);	-- 4x SCL
 
-          -- input signals
-          start,
-          stop,
-          read,
-          write,
-          ack_in : std_logic;
-          din    : in std_logic_vector(7 downto 0);
+		-- input signals
+		start,
+		stop,
+		read,
+		write,
+		ack_in : std_logic;
+		din    : in std_logic_vector(7 downto 0);
 
-          -- output signals
-          cmd_ack  : out std_logic;
-          ack_out  : out std_logic;
-          i2c_busy : out std_logic;
-          i2c_al   : out std_logic;
-          dout     : out std_logic_vector(7 downto 0);
+		-- output signals
+		cmd_ack  : out std_logic; -- command done
+		ack_out  : out std_logic;
+		i2c_busy : out std_logic; -- arbitration lost
+		i2c_al   : out std_logic; -- i2c bus busy
+		dout     : out std_logic_vector(7 downto 0);
 
-          -- i2c lines
-          scl_i   : in std_logic;  -- i2c clock line input
-          scl_o   : out std_logic; -- i2c clock line output
-          scl_oen : out std_logic; -- i2c clock line output enable, active low
-          sda_i   : in std_logic;  -- i2c data line input
-          sda_o   : out std_logic; -- i2c data line output
-          sda_oen : out std_logic  -- i2c data line output enable, active low
-    );
-    end component i2c_master_byte_ctrl;
+		-- i2c lines
+		scl_i   : in std_logic;  -- i2c clock line input
+		scl_o   : out std_logic; -- i2c clock line output
+		scl_oen : out std_logic; -- i2c clock line output enable, active low
+		sda_i   : in std_logic;  -- i2c data line input
+		sda_o   : out std_logic; -- i2c data line output
+		sda_oen : out std_logic  -- i2c data line output enable, active low
+	);
+  end component;
 
     -- registers
     signal prer : unsigned(15 downto 0);             -- clock prescale register
