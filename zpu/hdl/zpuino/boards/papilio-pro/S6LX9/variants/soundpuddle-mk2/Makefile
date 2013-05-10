@@ -24,7 +24,7 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 	-uc ${PROJECT}.ucf -p ${PART} ${PROJECT}.ngc ${PROJECT}.ngd
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
-	map -intstyle ise -p ${PART} \
+	map -intstyle ise -w -p ${PART} \
 	 -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 

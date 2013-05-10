@@ -282,6 +282,35 @@ architecture behave of papilio_pro_top is
   );
   end component sdram_ctrl;
 
+  component i2c_master_top is
+    generic(
+            ARST_LVL : std_logic := '0'                   -- asynchronous reset level
+    );
+    port   (
+            -- wishbone signals
+            wb_clk_i      : in  std_logic;                    -- master clock input
+            wb_rst_i      : in  std_logic := '0';             -- synchronous active high reset
+            arst_i        : in  std_logic := not ARST_LVL;    -- asynchronous reset
+            wb_adr_i      : in  std_logic_vector(2 downto 0); -- lower address bits
+            wb_dat_i      : in  std_logic_vector(7 downto 0); -- Databus input
+            wb_dat_o      : out std_logic_vector(7 downto 0); -- Databus output
+            wb_we_i       : in  std_logic;                    -- Write enable input
+            wb_stb_i      : in  std_logic;                    -- Strobe signals / core select signal
+            wb_cyc_i      : in  std_logic;                    -- Valid bus cycle input
+            wb_ack_o      : out std_logic;                    -- Bus cycle acknowledge output
+            wb_inta_o     : out std_logic;                    -- interrupt request output signal
+
+            -- i2c lines
+            scl_pad_i     : in  std_logic;                    -- i2c clock line input
+            scl_pad_o     : out std_logic;                    -- i2c clock line output
+            scl_padoen_o  : out std_logic;                    -- i2c clock line output enable, active low
+            sda_pad_i     : in  std_logic;                    -- i2c data line input
+            sda_pad_o     : out std_logic;                    -- i2c data line output
+            sda_padoen_o  : out std_logic                     -- i2c data line output enable, active low
+    );
+  end component;
+
+
   component wb_master_np_to_slave_p is
   generic (
     ADDRESS_HIGH: integer := maxIObit;
@@ -407,6 +436,9 @@ architecture behave of papilio_pro_top is
   signal bt_miso, bt_mosi, bt_clk: std_logic;
   signal bt_cs, codec_cs: std_logic;
 
+  signal scl_pad_i, scl_pad_o, scl_padoen_o: std_logic;
+  signal sda_pad_i, sda_pad_o, sda_padoen_o: std_logic;
+
 begin
 
   wb_clk_i <= sysclk;
@@ -434,7 +466,7 @@ begin
   );
 
   pin00: OPAD port map(I => lsck(2),  PAD => WING_A(0) );
-  pin01: OPAD port map(I => lmosi(3), PAD => WING_A(1) );
+  pin01: OPAD port map(I => lmosi(2), PAD => WING_A(1) );
   pin02: OPAD port map(I => lsck(3),  PAD => WING_A(2) );
   pin03: OPAD port map(I => lmosi(3), PAD => WING_A(3) );
   pin04: OPAD port map(I => lsck(4),  PAD => WING_A(4) );
@@ -489,8 +521,9 @@ begin
   pin43: IOPAD port map(I => gpio_o(43),O => gpio_i(43),T => gpio_t(43),C => sysclk,PAD => WING_C(11) ); -- CODEC MISO
   pin44: IOPAD port map(I => gpio_o(44),O => gpio_i(44),T => gpio_t(44),C => sysclk,PAD => WING_C(12) ); -- CODEC SCLK
   pin45: IOPAD port map(I => gpio_o(45),O => gpio_i(45),T => gpio_t(45),C => sysclk,PAD => WING_C(13) ); -- CODEC DOUT
-  --pin46: OPAD port map(I => lsck(12),  PAD => WING_C(14) );
-  --pin47: OPAD port map(I => lmosi(12), PAD => WING_C(15) );
+
+  pin46: IOPAD port map(I => scl_pad_o, O => scl_pad_i,T => scl_padoen_o,C => sysclk,PAD => WING_C(14) );
+  pin47: IOPAD port map(I => sda_pad_o, O => sda_pad_i,T => sda_padoen_o,C => sysclk,PAD => WING_C(15) );
   -- These two pins are mapped to I2C.
 
   -- Other ports are special, we need to avoid outputs on input-only pins
@@ -910,7 +943,7 @@ begin
     wb_inta_o     => slot_interrupt(8),
     mosi          => bt_mosi,
     miso          => bt_miso,
-    sck           => bt_sck
+    sck           => bt_clk
   );
 
   sram_inst: sdram_ctrl
@@ -1001,19 +1034,29 @@ slot9: zpuino_empty_device
   -- IO SLOT 12
   --
 
-  slot12: zpuino_empty_device
-  port map (
-    wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
-    wb_dat_o      => slot_read(12),
-    wb_dat_i      => slot_write(12),
-    wb_adr_i      => slot_address(12),
-    wb_we_i       => slot_we(12),
-    wb_cyc_i      => slot_cyc(12),
-    wb_stb_i      => slot_stb(12),
-    wb_ack_o      => slot_ack(12),
-    wb_inta_o     => slot_interrupt(12)
-  );
+  slot12: i2c_master_top
+    port map (
+            -- wishbone signals
+      wb_clk_i      => wb_clk_i,
+      wb_rst_i      => wb_rst_i,
+      wb_adr_i      => slot_address(12)(4 downto 2),
+      wb_dat_i      => slot_write(12)(7 downto 0),
+
+      wb_dat_o      => slot_read(12)(7 downto 0),
+      wb_we_i       => slot_we(12),
+      wb_stb_i      => slot_stb(12),
+      wb_cyc_i      => slot_cyc(12),
+      wb_ack_o      => slot_ack(12),
+      wb_inta_o     => slot_interrupt(12),
+
+      scl_pad_i     => scl_pad_i,
+      scl_pad_o     => scl_pad_o,
+      scl_padoen_o  => scl_padoen_o,
+
+      sda_pad_i     => sda_pad_i,
+      sda_pad_o     => sda_pad_o,
+      sda_padoen_o  => sda_padoen_o
+    );
 
   --
   -- IO SLOT 13
