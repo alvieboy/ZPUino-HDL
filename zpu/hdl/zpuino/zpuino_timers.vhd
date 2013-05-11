@@ -172,11 +172,50 @@ begin
   process(wb_adr_i,timer0_read,timer1_read)
   begin
     wb_dat_o <= (others => '0');
-    case wb_adr_i(8) is
-      when '0' =>
+    case wb_adr_i(9 downto 8) is
+      when "00" =>
         wb_dat_o <= timer0_read;
-      when '1' =>
+      when "01" =>
         wb_dat_o <= timer1_read;
+      when "10" =>
+        case wb_adr_i(3 downto 2) is
+          when "00" =>
+            wb_dat_o(5 downto 0) <= std_logic_vector(to_unsigned(A_WIDTH,6));
+          when "01" =>
+            if A_TSCENABLED then
+              wb_dat_o(8) <= '1';
+            end if;
+            if A_BUFFERS then
+              wb_dat_o(9) <= '1';
+            end if;
+            if A_PRESCALER_ENABLED then
+              wb_dat_o(10) <= '1';
+            end if;
+          when "10" =>
+            wb_dat_o(21 downto 16) <= std_logic_vector(to_unsigned(A_PWMCOUNT,6));
+          when others =>
+            wb_dat_o <= (others => DontCareValue);
+        end case;
+      when "11" =>
+        case wb_adr_i(3 downto 2) is
+          when "00" =>
+            wb_dat_o(5 downto 0) <= std_logic_vector(to_unsigned(B_WIDTH,6));
+          when "01" =>
+            if B_TSCENABLED then
+              wb_dat_o(8) <= '1';
+            end if;
+            if B_BUFFERS then
+              wb_dat_o(9) <= '1';
+            end if;
+            if B_PRESCALER_ENABLED then
+              wb_dat_o(10) <= '1';
+            end if;
+          when "10" =>
+            wb_dat_o(21 downto 16) <= std_logic_vector(to_unsigned(B_PWMCOUNT,6));
+          when others =>
+            wb_dat_o <= (others => DontCareValue);
+        end case;
+
       when others =>
         wb_dat_o <= (others => DontCareValue);
     end case;
