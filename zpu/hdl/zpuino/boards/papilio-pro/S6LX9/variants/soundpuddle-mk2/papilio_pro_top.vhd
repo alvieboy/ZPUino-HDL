@@ -465,14 +465,14 @@ begin
     rstout  => clkgen_rst
   );
 
-  pin00: OPAD port map(I => lsck(2),  PAD => WING_A(0) );
-  pin01: OPAD port map(I => lmosi(2), PAD => WING_A(1) );
+  pin00: OPAD port map(I => lmosi(2),  PAD => WING_A(0) );
+  pin01: OPAD port map(I => lsck(2), PAD => WING_A(1) );
   pin02: OPAD port map(I => lsck(3),  PAD => WING_A(2) );
   pin03: OPAD port map(I => lmosi(3), PAD => WING_A(3) );
-  pin04: OPAD port map(I => lsck(4),  PAD => WING_A(4) );
-  pin05: OPAD port map(I => lmosi(4), PAD => WING_A(5) );
-  pin06: OPAD port map(I => lsck(5),  PAD => WING_A(6) );
-  pin07: OPAD port map(I => lmosi(5), PAD => WING_A(7) );
+  pin04: OPAD port map(I => lmosi(4),  PAD => WING_A(4) );
+  pin05: OPAD port map(I => lsck(4), PAD => WING_A(5) );
+  pin06: OPAD port map(I => lmosi(5),  PAD => WING_A(6) );
+  pin07: OPAD port map(I => lsck(5), PAD => WING_A(7) );
 
 
   pin08: OPAD port map(I => lsck(6),  PAD => WING_A(8) );
@@ -500,10 +500,10 @@ begin
   pin26: OPAD port map(I => gpio_o(26), O => gpio_i(26), PAD => WING_B(10) ); -- BT RESET
 
   pin27: OPAD port map(I => gpio_o(27), O => gpio_i(27), PAD => WING_B(11) );
-  pin28: OPAD port map(I => lsck(0),  PAD => WING_B(12) );
-  pin29: OPAD port map(I => lmosi(0), PAD => WING_B(13) );
-  pin30: OPAD port map(I => lsck(1),  PAD => WING_B(14) );
-  pin31: OPAD port map(I => lmosi(1), PAD => WING_B(15) ); -- up to here, all OK
+  pin28: OPAD port map(I => lmosi(0),  PAD => WING_B(12) );
+  pin29: OPAD port map(I => lsck(0), PAD => WING_B(13) );
+  pin30: OPAD port map(I => lmosi(1),  PAD => WING_B(14) );
+  pin31: OPAD port map(I => lsck(1), PAD => WING_B(15) ); -- up to here, all OK
 
 
   pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );  -- ADC DIN
