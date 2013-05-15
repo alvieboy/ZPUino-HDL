@@ -302,7 +302,7 @@ architecture behave of papilio_one_top is
   end component;
 
   signal sid_audio_data: std_logic_vector(17 downto 0);
-  signal sid_audio: std_logic;
+  signal ym_audio: std_logic;
 
   component simple_sigmadelta is
   generic (
@@ -801,7 +801,7 @@ begin
     clk       => wb_clk_i,
     rst       => wb_rst_i,
     data_in   => ym2149_data_out,
-    data_out  => sid_audio
+    data_out  => ym_audio
     );
 
   pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
@@ -911,7 +911,7 @@ begin
     gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
     gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
     gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
-    gpio_spp_data(8) <= sid_audio;
+    gpio_spp_data(8) <= ym_audio;
     spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
     uart2_rx <= gpio_spp_read(1);              -- PPS0 : USPI MISO
 
