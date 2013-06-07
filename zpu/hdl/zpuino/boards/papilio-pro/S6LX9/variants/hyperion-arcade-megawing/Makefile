@@ -1,5 +1,6 @@
 PROJECT=papilio_pro
 PART=xc6slx9-2-tqg144
+VARIANT=zpuino-1.0-PapilioPro-S6LX9-Hyperion-1.0-HQVGA-Arcade-MegaWing.bit
 
 # For bootloader
 BOARD=PAPILIO_PRO
@@ -32,10 +33,12 @@ ${PROJECT}_routed.ncd: ${PROJECT}.ncd
 
 ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 	bitgen -f ${PROJECT}.ut ${PROJECT}_routed.ncd
+	cp ${PROJECT}_routed.bit ${VARIANT}
 
 ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 
 clean:
-	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit}
-	$(MAKE) -C ../../../bootloader clean
+	rm -rf ${PROJECT}{.ngc,.ngd,.ncd,_routed.ncd,.pcf,_routed_pad*,_routed.bit}
+	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
+	$(MAKE) -C ../../../../../bootloader clean
