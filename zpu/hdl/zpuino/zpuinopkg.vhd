@@ -606,6 +606,96 @@ package zpuinopkg is
   );
 
   end component generic_dp_ram;
+  
+  component zpuino_io_YM2149 is
+  generic (
+    FREQMHZ: integer := 96
+  );
+  port (
+  wb_clk_i:   in std_logic;
+  wb_rst_i:   in std_logic;
+  wb_dat_i:   in std_logic_vector(wordSize-1 downto 0);
+  wb_dat_o:   out std_logic_vector(wordSize-1 downto 0);
+  wb_adr_i:   in std_logic_vector(maxIOBit downto minIOBit);
+  wb_we_i:    in std_logic;
+  wb_cyc_i:   in std_logic;
+  wb_stb_i:   in std_logic;
+  wb_ack_o:   out std_logic;
+  wb_inta_o:  out std_logic;
 
+  data_out:   out std_logic_vector(7 downto 0)
+  );
+  end component;
+
+  component wb_sid6581 is
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+
+    clk_1MHZ: in std_logic;
+    audio_data: out std_logic_vector(17 downto 0)
+
+  );
+  end component wb_sid6581;
+
+  component zpuino_vga is
+  generic(
+    vgaclk_divider: integer := 2
+  );
+  port (
+    wb_clk_i: in std_logic;
+    wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    wb_intb_o:out std_logic;
+
+    -- VGA interface
+    vgaclk:     in std_logic;
+
+    vga_hsync:  out std_logic;
+    vga_vsync:  out std_logic;
+    vga_r:      out std_logic_vector(2 downto 0);
+    vga_g:      out std_logic_vector(2 downto 0);
+    vga_b:      out std_logic_vector(1 downto 0)
+  );
+  end component;  
+
+  component simple_sigmadelta is
+  generic (
+    BITS: integer := 8
+  );
+	port (
+    clk:      in std_logic;
+    rst:      in std_logic;
+    data_in:  in std_logic_vector(BITS-1 downto 0);
+    data_out: out std_logic
+    );
+  end component simple_sigmadelta;
+  
+  component zpuino_serialreset is
+  generic (
+    SYSTEM_CLOCK_MHZ: integer := 92
+  );
+  port (
+    clk:      in std_logic;
+    rx:       in std_logic;
+    rstin:    in std_logic;
+    rstout:   out std_logic
+  );
+  end component zpuino_serialreset;  
 
 end package zpuinopkg;
