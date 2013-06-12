@@ -313,7 +313,7 @@ package body txt_util is
 
    -- converts a std_logic_vector into a hex string.
    function hstr(slv: std_logic_vector) return string is
-       variable hexlen: integer;
+       variable hexlen: integer;            --67
        variable longslv : std_logic_vector(67 downto 0) := (others => '0');
        variable hex : string(1 to 16);
        variable fourbit : std_logic_vector(3 downto 0);

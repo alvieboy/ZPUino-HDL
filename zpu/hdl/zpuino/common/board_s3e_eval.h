@@ -1,11 +1,15 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-#define CLK_FREQ 96000000UL
-#define BOARD_MEMORYSIZE 0x8000
+#define CLK_FREQ 90000000UL
+#ifndef BOARD_MEMORYSIZE
+//#define BOARD_MEMORYSIZE 0x8000
+#error missing memory size
+#endif
+
 #define SPIOFFSET 0x00000000
 
-#define BOARD_SPI_DIVIDER BIT(SPICP2)
+#define BOARD_SPI_DIVIDER BIT(SPICP1)
 
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23

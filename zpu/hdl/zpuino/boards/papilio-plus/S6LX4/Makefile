@@ -4,13 +4,14 @@ PART=xc6slx4-2-tqg144
 # For bootloader
 BOARD=PAPILIO_PLUS
 SIZE=16384
-DEFINES="-D__S3E_250__ -DBOARD_ID=0xA4030E00 -DBOARD_MEMORYSIZE=0x4000"
+DEFINES="-D__S3E_250__ -DBOARD_ID=0xA4031300 -DBOARD_MEMORYSIZE=0x80000"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
 	cp ../../../bootloader/prom-generic-dp-32.vhd .
+	cp ../../../bootloader/bootloader.vhd .
 	
 ${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/

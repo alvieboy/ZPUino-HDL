@@ -250,9 +250,9 @@ begin
 			-- pattern) may never be '0' otherwise the generator "locks up"
 			LFSR	<= "00000000000000000000001";
 		else
-			accu_bit_prev	<= accumulator(22);
+			accu_bit_prev	<= accumulator(19);
 			-- when not equal to ...
-			if	(accu_bit_prev /= accumulator(22)) then
+			if	(accu_bit_prev /= accumulator(19)) then
 				LFSR(22 downto 1)	<= LFSR(21 downto 0);
 				LFSR(0) 					<= LFSR(17) xor LFSR(22);  -- see Xilinx XAPP052 for maximal LFSR taps
 			else
