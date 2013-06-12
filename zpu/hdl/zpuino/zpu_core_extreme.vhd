@@ -680,8 +680,9 @@ begin
                 if prefr.break='0' and rom_wb_stall_i='0' then
                   w.pcint := decr.fetchpc;
                   w.pc := decr.pcint;
-                end if;                if rom_wb_stall_i='0' then
-                  if rom_wb_stall_i='0' then
+                end if;
+
+                if rom_wb_stall_i='0' then
                   w.opcode := sampledOpcode;
                 end if;
               end if;
