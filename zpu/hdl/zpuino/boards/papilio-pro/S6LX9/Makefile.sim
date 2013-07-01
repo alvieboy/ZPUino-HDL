@@ -48,7 +48,6 @@ stack.vhd                          \
 ../../../pulse.vhd                \
 ../../../zpuino_debug_core.vhd    \
 ../../../zpuino_debug_jtag.vhd    \
-../../../zpuino_debug_spartan6.vhd \
 ../../../jtag_chain.vhd           \
 ../../../gh_vhdl_lib/memory/gh_fifo_async_rrd_sr_wf.vhd \
 ../../../gh_vhdl_lib/memory/gh_sram_1wp_2rp_sc.vhd      \
@@ -59,7 +58,7 @@ stack.vhd                          \
 ../../../generic_dp_ram.vhd                             \
 ../../../trace.vhd                                      \
 ../../../wbbootloadermux.vhd                            \
-bootloader.vhd                                          \
+bootloader-sim.vhd                                          \
 ../../../sim/M25P16_driver.vhd                          \
 ../../../sim/ACDC_check.vhd                             \
 ../../../sim/mem_util_pkg.vhd                           \
@@ -68,8 +67,16 @@ papilio_pro_top.vhd                                     \
 ../../../zpuino_sysctl.vhd                              
 							
 							
-all: work-obj93.cf
+all: sim
+
+sim: work-obj93.cf ../../../pty-impl.o
+	ghdl -m -fexplicit --ieee=synopsys -Wl,../../../pty-impl.o tb
      
+../../../pty-impl.o: ../../../pty-impl.c
+	$(CC) -O2 -c -o ../../../pty-impl.o ../../../pty-impl.c
+     
+clean:
+	rm -f ../../../pty-impl.o work-obj93.cf
      
 work-obj93.cf:
 	@for i in $(SRC); do \
