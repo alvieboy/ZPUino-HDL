@@ -181,7 +181,7 @@ begin
         case wb_adr_i(3 downto 2) is
           when "00" =>
             wb_dat_o(5 downto 0) <= std_logic_vector(to_unsigned(A_WIDTH,6));
-          when "01" =>
+          --when "01" =>
             if A_TSCENABLED then
               wb_dat_o(8) <= '1';
             end if;
@@ -200,7 +200,6 @@ begin
         case wb_adr_i(3 downto 2) is
           when "00" =>
             wb_dat_o(5 downto 0) <= std_logic_vector(to_unsigned(B_WIDTH,6));
-          when "01" =>
             if B_TSCENABLED then
               wb_dat_o(8) <= '1';
             end if;
