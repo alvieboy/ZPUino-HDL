@@ -69,6 +69,8 @@ papilio_pro_top.vhd                                     \
 							
 all: sim
 
+.PHONY: sim
+
 sim: unisim-obj93.cf work-obj93.cf ../../../pty-impl.o
 	ghdl -m -fexplicit --ieee=synopsys -Wl,../../../pty-impl.o tb
      
