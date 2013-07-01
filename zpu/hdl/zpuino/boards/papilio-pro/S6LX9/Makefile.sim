@@ -81,7 +81,7 @@ clean:
 work-obj93.cf:
 	@for i in $(SRC); do \
 	echo Importing $$i; \
-	ghdl -i $$i; \
+	ghdl -i $$i || exit 1; \
 	done
 
 unisim-obj93.cf:
@@ -93,4 +93,5 @@ unisim-obj93.cf:
 	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/unisim_VPKG.vhd
 	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S36_S36.vhd
 	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S9_S9.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/ODDR2.vhd	
 	
