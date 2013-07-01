@@ -25,7 +25,7 @@ ___zpu_interrupt_vector:
 	im _memreg
         load
         /* Get current interrupt */
-        im SYSCTLBASE
+        im SYSCTLBASE+8
         load
 	im ivector
         load
@@ -68,11 +68,3 @@ _memreg:
         .globl _bfunctions
 _bfunctions:
 
-.section ".rodata"
-.global _bfunctionsconst
-_bfunctionsconst:
-	.long udivmodsi4
-	.long memcpy
-	.long memset
-	.long strcmp
-	.long loadsketch

@@ -817,7 +817,6 @@ extern "C" int main(int argc,char**argv)
 	int unescaping;
 
 	ivector = &_zpu_interrupt;
-	memcpy(_bfunctions, _bfunctionsconst, 5*4);
 
 	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 
