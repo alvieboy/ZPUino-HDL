@@ -519,13 +519,13 @@ begin
   generic map (
     A_TSCENABLED        => true,
     A_PWMCOUNT          => 1,
-    A_WIDTH             => 16,
+    A_WIDTH             => 32,
     A_PRESCALER_ENABLED => true,
     A_BUFFERS           => true,
     B_TSCENABLED        => false,
     B_PWMCOUNT          => 1,
-    B_WIDTH             => 8,--24,
-    B_PRESCALER_ENABLED => false,
+    B_WIDTH             => 24,
+    B_PRESCALER_ENABLED => true,
     B_BUFFERS           => false
   )
   port map (
