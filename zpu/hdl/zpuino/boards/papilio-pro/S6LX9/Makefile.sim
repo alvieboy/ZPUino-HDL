@@ -37,7 +37,7 @@ zpuino_config.vhd \
 ../../../dualport_ram.vhd          \
 ../../../zpuino_io.vhd             \
 stack.vhd                          \
-../../../pad.vhd                   \
+../../../pad-sim.vhd                   \
 ../../../cachefill.vhd             \
 ../../../wbarb2_1.vhd              \
 ../../../wishbonepkg.vhd           \
@@ -69,14 +69,14 @@ papilio_pro_top.vhd                                     \
 							
 all: sim
 
-sim: work-obj93.cf ../../../pty-impl.o
+sim: unisim-obj93.cf work-obj93.cf ../../../pty-impl.o
 	ghdl -m -fexplicit --ieee=synopsys -Wl,../../../pty-impl.o tb
      
 ../../../pty-impl.o: ../../../pty-impl.c
 	$(CC) -O2 -c -o ../../../pty-impl.o ../../../pty-impl.c
      
 clean:
-	rm -f ../../../pty-impl.o work-obj93.cf
+	rm -f ../../../pty-impl.o work-obj93.cf unisim-obj93.cf
      
 work-obj93.cf:
 	@for i in $(SRC); do \
@@ -84,3 +84,13 @@ work-obj93.cf:
 	ghdl -i $$i; \
 	done
 
+unisim-obj93.cf:
+	@if [ -z $$XILINX ]; then \
+		echo "You don't seem to have XILINX ISE. Variable XILINX does not exist."; \
+		exit 1; \
+	fi;
+	ghdl -i --work=unisim  $$XILINX/vhdl/src/unisims/unisim_VCOMP.vhd 
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/unisim_VPKG.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S36_S36.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S9_S9.vhd
+	
