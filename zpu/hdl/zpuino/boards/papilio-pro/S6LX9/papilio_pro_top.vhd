@@ -149,13 +149,13 @@ architecture behave of papilio_pro_top is
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
     "1111111111111111" &  -- Wing C
-    "0000000000000000" &  -- Wing B
+    "1111111111111111" &  -- Wing B
     "1111111111111111";   -- Wing A
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
     "1111111111111111" &  -- Wing C
-    "0000000000000000" &  -- Wing B
+    "1111111111111111" &  -- Wing B
     "1111111111111111";   -- Wing A
 
   -- I/O Signals
@@ -552,6 +552,9 @@ begin
   --
 
   slot4: zpuino_spi
+  generic map (
+    INTERNAL_SPI => true
+  )
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
