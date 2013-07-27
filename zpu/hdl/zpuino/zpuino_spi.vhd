@@ -43,6 +43,9 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_spi is
+  generic (
+    INTERNAL_SPI: boolean := false
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -116,7 +119,10 @@ architecture behave of zpuino_spi is
   signal trans: std_logic;
 begin
 
-  id <= x"08" & x"10"; -- Vendor: ZPUino  Device: SPI
+
+  id <= x"08" & x"10"  -- Vendor: ZPUino  Device: SPI
+    when INTERNAL_SPI=false
+  else x"08" & x"03";
 
   zspi: spi
     port map (

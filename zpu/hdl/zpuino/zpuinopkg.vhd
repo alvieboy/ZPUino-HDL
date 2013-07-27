@@ -204,6 +204,9 @@ package zpuinopkg is
   end component zpuino_empty_device;
 
   component zpuino_spi is
+    generic (
+    INTERNAL_SPI: boolean := false
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;

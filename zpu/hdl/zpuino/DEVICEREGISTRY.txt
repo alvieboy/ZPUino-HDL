@@ -4,6 +4,7 @@
 08 ZPUino
 	01 System Controller
         02 Bootloader Code
+        03 Internal SPI-Flash SPI controller
         10 SPI interface
         11 UART
         12 GPIO Controller
