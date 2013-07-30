@@ -323,6 +323,8 @@ architecture behave of papilio_pro_top is
   );
   end component;
 
+  signal uart2_rx: std_logic;
+  signal uart2_tx: std_logic;
 
 begin
 
@@ -646,7 +648,7 @@ begin
   -- IO SLOT 8
   --
 
-  slot8: zpuino_empty_device
+  slot8: zpuino_uart
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -658,7 +660,9 @@ begin
     wb_stb_i      => slot_stb(8),
     wb_ack_o      => slot_ack(8),
     wb_inta_o     => slot_interrupt(8),
-    id            => slot_id(8)
+    id            => slot_id(8),
+    tx            => uart2_tx,
+    rx            => uart2_rx
   );
 
   sram_inst: sdram_ctrl
@@ -841,10 +845,18 @@ begin
     ppsout_info_slot(5) <= 5; -- Slot 5
     ppsout_info_pin(5) <= 1;  -- PPS OUT pin 0 (Channel 1)
 
+    gpio_spp_data(6)  <= uart2_tx;   -- PPS6 : UART2 TX
+    ppsout_info_slot(6) <= 8; -- Slot 8
+    ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (Channel 1)
+
     -- PPS inputs
     spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
     ppsin_info_slot(0) <= 6;                    -- USPI is in slot 6
     ppsin_info_pin(0) <= 0;                     -- PPS pin of USPI is 0
+
+    uart2_rx          <= gpio_spp_read(1);         -- PPS1 : UART2 RX
+    ppsin_info_slot(1) <= 8;                    -- USPI is in slot 6
+    ppsin_info_pin(1) <= 0;                     -- PPS pin of USPI is 0
 
   end process;
 
