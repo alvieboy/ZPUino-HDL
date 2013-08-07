@@ -48,6 +48,9 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
+    clkvga: out std_logic;
+    clkp:   out std_logic;
+    clkn:   out std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -66,6 +69,8 @@ signal clk0: std_ulogic;
 signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
+
+signal clkvga_i, clkp_i, clkn_i: std_logic;
 
 begin
 
@@ -108,6 +113,16 @@ begin
 
   clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
   clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
+  clkvga_inst: BUFG port map ( I => clkvga_i, O => clkvga );
+  clkp_inst: BUFG port map ( I => clkp_i, O => clkp );
+  clkn_inst: BUFG port map ( I => clkn_i, O => clkn );
+
+  -- x25 / 16 == 50Mhz
+
+
+
+
+
 
 pll_base_inst : PLL_ADV
   generic map
@@ -126,6 +141,19 @@ pll_base_inst : PLL_ADV
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
+
+    CLKOUT3_DIVIDE       => 8,  -- 120MHz
+    CLKOUT3_PHASE        => 0.0,
+    CLKOUT3_DUTY_CYCLE   => 0.500,
+
+    CLKOUT4_DIVIDE       => 40,  -- 24MHz
+    CLKOUT4_PHASE        => 0.0,
+    CLKOUT4_DUTY_CYCLE   => 0.500,
+
+    CLKOUT5_DIVIDE       => 40,  -- 24MHz
+    CLKOUT5_PHASE        => 180.0,
+    CLKOUT5_DUTY_CYCLE   => 0.500,
+
     CLKIN1_PERIOD         => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
@@ -135,9 +163,9 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => clk0,
     CLKOUT1             => clk1,
     CLKOUT2             => clk2,
-    CLKOUT3             => open,
-    CLKOUT4             => open,
-    CLKOUT5             => open,
+    CLKOUT3             => clkvga_i,
+    CLKOUT4             => clkp_i,
+    CLKOUT5             => clkn_i,
     LOCKED              => dcmlocked,
     RST                 => '0',
     -- Input clock control
