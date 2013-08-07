@@ -48,6 +48,9 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
+    clkvga: out std_logic;
+    clkp:   out std_logic;
+    clkn:   out std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -67,15 +70,18 @@ signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
 
+signal clkvga_i, clkp_i, clkn_i: std_logic;
+signal dcmin_clk0, dcmin_fb, clk_to_pll, dcmin_locked: std_ulogic;
+
 begin
 
   clkout <= clkout_i;
 
   rstout <= rst1_q;
 
-  process(dcmlocked, clkout_i, rstin)
+  process(dcmlocked, clkout_i, rstin, dcmin_locked)
   begin
-    if dcmlocked='0' or rstin='1' then
+    if dcmlocked='0' or dcmin_locked='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -108,25 +114,70 @@ begin
 
   clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
   clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
+  clkvga_inst: BUFG port map ( I => clkvga_i, O => clkvga );
+  clkp_inst: BUFG port map ( I => clkp_i, O => clkp );
+  clkn_inst: BUFG port map ( I => clkn_i, O => clkn );
+
+  -- x25 / 16 == 50Mhz
+
+  indcm: DCM
+    generic map (
+      CLKDV_DIVIDE => 2.0,
+      CLKFX_DIVIDE => 16,
+      CLKFX_MULTIPLY => 25,
+      CLKIN_DIVIDE_BY_2 => FALSE,
+      CLKIN_PERIOD => 31.250,
+      CLKOUT_PHASE_SHIFT => "NONE",
+      CLK_FEEDBACK => "1X"
+  )
+  port map (
+    CLK0      => dcmin_clk0,
+    CLKFX     => clk_to_pll,
+    LOCKED    => dcmin_locked,
+    CLKFB     => dcmin_fb,
+    CLKIN     => clkin_i,
+    RST       => '0'
+  );
+
+  dcmfb: BUFG PORT MAP ( I => dcmin_clk0, O => dcmin_fb );
+
+
+
 
 pll_base_inst : PLL_ADV
   generic map
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "SYSTEM_SYNCHRONOUS",
+    COMPENSATION         => "DCM2PLL",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 30,
+    CLKFBOUT_MULT        => 10,
     CLKFBOUT_PHASE       => 0.000,
-    CLKOUT0_DIVIDE       => 10,
+
+    CLKOUT0_DIVIDE       => 5,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
-    CLKOUT1_DIVIDE       => 10,
+
+    CLKOUT1_DIVIDE       => 5,
     CLKOUT1_PHASE        => 250.0,--300.0,--155.52,--103.700,--343.125,
     CLKOUT1_DUTY_CYCLE   => 0.500,
-    CLKOUT2_DIVIDE       => 10,
+
+    CLKOUT2_DIVIDE       => 5,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKIN1_PERIOD         => 31.250,
+
+    CLKOUT3_DIVIDE       => 20,  -- 125MHz
+    CLKOUT3_PHASE        => 0.0,
+    CLKOUT3_DUTY_CYCLE   => 0.500,
+
+    CLKOUT4_DIVIDE       => 4,  -- 25MHz
+    CLKOUT4_PHASE        => 0.0,
+    CLKOUT4_DUTY_CYCLE   => 0.500,
+
+    CLKOUT5_DIVIDE       => 4,  -- 25MHz
+    CLKOUT5_PHASE        => 180.0,
+    CLKOUT5_DUTY_CYCLE   => 0.500,
+
+    CLKIN1_PERIOD         => 20.0, -- 50 MHz
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
@@ -135,23 +186,22 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => clk0,
     CLKOUT1             => clk1,
     CLKOUT2             => clk2,
-    CLKOUT3             => open,
-    CLKOUT4             => open,
-    CLKOUT5             => open,
+    CLKOUT3             => clkvga_i,
+    CLKOUT4             => clkp_i,
+    CLKOUT5             => clkn_i,
     LOCKED              => dcmlocked,
     RST                 => '0',
     -- Input clock control
     CLKFBIN             => clkfb,
-    CLKIN1               => clkin_i,
+    CLKIN1               => clk_to_pll,
     CLKIN2 => '0',
-      CLKINSEL => '1',
-      DADDR => (others => '0'),
-      DCLK => '0',
-      DEN => '0',
-      DI => (others => '0'),
-      DWE => '0',
-      REL => '0'
-
+    CLKINSEL => '1',
+    DADDR => (others => '0'),
+    DCLK => '0',
+    DEN => '0',
+    DI => (others => '0'),
+    DWE => '0',
+    REL => '0'
    );
 
 end behave;
