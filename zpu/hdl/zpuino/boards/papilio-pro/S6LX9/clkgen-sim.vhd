@@ -63,8 +63,9 @@ signal irst: std_logic := '0';
 signal vclk: std_logic := '0';
 signal diffclk: std_logic := '0';
 
-constant nclk_period: time := 10.4166666667 ns;
-constant vclk_period: time := 39.583 ns;
+constant nclk_period: time := 10.1010101010101 ns;
+constant vclk_period: time := 13.4680134680135 ns;
+
 constant diffclk_period: time := vclk_period/5;
 
 signal divff1: std_logic := '0';

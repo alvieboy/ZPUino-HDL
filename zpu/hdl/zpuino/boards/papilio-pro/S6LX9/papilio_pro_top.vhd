@@ -94,15 +94,14 @@ architecture behave of papilio_pro_top is
 
   component clkgen is
   port (
-    clkin:  in std_logic;
-    rstin:  in std_logic;
-    clkout: out std_logic;
-    clkout1: out std_logic;
-    clkout2: out std_logic;
-    clkvga: out  std_logic;
-    clkp:   out  std_logic;
-    clkn:   out  std_logic;
+    clkin:        in std_ulogic;
+    rstin:        in std_ulogic;
 
+    sysclk:       out std_ulogic;
+    sysclk_shift: out std_ulogic;
+    pixelclk:     out std_ulogic;
+    tdmsclk_p:    out std_ulogic;
+    tdmsclk_n:    out std_ulogic;
     rstout: out std_logic
   );
   end component;
@@ -399,19 +398,18 @@ begin
       rstout    => sysrst
     );
 
+  sysclk_sram_wen <= sysclk;
+
   clkgen_inst: clkgen
   port map (
-    clkin   => clk,
-    rstin   => '0'  ,
-    clkout  => sysclk,
-    clkout1  => sysclk_sram_we,
-    clkout2  => sysclk_sram_wen,
-
-    clkvga   => hdmi_clk_pix,
-    clkp     => hdmi_clk_p,
-    clkn     => hdmi_clk_n,
-
-    rstout  => clkgen_rst
+    clkin         => clk,
+    rstin         => '0',
+    sysclk        => sysclk,
+    sysclk_shift  => sysclk_sram_we,
+    pixelclk      => hdmi_clk_pix,
+    tdmsclk_p     => hdmi_clk_p,
+    tdmsclk_n     => hdmi_clk_n,
+    rstout        => clkgen_rst
   );
 
   pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
