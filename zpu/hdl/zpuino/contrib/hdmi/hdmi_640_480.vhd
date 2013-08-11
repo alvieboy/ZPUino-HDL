@@ -145,16 +145,16 @@ architecture behave of hdmi_640_480 is
 --ModeLine "640x480"    25.2  640  656  752  800    480  490  492  525 -hsync -vsync
 
   constant VGA_H_BORDER: integer := 0;
-  constant VGA_H_SYNC: integer := 96;
-  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER;
-  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
-  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER;
+  constant VGA_H_SYNC: integer := 40;
+  constant VGA_H_FRONTPORCH: integer := 110+VGA_H_BORDER;
+  constant VGA_H_DISPLAY: integer := 1280 - (2*VGA_H_BORDER);
+  constant VGA_H_BACKPORCH: integer := 220+VGA_H_BORDER;
 
   constant VGA_V_BORDER: integer := 0;
-  constant VGA_V_FRONTPORCH: integer := 10+VGA_V_BORDER;
-  constant VGA_V_SYNC: integer := 2;
-  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
-  constant VGA_V_BACKPORCH: integer := 33+VGA_V_BORDER;
+  constant VGA_V_FRONTPORCH: integer := 5+VGA_V_BORDER;
+  constant VGA_V_SYNC: integer := 5;
+  constant VGA_V_DISPLAY: integer := 720 - (2*VGA_V_BORDER);
+  constant VGA_V_BACKPORCH: integer := 20+VGA_V_BORDER;
 
 --  constant VGA_H_BORDER: integer := 0;
 --  constant VGA_H_SYNC: integer := 2;

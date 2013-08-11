@@ -171,7 +171,7 @@ pll_base_inst : PLL_ADV
     CLKOUT3_DUTY_CYCLE   => 0.500,
 
     CLKIN1_PERIOD         => 37.037037, -- 27 MHz
-    REF_JITTER           => 0.010,
+   -- REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
@@ -205,7 +205,7 @@ pll_base_inst2 : PLL_ADV
     CLKFBOUT_PHASE       => 0.000,
 
     CLKOUT0_DIVIDE       => 2,      -- 371.25Mhz
-    CLKOUT0_PHASE        => 0.000,
+    CLKOUT0_PHASE        => 00.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
 
     CLKOUT1_DIVIDE       => 2,      -- 371.25Mhz, inverted clock
@@ -213,7 +213,7 @@ pll_base_inst2 : PLL_ADV
     CLKOUT1_DUTY_CYCLE   => 0.500,
 
     CLKIN1_PERIOD         => 13.46, -- 74.25 MHz
-    REF_JITTER           => 0.010,
+    --REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
