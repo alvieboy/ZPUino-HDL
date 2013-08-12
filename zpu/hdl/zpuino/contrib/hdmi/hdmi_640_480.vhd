@@ -59,6 +59,8 @@ architecture behave of hdmi_640_480 is
            green_p   : in  STD_LOGIC_VECTOR (7 downto 0);
            blue_p    : in  STD_LOGIC_VECTOR (7 downto 0);
            blank     : in  STD_LOGIC;
+           startp    : in  STD_LOGIC;
+           guard     : in  STD_LOGIC;
            hsync     : in  STD_LOGIC;
            vsync     : in  STD_LOGIC;
            red_s     : out STD_LOGIC;
@@ -66,6 +68,28 @@ architecture behave of hdmi_640_480 is
            blue_s    : out STD_LOGIC;
            clock_s   : out STD_LOGIC);
   end component;
+
+  component async_fifo is
+  generic (
+    address_bits: integer := 11;
+    data_bits: integer := 8;
+    threshold: integer
+  );
+  port (
+    clk_r:    in std_logic;
+    clk_w:    in std_logic;
+    arst:     in std_logic;
+
+    wr:       in std_logic;
+    rd:       in std_logic;
+
+    write:    in std_logic_vector(data_bits-1 downto 0);
+    read :    out std_logic_vector(data_bits-1 downto 0);
+
+    almost_full: out std_logic
+  );
+  end component;
+
 
   component gh_fifo_async_rrd_sr_wf is
 	GENERIC (add_width: INTEGER :=8; -- min value is 2 (4 memory locations)
@@ -87,17 +111,17 @@ architecture behave of hdmi_640_480 is
 		full    : out STD_LOGIC);
   end component;
 
-  signal fifo_full: std_logic;
+  --signal fifo_full: std_logic;
   signal fifo_almost_full: std_logic;
   signal fifo_write_enable: std_logic;
-  signal fifo_quad_full: std_logic;
-  signal fifo_half_full: std_logic;
+ -- signal fifo_quad_full: std_logic;
+ -- signal fifo_half_full: std_logic;
 
 --  signal readclk: std_logic:='0';
   signal fifo_clear: std_logic:='0';
   signal read_enable: std_logic:='0';
   signal fifo_write, read: std_logic_vector(29 downto 0);
-  signal fifo_empty: std_logic;
+  --signal fifo_empty: std_logic;
 
   signal vga_hsync, vga_vsync: std_logic;
   signal vga_b, vga_r, vga_g: std_logic_vector(4 downto 0);
@@ -144,11 +168,13 @@ architecture behave of hdmi_640_480 is
 --# 640x480 @ 60Hz (Industry standard) hsync: 31.5kHz
 --ModeLine "640x480"    25.2  640  656  752  800    480  490  492  525 -hsync -vsync
 
+  constant GUARD_PIXELS: integer := 2;
+
   constant VGA_H_BORDER: integer := 0;
   constant VGA_H_SYNC: integer := 96;
-  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER;
+  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER ;
   constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
-  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER;
+  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER - GUARD_PIXELS;
 
   constant VGA_V_BORDER: integer := 0;
   constant VGA_V_FRONTPORCH: integer := 10+VGA_V_BORDER;
@@ -159,18 +185,22 @@ architecture behave of hdmi_640_480 is
 --  constant VGA_H_BORDER: integer := 0;
 --  constant VGA_H_SYNC: integer := 2;
 --  constant VGA_H_FRONTPORCH: integer := 2;
- -- constant VGA_H_DISPLAY: integer := 128;
---  constant VGA_H_BACKPORCH: integer := 2;
+--  constant VGA_H_DISPLAY: integer := 16;
+-- constant VGA_H_BACKPORCH: integer := 16 - GUARD_PIXELS;
 
 --  constant VGA_V_BORDER: integer := 0;
---  constant VGA_V_FRONTPORCH: integer := 2;
+--  constant VGA_V_FRONTPORCH: integer := 4;
 --  constant VGA_V_SYNC: integer := 2;
 --  constant VGA_V_DISPLAY: integer := 192;
 --  constant VGA_V_BACKPORCH: integer := 2;
 
 
   constant VGA_HCOUNT: integer :=
-    VGA_H_SYNC + VGA_H_FRONTPORCH + VGA_H_DISPLAY + VGA_H_BACKPORCH;
+    VGA_H_SYNC + VGA_H_FRONTPORCH + VGA_H_DISPLAY + VGA_H_BACKPORCH + GUARD_PIXELS;
+
+  -- 8 is the number of PERIOD pulses we need to send
+
+  constant VGA_H_STARTPERIOD: integer := VGA_HCOUNT - 8 - GUARD_PIXELS;
 
   constant VGA_VCOUNT: integer :=
     VGA_V_SYNC + VGA_V_FRONTPORCH + VGA_V_DISPLAY + VGA_V_BACKPORCH;
@@ -209,6 +239,8 @@ architecture behave of hdmi_640_480 is
   signal red_s, blue_s, green_s, clock_s: std_ulogic;
 
   signal v_display_neg: std_logic;
+  signal guard: std_logic; -- Video Display Guard
+  signal startp:std_logic; -- Start of video period (8 words)
 
 begin
 
@@ -251,6 +283,19 @@ begin
     end if;
   end process;
 
+  process(vcount_q, hcount_q)
+  begin
+    startp <= '0';
+    guard <= '0';
+    if vcount_q < VGA_V_DISPLAY then
+      if hcount_q > VGA_H_STARTPERIOD then
+        startp <= '1';
+      end if;
+      if hcount_q > VGA_HCOUNT-GUARD_PIXELS then
+        guard <= '1';
+      end if;
+    end if;
+  end process;
 
   process(wb_clk_i)
   begin
@@ -409,7 +454,7 @@ begin
         if hcount_q = (VGA_H_DISPLAY + VGA_H_FRONTPORCH) then
           h_sync_tick <= '1';
           vga_hsync <= not h_polarity;
-        elsif hcount_q = (VGA_HCOUNT - VGA_H_BACKPORCH) then
+        elsif hcount_q = (VGA_HCOUNT - VGA_H_BACKPORCH - GUARD_PIXELS) then
           vga_hsync <= h_polarity;
         end if;
       end if;
@@ -487,6 +532,8 @@ begin
       blue_p(2 downto 0) => "000",
 
       blank             => v_display_neg,
+      guard             => guard,
+      startp            => startp,
       hsync             => vga_hsync,
       vsync             => vga_vsync,
 
@@ -496,10 +543,10 @@ begin
       clock_s   => clock_s
     );
 
-  -- Synchronous output
-  process(CLK_PIX)
+  -- Asynchronous output
+  process(read,hflip)
   begin
-    if rising_edge(CLK_PIX) then
+    --if rising_edge(CLK_PIX) then
       if v_display='0' then
           vga_b <= (others => '0');
           vga_r <= (others => '0');
@@ -515,7 +562,7 @@ begin
             vga_g <= read(29 downto 25);
           end if;
       end if;
-    end if;
+    --end if;
   end process;
 
 
@@ -545,32 +592,50 @@ begin
     end if;
   end process;
 
-  read_enable <= v_display and not hflip;
+  read_enable <= (v_display and not guard) and not hflip;
 
   OBUFDS_blue  : OBUFDS port map ( O  => TMDS(0), OB => TMDSB(0), I  => blue_s  );
   OBUFDS_red   : OBUFDS port map ( O  => TMDS(1), OB => TMDSB(1), I  => green_s );
   OBUFDS_green : OBUFDS port map ( O  => TMDS(2), OB => TMDSB(2), I  => red_s   );
   OBUFDS_clock : OBUFDS port map ( O  => TMDS(3), OB => TMDSB(3), I  => clock_s );
 
-  myfifo: gh_fifo_async_rrd_sr_wf
-  generic map (
-    data_width => 30,
-    add_width => 8
-  )
-  port map (
-		clk_WR  => wb_clk_i,
-		clk_RD  => CLK_PIX,
-		rst     => '0',
-		srst    => fifo_clear,
-		WR      => fifo_write_enable,
-		RD      => read_enable,
-		D       => fifo_write,
-		Q       => read,
-		empty   => fifo_empty,
-		qfull   => fifo_quad_full,
-		hfull   => fifo_half_full,
-		qqqfull => fifo_almost_full,
-		full    => fifo_full
-  );
+--  myfifo: gh_fifo_async_rrd_sr_wf
+--  generic map (
+--    data_width => 30,
+--    add_width => 8
+--  )
+--  port map (
+--		clk_WR  => wb_clk_i,
+--		clk_RD  => CLK_PIX,
+--		rst     => '0',
+--		srst    => fifo_clear,
+--		WR      => fifo_write_enable,
+--		RD      => read_enable,
+--		D       => fifo_write,
+--		Q       => read,
+--		empty   => fifo_empty,
+--		qfull   => fifo_quad_full,
+--		hfull   => fifo_half_full,
+--		qqqfull => fifo_almost_full,
+--		full    => fifo_full
+--  );
+
+  myfifo: async_fifo
+    generic map (
+      data_bits => 30,
+      address_bits => 8,
+      threshold => 220
+    )
+    port map (
+      clk_r   => CLK_PIX,
+      clk_w   => wb_clk_i,
+      arst    => fifo_clear,
+      wr      => fifo_write_enable,
+      rd      => read_enable,
+      read    => read,
+      write   => fifo_write,
+      almost_full => fifo_almost_full
+    );
+    
 
 end behave;

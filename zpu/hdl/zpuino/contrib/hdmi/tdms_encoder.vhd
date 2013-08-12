@@ -12,10 +12,14 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity TDMS_encoder is
+    generic (
+      CHANNEL : integer range 0 to 2 := 0
+    );
     Port ( clk     : in  STD_LOGIC;
            data    : in  STD_LOGIC_VECTOR (7 downto 0);
            c       : in  STD_LOGIC_VECTOR (1 downto 0);
            blank   : in  STD_LOGIC;
+           guard   : in  STD_LOGIC;
            encoded : out  STD_LOGIC_VECTOR (9 downto 0));
 end TDMS_encoder;
 
@@ -28,6 +32,7 @@ architecture Behavioral of TDMS_encoder is
    signal data_word_inv       : STD_LOGIC_VECTOR (8 downto 0);
    signal data_word_disparity : STD_LOGIC_VECTOR (3 downto 0);
    signal dc_bias             : STD_LOGIC_VECTOR (3 downto 0) := (others => '0');
+   signal bg                  : STD_LOGIC_VECTOR (1 downto 0);
 begin
    -- Work our the two different encodings for the byte
    xored(0) <= data(0);
@@ -69,12 +74,22 @@ begin
    -- Work out the DC bias of the dataword;
    data_word_disparity  <= "1100" + data_word(0) + data_word(1) + data_word(2) + data_word(3) 
                                     + data_word(4) + data_word(5) + data_word(6) + data_word(7);
-   
+
+   bg <= blank & guard;
    -- Now work out what the output should be
    process(clk)
    begin
       if rising_edge(clk) then
-         if blank = '1' then 
+        case bg is
+          when "11"  =>
+            -- Video guard band (two pixels wide)
+            case CHANNEL is
+              when 0 => encoded <= "1011001100";
+              when 1 => encoded <= "0100110011";
+              when 2 => encoded <= "1011001100";
+              when others => encoded <= (others => 'X');
+            end case;
+          when "10" =>
             -- In the control periods, all values have and have balanced bit count
             case c is            
                when "00"   => encoded <= "1101010100";
@@ -83,7 +98,8 @@ begin
                when others => encoded <= "1010101011";
             end case;
             dc_bias <= (others => '0');
-         else
+
+          when "00" =>
             if dc_bias = "00000" or data_word_disparity = 0 then
                -- dataword has no disparity
                if data_word(8) = '1' then
@@ -101,7 +117,8 @@ begin
                encoded <= '0' & data_word;
                dc_bias <= dc_bias - data_word_inv(8) + data_word_disparity;
             end if;
-         end if;
+          when others => encoded <= (others => 'X');
+         end case;
       end if;
    end process;      
 end Behavioral;
