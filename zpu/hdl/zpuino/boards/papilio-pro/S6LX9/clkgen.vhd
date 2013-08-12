@@ -166,9 +166,9 @@ pll_base_inst : PLL_ADV
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
 
-    CLKOUT3_DIVIDE       => 8,  -- 74.25MHz - pixel clock
-    CLKOUT3_PHASE        => 0.0,
-    CLKOUT3_DUTY_CYCLE   => 0.500,
+--    CLKOUT3_DIVIDE       => 8,  -- 74.25MHz - pixel clock
+--    CLKOUT3_PHASE        => 0.0,
+--    CLKOUT3_DUTY_CYCLE   => 0.500,
 
     CLKIN1_PERIOD         => 37.037037, -- 27 MHz
    -- REF_JITTER           => 0.010,
@@ -179,7 +179,7 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => sysclk_i,
     CLKOUT1             => sysclk_shift_i,
     CLKOUT2             => clk_to_pll2_i,
-    CLKOUT3             => pixelclk_i,
+ --   CLKOUT3             => pixelclk_i,
     LOCKED              => pll1_locked,
     RST                 => not_dcmin_locked,   -- Keep in reset while DCM does not lock
     -- Input clock control
@@ -212,6 +212,10 @@ pll_base_inst2 : PLL_ADV
     CLKOUT1_PHASE        => 180.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
 
+    CLKOUT2_DIVIDE       => 10,      -- 74.25Mhz
+    CLKOUT2_PHASE        => 0.0,
+    CLKOUT2_DUTY_CYCLE   => 0.500,
+
     CLKIN1_PERIOD         => 13.46, -- 74.25 MHz
     --REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
@@ -220,6 +224,7 @@ pll_base_inst2 : PLL_ADV
    (CLKFBOUT            => pll2_to_clkfb,
     CLKOUT0             => tdmsclk_p_i,
     CLKOUT1             => tdmsclk_n_i,
+    CLKOUT2             => pixelclk_i,
     LOCKED              => pll2_locked,
     RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
     -- Input clock control
