@@ -451,14 +451,14 @@ begin
   WING_C(0) <= tmds_b(3);
   WING_C(1) <= tmds(3);
 
-  WING_C(2) <= tmds_b(2);   -- TX0 - red
-  WING_C(3) <= tmds(2);
+  WING_C(2) <= tmds_b(0);   -- TX0 - red
+  WING_C(3) <= tmds(0);
 
   WING_C(4) <= tmds_b(1);   -- TX1 - green
   WING_C(5) <= tmds(1);
 
-  WING_C(6) <= tmds_b(0);   -- TX2 - blue/sync
-  WING_C(7) <= tmds(0);
+  WING_C(6) <= tmds_b(2);   -- TX2 - blue/sync
+  WING_C(7) <= tmds(2);
 
   --pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   --pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );

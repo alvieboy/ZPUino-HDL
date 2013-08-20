@@ -11,6 +11,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 Library UNISIM;
 use UNISIM.vcomponents.all;
+library work;
+use work.tmdspkg.all;
 
 entity dvid is
     Port ( clk       : in  STD_LOGIC;
@@ -19,9 +21,7 @@ entity dvid is
            red_p     : in  STD_LOGIC_VECTOR (7 downto 0);
            green_p   : in  STD_LOGIC_VECTOR (7 downto 0);
            blue_p    : in  STD_LOGIC_VECTOR (7 downto 0);
-           blank     : in  STD_LOGIC;
-           guard     : in  STD_LOGIC;
-           startp    : in  STD_LOGIC;
+           phase     : in  TMDS_PHASE_TYPE;
            hsync     : in  STD_LOGIC;
            vsync     : in  STD_LOGIC;
            red_s     : out STD_LOGIC;
@@ -39,8 +39,7 @@ architecture Behavioral of dvid is
       clk     : IN  std_logic;
       data    : IN  std_logic_vector(7 downto 0);
       c       : IN  std_logic_vector(1 downto 0);
-      blank   : IN  std_logic;
-      guard   : IN  std_logic;
+      phase   : IN  TMDS_PHASE_TYPE;
       encoded : OUT std_logic_vector(9 downto 0)
       );
    END COMPONENT;
@@ -52,18 +51,19 @@ architecture Behavioral of dvid is
    signal shift_clock   : std_logic_vector(9 downto 0) := "0000011111";
 
    
-   constant c_red       : std_logic_vector(1 downto 0) := (others => '0');
+   signal   c_red       : std_logic_vector(1 downto 0);
    signal   c_green     : std_logic_vector(1 downto 0);
    signal   c_blue      : std_logic_vector(1 downto 0);
 
 begin   
    c_blue <= vsync & hsync;
 
-   c_green <= "10" when startp='1' else "00";
-   
-   TDMS_encoder_red:   TDMS_encoder GENERIC MAP ( CHANNEL => 2 ) PORT MAP(clk => clk_pixel, data => red_p,   c => c_red,   blank => blank, guard => guard, encoded => encoded_red);
-   TDMS_encoder_green: TDMS_encoder GENERIC MAP ( CHANNEL => 1 ) PORT MAP(clk => clk_pixel, data => green_p, c => c_green, blank => blank, guard => guard, encoded => encoded_green);
-   TDMS_encoder_blue:  TDMS_encoder GENERIC MAP ( CHANNEL => 0 ) PORT MAP(clk => clk_pixel, data => blue_p,  c => c_blue,  blank => blank, guard => guard, encoded => encoded_blue);
+   c_green <= "10" when phase=VIDEO_PREAMBLE or phase=PACKET_PREAMBLE else "00";
+   c_red   <= "10" when phase=PACKET_PREAMBLE else "00";
+
+   TDMS_encoder_red:   TDMS_encoder GENERIC MAP ( CHANNEL => 2 ) PORT MAP(clk => clk_pixel, data => red_p,   c => c_red,   phase => phase, encoded => encoded_red);
+   TDMS_encoder_green: TDMS_encoder GENERIC MAP ( CHANNEL => 1 ) PORT MAP(clk => clk_pixel, data => green_p, c => c_green, phase => phase, encoded => encoded_green);
+   TDMS_encoder_blue:  TDMS_encoder GENERIC MAP ( CHANNEL => 0 ) PORT MAP(clk => clk_pixel, data => blue_p,  c => c_blue,  phase => phase, encoded => encoded_blue);
 
    ODDR2_red   : ODDR2 generic map( DDR_ALIGNMENT => "C0", INIT => '0', SRTYPE => "ASYNC") 
       port map (Q => red_s,   D0 => shift_red(0),   D1 => shift_red(1),   C0 => clk, C1 => clk_n, CE => '1', R => '0', S => '0');
