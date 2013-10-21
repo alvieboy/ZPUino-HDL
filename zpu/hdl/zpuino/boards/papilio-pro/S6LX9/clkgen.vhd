@@ -43,12 +43,26 @@ use UNISIM.VCOMPONENTS.all;
 
 entity clkgen is
   port (
+<<<<<<< HEAD
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
     rstout: out std_logic
+=======
+    clkin:        in std_ulogic;
+    rstin:        in std_ulogic;
+
+    sysclk:       out std_ulogic;
+    sysclk_shift: out std_ulogic;
+    pixelclk:     out std_ulogic;
+    tdmsclk_p:    out std_ulogic;
+    tdmsclk_n:    out std_ulogic;
+    pll_locked:   out std_ulogic;
+    clk_x2:       out std_ulogic;
+    rstout:       out std_ulogic
+>>>>>>> Serdes version
   );
 end entity clkgen;
 
@@ -66,6 +80,8 @@ signal clk0: std_ulogic;
 signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
+
+signal tdmsclk_x2: std_ulogic;
 
 begin
 
@@ -86,7 +102,22 @@ begin
     end if;
   end process;
 
-  -- Clock buffers
+  -- Clock buffers - input
+
+  clkin_inst: IBUFG  port map ( I => clkin,       O =>  clkin_i );
+
+  -- Clock buffers - output
+
+  clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
+  clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
+  clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
+  --clkp_inst: BUFG port map ( I => tdmsclk_p_i,    O => tdmsclk_p );
+  clkx2_inst: BUFG port map ( I => tdmsclk_x2,    O => clk_x2 );
+  --clkn_inst: BUFG port map ( I => tdmsclk_n_i,    O => tdmsclk_n );
+  -- Clock buffers - internal
+
+  -- 1st DCM feedback clock
+  dcmfb:      BUFG   port map ( I => dcmin_clk0,  O => dcmin_fb );
 
   clkfx_inst: BUFG
     port map (
@@ -128,20 +159,68 @@ pll_base_inst : PLL_ADV
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKIN1_PERIOD        => 31.250,
-    REF_JITTER           => 0.010,
+
+--    CLKOUT3_DIVIDE       => 8,  -- 74.25MHz - pixel clock
+--    CLKOUT3_PHASE        => 0.0,
+--    CLKOUT3_DUTY_CYCLE   => 0.500,
+
+    CLKIN1_PERIOD         => 37.037037, -- 27 MHz
+   -- REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
-   (CLKFBOUT            => dcmclock,
-    CLKOUT0             => clk0,
-    CLKOUT1             => clk1,
-    CLKOUT2             => clk2,
-    CLKOUT3             => open,
-    CLKOUT4             => open,
-    CLKOUT5             => open,
-    LOCKED              => dcmlocked,
-    RST                 => '0',
+   (CLKFBOUT            => pll1_to_clkfb,
+    CLKOUT0             => sysclk_i,
+    CLKOUT1             => sysclk_shift_i,
+    CLKOUT2             => clk_to_pll2_i,
+ --   CLKOUT3             => pixelclk_i,
+    LOCKED              => pll1_locked,
+    RST                 => not_dcmin_locked,   -- Keep in reset while DCM does not lock
+    -- Input clock control
+    CLKFBIN             => clkfb_to_pll1,
+    CLKIN1              => clk_to_pll1,
+    CLKIN2 => '0',
+    CLKINSEL => '1',
+    DADDR => (others => '0'),
+    DCLK => '0',
+    DEN => '0',
+    DI => (others => '0'),
+    DWE => '0',
+    REL => '0'
+   );
+
+pll_base_inst2 : PLL_ADV
+  generic map
+   (BANDWIDTH            => "OPTIMIZED",
+    CLK_FEEDBACK         => "CLKFBOUT",
+    COMPENSATION         => "SOURCE_SYNCHRONOUS",
+    DIVCLK_DIVIDE        => 1,
+    CLKFBOUT_MULT        => 10,
+    CLKFBOUT_PHASE       => 0.000,
+
+    CLKOUT0_DIVIDE       => 1,      -- 371.25Mhz
+    CLKOUT0_PHASE        => 00.000,
+    CLKOUT0_DUTY_CYCLE   => 0.500,
+
+    CLKOUT1_DIVIDE       => 5,      -- 371.25Mhz, inverted clock
+    CLKOUT1_PHASE        => 0.0,
+    CLKOUT1_DUTY_CYCLE   => 0.500,
+
+    CLKOUT2_DIVIDE       => 10,      -- 74.25Mhz
+    CLKOUT2_PHASE        => 0.0,
+    CLKOUT2_DUTY_CYCLE   => 0.500,
+
+    CLKIN1_PERIOD         => 13.46, -- 74.25 MHz
+    --REF_JITTER           => 0.010,
+    SIM_DEVICE           => "SPARTAN6")
+  port map
+    -- Output clocks
+   (CLKFBOUT            => pll2_to_clkfb,
+    CLKOUT0             => tdmsclk_p,--_i,
+    CLKOUT1             => tdmsclk_x2,--tdmsclk_n_i,
+    CLKOUT2             => pixelclk_i,
+    LOCKED              => pll2_locked,
+    RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
     -- Input clock control
     CLKFBIN             => clkfb,
     CLKIN1              => clkin_i,
@@ -154,5 +233,8 @@ pll_base_inst : PLL_ADV
     DWE                 => '0',
     REL                 => '0'
    );
+
+  pll_locked <= pll2_locked;
+
 
 end behave;

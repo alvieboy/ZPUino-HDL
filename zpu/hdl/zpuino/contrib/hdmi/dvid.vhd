@@ -13,9 +13,11 @@ Library UNISIM;
 use UNISIM.vcomponents.all;
 
 entity dvid is
-    Port ( clk       : in  STD_LOGIC;
-           clk_n     : in  STD_LOGIC;
-           clk_pixel : in  STD_LOGIC;
+    Port ( clk       : in  STD_ULOGIC;
+           --clk_n     : in  STD_ULOGIC;
+           clk_pixel : in  STD_ULOGIC;
+           clk2x     : in std_ulogic;
+           pll_locked: in std_ulogic;
            red_p     : in  STD_LOGIC_VECTOR (7 downto 0);
            green_p   : in  STD_LOGIC_VECTOR (7 downto 0);
            blue_p    : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -24,10 +26,10 @@ entity dvid is
            startp    : in  STD_LOGIC;
            hsync     : in  STD_LOGIC;
            vsync     : in  STD_LOGIC;
-           red_s     : out STD_LOGIC;
-           green_s   : out STD_LOGIC;
-           blue_s    : out STD_LOGIC;
-           clock_s   : out STD_LOGIC);
+           red_s     : out STD_ULOGIC;
+           green_s   : out STD_ULOGIC;
+           blue_s    : out STD_ULOGIC;
+           clock_s   : out STD_ULOGIC);
 end dvid;
 
 architecture Behavioral of dvid is
@@ -56,6 +58,22 @@ architecture Behavioral of dvid is
    signal   c_green     : std_logic_vector(1 downto 0);
    signal   c_blue      : std_logic_vector(1 downto 0);
 
+  component ser10 is
+  port (
+    clk:    in std_ulogic;
+    --nclk:    in std_ulogic;
+    locked: in std_ulogic;
+    clkdiv: in std_ulogic;
+    serdesstrobe: in std_ulogic;
+    datain: in std_logic_vector(9 downto 0);
+    dataout: out std_ulogic
+  );
+  end component ser10;
+
+  signal ioclk: std_ulogic;
+  signal serdesstrobe: std_ulogic;
+
+  signal clk_n: std_ulogic;
 begin   
    c_blue <= vsync & hsync;
 
@@ -64,6 +82,8 @@ begin
    TDMS_encoder_red:   TDMS_encoder GENERIC MAP ( CHANNEL => 2 ) PORT MAP(clk => clk_pixel, data => red_p,   c => c_red,   blank => blank, guard => guard, encoded => encoded_red);
    TDMS_encoder_green: TDMS_encoder GENERIC MAP ( CHANNEL => 1 ) PORT MAP(clk => clk_pixel, data => green_p, c => c_green, blank => blank, guard => guard, encoded => encoded_green);
    TDMS_encoder_blue:  TDMS_encoder GENERIC MAP ( CHANNEL => 0 ) PORT MAP(clk => clk_pixel, data => blue_p,  c => c_blue,  blank => blank, guard => guard, encoded => encoded_blue);
+
+  oldddr: if false generate
 
    ODDR2_red   : ODDR2 generic map( DDR_ALIGNMENT => "C0", INIT => '0', SRTYPE => "ASYNC") 
       port map (Q => red_s,   D0 => shift_red(0),   D1 => shift_red(1),   C0 => clk, C1 => clk_n, CE => '1', R => '0', S => '0');
@@ -102,5 +122,34 @@ begin
          shift_clock <= shift_clock(1 downto 0) & shift_clock(9 downto 2);
       end if;
    end process;
-   
+
+  end generate;
+
+  newserdes: if true generate
+
+  -- New, OSERDES based
+
+  ipll: BUFPLL
+    generic map (
+      DIVIDE => 5
+    )
+    port map (
+      IOCLK        => ioclk,
+      LOCK         => OPEN,
+      SERDESSTROBE => serdesstrobe,
+
+      GCLK         => clk2x,
+      LOCKED       => pll_locked,
+      PLLIN        => clk
+
+    );
+
+  osclk: ser10 port map ( clk => ioclk,   locked => pll_locked, serdesstrobe => serdesstrobe, clkdiv => clk2x, datain => "0000011111", dataout => clock_s );
+  osred: ser10 port map ( clk => ioclk,   locked => pll_locked, serdesstrobe => serdesstrobe, clkdiv => clk2x, datain => encoded_red, dataout => red_s );
+  osgreen: ser10 port map ( clk => ioclk, locked => pll_locked, serdesstrobe => serdesstrobe, clkdiv => clk2x, datain => encoded_green, dataout => green_s );
+  osbluc: ser10 port map ( clk => ioclk,  locked => pll_locked, serdesstrobe => serdesstrobe, clkdiv => clk2x, datain => encoded_blue, dataout => blue_s );
+
+  end generate;
+
+       
 end Behavioral;

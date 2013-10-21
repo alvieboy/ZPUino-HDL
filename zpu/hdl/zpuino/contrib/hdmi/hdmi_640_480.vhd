@@ -40,8 +40,9 @@ entity hdmi_640_480 is
 
     CLK_PIX           : in     std_logic;
     CLK_P             : in     std_logic;
-    CLK_N             : in     std_logic;
-
+--    CLK_N             : in     std_logic;
+    clk_X2     : in std_ulogic;
+    PLL_LOCKED:  in std_ulogic;
     -- HDMI signals
 
     tmds    : out  STD_LOGIC_VECTOR(3 downto 0);
@@ -52,9 +53,12 @@ end entity;
 architecture behave of hdmi_640_480 is
 
   component dvid is
-    Port ( clk       : in  STD_LOGIC;
-           clk_n     : in  STD_LOGIC;
-           clk_pixel : in  STD_LOGIC;
+    Port ( clk       : in  STD_ULOGIC;
+           --clk_n     : in  STD_ULOGIC;
+           clk2x     : in std_ulogic;
+           pll_locked: in std_ulogic;
+
+           clk_pixel : in  STD_ULOGIC;
            red_p     : in  STD_LOGIC_VECTOR (7 downto 0);
            green_p   : in  STD_LOGIC_VECTOR (7 downto 0);
            blue_p    : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -63,10 +67,10 @@ architecture behave of hdmi_640_480 is
            guard     : in  STD_LOGIC;
            hsync     : in  STD_LOGIC;
            vsync     : in  STD_LOGIC;
-           red_s     : out STD_LOGIC;
-           green_s   : out STD_LOGIC;
-           blue_s    : out STD_LOGIC;
-           clock_s   : out STD_LOGIC);
+           red_s     : out STD_ULOGIC;
+           green_s   : out STD_ULOGIC;
+           blue_s    : out STD_ULOGIC;
+           clock_s   : out STD_ULOGIC);
   end component;
 
   component async_fifo is
@@ -186,7 +190,7 @@ architecture behave of hdmi_640_480 is
 --  constant VGA_H_SYNC: integer := 2;
 --  constant VGA_H_FRONTPORCH: integer := 2;
 --  constant VGA_H_DISPLAY: integer := 16;
--- constant VGA_H_BACKPORCH: integer := 16 - GUARD_PIXELS;
+--  constant VGA_H_BACKPORCH: integer := 16 - GUARD_PIXELS;
 
 --  constant VGA_V_BORDER: integer := 0;
 --  constant VGA_V_FRONTPORCH: integer := 4;
@@ -521,8 +525,10 @@ begin
   mydvid: dvid
     port map (
       clk        => CLK_P,
-      clk_n      => CLK_N,
+      --clk_n      => CLK_N,
       clk_pixel  => CLK_PIX,
+      clk2x      => CLK_X2,
+      pll_locked => pll_locked,
 
       red_p(7 downto 3) => vga_r,
       red_p(2 downto 0) => "000",
@@ -595,8 +601,8 @@ begin
   read_enable <= (v_display and not guard) and not hflip;
 
   OBUFDS_blue  : OBUFDS port map ( O  => TMDS(0), OB => TMDSB(0), I  => blue_s  );
-  OBUFDS_red   : OBUFDS port map ( O  => TMDS(1), OB => TMDSB(1), I  => green_s );
-  OBUFDS_green : OBUFDS port map ( O  => TMDS(2), OB => TMDSB(2), I  => red_s   );
+  OBUFDS_green : OBUFDS port map ( O  => TMDS(1), OB => TMDSB(1), I  => green_s );
+  OBUFDS_red   : OBUFDS port map ( O  => TMDS(2), OB => TMDSB(2), I  => red_s   );
   OBUFDS_clock : OBUFDS port map ( O  => TMDS(3), OB => TMDSB(3), I  => clock_s );
 
 --  myfifo: gh_fifo_async_rrd_sr_wf

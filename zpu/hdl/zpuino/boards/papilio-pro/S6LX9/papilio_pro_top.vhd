@@ -102,6 +102,10 @@ architecture behave of papilio_pro_top is
     pixelclk:     out std_ulogic;
     tdmsclk_p:    out std_ulogic;
     tdmsclk_n:    out std_ulogic;
+
+    pll_locked:   out std_ulogic;
+    clk_x2:       out std_ulogic;
+
     rstout: out std_logic
   );
   end component;
@@ -147,7 +151,9 @@ architecture behave of papilio_pro_top is
 
     CLK_PIX           : in     std_logic;
     CLK_P             : in     std_logic;
-    CLK_N             : in     std_logic;
+    --CLK_N             : in     std_logic;
+    clk_X2            : in std_ulogic;
+    PLL_LOCKED:       in std_ulogic;
 
     -- HDMI signals
 
@@ -183,7 +189,9 @@ architecture behave of papilio_pro_top is
   signal wb_clk_i:    std_logic;
   signal wb_rst_i:    std_logic;
 
-  signal hdmi_clk_pix, hdmi_clk_p, hdmi_clk_n: std_logic;
+  signal hdmi_clk_pix, hdmi_clk_p, hdmi_clk_n: std_ulogic;
+  signal hdmi_clk_x2: std_ulogic;
+  signal pll_locked: std_ulogic;
 
   signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -409,6 +417,8 @@ begin
     pixelclk      => hdmi_clk_pix,
     tdmsclk_p     => hdmi_clk_p,
     tdmsclk_n     => hdmi_clk_n,
+    clk_x2        => hdmi_clk_x2,
+    pll_locked    => pll_locked,
     rstout        => clkgen_rst
   );
 
@@ -449,14 +459,14 @@ begin
   WING_C(0) <= tmds_b(3);
   WING_C(1) <= tmds(3);
 
-  WING_C(2) <= tmds_b(0);   -- TX0 - red
-  WING_C(3) <= tmds(0);
+  WING_C(2) <= tmds_b(2);   -- TX0 - red
+  WING_C(3) <= tmds(2);
 
   WING_C(4) <= tmds_b(1);   -- TX1 - green
   WING_C(5) <= tmds(1);
 
-  WING_C(6) <= tmds_b(2);   -- TX2 - blue/sync
-  WING_C(7) <= tmds(2);
+  WING_C(6) <= tmds_b(0);   -- TX2 - blue/sync
+  WING_C(7) <= tmds(0);
 
   --pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   --pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
@@ -896,7 +906,8 @@ begin
 
     CLK_PIX => hdmi_clk_pix,
     CLK_P   => hdmi_clk_p,
-    CLK_N   => hdmi_clk_n,
+    CLK_X2   => hdmi_clk_x2,
+    PLL_LOCKED => pll_locked,
 
     tmds    => tmds,
     tmdsb  => tmds_b
