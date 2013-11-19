@@ -96,12 +96,12 @@ architecture behave of papilio_pro_top is
   port (
     clkin:  in std_logic;
     rstin:  in std_logic;
-    clkout: out std_logic;
-    clkout1: out std_logic;
-    clkout2: out std_logic;
-    clkvga: out  std_logic;
-    clkp:   out  std_logic;
-    clkn:   out  std_logic;
+    clkout: out std_ulogic;
+    clkout1: out std_ulogic;
+    clkout2: out std_ulogic;
+    clkvga: out  std_ulogic;
+    clkp:   out  std_ulogic;
+    clkn:   out  std_ulogic;
 
     rstout: out std_logic
   );
@@ -184,7 +184,7 @@ architecture behave of papilio_pro_top is
   signal wb_clk_i:    std_logic;
   signal wb_rst_i:    std_logic;
 
-  signal hdmi_clk_pix, hdmi_clk_p, hdmi_clk_n: std_logic;
+  signal hdmi_clk_pix, hdmi_clk_p, hdmi_clk_n: std_ulogic;
 
   signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -448,16 +448,16 @@ begin
   pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
 
   -- starting with pin 0 on the side with the power pins: Clk-, Clk+, tx0-, tx0+, tx1-, tx1+, tx2-, tx2+
-  WING_C(0) <= tmds_b(3);
-  WING_C(1) <= tmds(3);
+  WING_C(0) <= tmds_b(3);  -- CK-
+  WING_C(1) <= tmds(3);    -- CK+
 
-  WING_C(2) <= tmds_b(0);   -- TX0 - red
+  WING_C(2) <= tmds_b(0);   -- TX0 - blue/sync
   WING_C(3) <= tmds(0);
 
   WING_C(4) <= tmds_b(1);   -- TX1 - green
   WING_C(5) <= tmds(1);
 
-  WING_C(6) <= tmds_b(2);   -- TX2 - blue/sync
+  WING_C(6) <= tmds_b(2);   -- TX2 - red
   WING_C(7) <= tmds(2);
 
   --pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );

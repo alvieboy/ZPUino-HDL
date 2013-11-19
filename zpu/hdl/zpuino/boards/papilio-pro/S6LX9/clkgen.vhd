@@ -45,13 +45,13 @@ entity clkgen is
   port (
     clkin:  in std_logic;
     rstin:  in std_logic;
-    clkout: out std_logic;
-    clkout1: out std_logic;
-    clkout2: out std_logic;
-    clkvga: out std_logic;
-    clkp:   out std_logic;
-    clkn:   out std_logic;
-    rstout: out std_logic
+    clkout: out std_ulogic;
+    clkout1: out std_ulogic;
+    clkout2: out std_ulogic;
+    clkvga: out std_ulogic;
+    clkp:   out std_ulogic;
+    clkn:   out std_ulogic;
+    rstout: out std_ulogic
   );
 end entity clkgen;
 
@@ -70,7 +70,7 @@ signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
 
-signal clkvga_i, clkp_i, clkn_i: std_logic;
+signal clkvga_i, clkp_i, clkn_i: std_ulogic;
 signal dcmin_clk0, dcmin_fb, clk_to_pll, dcmin_locked: std_ulogic;
 
 begin

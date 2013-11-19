@@ -167,31 +167,31 @@ architecture behave of hdmi_640_480 is
 --# 640x480 @ 60Hz (Industry standard) hsync: 31.5kHz
 --ModeLine "640x480"    25.2  640  656  752  800    480  490  492  525 -hsync -vsync
 
-  constant GUARD_PIXELS: integer := 2;
-
---  constant VGA_H_BORDER: integer := 0;
---  constant VGA_H_SYNC: integer := 96;
---  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER ;
---  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
---  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER - GUARD_PIXELS;
-
---  constant VGA_V_BORDER: integer := 0;
---  constant VGA_V_FRONTPORCH: integer := 10+VGA_V_BORDER;
---  constant VGA_V_SYNC: integer := 2;
---  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
---  constant VGA_V_BACKPORCH: integer := 33+VGA_V_BORDER;
+  constant GUARD_PIXELS: integer := 0;
 
   constant VGA_H_BORDER: integer := 0;
-  constant VGA_H_SYNC: integer := 2;
-  constant VGA_H_FRONTPORCH: integer := 2;
-  constant VGA_H_DISPLAY: integer := 64;
-  constant VGA_H_BACKPORCH: integer := 16 - GUARD_PIXELS;
+  constant VGA_H_SYNC: integer := 96;
+  constant VGA_H_FRONTPORCH: integer := 16+VGA_H_BORDER ;
+  constant VGA_H_DISPLAY: integer := 640 - (2*VGA_H_BORDER);
+  constant VGA_H_BACKPORCH: integer := 48+VGA_H_BORDER - GUARD_PIXELS;
 
   constant VGA_V_BORDER: integer := 0;
-  constant VGA_V_FRONTPORCH: integer := 4;
+  constant VGA_V_FRONTPORCH: integer := 11+VGA_V_BORDER;
   constant VGA_V_SYNC: integer := 2;
-  constant VGA_V_DISPLAY: integer := 192;
-  constant VGA_V_BACKPORCH: integer := 2;
+  constant VGA_V_DISPLAY: integer := 480 - (2*VGA_V_BORDER);
+  constant VGA_V_BACKPORCH: integer := 31+VGA_V_BORDER;
+
+--  constant VGA_H_BORDER: integer := 0;
+--  constant VGA_H_SYNC: integer := 2;
+--  constant VGA_H_FRONTPORCH: integer := 2;
+--  constant VGA_H_DISPLAY: integer := 64;
+--  constant VGA_H_BACKPORCH: integer := 16 - GUARD_PIXELS;
+
+--  constant VGA_V_BORDER: integer := 0;
+--  constant VGA_V_FRONTPORCH: integer := 4;
+--  constant VGA_V_SYNC: integer := 2;
+--  constant VGA_V_DISPLAY: integer := 192;
+--  constant VGA_V_BACKPORCH: integer := 2;
 
   constant VGA_V_DATA_ISLAND: integer := VGA_V_DISPLAY + 2;
 
@@ -293,7 +293,7 @@ begin
         startp <= '1';
       end if;
       if hcount_q > VGA_HCOUNT-GUARD_PIXELS then
-        guard <= '1';
+    --    guard <= '1';
       end if;
     end if;
   end process;
@@ -524,39 +524,40 @@ begin
   process(v_display,guard,startp, hcount_q, vcount_q)
   begin
     if v_display='1' then
-      if guard='1' then
-        phase <= VIDEO_GUARD;
-      else
+--      if guard='1' then
+--        phase <= VIDEO_GUARD;
+--      else
         phase <= VIDEO_DATA;
-      end if;
+--      end if;
     else
       if startp='0' then
 
         -- Data island
-        if vcount_q = VGA_V_DATA_ISLAND then
+        --if vcount_q = VGA_V_DATA_ISLAND then
           --
-          if hcount_q < 8 then
-            phase <= PACKET_PREAMBLE;
-          elsif hcount_q < 10 then
-            phase <= PACKET_GUARD;
-          elsif hcount_q < 42 then
-            phase <= PACKET_DATA;
-          elsif hcount_q < 44 then
-            phase <= PACKET_GUARD;
-          else
-            phase <= CONTROL;
-          end if;
+        --  if hcount_q < 8 then
+        --    phase <= PACKET_PREAMBLE;
+        --  elsif hcount_q < 10 then
+        --    phase <= PACKET_GUARD;
+        --  elsif hcount_q < 42 then
+        --    phase <= PACKET_DATA;
+        --  elsif hcount_q < 44 then
+        --    phase <= PACKET_GUARD;
+        --  else
+        --    phase <= CONTROL;
+        --  end if;
 
-        else
+        --else
           phase <= CONTROL;
-        end if;
+        --end if;
       else
 
-        if guard='1' then
-           phase <= VIDEO_GUARD;
-        else
-          phase <= VIDEO_PREAMBLE;
-        end if;
+     --   if guard='1' then
+      --     phase <= VIDEO_GUARD;
+      --  else
+          ---phase <= VIDEO_PREAMBLE;
+          phase <= CONTROL;
+       -- end if;
       end if;
     end if;
   end process;
