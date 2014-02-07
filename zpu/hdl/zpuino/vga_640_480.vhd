@@ -200,11 +200,29 @@ begin
       -- Wishbone register access
   id <= x"08" & x"1A"; -- Vendor: ZPUIno  Product: VGA 640x480 16-bit
 
-  wb_dat_o(31 downto 1) <= (others => DontCareValue);
-  wb_dat_o(0) <= v_display_in_wbclk;
-
   mi_wb_dat_o <= (others => DontCareValue);
   mi_wb_we_o <= '0';
+
+  process(wb_adr_i)
+    variable r: unsigned(15 downto 0);
+  begin
+    wb_dat_o(31 downto 0) <= (others => '0');
+    case wb_adr_i(1 downto 0) is
+      when "00" =>
+        wb_dat_o(0) <= v_display_in_wbclk;
+      when "01" =>
+        r := conv_integer(VGA_H_DISPLAY,16);
+        wb_dat_o(31 downto 16) <= std_logic_vector(r);
+        r := conv_integer(VGA_V_DISPLAY,16);
+        wb_dat_o(15 downto 0) <= std_logic_vector(r);
+      when "10" =>
+        -- Pixel format
+
+      when others =>
+
+    end case;
+  end process;
+
 
   process(wb_clk_i)
   begin
