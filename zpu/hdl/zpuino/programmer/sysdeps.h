@@ -46,6 +46,7 @@ int conn_set_speed(connection_t conn,speed_t speed);
 void conn_prepare(connection_t conn);
 void conn_setsimulator(int);
 buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size, int timeout);
+unsigned int *conn_get_baudrates();
 
 buffer_t *sendreceive(connection_t conn, unsigned char *txbuf, size_t size, int timeout);
 buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout);

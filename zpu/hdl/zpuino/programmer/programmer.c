@@ -27,6 +27,7 @@
 #include "transport.h"
 #include "programmer.h"
 #include <unistd.h>
+#include <math.h>
 #include "boards.h"
 
 #ifdef __linux__
@@ -54,7 +55,7 @@ static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
 static speed_t serial_speed = DEFAULT_SPEED;
-static unsigned int serial_speed_int = DEFAULT_SPEED_INT;
+static unsigned int serial_speed_int = 0;
 static int dry_run = 0;
 static int serial_reset = 0;
 
@@ -156,19 +157,53 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 	int retries = 30;
 	speed_t speed;
 
-	divider = ((freq/baud_int)/16)-1;
+        if (baud_int==0) {
+            /* Automatic baud rate selection */
+            unsigned int *baudrates = conn_get_baudrates();
+            while (*baudrates) {
+                baud_int = *baudrates;
+                divider = ((freq/baud_int)/16)-1;
+                unsigned int real_baud =  (freq/16)/(divider+1);
+                unsigned int real_baud2 =  (freq/16)/(divider+2);
+
+                /* Check error */
+                double error = fabs(100.0 - (double)baud_int/((double)real_baud/100.0));
+                double error2 = fabs(100.0 - (double)baud_int/((double)real_baud2/100.0));
+
+                if (error<3.0) {
+                    printf("Using baudrate %d (error %f%%)\n", baud_int, error);
+                    break;
+                } else if (error2<3.0) {
+                    divider++;
+                    printf("Using baudrate %d (error %f%%)\n", baud_int, error2);
+                    break;
+                } else {
+                    if (verbose>2) {
+                        printf("Skipping baudrate %d: error is %f%% %f%% (%d %d)\n", baud_int, error,error2,
+                               real_baud, real_baud2);
+                    }
+                }
+                baudrates++;
+            }
+        } else {
+            /* TODO: also do computation based on error here */
+            divider = ((freq/baud_int)/16)-1;
+        }
+
 	txbuf[0] = divider>>24;
 	txbuf[1] = divider>>16;
 	txbuf[2] = divider>>8;
-    txbuf[3] = divider;
-	if (verbose>1) {
+        txbuf[3] = divider;
+
+
+        if (verbose>1) {
 		printf("Settting baudrate divider to %u\n",divider);
 	}
 	b = sendreceivecommand(conn,BOOTLOADER_CMD_SETBAUDRATE, txbuf,4,300);
 	if (b)
 		buffer_free(b);
 
-    conn_parse_speed(baud_int,&speed);
+        conn_parse_speed(baud_int,&speed);
 	conn_set_speed(conn, speed);
 
 	while (retries>0) {

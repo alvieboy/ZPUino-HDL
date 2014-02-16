@@ -36,6 +36,21 @@ typedef struct win32_port *connection_t;
 #ifndef CBR_1000000
 #define CBR_1000000 1000000
 #endif
+#ifndef CBR_921600
+#define CBR_921600 921600
+#endif
+#ifndef CBR_576000
+#define CBR_576000 576000
+#endif
+#ifndef CBR_500000
+#define CBR_500000 500000
+#endif
+#ifndef CBR_460800
+#define CBR_460800 460800
+#endif
+#ifndef CBR_230400
+#define CBR_230400 230400
+#endif
 
 #define speed_t int
 
