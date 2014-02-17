@@ -51,6 +51,7 @@ static char *extradata=NULL;
 static char *serialport=NULL;
 static int is_simulator=0;
 static int only_read=0;
+static int verify=0;
 static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
@@ -82,11 +83,14 @@ int parse_arguments(int argc,char **const argv)
 {
 	int p;
 	while (1) {
-		switch ((p=getopt(argc,argv,"RDvb:d:re:o:ls:U"))) {
+		switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:U"))) {
 		case '?':
 			return -1;
 		case 'v':
 			verbose++;
+			break;
+		case 't':
+			verify=1;
 			break;
 		case 's':
 			serial_speed_int = atoi(optarg);
@@ -136,11 +140,12 @@ int help(char *name)
 	printf("  -D\t\tDry-run. Don't actually do anything\n");
 	printf("  -o offset\tUse specified offset within flash\n");
 	printf("  -b binfile\tBinary file to program\n");
-    printf("  -e datafile\tData file to program after binary\n");
+	printf("  -e datafile\tData file to program after binary\n");
 	printf("  -l\t\tIgnore programming limit sent by bootloader\n");
 	printf("  -R\t\tPerform serial reset before programming\n");
-    printf("  -U\t\tUpload only, do not program flash\n");
-	printf("  -s speed\tUse specified serial port speed (default: 1000000)\n");
+	printf("  -U\t\tUpload only, do not program flash\n");
+	printf("  -t\t\tTest/verify flash after programming\n");
+	printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
 	printf("  -v\t\tIncrease verbosity\n");
 	return -1;
 }
@@ -900,8 +905,13 @@ int main(int argc, char **argv)
 		saddr++;
 	}
 
-	if (verbose>0)
-		printf("\ndone. Verifying...\n");
+	if (verbose>0) {
+		if (verify)
+			printf("\ndone. Verifying...\n");
+		else
+			printf("\ndone.\n");
+
+	}
 
 	pages = size_bytes/flash->pagesize;
 	sptr = buf;
@@ -910,7 +920,7 @@ int main(int argc, char **argv)
 	if (dry_run) {
 		if (verbose>0)
 			printf("Skipping verification due to dry run\n");
-	} else {
+	} else if (verify) {
 		while (pages--) {
 			if (verbose>0) {
 				printf("Verifying page %d at 0x%08x...\r",saddr, saddr * flash->pagesize);
