@@ -768,6 +768,17 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_XULA2__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+	pinModePPS(FPGA_PIN_SDCS,LOW);
+        pinMode(FPGA_PIN_SDCS, OUTPUT);
+        digitalWrite(FPGA_PIN_SDCS, HIGH);
+}
+#endif
+
 #if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {

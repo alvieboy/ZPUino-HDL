@@ -15,6 +15,8 @@
 # include "board_oho_godil.h"
 #elif defined( __ZPUINO_NEXYS3__ )
 # include "board_nexys3.h"
+#elif defined( __ZPUINO_XULA2__ )
+# include "board_xula2.h"
 #else
 #  error Unknown board.
 # endif

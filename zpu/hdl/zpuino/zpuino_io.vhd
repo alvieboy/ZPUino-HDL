@@ -66,7 +66,7 @@ entity zpuino_io is
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type := (others => '1');
-    slot_interrupt: in slot_std_logic_type := (others => '0' )
+    slot_interrupt: in slot_std_logic_type := (others => '0')
 
   );
 end entity zpuino_io;
