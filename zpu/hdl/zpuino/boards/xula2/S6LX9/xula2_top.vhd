@@ -396,12 +396,15 @@ begin
     clkout  => sysclk,
     clkout1  => sysclk_sram_we,
     clkout2  => sysclk_sram_wen,
-	clk_1Mhz_out => sysclk_1mhz,
+	  --clk_1Mhz_out => sysclk_1mhz,
     rstout  => clkgen_rst
   );
 
-  pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => chan_io(0) );
-  pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => chan_io(1) );
+  ibufrx:   IPAD port map ( PAD => chan_io(0),        O => rx,           C => sysclk );
+  obuftx:   OPAD port map ( I => tx,           PAD => chan_io(1) );
+
+  --pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => chan_io(0) );
+  --pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => chan_io(1) );
   pin02: IOPAD port map(I => gpio_o(2),O => gpio_i(2),T => gpio_t(2),C => sysclk,PAD => chan_io(2) );
   pin03: IOPAD port map(I => gpio_o(3),O => gpio_i(3),T => gpio_t(3),C => sysclk,PAD => chan_io(3) );
   pin04: IOPAD port map(I => gpio_o(4),O => gpio_i(4),T => gpio_t(4),C => sysclk,PAD => chan_io(4) );
