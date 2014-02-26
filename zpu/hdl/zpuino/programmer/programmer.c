@@ -134,6 +134,7 @@ int parse_arguments(int argc,char **const argv)
 
 int help(char *name)
 {
+	printf("This is ZPUino programmer, version " VERSION "\n\n");
 	printf("Usage: %s -d <serialdevice> [OPTIONS]\n",name);
 	printf("\nOptions:\n");
 	printf("  -r\t\tPerform only sector read (use with -o)\n");
