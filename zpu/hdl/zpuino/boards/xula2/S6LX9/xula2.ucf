@@ -76,7 +76,7 @@ NET miso_i         LOC = P10;
 # Prototyping Header
 ##############################
 NET chanClk_io     LOC = T7;   # L32N
-NET chan_io<0>     LOC = R7;   # L32P
+NET chan_io<0>     LOC = R7 | PULLUP;   # L32P
 NET chan_io<1>     LOC = R15;  # L49P
 NET chan_io<2>     LOC = R16;  # L49N
 NET chan_io<3>     LOC = M15;  # L46P

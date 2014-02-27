@@ -136,12 +136,12 @@ architecture behave of xula2_top is
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &
     "1111111111111111" &
-    "1111111111111111";
+    "1111111111111100";
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &
     "1111111111111111" &
-    "1111111111111111";
+    "1111111111111100";
 
   -- I/O Signals
   signal slot_cyc:    slot_std_logic_type;
@@ -403,7 +403,7 @@ begin
   ibufrx:   IPAD port map ( PAD => chan_io(0),        O => rx,           C => sysclk );
   obuftx:   OPAD port map ( I => tx,           PAD => chan_io(1) );
 
-  --pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => chan_io(0) );
+  pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => chanClk_io );
   --pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => chan_io(1) );
   pin02: IOPAD port map(I => gpio_o(2),O => gpio_i(2),T => gpio_t(2),C => sysclk,PAD => chan_io(2) );
   pin03: IOPAD port map(I => gpio_o(3),O => gpio_i(3),T => gpio_t(3),C => sysclk,PAD => chan_io(3) );
