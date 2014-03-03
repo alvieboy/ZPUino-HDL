@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<symbol version="7" name="zpuino_empty_device">
+    <symboltype>BLOCK</symboltype>
+    <timestamp>2013-2-4T5:31:40</timestamp>
+    <pin polarity="Input" x="-112" y="96" name="wb_clk_i" />
+    <pin polarity="Input" x="-96" y="96" name="wb_rst_i" />
+    <pin polarity="Output" x="-80" y="96" name="wb_dat_o(31:0)" />
+    <pin polarity="Input" x="-64" y="96" name="wb_dat_i(31:0)" />
+    <pin polarity="Input" x="-48" y="96" name="wb_adr_i(26:2)" />
+    <pin polarity="Input" x="-32" y="96" name="wb_we_i" />
+    <pin polarity="Input" x="-16" y="96" name="wb_cyc_i" />
+    <pin polarity="Input" x="0" y="96" name="wb_stb_i" />
+    <pin polarity="Output" x="16" y="96" name="wb_ack_o" />
+    <pin polarity="Output" x="32" y="96" name="wb_inta_o" />
+    <graph>
+        <rect width="152" x="-116" y="112" height="20" />
+        <line x2="-112" y1="96" y2="112" x1="-112" />
+        <line x2="-96" y1="96" y2="112" x1="-96" />
+        <line x2="-80" y1="96" y2="112" x1="-80" />
+        <line x2="-64" y1="96" y2="112" x1="-64" />
+        <line x2="-48" y1="96" y2="112" x1="-48" />
+        <line x2="-32" y1="96" y2="112" x1="-32" />
+        <line x2="-16" y1="96" y2="108" x1="-16" />
+        <line x2="0" y1="96" y2="112" x1="0" />
+        <line x2="16" y1="96" y2="112" x1="16" />
+        <line x2="32" y1="96" y2="112" x1="32" />
+        <attrtext style="alignment:BCENTER" attrname="SymbolName" x="-40" y="132" type="symbol" />
+    </graph>
+</symbol>

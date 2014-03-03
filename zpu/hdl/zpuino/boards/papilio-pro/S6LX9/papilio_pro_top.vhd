@@ -167,7 +167,7 @@ architecture behave of papilio_pro_top is
   signal slot_address:slot_address_type;
   signal slot_ack:    slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
-  signal slot_id:    slot_id_type;
+  signal slot_ids:    slot_id_type;
 
   -- 2nd SPI signals
   signal spi2_mosi:   std_logic;
@@ -426,7 +426,7 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      slot_id       => slot_id,
+      slot_id       => slot_ids,
 
       pps_in_slot   => ppsin_info_slot,
       pps_in_pin    => ppsin_info_pin,
@@ -475,7 +475,7 @@ begin
     wb_stb_i      => slot_stb(1),
     wb_ack_o      => slot_ack(1),
     wb_inta_o     => slot_interrupt(1),
-    id            => slot_id(1),
+    id            => slot_ids(1),
 
     enabled       => open,
     tx            => tx,
@@ -501,7 +501,7 @@ begin
     wb_stb_i      => slot_stb(2),
     wb_ack_o      => slot_ack(2),
     wb_inta_o     => slot_interrupt(2),
-    id            => slot_id(2),
+    id            => slot_ids(2),
 
     spp_data      => gpio_spp_data,
     spp_read      => gpio_spp_read,
@@ -540,7 +540,7 @@ begin
     wb_cyc_i      => slot_cyc(3),
     wb_stb_i      => slot_stb(3),
     wb_ack_o      => slot_ack(3),
-    id            => slot_id(3),
+    id            => slot_ids(3),
 
     wb_inta_o     => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o     => slot_interrupt(4), -- so we borrow intr line from slot 4
@@ -568,7 +568,7 @@ begin
     wb_stb_i      => slot_stb(4),
     wb_ack_o      => slot_ack(4),
     -- wb_inta_o     => slot_interrupt(4), -- Used by the Timers.
-    id            => slot_id(4),
+    id            => slot_ids(4),
 
     mosi          => spi_pf_mosi,
     miso          => spi_pf_miso,
@@ -592,7 +592,7 @@ begin
     wb_stb_i      => slot_stb(5),
     wb_ack_o      => slot_ack(5),
     wb_inta_o     => slot_interrupt(5),
-    id            => slot_id(5),
+    id            => slot_ids(5),
 
     spp_data      => sigmadelta_spp_data,
     spp_en        => open,
@@ -615,7 +615,7 @@ begin
     wb_stb_i      => slot_stb(6),
     wb_ack_o      => slot_ack(6),
     wb_inta_o     => slot_interrupt(6),
-    id            => slot_id(6),
+    id            => slot_ids(6),
 
     mosi          => spi2_mosi,
     miso          => spi2_miso,
@@ -641,7 +641,7 @@ begin
     wb_stb_i      => slot_stb(7),
     wb_ack_o      => slot_ack(7),
     wb_inta_o     => slot_interrupt(7),
-    id            => slot_id(7)
+    id            => slot_ids(7)
   );
 
   --
@@ -660,7 +660,7 @@ begin
     wb_stb_i      => slot_stb(8),
     wb_ack_o      => slot_ack(8),
     wb_inta_o     => slot_interrupt(8),
-    id            => slot_id(8),
+    id            => slot_ids(8),
     tx            => uart2_tx,
     rx            => uart2_rx
   );
@@ -676,24 +676,24 @@ begin
       wb_cyc_i    => sram_wb_cyc_i,
       wb_stb_i    => sram_wb_stb_i,
       wb_sel_i    => sram_wb_sel_i,
-      --wb_cti_i    => CTI_CYCLE_CLASSIC,
       wb_ack_o    => sram_wb_ack_o,
       wb_stall_o  => sram_wb_stall_o,
 
       clk_off_3ns => sysclk_sram_we,
-    DRAM_ADDR   => DRAM_ADDR(11 downto 0),
-    DRAM_BA     => DRAM_BA,
-    DRAM_CAS_N  => DRAM_CAS_N,
-    DRAM_CKE    => DRAM_CKE,
-    DRAM_CLK    => DRAM_CLK,
-    DRAM_CS_N   => DRAM_CS_N,
-    DRAM_DQ     => DRAM_DQ,
-    DRAM_DQM    => DRAM_DQM,
-    DRAM_RAS_N  => DRAM_RAS_N,
-    DRAM_WE_N   => DRAM_WE_N
-
+      DRAM_ADDR   => DRAM_ADDR(11 downto 0),
+      DRAM_BA     => DRAM_BA,
+      DRAM_CAS_N  => DRAM_CAS_N,
+      DRAM_CKE    => DRAM_CKE,
+      DRAM_CLK    => DRAM_CLK,
+      DRAM_CS_N   => DRAM_CS_N,
+      DRAM_DQ     => DRAM_DQ,
+      DRAM_DQM    => DRAM_DQM,
+      DRAM_RAS_N  => DRAM_RAS_N,
+      DRAM_WE_N   => DRAM_WE_N
     );
+
     DRAM_ADDR(12) <= '0';
+
   --
   -- IO SLOT 9
   --
@@ -710,7 +710,7 @@ begin
     wb_stb_i      => slot_stb(9),
     wb_ack_o      => slot_ack(9),
     wb_inta_o     => slot_interrupt(9),
-    id            => slot_id(9)
+    id            => slot_ids(9)
   );
 
 
@@ -730,7 +730,7 @@ begin
     wb_stb_i      => slot_stb(10),
     wb_ack_o      => slot_ack(10),
     wb_inta_o     => slot_interrupt(10),
-    id            => slot_id(10)
+    id            => slot_ids(10)
   );
 
   --
@@ -749,7 +749,7 @@ begin
     wb_stb_i      => slot_stb(11),
     wb_ack_o      => slot_ack(11),
     wb_inta_o     => slot_interrupt(11),
-    id            => slot_id(11)
+    id            => slot_ids(11)
   );
 
   --
@@ -768,7 +768,7 @@ begin
     wb_stb_i      => slot_stb(12),
     wb_ack_o      => slot_ack(12),
     wb_inta_o     => slot_interrupt(12),
-    id            => slot_id(12)
+    id            => slot_ids(12)
   );
 
   --
@@ -787,7 +787,7 @@ begin
     wb_stb_i      => slot_stb(13),
     wb_ack_o      => slot_ack(13),
     wb_inta_o     => slot_interrupt(13),
-    id            => slot_id(13)
+    id            => slot_ids(13)
   );
 
   --
@@ -806,7 +806,7 @@ begin
     wb_stb_i      => slot_stb(14),
     wb_ack_o      => slot_ack(14),
     wb_inta_o     => slot_interrupt(14),
-    id            => slot_id(14)
+    id            => slot_ids(14)
   );
 
   --

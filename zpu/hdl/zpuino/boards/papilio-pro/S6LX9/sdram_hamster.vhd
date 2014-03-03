@@ -3,10 +3,11 @@
 --
 -- Version 0.1 - Ready to simulate
 --
--- Author: Mike Field (hamster@snap.net.nz)
+-- Authors: Mike Field (hamster@snap.net.nz)
+--          Alvaro Lopes (alvieboy@alvie.com)
 --
 -- Feel free to use it however you would like, but
--- just drop me an email to say thanks.
+-- just drop us an email to say thanks.
 -------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;

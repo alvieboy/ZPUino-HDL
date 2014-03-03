@@ -82,8 +82,8 @@ const unsigned char vstring[] = {
 	BOARD_ID
 };
 
-
 static void outbyte(int);
+extern "C" void _zpu_interrupt(int);
 
 void flush()
 {
@@ -208,6 +208,10 @@ static void enableTimer()
 #endif
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
+	ivector = &_zpu_interrupt;
+
+	INTRCTL = 1;
+
 }
 
 
@@ -367,7 +371,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef __ZPUINO_NEXYS3__
 		digitalWrite(FPGA_LED_3, HIGH);
 #endif
-
 		while(1) {};
 	}
 
@@ -380,7 +383,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef __ZPUINO_NEXYS3__
 		digitalWrite(FPGA_LED_4, HIGH);
 #endif
-
 		while(1) {};
 	}
 
@@ -401,7 +403,6 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	//asm ("im _start\npoppc\nnop\n");
 	while (1) {}
 }
-
 
 extern "C" void _zpu_interrupt(int line)
 {
@@ -535,7 +536,6 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 #ifdef __SST_FLASH__
-
 	// buffer[1-2] is number of TX bytes
     // buffer[3-5] is address to program
 	// buffer[6...] is data to transmit.
@@ -762,6 +762,17 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_XULA2__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+	pinModePPS(FPGA_PIN_SDCS,LOW);
+        pinMode(FPGA_PIN_SDCS, OUTPUT);
+	digitalWrite(FPGA_PIN_SDCS, HIGH);
+}
+#endif
+
 #if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {
@@ -836,8 +847,6 @@ extern "C" int main(int argc,char**argv)
 #ifdef VERBOSE_LOADER
 	printstring("\r\nZPUINO\r\n");
 #endif
-
-
 	enableTimer();
 
 	CRC16POLY = 0xFFFF8408; // CRC16-CCITT

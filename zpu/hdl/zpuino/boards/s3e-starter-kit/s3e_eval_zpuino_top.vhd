@@ -447,7 +447,6 @@ begin
       wb_stb_o      => dram_wb_stb_i,
       wb_we_o       => dram_wb_we_i,
 
-
       jtag_ctrl_chain_in => (others => '0')
     );
 

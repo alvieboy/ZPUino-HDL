@@ -1,0 +1,205 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--This is an ISE project configuration file.-->
+<!--It holds project specific layout data for the projectmgr plugin.-->
+<!--Copyright (c) 1995-2009 Xilinx, Inc.  All rights reserved.-->
+<Project version="2" owner="projectmgr" name="ise" >
+   <!--This is an ISE project configuration file.-->
+   <ItemView engineview="SynthesisOnly" guiview="Source" compilemode="AutoCompile" >
+      <ClosedNodes>
+         <ClosedNodesVersion>2</ClosedNodesVersion>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/ibufmiso - ipad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/ibufrx - ipad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/mixer - zpuino_io_audiomixer - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin00 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin01 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin02 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin03 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin04 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin05 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin06 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin07 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin08 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin09 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin10 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin11 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin12 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin13 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin14 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin15 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin16 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin17 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin18 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin19 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin20 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin21 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin22 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin23 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin24 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin25 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin26 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin27 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin28 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin29 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin30 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin31 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin32 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin33 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin34 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin35 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin36 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin37 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin38 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin39 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin40 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin41 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin42 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin43 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin44 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin45 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin46 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/pin47 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/slot0 - zpuino_spi - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/slot1 - zpuino_spi - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/slot11 - zpuino_uart - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/slot14 - wb_sid6581 - rtl</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/timers_inst - zpuino_timers - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/uart_inst - zpuino_uart - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|GadgetFactory_Engineering|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|retrocade_ppro|papilio_one_top.vhd/zpuino - zpuino_top - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/ibufmiso - ipad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/ibufrx - ipad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/mixer - zpuino_io_audiomixer - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin00 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin01 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin02 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin03 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin04 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin05 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin06 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin07 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin08 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin09 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin10 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin11 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin12 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin13 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin14 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin15 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin16 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin17 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin18 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin19 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin20 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin21 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin22 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin23 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin24 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin25 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin26 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin27 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin28 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin29 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin30 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin31 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin32 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin33 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin34 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin35 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin36 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin37 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin38 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin39 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin40 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin41 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin42 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin43 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin44 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin45 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin46 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/pin47 - iopad - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/slot0 - zpuino_spi - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/slot1 - zpuino_spi - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/slot11 - zpuino_uart - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/slot14 - wb_sid6581 - rtl</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/timers_inst - zpuino_timers - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/uart_inst - zpuino_uart - behave</ClosedNode>
+         <ClosedNode>/papilio_one_top - behave C:|Users|killian|Dropbox|GadgetFactory|zpuino_main|ZPUino-HDL|zpu|hdl|zpuino|boards|papilio_one|s3e500|variants|sid|papilio_one_top.vhd/zpuino - zpuino_top - behave</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>papilio_one_top - behave (C:/Dropbox/GadgetFactory/GadgetFactory_Engineering/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/retrocade_lite/papilio_one_top.vhd)</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >2</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff000000000000000100000001000000000000000000000000000000000202000000010000000100000064000004c5000000020000000000000000000000000200000064ffffffff000000810000000300000002000004c50000000100000003000000000000000100000003</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >true</UserChangedColumnWidths>
+      <CurrentItem>papilio_one_top - behave (C:/Dropbox/GadgetFactory/GadgetFactory_Engineering/ZPUino-HDL/zpu/hdl/zpuino/boards/papilio_one/s3e500/variants/retrocade_lite/papilio_one_top.vhd)</CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_VHDL_ARCHITECTURE" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>Configure Target Device</ClosedNode>
+         <ClosedNode>Implement Design</ClosedNode>
+         <ClosedNode>Synthesize - XST</ClosedNode>
+         <ClosedNode>User Constraints</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>Generate Programming File</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff000000000000000100000001000000000000000000000000000000000000000000000001dd000000010000000100000000000000000000000064ffffffff000000810000000000000001000001dd0000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>Generate Programming File</CurrentItem>
+   </ItemView>
+   <ItemView guiview="File" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>C:\Dropbox\GadgetFactory\GadgetFactory_Engineering\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\zpu_config.vhd</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff0000000000000001000000000000000001000000000000000000000000000000000000052b000000040101000100000000000000000000000064ffffffff000000810000000000000004000003c400000001000000000000009d0000000100000000000000660000000100000000000000640000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>C:\Dropbox\GadgetFactory\GadgetFactory_Engineering\ZPUino-HDL\zpu\hdl\zpuino\boards\papilio_one\s3e500\zpu_config.vhd</CurrentItem>
+   </ItemView>
+   <ItemView guiview="Library" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>work</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems/>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000000000000010000000000000000000000000000000000000109000000010001000100000000000000000000000064ffffffff000000810000000000000001000001090000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>work</CurrentItem>
+   </ItemView>
+   <SourceProcessView>000000ff00000000000000020000011b0000011b01000000050100000002</SourceProcessView>
+   <CurrentView>Implementation</CurrentView>
+   <ItemView engineview="SynthesisOnly" sourcetype="" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>Design Utilities</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem/>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff000000000000000100000001000000000000000000000000000000000000000000000001e6000000010000000100000000000000000000000064ffffffff000000810000000000000001000001e60000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem/>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_UCF" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems/>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" />
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem/>
+   </ItemView>
+</Project>

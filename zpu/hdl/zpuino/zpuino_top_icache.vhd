@@ -111,7 +111,6 @@ architecture behave of zpuino_top_icache is
   signal i_slot_interrupt: slot_std_logic_type;
   signal i_slot_id:    slot_id_type;
 
-
   signal io_read:    std_logic_vector(wordSize-1 downto 0);
   signal io_write:   std_logic_vector(wordSize-1 downto 0);
   signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
@@ -129,7 +128,6 @@ architecture behave of zpuino_top_icache is
   signal wb_we:       std_logic;
   signal wb_ack:     std_logic;
 
-  --signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
 
   signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);

@@ -1,7 +1,7 @@
 --
 -- Sigma-delta output
 --
--- Copyright 2008,2009,2010 Álvaro Lopes <alvieboy@alvie.com>
+-- Copyright 2008,2009,2010 ï¿½lvaro Lopes <alvieboy@alvie.com>
 --
 -- Version: 1.2
 --
@@ -63,6 +63,7 @@ entity zpuino_sigmadelta is
     sync_in:  in std_logic;
 
     -- Connection to GPIO pin
+	 raw_out: out std_logic_vector(17 downto 0);
     spp_data: out std_logic_vector(1 downto 0);
     spp_en:   out std_logic_vector(1 downto 0)
   );
@@ -115,6 +116,8 @@ begin
   wb_dat_o <= (others => DontCareValue);
   wb_inta_o <= '0';
   wb_ack_o <= wb_cyc_i and wb_stb_i;
+  raw_out(17 downto 2) <= std_logic_vector(dat_q1(15 downto 0));
+  raw_out(1 downto 0)<=(others => '0');
 
 process(wb_clk_i)
   variable in_le1,in_le2: std_logic_vector(15 downto 0);

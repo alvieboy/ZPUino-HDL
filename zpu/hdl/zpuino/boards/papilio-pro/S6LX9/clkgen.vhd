@@ -109,6 +109,8 @@ begin
   clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
   clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
 
+
+
 pll_base_inst : PLL_ADV
   generic map
    (BANDWIDTH            => "OPTIMIZED",
@@ -121,12 +123,12 @@ pll_base_inst : PLL_ADV
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
     CLKOUT1_DIVIDE       => 10,
-    CLKOUT1_PHASE        => 250.0,--300.0,--155.52,--103.700,--343.125,
+    CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKIN1_PERIOD         => 31.250,
+    CLKIN1_PERIOD        => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
@@ -142,16 +144,15 @@ pll_base_inst : PLL_ADV
     RST                 => '0',
     -- Input clock control
     CLKFBIN             => clkfb,
-    CLKIN1               => clkin_i,
-    CLKIN2 => '0',
-      CLKINSEL => '1',
-      DADDR => (others => '0'),
-      DCLK => '0',
-      DEN => '0',
-      DI => (others => '0'),
-      DWE => '0',
-      REL => '0'
-
+    CLKIN1              => clkin_i,
+    CLKIN2              => '0',
+    CLKINSEL            => '1',
+    DADDR               => (others => '0'),
+    DCLK                => '0',
+    DEN                 => '0',
+    DI                  => (others => '0'),
+    DWE                 => '0',
+    REL                 => '0'
    );
 
 end behave;

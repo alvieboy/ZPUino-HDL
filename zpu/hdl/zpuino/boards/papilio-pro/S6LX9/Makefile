@@ -4,8 +4,7 @@ PART=xc6slx9-2-tqg144
 # For bootloader
 BOARD=PAPILIO_PRO
 SIZE=16384
-DEFINES="-DBOARD_ID=0xA5041700 -DBOARD_MEMORYSIZE=0x800000 -DZPU20 -DZPUINO_HAS_ICACHE"
-#define ZPUINO_HAS_ICACHE
+DEFINES="-DBOARD_ID=0xB4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPU20 -DZPUINO_HAS_ICACHE"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
@@ -24,7 +23,7 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -w -mt 2 -p ${PART} \
-	 -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
+	-detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd
