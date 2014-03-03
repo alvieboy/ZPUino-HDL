@@ -1,3 +1,5 @@
+#include "register.h"
+
 #define STACKTOP (BOARD_MEMORYSIZE - 0x8)
 
 .text
@@ -13,6 +15,30 @@ start_sketch:
         popsp
         im __sketch_start
         poppc
+
+        .globl ___zpu_interrupt_vector
+        .type ___zpu_interrupt_vector, @function
+___zpu_interrupt_vector:
+        im _memreg
+        load
+        im _memreg+4
+        load
+        ;im _memreg+8
+        ;load
+        im ivector
+        call
+        ;im _memreg+8
+        ;store
+        im _memreg+4
+        store
+        im _memreg
+        store
+        im 1
+        nop
+        im INTRBASE
+        store
+        poppc
+.size ___zpu_interrupt_vector, . - ___zpu_interrupt_vector
 
 .section ".boots", ""
 

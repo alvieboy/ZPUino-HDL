@@ -2,27 +2,6 @@
 #include "zpuino.h"
 extern void (*ivector)(void);
 
-void ___zpu_interrupt_vector()
-{
-	__asm__("im _memreg\n"
-			"load\n"
-			"im _memreg+4\n"
-			"load\n"
-			"im _memreg+8\n"
-			"load\n"
-		   );
-	ivector();
-	__asm__("im _memreg+8\n"
-			"store\n"
-			"im _memreg+4\n"
-			"store\n"
-			"im _memreg+2\n"
-			"store\n"
-		   );
-	// Re-enable interrupts
-	INTRCTL=1;
-}
-
 extern unsigned char __ram_start,__data_start,__data_end;
 
 static void __copy_data(void)
