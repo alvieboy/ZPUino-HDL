@@ -30,8 +30,6 @@ ZPUino 2.0
 | 0x93010F00 | S3ESK         | S3E500   | 32Kb                                |
 | 0x93010E01 | S3ESK         | S3E500   | 16Kb + 8 bit HQVGA                  |
 | 0x93011A00 | S3ESK         | S3E500   | 64MB (8K Inst Cache)                |
-| 0xB4030E00 | GF Papilioplus| S6 LX4   | 16Kb                                |
-| 0xB4040F00 | GF Papilioplus| S6 LX9   | 32Kb                                |
 | 0x94010F00 | Nexys2        | S3E1200  | 32Kb                                |
 | 0xB4031700 | GF PapilioPro | S6 LX9   | 8MB SDRAM (8K Inst Cache) 	      |
 | 0xB5010F00 | OHO GODIL     | S3E500   | 32Kb                                |
