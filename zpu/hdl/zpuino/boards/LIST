@@ -23,14 +23,6 @@ ZPUino 2.0
 
 |     ID     |     Board     |   FPGA   | Notes                               |
 +------------+---------------+----------+-------------------------------------+
-| 0xB4010F00 | GF PapilioOne | S3E500   | 32Kb                                |
-| 0xB4010E01 | GF PapilioOne | S3E500   | 16Kb + 8 bit HQVGA                  |
-| 0xB4020F00 | GF PapilioOne | S3E250   | 16Kb+4Kb                            |
-| 0xB4020E00 | GF PapilioOne | S3E250   | 16Kb                                |
-| 0x93010F00 | S3ESK         | S3E500   | 32Kb                                |
-| 0x93010E01 | S3ESK         | S3E500   | 16Kb + 8 bit HQVGA                  |
 | 0x93011A00 | S3ESK         | S3E500   | 64MB (8K Inst Cache)                |
-| 0x94010F00 | Nexys2        | S3E1200  | 32Kb                                |
 | 0xB4031700 | GF PapilioPro | S6 LX9   | 8MB SDRAM (8K Inst Cache) 	      |
-| 0xB5010F00 | OHO GODIL     | S3E500   | 32Kb                                |
 | 0xB6011900 | Xess XuLA2    | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
