@@ -132,6 +132,19 @@ int parse_arguments(int argc,char **const argv)
 	}
 }
 
+void comms_error()
+{
+	fprintf(stderr,"Cannot get programmer version, aborting\n");
+	fprintf(stderr,"\nCould not contact ZPUino embedded programmer.\n");
+	fprintf(stderr,"The more common reasons for this are:\n\n");
+	fprintf(stderr,"a) You are not specifying the correct port. The port currently selected is '%s'\n",
+		serialport);
+	fprintf(stderr,"b) The board FPGA is not programmed with a valid ZPUino bitfile.\n");
+	fprintf(stderr,"c) The board is properly not powered.\n");
+	fprintf(stderr,"\nPlease review all of above, if problem persists please contact support.\n");
+
+}
+
 int help(char *name)
 {
 	printf("This is ZPUino programmer, version " VERSION "\n\n");
@@ -731,7 +744,7 @@ int main(int argc, char **argv)
 			printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
 		}
 	} else {
-		fprintf(stderr,"Cannot get programmer version, aborting\n");
+		comms_error();
 		conn_close(conn);
 		return -1;
 	}
