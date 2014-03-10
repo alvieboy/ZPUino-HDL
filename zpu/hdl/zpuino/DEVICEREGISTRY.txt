@@ -28,3 +28,4 @@
 04 OpenCores
 	01 I2C Master Controller
 	02 CORDIC
+        03 PS/2 Controller
