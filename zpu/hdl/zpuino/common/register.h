@@ -17,6 +17,8 @@
 # include "board_nexys3.h"
 #elif defined( __ZPUINO_XULA2__ )
 # include "board_xula2.h"
+#elif defined( __ZPUINO_EMS11__ )
+# include "board_ems11.h"
 #else
 #  error Unknown board.
 # endif

@@ -773,6 +773,14 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_EMS11__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
 #if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ )
 inline void configure_pins()
 {
