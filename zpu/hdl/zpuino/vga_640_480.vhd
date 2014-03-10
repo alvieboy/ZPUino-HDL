@@ -207,13 +207,13 @@ begin
     variable r: unsigned(15 downto 0);
   begin
     wb_dat_o(31 downto 0) <= (others => '0');
-    case wb_adr_i(1 downto 0) is
+    case wb_adr_i(3 downto 2) is
       when "00" =>
         wb_dat_o(0) <= v_display_in_wbclk;
       when "01" =>
-        r := conv_integer(VGA_H_DISPLAY,16);
+        r := to_unsigned(VGA_H_DISPLAY,16);
         wb_dat_o(31 downto 16) <= std_logic_vector(r);
-        r := conv_integer(VGA_V_DISPLAY,16);
+        r := to_unsigned(VGA_V_DISPLAY,16);
         wb_dat_o(15 downto 0) <= std_logic_vector(r);
       when "10" =>
         -- Pixel format
