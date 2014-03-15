@@ -40,7 +40,8 @@ entity vga_640_480 is
     vga_vsync:  out std_logic;
     vga_b:      out std_logic_vector(4 downto 0);
     vga_r:      out std_logic_vector(4 downto 0);
-    vga_g:      out std_logic_vector(4 downto 0)
+    vga_g:      out std_logic_vector(4 downto 0);
+    blank:      out std_logic
   );
 end entity;
 
@@ -482,7 +483,9 @@ begin
           vga_b <= (others => '0');
           vga_r <= (others => '0');
           vga_g <= (others => '0');
+          blank <= '1';
       else
+          blank <= '0';
           if hflip='1' then
             vga_b <= read(4 downto 0);
             vga_r <= read(9 downto 5);
