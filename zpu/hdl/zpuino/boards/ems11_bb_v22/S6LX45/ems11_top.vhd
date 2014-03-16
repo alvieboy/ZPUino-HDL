@@ -352,6 +352,7 @@ architecture behave of ems11_top is
   signal vga_g:       std_logic_vector(4 downto 0);
   signal vga_blank:   std_logic;
 
+  signal extrst:      std_logic;
 begin
 
 
@@ -369,10 +370,12 @@ begin
       rstout    => sysrst
     );
 
+  extrst <= not i_RESET_n;
+
   clkgen_inst: clkgen
   port map (
     clkin   => i_50MHZ,
-    rstin   => '0'  ,
+    rstin   => extrst,
     clkout  => sysclk,
     clkout1  => sysclk_sram_we,
     clkout2  => sysclk_sram_wen,
