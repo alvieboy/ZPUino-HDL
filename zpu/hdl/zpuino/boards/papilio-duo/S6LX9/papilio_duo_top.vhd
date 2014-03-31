@@ -454,7 +454,7 @@ begin
     s0_wb_dat_i   => sram_wb_dat_o,
     s0_wb_dat_o   => sram_wb_dat_i,
     s0_wb_adr_o   => sram_wb_adr_i(maxAddrBit downto 2),
-    s0_wb_sel_o   => open,
+    s0_wb_sel_o   => sram_wb_sel_i,
     s0_wb_cti_o   => open,
     s0_wb_we_o    => sram_wb_we_i,
     s0_wb_cyc_o   => sram_wb_cyc_i,
