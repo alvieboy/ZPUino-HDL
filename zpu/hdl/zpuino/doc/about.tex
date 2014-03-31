@@ -12,17 +12,19 @@ Hardware-wise, ZPUino currently integrates the following devices:
 \item A 16-bit and a 24-bit timer.
 \item One TSC (Time Stamp Counter)
 \item 128-bit GPIO interface
-\item Interrupt Controller
+\item System Controller
 \item Two SigmaDelta outputs
 \item Peripheral Pin Select
 \item VGA (optional)
 \end{itemize}
 
+See chapter \ref{iodevices} which discuss IO devices for more information.
+
 Software-wise, it supports the following features:
 
 \begin{itemize}
 \item 4Kb Bootloader, which includes required emulation code for ZPU.
-\item Bootstraps code from program flash (shadows into FPGA blockram)
+\item Bootstraps code from program flash (shadows into RAM)
 \item Serial programming of program flash.
 \end{itemize}
 
@@ -89,7 +91,7 @@ VGA features:
 
 ZPUino programmer:
 \begin{itemize}
-\item 1Mbps programming speed
+\item Up to 1Mbps programming speed
 \item Supports programming both sketches and FPGA bitfile [if ZPUino bootloader already loaded]
 \item Support for upload-to-ram
 \end{itemize}
