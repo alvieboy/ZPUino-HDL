@@ -744,4 +744,27 @@ package zpuinopkg is
   );
   end component;
 
+  component zpuino_pwmaudio is
+	port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_inta_o:out std_logic;
+    id:       out slot_id;
+
+    sync_in:  in std_logic;
+
+    -- Connection to GPIO pin
+	  raw_out: out std_logic_vector(17 downto 0);
+    spp_data: out std_logic_vector(1 downto 0);
+    spp_en:   out std_logic_vector(1 downto 0)
+  );
+  end component;
+
 end package zpuinopkg;
