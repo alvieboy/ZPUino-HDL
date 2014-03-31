@@ -11,7 +11,7 @@
         13 Dual Timer Interface with PWM
         14 16-Bit Dual SigmaDelta
         15 Hardware CRC16 engine
-        17 Seven Segment Display Driver
+        16 Seven Segment Display Driver
         18 HQVGA (240x160) 8-bit Graphics Adaptor
         19 8-bit single-port Character RAM
         1A VGA (640x480) 15-bit Graphics Adaptor
