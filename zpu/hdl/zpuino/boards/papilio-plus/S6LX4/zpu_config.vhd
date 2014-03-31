@@ -55,7 +55,7 @@ package zpu_config is
 
   -- Stack size
 
-  constant stackSize_bits: integer := 9;
+  constant stackSize_bits: integer := 13;
 
 
 	-- start byte address of stack. 
