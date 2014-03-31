@@ -55,28 +55,56 @@ entity papilio_pro_top is
     SPI_MOSI:   out std_logic;
     SPI_CS:     out std_logic;
 
-    -- WING connections
-    WING_A:     inout std_logic_vector(15 downto 0);
-    WING_B:     inout std_logic_vector(15 downto 0);
-    WING_C:     inout std_logic_vector(15 downto 0);
 
     -- UART (FTDI) connection
     TXD:        out std_logic;
     RXD:        in std_logic;
 
     DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (12 downto 0);
-     DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
-     DRAM_CAS_N   : OUT   STD_LOGIC;
-     DRAM_CKE      : OUT   STD_LOGIC;
-     DRAM_CLK      : OUT   STD_LOGIC;
-     DRAM_CS_N   : OUT   STD_LOGIC;
-     DRAM_DQ      : INOUT STD_LOGIC_VECTOR(15 downto 0);
-     DRAM_DQM      : OUT   STD_LOGIC_VECTOR(1 downto 0);
-     DRAM_RAS_N   : OUT   STD_LOGIC;
-     DRAM_WE_N    : OUT   STD_LOGIC;
+    DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
+    DRAM_CAS_N   : OUT   STD_LOGIC;
+    DRAM_CKE      : OUT   STD_LOGIC;
+    DRAM_CLK      : OUT   STD_LOGIC;
+    DRAM_CS_N   : OUT   STD_LOGIC;
+    DRAM_DQ      : INOUT STD_LOGIC_VECTOR(15 downto 0);
+    DRAM_DQM      : OUT   STD_LOGIC_VECTOR(1 downto 0);
+    DRAM_RAS_N   : OUT   STD_LOGIC;
+    DRAM_WE_N    : OUT   STD_LOGIC;
 
+    -- Others
+
+    LED:          out std_logic_vector(7 downto 0);
+    SWITCH:       in std_logic_vector(7 downto 0);
+
+    JOY_RIGHT:    in std_logic;
+    JOY_LEFT :    in std_logic;
+    JOY_DOWN :    in std_logic;
+    JOY_UP   :    in std_logic;
+    JOY_SELECT:   in std_logic;
+
+    Seg7_AN:        out std_logic(3 downto 0);
+    Seg7_DP:        out std_logic;
+    Seg7_E:        out std_logic;
+    Seg7_F:        out std_logic;
+    Seg7_C:        out std_logic;
+    Seg7_D:        out std_logic;
+    Seg7_A:        out std_logic;
+    Seg7_G:        out std_logic;
+    Seg7_B:        out std_logic;
+
+    SPI_CS:        out std_logic;  -- ADC
+    SPI_MISO:        in std_logic; -- ADC
+    SPI_MOSI:        out std_logic; -- ADC
+    SPI_SCLK:        out std_logic; -- ADC
+
+    VGA_VSYNC:        out std_logic;
+    VGA_HSYNC:        out std_logic;
+    VGA_BLUE:     out std_logic_vector(1 downto 0);
+    VGA_GREEN:    out std_logic_vector(2 downto 0);
+    VGA_RED:      out std_logic_vector(2 downto 0);
+    AUDIO:        out std_logic;
     -- The LED
-    LED:        out std_logic
+    LED1:        out std_logic
   );
 end entity papilio_pro_top;
 
@@ -150,15 +178,15 @@ architecture behave of papilio_pro_top is
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
-    "1111111111111111" &  -- Wing C
-    "1111111111111111" &  -- Wing B
-    "1111111111111111";   -- Wing A
+    "0000000000000000" &  -- Wing C
+    "0000000000000000" &  -- Wing B
+    "0000000000000000";   -- Wing A
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "00" &                -- SPI CS and LED
-    "1111111111111111" &  -- Wing C
-    "1111111111111111" &  -- Wing B
-    "1111111111111111";   -- Wing A
+    "0000000000000000" &  -- Wing C
+    "0000000000000000" &  -- Wing B
+    "0000000000000000";   -- Wing A
 
   -- I/O Signals
   signal slot_cyc:    slot_std_logic_type;
