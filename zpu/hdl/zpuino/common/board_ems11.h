@@ -17,6 +17,8 @@
 #define IO_SLOT_OFFSET_BIT 23
 
 #define FPGA_PIN_FLASHCS     30
+#define FPGA_PIN_LED1        31
+#define FPGA_PIN_LED2        32
 
 #define SPI_FLASH_SEL_PIN FPGA_PIN_FLASHCS
 
