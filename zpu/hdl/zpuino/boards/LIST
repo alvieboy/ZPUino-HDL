@@ -13,5 +13,6 @@ Current board listing
 | 0xA4040F00 | GF Papilioplus| S6 LX9   | 32Kb                                |
 | 0x84010F00 | Nexys2        | S3E1200  | 32Kb                                |
 | 0xA4031700 | GF PapilioPro | S6 LX9   | 8MB SDRAM (8K Inst Cache) 	      |
+| 0xA4051300 | GF Papilio Duo| S6 LX9   | 32Kb                                |
 | 0xA5010F00 | OHO GODIL     | S3E500   | 32Kb                                |
 | 0xA6011900 | Xess XuLA2    | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |

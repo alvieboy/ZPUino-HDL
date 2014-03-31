@@ -405,6 +405,32 @@ package zpuinopkg is
   );
   end component sram_ctrl;
 
+  component sram_ctrl8 is
+  port (
+    wb_clk_i: in std_logic;
+	 	wb_rst_i: in std_logic;
+
+    wb_dat_o: out std_logic_vector(31 downto 0);
+    wb_dat_i: in std_logic_vector(31 downto 0);
+    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
+    wb_sel_i: in std_logic_vector(3 downto 0);
+    wb_we_i:  in std_logic;
+    wb_cyc_i: in std_logic;
+    wb_stb_i: in std_logic;
+    wb_ack_o: out std_logic;
+    wb_stall_o: out std_logic;
+    clk_we: in std_logic;
+    clk_wen: in std_logic;
+
+    -- SRAM signals
+    sram_addr:  out std_logic_vector(18 downto 0);
+    sram_data:  inout std_logic_vector(7 downto 0);
+    sram_ce:    out std_logic;
+    sram_we:    out std_logic;
+    sram_oe:    out std_logic
+  );
+  end component sram_ctrl8;
+
   component zpuino_sevenseg is
   generic (
     BITS: integer := 2;
