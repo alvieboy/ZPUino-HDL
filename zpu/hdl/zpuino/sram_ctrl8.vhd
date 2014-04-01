@@ -123,7 +123,7 @@ begin
     when stage2 =>
       out_write_enable <= not (write_save_q and sel_q(2));
     when stage3 =>
-      out_write_enable <= not (write_save_q and sel_q(2));
+      out_write_enable <= not (write_save_q and sel_q(3));
   end case;
 end process;
 
@@ -290,6 +290,7 @@ begin
             state <= stage1;
           else
             sram_ce_i <= '1';
+            sram_oe_i <= '1';
           end if;
 
         when stage1 =>
@@ -303,24 +304,25 @@ begin
         when stage2 =>
 
             sram_data_write <= wb_dat_i(23 downto 16);
-            sram_oe_i <= wb_we_i;
-            ntristate <= wb_we_i;
+            sram_oe_i <= write_save_q;
+            ntristate <= write_save_q;
             sram_ce_i <= '0';
             state <= stage3;
 		  
         when stage3 =>
 
             sram_data_write <= wb_dat_i(31 downto 24);
-            sram_oe_i <= wb_we_i;
-            ntristate <= wb_we_i;
+            sram_oe_i <= write_save_q;
+            ntristate <= write_save_q;
             sram_ce_i <= '0';
             state <= stage4;
 
         when stage4 =>
 
           ack_q <= '1';
-
-
+          sram_oe_i <= write_save_q;
+          ntristate <= write_save_q;
+          sram_ce_i <= '0';
           if wb_stb_i='1' and wb_cyc_i='1' then
             sram_data_write <= wb_dat_i(7 downto 0);
             sram_oe_i <= wb_we_i;
@@ -328,9 +330,9 @@ begin
             sram_ce_i <= '0';
             state <= stage1; --Should this be stage1? I think so, JPG
           else
-            sram_oe_i <= '1';
-            ntristate <= '1';
-            sram_ce_i <= '0';
+            --sram_oe_i <= '1';
+            --ntristate <= '1';
+            --sram_ce_i <= '0';
             state <= idle;
           end if;
 

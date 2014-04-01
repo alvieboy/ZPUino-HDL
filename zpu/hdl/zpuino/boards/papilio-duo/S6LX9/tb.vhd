@@ -34,10 +34,8 @@ architecture sim of tb is
     sram_data:  inout std_logic_vector(7 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
-    sram_oe:    out std_logic;
+    sram_oe:    out std_logic
 
-    -- The LED
-    LED:        out std_logic
   );
   end component;
 

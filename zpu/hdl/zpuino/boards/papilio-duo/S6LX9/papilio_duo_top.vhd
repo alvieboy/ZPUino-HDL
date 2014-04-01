@@ -194,6 +194,7 @@ architecture behave of papilio_duo_top is
   signal ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
   signal ram_wb_cyc_i:       std_logic;
   signal ram_wb_stb_i:       std_logic;
+  signal ram_wb_sel_i:       std_logic_vector(3 downto 0);
   signal ram_wb_we_i:        std_logic;
   signal ram_wb_stall_o:     std_logic;
 
@@ -203,6 +204,7 @@ architecture behave of papilio_duo_top is
   signal np_ram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
   signal np_ram_wb_cyc_i:       std_logic;
   signal np_ram_wb_stb_i:       std_logic;
+  signal np_ram_wb_sel_i:       std_logic_vector(3 downto 0);
   signal np_ram_wb_we_i:        std_logic;
 
   signal sram_wb_ack_o:       std_logic;
@@ -396,6 +398,7 @@ begin
       ram_wb_adr_o      => np_ram_wb_adr_i(maxAddrBit downto 0),
       ram_wb_cyc_o      => np_ram_wb_cyc_i,
       ram_wb_stb_o      => np_ram_wb_stb_i,
+      ram_wb_sel_o      => np_ram_wb_sel_i,
       ram_wb_we_o       => np_ram_wb_we_i,
 
       rom_wb_ack_i      => rom_wb_ack_o,
@@ -430,7 +433,7 @@ begin
     m0_wb_dat_o   => ram_wb_dat_o,
     m0_wb_dat_i   => ram_wb_dat_i,
     m0_wb_adr_i   => ram_wb_adr_i(maxAddrBit downto 2),
-    m0_wb_sel_i   => (others => '1'),
+    m0_wb_sel_i   => ram_wb_sel_i,
     m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
     m0_wb_we_i    => ram_wb_we_i,
     m0_wb_cyc_i   => ram_wb_cyc_i,
@@ -526,11 +529,11 @@ begin
     m_wb_dat_o  => np_ram_wb_dat_o,
     m_wb_dat_i  => np_ram_wb_dat_i,
     m_wb_adr_i  => np_ram_wb_adr_i,
-    m_wb_sel_i  => (others => '1'),
     m_wb_cti_i  => CTI_CYCLE_CLASSIC,
     m_wb_we_i   => np_ram_wb_we_i,
     m_wb_cyc_i  => np_ram_wb_cyc_i,
     m_wb_stb_i  => np_ram_wb_stb_i,
+    m_wb_sel_i  => np_ram_wb_sel_i,
     m_wb_ack_o  => np_ram_wb_ack_o,
 
     -- Slave signals
@@ -538,7 +541,7 @@ begin
     s_wb_dat_i  => ram_wb_dat_o,
     s_wb_dat_o  => ram_wb_dat_i,
     s_wb_adr_o  => ram_wb_adr_i,
-    s_wb_sel_o  => open,
+    s_wb_sel_o  => ram_wb_sel_i,
     s_wb_cti_o  => open,
     s_wb_we_o   => ram_wb_we_i,
     s_wb_cyc_o  => ram_wb_cyc_i,

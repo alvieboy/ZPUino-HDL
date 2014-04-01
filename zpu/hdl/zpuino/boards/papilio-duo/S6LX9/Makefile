@@ -23,7 +23,7 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
 	map -intstyle ise -p ${PART} \
-	 -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
+	 -detail -ir off -w -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd
