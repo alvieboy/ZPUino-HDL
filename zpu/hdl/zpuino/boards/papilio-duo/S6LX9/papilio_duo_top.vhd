@@ -69,10 +69,8 @@ entity papilio_duo_top is
     sram_data:  inout std_logic_vector(7 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;
-    sram_oe:    out std_logic;
+    sram_oe:    out std_logic
 
-    -- The LED
-    LED:        out std_logic
   );
 end entity papilio_duo_top;
 
@@ -365,7 +363,7 @@ begin
   ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
   ospics:   OPAD port map ( I => gpio_o(48),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
-  oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
+  --oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
   zpuino:zpuino_top_icache
     port map (

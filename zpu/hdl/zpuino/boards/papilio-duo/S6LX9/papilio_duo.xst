@@ -3,7 +3,7 @@ set -xsthdpdir "xst"
 run
 -ifn papilio_duo.prj
 -ifmt mixed
--ofn papilio_plus
+-ofn papilio_duo
 -ofmt NGC
 -p xc6slx9-2-tqg144
 -top papilio_duo_top

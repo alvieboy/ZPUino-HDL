@@ -224,7 +224,7 @@ begin
 
   mysram: sram
     GENERIC MAP (
-      size      => 8192,  -- number of memory words
+      size      => 524288,  -- number of memory words
       adr_width => 19,  -- number of address bits
       width     => 8,  -- number of bits per memory word
 

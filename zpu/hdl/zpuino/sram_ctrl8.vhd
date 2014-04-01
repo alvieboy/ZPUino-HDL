@@ -68,9 +68,10 @@ signal sram_data_read_q: std_logic_vector(31 downto 0);
 signal out_addr: std_logic_vector(maxIOBit downto minIOBit);
 signal addr_save_q: std_logic_vector(maxIOBit downto minIOBit);
 signal write_save_q: std_logic;
+signal sel_q: std_logic_vector(3 downto 0);
+signal ack_q: std_logic;
 signal stall: std_logic;
-
-signal ack_q, ack_q_q, ack_q_q_q: std_logic;
+signal ntristate: std_logic;
 
 signal sram_ce_i: std_logic :='1';
 signal sram_we_i: std_logic :='1';
@@ -98,22 +99,31 @@ sram_oe <= sram_oe_i;
 
 wb_stall_o <= stall;
 
-sram_data <= sram_data_write_i when wb_we_i='1' and wb_cyc_i='1' else (others => 'Z');
+
+--with sram_oe_i select
+--  sram_data <= transport sram_data_write_i after 1.7 ns when '1',
+--               (others => 'Z') after 8 ns when others;
+
+sram_data <= sram_data_write_i when ntristate='1' else (others => 'Z') after 8 ns;
 
 sram_data_write_i <= transport sram_data_write after 1.7 ns;
 
 
-process(state,wb_cyc_i,wb_stb_i,wb_we_i,write_save_q)
+process(state,wb_cyc_i,wb_stb_i,wb_we_i,write_save_q,wb_sel_i, sel_q)
 begin
   case state is
-    when idle =>
+    when idle | stage4 =>
       if wb_cyc_i='1' and wb_stb_i='1' then
-        out_write_enable <= not wb_we_i;
+        out_write_enable <= not (wb_we_i and wb_sel_i(0));
       else
         out_write_enable <= '1';
       end if;
-    when stage1 | stage2 | stage3 | stage4 =>
-      out_write_enable <= not write_save_q;
+    when stage1 =>
+      out_write_enable <= not (write_save_q and sel_q(1));
+    when stage2 =>
+      out_write_enable <= not (write_save_q and sel_q(2));
+    when stage3 =>
+      out_write_enable <= not (write_save_q and sel_q(2));
   end case;
 end process;
 
@@ -146,7 +156,7 @@ saq: for index in 2 to 18 generate
       INIT          => '0',
       SRTYPE        => "ASYNC") 
     port map (
-      D0 => out_addr(index+2),
+      D0 => out_addr(index),
       Q => sram_addr_q(index),
       C0 => wb_clk_i,
       D1 => '0',
@@ -212,33 +222,21 @@ process(wb_clk_i)
 begin
   if falling_edge(wb_clk_i) then
     sram_data_read_q(31 downto 24) <= sram_data_read;
-	sram_data_read_q(23 downto 0) <= sram_data_read_q(31 downto 8);
+	  sram_data_read_q(23 downto 0) <= sram_data_read_q(31 downto 8);
   end if;
 end process;
-
---process(clk_wen)
---begin
---  if rising_edge(clk_wen) then
---    sram_data_read_q(31 downto 16) <= sram_data_read;
---    sram_data_read_q(15 downto 0) <= sram_data_read_q(31 downto 16);
---  end if;
---end process;
 
 process(state, wb_cyc_i, wb_stb_i)
 begin
   case state is
     when idle =>
-      --if wb_cyc_i='1' and wb_stb_i='1' then
-      --  _stall <= '1';
-      --else
       stall <= '0';
-      --end if;
     when stage1 =>
       stall <= '1';
     when stage2 =>
       stall <= '1';
     when stage3 =>
-      stall <= '1';	  
+      stall <= '1';
     when others =>
       stall <= '0';
   end case;
@@ -248,39 +246,37 @@ end process;
 process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
-    if wb_stb_i='1' and stall<='0' then
+    
+    if wb_stb_i='1' and wb_cyc_i='1' and stall='0' then
       addr_save_q <= wb_adr_i;
       write_save_q <= wb_we_i;
+      sel_q <= wb_sel_i;
     end if;
 
     wb_dat_o <= sram_data_read_q;
-
+    wb_ack_o <= ack_q;
+    if wb_rst_i='1' then
+      wb_ack_o<='0';
+    end if;
   end if;
 end process;
-
-wb_ack_o <= ack_q_q;
 
 process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
     if wb_rst_i='1' then
       state <= idle;
-      --out_write_enable<='1';
-      --sram_we <= '1';
       sram_ce_i <= '1';
       sram_oe_i <= '1';
-      ack_q_q_q <= '0';
-      ack_q_q   <= '0';
---      ack_q     <= '0';
+      ntristate <= '1';
+      ack_q  <= '0';
       sram_data_write <= (others => DontCareValue);
     else
       sram_ce_i <= '1';
       sram_oe_i <= '1';
+      ntristate <= '1';
       sram_data_write <= (others => DontCareValue);
-      ack_q_q_q <= '0';
-      ack_q_q <= ack_q_q_q;
---      ack_q <= ack_q_q;
-
+      ack_q <= '0';
       case state is
 
         when idle =>
@@ -288,16 +284,19 @@ begin
 
             sram_data_write <= wb_dat_i(7 downto 0);
             sram_oe_i <= wb_we_i;
+            ntristate <= wb_we_i;
             sram_ce_i <= '0';
 
             state <= stage1;
-
+          else
+            sram_ce_i <= '1';
           end if;
 
         when stage1 =>
 
-          sram_data_write <= wb_dat_i(31 downto 24);
+          sram_data_write <= wb_dat_i(15 downto 8);
           sram_oe_i <= write_save_q;
+          ntristate <= write_save_q;
           sram_ce_i <= '0';
           state <= stage2;
 
@@ -305,29 +304,35 @@ begin
 
             sram_data_write <= wb_dat_i(23 downto 16);
             sram_oe_i <= wb_we_i;
+            ntristate <= wb_we_i;
             sram_ce_i <= '0';
             state <= stage3;
 		  
         when stage3 =>
 
-            sram_data_write <= wb_dat_i(15 downto 8);
+            sram_data_write <= wb_dat_i(31 downto 24);
             sram_oe_i <= wb_we_i;
+            ntristate <= wb_we_i;
             sram_ce_i <= '0';
             state <= stage4;
 
         when stage4 =>
 
-          if wb_stb_i='1' then
+          ack_q <= '1';
+
+
+          if wb_stb_i='1' and wb_cyc_i='1' then
             sram_data_write <= wb_dat_i(7 downto 0);
             sram_oe_i <= wb_we_i;
+            ntristate <= wb_we_i;
             sram_ce_i <= '0';
             state <= stage1; --Should this be stage1? I think so, JPG
           else
             sram_oe_i <= '1';
-            sram_ce_i <= '1';
+            ntristate <= '1';
+            sram_ce_i <= '0';
             state <= idle;
           end if;
-          ack_q_q_q <= '1'; --This should only be done at end of all 4 stages. JPG
 
         when others =>
       end case;
