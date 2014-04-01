@@ -806,7 +806,8 @@ extern "C" unsigned _bfunctions[];
 
 extern "C" void udivmodsi4(); /* Just need it's address */
 
-extern "C" int loadsketch(unsigned offset, unsigned size)
+extern "C" {
+static int loadsketch(unsigned offset, unsigned size)
 {
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	unsigned crc16base = CRC16BASE;
@@ -821,9 +822,120 @@ extern "C" int loadsketch(unsigned offset, unsigned size)
 	flush();
 	start();
 }
+}
+
+
+
+#ifdef MEMORY_TEST
+
+#define _BS(X) (const char*)(X+ (unsigned)IO_SLOT(15))
+
+extern "C" {
+static int memtest()
+{
+	volatile unsigned int *mtest;
+	volatile unsigned char *bmtest;
+	int error=0;
+	unsigned v;
+	unsigned r;
+#define PAT(x) \
+	v=x; \
+	*mtest=x; \
+	r=*mtest; \
+	if (r!=v) { \
+	error=1; \
+	break; \
+	}
+	printstring(_BS("ZPUino Memory Tester starting.\r\n\r\n"));
+	printstring(_BS("Starting simple pattern test..."));
+	do {
+		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
+			PAT(0xaaaaaaaa);
+			PAT(0x55555555);
+			PAT(0xa55aa55a);
+			PAT(0x5AF06B0F);
+			PAT(0);
+			PAT(0xffffffff);
+			PAT(0xaa000000);
+			PAT(0x00aa0000);
+			PAT(0x0000aa00);
+			PAT(0x000000aa);
+		}
+	
+		if (error) {
+			printstring(_BS("Error at address 0x"));
+			printhex((unsigned)mtest);
+			printstring(_BS(": wrote 0x"));
+			printhex((unsigned)v);
+			printstring(_BS(", read back 0x"));
+			printhex((unsigned)r);
+			printstring(_BS("\r\n"));
+			break;
+		} else {
+			printstring(_BS("Step 1 (word) passed.\r\n"));
+		}
+
+
+		printstring(_BS("Starting incremental test..."));
+		unsigned count=0;
+		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
+			*mtest= (unsigned)count;
+			count++;
+		}
+		count=0;
+		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
+			if (*mtest!= (unsigned)count) {
+				error=1;
+				break;
+			}
+			count++;
+		}
+		if (error) {
+			printstring(_BS("Error at address 0x"));
+			printhex((unsigned)mtest);
+			printstring(_BS("\r\n"));
+			break;
+		} else {
+			printstring(_BS("Step 2 (incremental) passed.\r\n"));
+		}
+		printstring(_BS("Starting bytewise incremental test..."));
+		count=0;
+		for(bmtest=(unsigned char*)0; bmtest!=(unsigned char *)(BOARD_MEMORYSIZE); bmtest++) {
+			*bmtest= count & 0xff;
+			count++;
+		}
+		count=0;
+		for(bmtest=(unsigned char*)0; bmtest!=(unsigned char*)(BOARD_MEMORYSIZE); bmtest++) {
+			if (*bmtest!= (count & 0xff)) {
+				error=1;
+				break;
+			}
+			count++;
+		}
+		if (error) {
+			printstring(_BS("Error at address 0x"));
+			printhex((unsigned)bmtest);
+			printstring(_BS("\r\n"));
+			break;
+		} else {
+			printstring(_BS("Step 3 (byte-wise) passed.\r\n"));
+		}
+
+	} while (0);
+	while (1) {
+	}
+}
+}
+#endif
 
 extern "C" int main(int argc,char**argv)
 {
+#ifdef MEMORY_TEST
+	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+	configure_pins();
+	memtest();
+	return 0;
+#endif
 	inprogrammode = 0;
 	milisseconds = 0;
 	unsigned bufferpos = 0;

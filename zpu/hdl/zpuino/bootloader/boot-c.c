@@ -24,7 +24,9 @@ void _premain()
 {
    /* __tests(); */
 #ifdef ZPUINO_HAS_ICACHE
-	__sys_load();
+#ifndef MEMORY_TEST
+    __sys_load();
+#endif
 #endif
 	main(0,0);
 }
