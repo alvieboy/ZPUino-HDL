@@ -194,10 +194,10 @@ begin
   even_odd <= (others =>DontCareValue);
   case state is
     when idle | stage4=>
+      even_odd <= "00";
       if wb_cyc_i='1' and wb_stb_i='1' then
         out_addr <= wb_adr_i;
         strobe_addr<='1';
-        even_odd <= "00";
       else
         out_addr <= (others => DontCareValue);
       end if;
@@ -214,6 +214,7 @@ begin
       strobe_addr<='1';
       even_odd <= "11";
     when others =>
+      even_odd <= "00";
       out_addr <= (others => DontCareValue);
   end case;
 end process;
@@ -246,17 +247,17 @@ end process;
 process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
-    
-    if wb_stb_i='1' and wb_cyc_i='1' and stall='0' then
-      addr_save_q <= wb_adr_i;
-      write_save_q <= wb_we_i;
-      sel_q <= wb_sel_i;
-    end if;
-
-    wb_dat_o <= sram_data_read_q;
-    wb_ack_o <= ack_q;
     if wb_rst_i='1' then
       wb_ack_o<='0';
+    else
+      if wb_stb_i='1' and wb_cyc_i='1' and stall='0' then
+        addr_save_q <= wb_adr_i;
+        write_save_q <= wb_we_i;
+        sel_q <= wb_sel_i;
+      end if;
+  
+      wb_dat_o <= sram_data_read_q;
+      wb_ack_o <= ack_q;
     end if;
   end if;
 end process;
@@ -291,6 +292,7 @@ begin
           else
             sram_ce_i <= '1';
             sram_oe_i <= '1';
+            ntristate <= '1';
           end if;
 
         when stage1 =>
