@@ -838,6 +838,8 @@ static int memtest()
 	int error=0;
 	unsigned v;
 	unsigned r;
+	unsigned e;
+	unsigned count;
 #define PAT(x) \
 	v=x; \
 	*mtest=x; \
@@ -849,6 +851,7 @@ static int memtest()
 	printstring(_BS("ZPUino Memory Tester starting.\r\n\r\n"));
 	printstring(_BS("Starting simple pattern test..."));
 	do {
+#if 0
 		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
 			PAT(0xaaaaaaaa);
 			PAT(0x55555555);
@@ -877,7 +880,7 @@ static int memtest()
 
 
 		printstring(_BS("Starting incremental test..."));
-		unsigned count=0;
+		count=0;
 		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
 			*mtest= (unsigned)count;
 			count++;
@@ -913,13 +916,62 @@ static int memtest()
 			count++;
 		}
 		if (error) {
-			printstring(_BS("Error at address 0x"));
+			printstring(_BS("\r\nError at address 0x"));
 			printhex((unsigned)bmtest);
 			printstring(_BS("\r\n"));
 			break;
 		} else {
 			printstring(_BS("Step 3 (byte-wise) passed.\r\n"));
 		}
+#endif
+		/* Mixed */
+		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
+			bmtest = (unsigned char*)mtest;
+			PAT(0xaaaaaaaa);
+			*bmtest = 0x55;
+			e=0x55aaaaaa; r=*mtest;
+			if (r!=e) {
+				error=1;
+				break;
+			}
+			bmtest++;
+			PAT(0xaaaaaaaa);
+			*bmtest = 0x55;
+			e=0xaa55aaaa; r=*mtest;
+			if (r!=e) {
+				error=1;
+				break;
+			}
+			bmtest++;
+			PAT(0xaaaaaaaa);
+			*bmtest = 0x55;
+			e=0xaaaa55aa; r=*mtest;
+			if (r!=e) {
+				error=1;
+				break;
+			}
+			bmtest++;
+			PAT(0xaaaaaaaa);
+			*bmtest = 0x55;
+			e=0xaaaaaa55; r=*mtest;
+			if (r!=e) {
+				error=1;
+				break;
+			}
+		}
+		 if (error) {
+			printstring(_BS("\r\nError at address 0x"));
+			printhex((unsigned)bmtest);
+			 printstring(_BS(": expected 0x"));
+			printhex((unsigned)e);
+			printstring(_BS(", read back 0x"));
+			printhex((unsigned)r);
+			printstring(_BS("\r\n"));
+			break;
+		} else {
+			printstring(_BS("Step 4 (endian byte-wise) passed.\r\n"));
+		}
+
 
 	} while (0);
 	while (1) {
