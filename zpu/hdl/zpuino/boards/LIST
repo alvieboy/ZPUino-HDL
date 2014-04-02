@@ -21,8 +21,9 @@ ZPUino 1.0
 
 ZPUino 2.0
 
-|     ID     |     Board     |   FPGA   | Notes                               |
-+------------+---------------+----------+-------------------------------------+
-| 0x93011A00 | S3ESK         | S3E500   | 64MB (8K Inst Cache)                |
-| 0xB4031700 | GF PapilioPro | S6 LX9   | 8MB SDRAM (8K Inst Cache) 	      |
-| 0xB6011900 | Xess XuLA2    | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
+|     ID     |         Board        |   FPGA   | Notes                               |
++------------+----------------------+----------+-------------------------------------+
+| 0x93011A00 | S3ESK                | S3E500   | 64MB (8K Inst Cache)                |
+| 0xB4031700 | GF PapilioPro        | S6 LX9   | 8MB SDRAM (8K Inst Cache)	     |
+| 0xB6011900 | Xess XuLA2           | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
+| 0xB8011A00 | Saanlima Pipistrello | S6 LX45  | 64MB LPDDR (8K Inst Cache)          |
