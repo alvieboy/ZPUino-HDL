@@ -31,54 +31,60 @@ CONFIG PROHIBIT=P60;
 NET CLK      LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;               										# CLK
 NET TXD       LOC="P141" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          										# TX
 NET RXD       LOC="P46" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    											# RX
-NET WING_A(0)     LOC="P116"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A0
-NET WING_A(1)     LOC="P117"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A1
-NET WING_A(2)     LOC="P118"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A2
-NET WING_A(3)     LOC="P119"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A3
-NET WING_A(4)     LOC="P120"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A4
-NET WING_A(5)     LOC="P121"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A5
-NET WING_A(6)     LOC="P123"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A6
-NET WING_A(7)     LOC="P124"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A7
-NET WING_A(8)     LOC="P126"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A8
-NET WING_A(9)     LOC="P127"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A9
-NET WING_A(10)     LOC="P131"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A10
-NET WING_A(11)     LOC="P132"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A11
-NET WING_A(12)     LOC="P133"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A12
-NET WING_A(13)     LOC="P134"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A13
-NET WING_A(14)     LOC="P115"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A14
-NET WING_A(15)     LOC="P114" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A15
-NET WING_B(0)     LOC="P112"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B0
-NET WING_B(1)     LOC="P111"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B1
-NET WING_B(2)     LOC="P105"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B2
-NET WING_B(3)     LOC="P102"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B3
-NET WING_B(4)     LOC="P101"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B4
-NET WING_B(5)     LOC="P100"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B5
-NET WING_B(6)     LOC="P99"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B6
-NET WING_B(7)     LOC="P98"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B7
-NET WING_B(8)     LOC="P97"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B8
-NET WING_B(9)     LOC="P95"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B9
-NET WING_B(10)     LOC="P93"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B10
-NET WING_B(11)     LOC="P92"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B11
-NET WING_B(12)     LOC="P88"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B12
-NET WING_B(13)     LOC="P87"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B13
-NET WING_B(14)     LOC="P85"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B14
-NET WING_B(15)     LOC="P84"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B15
-NET WING_C(0)     LOC="P83" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C0
-NET WING_C(1)     LOC="P82" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C1
-NET WING_C(2)     LOC="P81" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C2
-NET WING_C(3)     LOC="P80" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C3
-NET WING_C(4)     LOC="P79" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C4
-NET WING_C(5)     LOC="P78" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C5
-NET WING_C(6)     LOC="P75" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C6
-NET WING_C(7)     LOC="P74" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C7
-NET WING_C(8)     LOC="P67" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C8
-NET WING_C(9)     LOC="P66" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C9
-NET WING_C(10)     LOC="P62" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C10
-NET WING_C(11)     LOC="P61" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C11
-NET WING_C(12)     LOC="P59" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C12
-NET WING_C(13)    LOC="P58" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C13
-NET WING_C(14)     LOC="P57" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C14
-NET WING_C(15)     LOC="P56" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # C15
+NET WING_A(0)          LOC="P116" | IOSTANDARD=LVTTL;                                # A0
+NET WING_A(1)          LOC="P117" | IOSTANDARD=LVTTL;                                # A1
+NET WING_A(2)          LOC="P118" | IOSTANDARD=LVTTL;                                # A2
+NET WING_A(3)          LOC="P119" | IOSTANDARD=LVTTL;                                # A3
+NET WING_A(4)          LOC="P120" | IOSTANDARD=LVTTL;                                # A4
+NET WING_A(5)          LOC="P121" | IOSTANDARD=LVTTL;                                # A5
+NET WING_A(6)          LOC="P123" | IOSTANDARD=LVTTL;                                # A6
+NET WING_A(7)          LOC="P124" | IOSTANDARD=LVTTL;                                # A7
+NET WING_A(8)          LOC="P126" | IOSTANDARD=LVTTL;                                # A8
+NET WING_A(9)          LOC="P127" | IOSTANDARD=LVTTL;                                # A9
+NET WING_A(10)         LOC="P131" | IOSTANDARD=LVTTL;                                # A10
+NET WING_A(11)         LOC="P132" | IOSTANDARD=LVTTL;                                # A11
+NET WING_A(12)         LOC="P133" | IOSTANDARD=LVTTL;                                # A12
+NET WING_A(13)         LOC="P134" | IOSTANDARD=LVTTL;                                # A13
+
+#This is actually D0-1
+NET WING_A(14)     LOC="P98"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A14
+NET WING_A(15)     LOC="P95" | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # A15
+
+NET WING_B(0)          LOC="P115" | IOSTANDARD=LVTTL;                                # B0
+NET WING_B(1)          LOC="P114" | IOSTANDARD=LVTTL;                                # B1
+NET WING_B(2)          LOC="P112" | IOSTANDARD=LVTTL;                                # B2
+NET WING_B(3)          LOC="P111" | IOSTANDARD=LVTTL;                                # B3
+NET WING_B(4)          LOC="P105" | IOSTANDARD=LVTTL;                                # B4
+NET WING_B(5)          LOC="P102" | IOSTANDARD=LVTTL;                                # B5
+NET WING_B(6)          LOC="P101" | IOSTANDARD=LVTTL;                                # B6
+NET WING_B(7)          LOC="P100" | IOSTANDARD=LVTTL;                                # B7
+
+#This is actually D2-9
+NET WING_B(8)     LOC="P92"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B8
+NET WING_B(9)     LOC="P87"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B9
+NET WING_B(10)     LOC="P84"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B10
+NET WING_B(11)     LOC="P82"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B11
+NET WING_B(12)     LOC="P80"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B12
+NET WING_B(13)     LOC="P78"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B13
+NET WING_B(14)     LOC="P74"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B14
+NET WING_B(15)     LOC="P66"  | IOSTANDARD=LVTTL | SLEW = FAST | DRIVE = 8;                                # B15
+
+NET WING_C(0)          LOC="P99"  | IOSTANDARD=LVTTL;                                # C0
+NET WING_C(1)          LOC="P97"  | IOSTANDARD=LVTTL;                                # C1
+NET WING_C(2)          LOC="P93"  | IOSTANDARD=LVTTL;                                # C2
+NET WING_C(3)          LOC="P88"  | IOSTANDARD=LVTTL;                                # C3
+NET WING_C(4)          LOC="P85"  | IOSTANDARD=LVTTL;                                # C4
+NET WING_C(5)          LOC="P83"  | IOSTANDARD=LVTTL;                                # C5
+NET WING_C(6)          LOC="P81"  | IOSTANDARD=LVTTL;                                # C6
+NET WING_C(7)          LOC="P79"  | IOSTANDARD=LVTTL;                                # C7
+NET WING_C(8)          LOC="P75"  | IOSTANDARD=LVTTL;                                # C8
+NET WING_C(9)          LOC="P67"  | IOSTANDARD=LVTTL;                                # C9
+NET WING_C(10)         LOC="P62"  | IOSTANDARD=LVTTL;                                # C10
+NET WING_C(11)         LOC="P59"  | IOSTANDARD=LVTTL;                                # C11
+NET WING_C(12)         LOC="P57"  | IOSTANDARD=LVTTL;                                # C12
+NET WING_C(13)         LOC="P55"  | IOSTANDARD=LVTTL;                                # C13
+NET WING_C(14)         LOC="P50"  | IOSTANDARD=LVTTL;                                # C14
+NET WING_C(15)         LOC="P47"  | IOSTANDARD=LVTTL;                                # C15
 
 # SRAM
 
