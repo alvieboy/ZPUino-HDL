@@ -851,7 +851,6 @@ static int memtest()
 	printstring(_BS("ZPUino Memory Tester starting.\r\n\r\n"));
 	printstring(_BS("Starting simple pattern test..."));
 	do {
-#if 0
 		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
 			PAT(0xaaaaaaaa);
 			PAT(0x55555555);
@@ -923,8 +922,9 @@ static int memtest()
 		} else {
 			printstring(_BS("Step 3 (byte-wise) passed.\r\n"));
 		}
-#endif
-		/* Mixed */
+                /* Mixed */
+                printstring(_BS("Starting endian byte-wise test..."));
+
 		for(mtest=(unsigned*)0; mtest!=(unsigned*)(BOARD_MEMORYSIZE/4); mtest++) {
 			bmtest = (unsigned char*)mtest;
 			PAT(0xaaaaaaaa);
