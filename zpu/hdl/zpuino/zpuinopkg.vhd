@@ -98,6 +98,7 @@ package zpuinopkg is
     wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     wb_cyc_o:       out std_logic;
     wb_stb_o:       out std_logic;
+    wb_cti_o:       out std_logic_vector(2 downto 0);
     wb_sel_o:       out std_logic_vector(3 downto 0);
     wb_we_o:        out std_logic;
 

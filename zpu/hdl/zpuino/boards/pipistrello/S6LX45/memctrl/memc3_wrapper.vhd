@@ -557,7 +557,7 @@ signal uo_data : std_logic_vector(7 downto 0);
 
  constant C_PORT_ENABLE              : std_logic_vector(5 downto 0) := "000001";
 
-constant C_PORT_CONFIG             : string :=  "B64_B64";
+constant C_PORT_CONFIG             : string :=  "B32_B32_R32_R32_R32_R32";
 
 
 constant ARB_TIME_SLOT_0    : bit_vector(17 downto 0) := ("000" & "000" & "000" & "000" & "000" & C_ARB_TIME_SLOT_0(2 downto 0));
@@ -592,7 +592,7 @@ attribute X_CORE_INFO of acch : architecture IS
   "mig_v3_91_lpddr_s6, Coregen 13.4";
 
 attribute CORE_GENERATION_INFO : string;
-attribute CORE_GENERATION_INFO of acch : architecture IS "mcb3_lpddr_s6,mig_v3_91,{LANGUAGE=VHDL, SYNTHESIS_TOOL=ISE,  NO_OF_CONTROLLERS=1, AXI_ENABLE=0, MEM_INTERFACE_TYPE=LPDDR, CLK_PERIOD=5000, MEMORY_PART=mt46h32m16xxxx-5, MEMORY_DEVICE_WIDTH=16, PA_SR=FULL, OUTPUT_DRV=FULL, PORT_CONFIG=Two 64-bit bi-directional ports, MEM_ADDR_ORDER=ROW_BANK_COLUMN, PORT_ENABLE=Port0, INPUT_PIN_TERMINATION=EXTERN_TERM, DATA_TERMINATION=25 Ohms, CLKFBOUT_MULT_F=4, CLKOUT_DIVIDE=2, DEBUG_PORT=0, INPUT_CLK_TYPE=Single-Ended}";
+attribute CORE_GENERATION_INFO of acch : architecture IS "mcb3_lpddr_s6,mig_v3_91,{LANGUAGE=VHDL, SYNTHESIS_TOOL=ISE,  NO_OF_CONTROLLERS=1, AXI_ENABLE=0, MEM_INTERFACE_TYPE=LPDDR, CLK_PERIOD=5000, MEMORY_PART=mt46h32m16xxxx-5, MEMORY_DEVICE_WIDTH=16, PA_SR=FULL, OUTPUT_DRV=FULL, PORT_CONFIG=Two 32-bit bi-directional and four 32-bit unidirectional ports, MEM_ADDR_ORDER=ROW_BANK_COLUMN, PORT_ENABLE=Port0, INPUT_PIN_TERMINATION=EXTERN_TERM, DATA_TERMINATION=25 Ohms, CLKFBOUT_MULT_F=4, CLKOUT_DIVIDE=2, DEBUG_PORT=0, INPUT_CLK_TYPE=Single-Ended}";
 
 begin
 

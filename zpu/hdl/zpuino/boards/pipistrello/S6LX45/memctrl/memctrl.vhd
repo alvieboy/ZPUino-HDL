@@ -68,10 +68,10 @@ use ieee.std_logic_1164.all;
 entity memctrl is
 generic
   (
-          C3_P0_MASK_SIZE           : integer := 8;
-          C3_P0_DATA_PORT_SIZE      : integer := 64;
-          C3_P1_MASK_SIZE           : integer := 8;
-          C3_P1_DATA_PORT_SIZE      : integer := 64;
+          C3_P0_MASK_SIZE           : integer := 4;
+          C3_P0_DATA_PORT_SIZE      : integer := 32;
+          C3_P1_MASK_SIZE           : integer := 4;
+          C3_P1_DATA_PORT_SIZE      : integer := 32;
     C3_MEMCLK_PERIOD        : integer := 5000; 
                                        -- Memory data transfer clock period.
     C3_RST_ACT_LOW          : integer := 0; 

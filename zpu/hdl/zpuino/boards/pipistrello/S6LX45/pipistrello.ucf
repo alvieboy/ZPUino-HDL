@@ -158,7 +158,7 @@ NET "Wing_C<0>"        LOC = "F17"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = SL
 
 
 #NET "ram_interface/lpddr/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
-INST "memctrl_inst/ctrl/memc3_wrapper_inst/memc3_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/SELFREFRESH_MCB_MODE*" TIG;
+#INST "memctrl_inst/ctrl/memc3_wrapper_inst/memc3_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/SELFREFRESH_MCB_MODE*" TIG;
 
 #NET "ram_interface/lpddr/c3_pll_lock" TIG;
 #INST "dram_interface/memc3_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;

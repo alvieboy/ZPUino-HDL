@@ -58,10 +58,10 @@ architecture rtl of memctrl_wb is
   component memctrl is
   generic
   (
-            C3_P0_MASK_SIZE           : integer := 8;
-          C3_P0_DATA_PORT_SIZE      : integer := 64;
-          C3_P1_MASK_SIZE           : integer := 8;
-          C3_P1_DATA_PORT_SIZE      : integer := 64;
+            C3_P0_MASK_SIZE           : integer := 4;
+          C3_P0_DATA_PORT_SIZE      : integer := 32;
+          C3_P1_MASK_SIZE           : integer := 4;
+          C3_P1_DATA_PORT_SIZE      : integer := 32;
     C3_MEMCLK_PERIOD        : integer := 5000; 
                                        -- Memory data transfer clock period.
     C3_RST_ACT_LOW          : integer := 0; 
@@ -69,10 +69,10 @@ architecture rtl of memctrl_wb is
                                        -- # = 0 for active high reset.
     C3_INPUT_CLK_TYPE       : string := "SINGLE_ENDED"; 
                                        -- input clock type DIFFERENTIAL or SINGLE_ENDED.
-    C3_CALIB_SOFT_IP        : string := "TRUE"; 
+    C3_CALIB_SOFT_IP        : string := "FALSE";
                                        -- # = TRUE, Enables the soft calibration logic,
                                        -- # = FALSE, Disables the soft calibration logic.
-    C3_SIMULATION           : string := "FALSE"; 
+    C3_SIMULATION           : string := "TRUE";
                                        -- # = TRUE, Simulating the design. Useful to reduce the simulation time,
                                        -- # = FALSE, Implementing the design.
     DEBUG_EN                : integer := 0; 
@@ -154,12 +154,12 @@ architecture rtl of memctrl_wb is
 
   signal wr_en: std_logic;
   signal wr_full: std_logic;
-  signal wr_mask: std_logic_vector(7 downto 0);
-  signal wr_data: std_logic_vector(63 downto 0);
+  signal wr_mask: std_logic_vector(3 downto 0);
+  signal wr_data: std_logic_vector(31 downto 0);
 
   signal rd_en: std_logic;
   signal rd_empty: std_logic;
-  signal rd_data: std_logic_vector(63 downto 0);
+  signal rd_data: std_logic_vector(31 downto 0);
 
   type state_type is (
     IDLE,
@@ -226,12 +226,9 @@ begin
 
    );
 
-  wr_data(31 downto 0) <= wb_dat_i;
-  wr_data(63 downto 32) <= wb_dat_i;
-
-  wr_mask(3 downto 0) <= not wb_sel_i when wb_adr_i(2)='0' else "1111";
-  wr_mask(7 downto 4) <= not wb_sel_i when wb_adr_i(2)='1' else "1111";
-
+  wr_data <= wb_dat_i;
+  wb_dat_o <= rd_data;
+  wr_mask <= not wb_sel_i;
 
   process(sysclk,
     wb_cyc_i, wb_adr_i, wb_stb_i, wb_adr_i, wb_cti_i,
@@ -259,7 +256,7 @@ begin
               wb_stall_o<='1';
             else
               w.addr := (others => '0');
-              w.addr(wb_adr_i'HIGH downto 3) := wb_adr_i(wb_adr_i'HIGH downto 3);
+              w.addr(wb_adr_i'HIGH downto 2) := wb_adr_i(wb_adr_i'HIGH downto 2);
               wr_en <= '1';
 
               -- Dispatch
@@ -280,10 +277,10 @@ begin
               cmd_en <= '1';
               cmd_instr <= INSTR_READ;
               cmd_addr <= (others => '0');
-              cmd_addr(wb_adr_i'HIGH downto 3) <= wb_adr_i(wb_adr_i'HIGH downto 3);
+              cmd_addr(wb_adr_i'HIGH downto 2) <= wb_adr_i(wb_adr_i'HIGH downto 2);
 
               w.addr := (others => '0');
-              w.addr(wb_adr_i'HIGH downto 3) := wb_adr_i(wb_adr_i'HIGH downto 3);
+              w.addr(wb_adr_i'HIGH downto 2) := wb_adr_i(wb_adr_i'HIGH downto 2);
 
               case wb_cti_i is
                 when CTI_CYCLE_INCRADDR =>
@@ -304,12 +301,7 @@ begin
         -- Let requests come in ?!?!.
         wb_stall_o<='1';
         wb_ack_o <= not rd_empty;
-
-        case r.addr(2) is
-          when '0' => wb_dat_o <= rd_data(31 downto 0);
-          when '1' => wb_dat_o <= rd_data(63 downto 32);
-          when others =>
-        end case;
+        rd_en<='1';
 
         if rd_empty='0' then
           -- Only one request...
@@ -320,19 +312,14 @@ begin
         -- Let requests come in ?!?!.
         wb_stall_o<='0';
         wb_ack_o <= not rd_empty;
-
+        rd_en<='1';
         if rd_empty='0' then
           w.bl := std_logic_vector(unsigned(r.bl) - 1);
         end if;
 
-        case r.addr(2) is
-          when '0' => wb_dat_o <= rd_data(31 downto 0);
-          when '1' => wb_dat_o <= rd_data(63 downto 32);
-          when others =>
-        end case;
-
 
         if r.bl="000000" then
+          wb_ack_o<='0';
           w.state := IDLE;
         end if;
 

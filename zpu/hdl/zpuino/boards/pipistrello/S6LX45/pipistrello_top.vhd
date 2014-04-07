@@ -149,13 +149,13 @@ architecture behave of pipistrello_top is
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00" &
+    "000000" &
     "1111111111111111" &
     "1111111111111111" &
     "1111111111111111";
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "00" &
+    "000000" &
     "1111111111111111" &
     "1111111111111111" &
     "1111111111111111";
@@ -400,8 +400,15 @@ begin
     obuftx:   OPAD port map ( I => tx,           PAD => USB_TXD );
     ibufmiso: IPAD port map ( PAD => flash_miso, O => spi_pf_miso,  C => sysclk );
     ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => flash_sck );
-    ospics:   OPAD port map ( I => gpio_o(30),   PAD => flash_cs );
+    ospics:   OPAD port map ( I => gpio_o(48),   PAD => flash_cs );
     ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => flash_mosi );
+    leds: for i in 0 to 4 generate
+      ledbuf: OPAD port map ( I => gpio_o(49+i), PAD => led(i+1) );
+    end generate;
+
+    USB_RTS <= '1';
+    flash_hold<='1';
+    flash_wp<='1';
 
   end block;
 

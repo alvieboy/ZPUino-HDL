@@ -19,6 +19,8 @@
 # include "board_xula2.h"
 #elif defined( __ZPUINO_EMS11__ )
 # include "board_ems11.h"
+#elif defined( __ZPUINO_PIPISTRELLO__ )
+# include "board_pipistrello.h"
 #else
 #  error Unknown board.
 # endif
