@@ -17,7 +17,7 @@ architecture sim of tb is
 
 
   signal CLKPERIOD: time := 10 ns;
-  signal DISPLAYPERIOD: time := 33.33 ns;
+  signal DISPLAYPERIOD: time := 100 ns;
 
   component zpuino_rgbctrl is
   port (
@@ -31,7 +31,7 @@ architecture sim of tb is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
+    --id:       out slot_id;
 
     displayclk: in std_logic;
     -- RGB outputters
@@ -85,7 +85,7 @@ begin
     wb_stb_i  => '0',
     wb_ack_o  => open,
     wb_inta_o => open,
-    id        => open,
+    --id        => open,
 
     displayclk  => dispclk,
 
@@ -117,5 +117,7 @@ begin
         OE  => DPOE
       );
   end generate;
+
+    
 
 end sim;

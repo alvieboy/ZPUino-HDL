@@ -19,7 +19,7 @@ entity zpuino_rgbctrl is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
+    --id:       out slot_id;
 
     displayclk: in std_logic;
     -- RGB outputters
@@ -79,9 +79,9 @@ architecture behave of zpuino_rgbctrl is
   signal mraddr: unsigned(8 downto 0) := (others => '0');
   signal mrdata: std_logic_vector(31 downto 0);
   signal mren: std_logic;
-  signal cpwm: unsigned (4 downto 0) := (others => '0');
+  signal cpwm: unsigned (5 downto 0) := (others => '0');
 
-  signal column: unsigned(4 downto 0) := (others => '0');
+  signal column, column_q: unsigned(4 downto 0) := (others => '0');
   signal row: unsigned(5 downto 0) := (others => '0');
 
   subtype colorvaluetype is unsigned(4 downto 0);
@@ -142,7 +142,8 @@ begin
               mren<='0';
               row(5)<='0';
               transfer<='1';
-              column <= column + 1 ;
+              column_q <= column;
+              --column <= column + 1 ;
             end if;
 
         
@@ -158,7 +159,7 @@ begin
               ucomp(0) := mword(14 downto 10);
               -- Compare output for each of them
               comparepwm: for j in 0 to 2 loop
-                if (ucomp(j)>=cpwm) then
+                if (ucomp(j)>=cpwm(4 downto 0)) then
                   compresult(j):='1';
                 else
                   compresult(j):='0';
@@ -173,10 +174,10 @@ begin
               shiftdata(i)(0) <= compresult;
             end loop;
     
-            if row(5)='1' and column(4)='1' then
+            if row(5)='1' then
               -- Advance pwm counter
               cpwm <= cpwm + 1;
-              column(4)<='0';
+              --column(4)<='0';
             end if;
           end if;
 
@@ -190,6 +191,10 @@ begin
             mren<='1';
             fillerstate<=compute;
             transfer<='0';
+            if cpwm(5)='1' then
+              column <= column + 1;
+              cpwm(5)<='0';
+            end if;
           end if;
   
       end case;
@@ -253,6 +258,7 @@ begin
           end if;
         when strobe =>
           STB <= '1';
+          COL <= std_logic_vector(column_q(3 downto 0));
           shstate <= idle;
 
       end case;
