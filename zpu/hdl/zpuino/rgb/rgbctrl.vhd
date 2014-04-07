@@ -89,7 +89,6 @@ architecture behave of zpuino_rgbctrl is
 
   type fillerstatetype is (
     compute,
-    preparesend,
     send
   );
 
@@ -98,8 +97,33 @@ architecture behave of zpuino_rgbctrl is
   signal debug_compresult: std_logic_vector(2 downto 0);
   signal memvalid: std_logic := '0';
 
+  signal ack_q: std_logic;
+
 begin
 
+  wb_ack_o <= ack_q;
+  wb_inta_o <= '0';
+
+  OE <='1';
+
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
+        ack_q<='0';
+      else
+        ack_q<='0';
+        if wb_cyc_i='1' and wb_stb_i='1' then
+          ack_q<='1';
+          if wb_we_i='1' then
+            mem( to_integer(unsigned(wb_adr_i(10 downto 2))) ) := wb_dat_i;
+          end if;
+
+          wb_dat_o <= mem( to_integer(unsigned(wb_adr_i(10 downto 2))));
+        end if;
+      end if;
+    end if;
+  end process;
 
   process(displayclk)
   begin
@@ -164,12 +188,10 @@ begin
                 else
                   compresult(j):='0';
                 end if;
-                -- At this point we have the comparation. Shift it into the correct
-                -- registers.
-    
               end loop;
 
-
+              -- At this point we have the comparation. Shift it into the correct
+              -- registers.
               shiftdata(i)(31 downto 1) <= shiftdata(i)(30 downto 0);
               shiftdata(i)(0) <= compresult;
             end loop;
@@ -180,11 +202,6 @@ begin
               --column(4)<='0';
             end if;
           end if;
-
-        when preparesend =>
- --         transfer<='1';
---          column <= column + 1 ;
-          fillerstate <= send;
 
         when send =>
           if ack_transfer='1' then
