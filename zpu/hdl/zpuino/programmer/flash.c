@@ -40,7 +40,6 @@ extern flash_driver_t m25p_flash;
 extern flash_driver_t sst25vf_flash;
 extern flash_driver_t atmel_flash;
 
-
 flash_info_t flash_list[] =
 {
 	/* Dummy flash driver, for direct upload */
