@@ -68,6 +68,10 @@ architecture sim of tb is
   signal DPCLK, DPSTB, DPOE: std_logic;
   signal COL: std_logic_vector(3 downto 0);
 
+  signal Ro0,Ro1:       std_logic_vector(31 downto 0);
+  signal Go0,Go1:       std_logic_vector(31 downto 0);
+  signal Bo0,Bo1:       std_logic_vector(31 downto 0);
+
 begin
 
   dispclk <= not dispclk after DISPLAYPERIOD/2;
@@ -102,22 +106,35 @@ begin
     OE        => DPOE
   );
 
-  shregs: for i in 0 to 1 generate
-    rgb: rgb32
+    rgb0: rgb32
       port map (
-        R => R(i),
-        G => G(i),
-        B => B(i),
-        Ro  => open,
-        Go  => open,
-        Bo  => open,
+        R => R(0),
+        G => G(0),
+        B => B(0),
+        Ro  => Ro0,
+        Go  => Go1,
+        Bo  => Bo1,
     
         CLK => DPCLK,
         STB => DPSTB,
         OE  => DPOE
       );
-  end generate;
 
+    rgb1: rgb32
+      port map (
+        R => R(1),
+        G => G(1),
+        B => B(1),
+        Ro  => Ro1,
+        Go  => Go1,
+        Bo  => Bo1,
     
+        CLK => DPCLK,
+        STB => DPSTB,
+        OE  => DPOE
+      );
+
+  
+
 
 end sim;

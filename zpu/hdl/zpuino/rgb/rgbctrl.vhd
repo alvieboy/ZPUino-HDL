@@ -55,12 +55,16 @@ architecture behave of zpuino_rgbctrl is
 
 
 
-  subtype rgbtype is std_logic_vector(2 downto 0);
-  type shifteddatatype is array(WITDH-1 downto 0) of rgbtype;
+  subtype shreg is std_logic_vector(WITDH-1 downto 0);
 
-  type dualshifteddatatype is array(0 to 1) of shifteddatatype;
+  type shifteddatatype is array(0 to 1) of shreg;
 
-  signal shiftout, shiftdata: dualshifteddatatype;
+  signal shiftout_r,
+         shiftout_g,
+         shiftout_b,
+         shiftdata_r,
+         shiftdata_g,
+         shiftdata_b: shifteddatatype;
 
   type shtype is (
     idle,shift,clock,strobe
@@ -71,9 +75,185 @@ architecture behave of zpuino_rgbctrl is
 
   -- Memory
   subtype memwordtype is std_logic_vector(31 downto 0);
-  type memtype is array(0 to (32*16)) of memwordtype;
+  type memtype is array(0 to (32*16)-1) of memwordtype;
 
-  shared variable mem: memtype := (others => x"3def3def");
+  constant RED:   std_logic_vector(15 downto 0) := "0111110000000000";
+  constant GREEN: std_logic_vector(15 downto 0) := "0000001111100000";
+  constant BLUE:  std_logic_vector(15 downto 0) := "0000000000011111";
+
+  shared variable mem: memtype := (
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
+    RED & RED,   GREEN & GREEN
+  );
   signal ack_transfer: std_logic := '0';
 
   signal mraddr: unsigned(8 downto 0) := (others => '0');
@@ -104,7 +284,7 @@ begin
   wb_ack_o <= ack_q;
   wb_inta_o <= '0';
 
-  OE <='1';
+  OE <='0';
 
   process(wb_clk_i)
   begin
@@ -116,10 +296,10 @@ begin
         if wb_cyc_i='1' and wb_stb_i='1' then
           ack_q<='1';
           if wb_we_i='1' then
-            mem( to_integer(unsigned(wb_adr_i(10 downto 2))) ) := wb_dat_i;
+            mem( to_integer(unsigned(wb_adr_i(11 downto 2))) ) := wb_dat_i;
           end if;
 
-          wb_dat_o <= mem( to_integer(unsigned(wb_adr_i(10 downto 2))));
+          wb_dat_o <= mem( to_integer(unsigned(wb_adr_i(11 downto 2))));
         end if;
       end if;
     end if;
@@ -183,7 +363,7 @@ begin
               ucomp(0) := mword(14 downto 10);
               -- Compare output for each of them
               comparepwm: for j in 0 to 2 loop
-                if (ucomp(j)>=cpwm(4 downto 0)) then
+                if (ucomp(j)>cpwm(4 downto 0)) then
                   compresult(j):='1';
                 else
                   compresult(j):='0';
@@ -192,8 +372,15 @@ begin
 
               -- At this point we have the comparation. Shift it into the correct
               -- registers.
-              shiftdata(i)(31 downto 1) <= shiftdata(i)(30 downto 0);
-              shiftdata(i)(0) <= compresult;
+              shiftdata_r(i)(31 downto 1) <= shiftdata_r(i)(30 downto 0);
+              shiftdata_r(i)(0) <= compresult(0);
+
+              shiftdata_g(i)(31 downto 1) <= shiftdata_g(i)(30 downto 0);
+              shiftdata_g(i)(0) <= compresult(1);
+
+              shiftdata_b(i)(31 downto 1) <= shiftdata_b(i)(30 downto 0);
+              shiftdata_b(i)(0) <= compresult(2);
+
             end loop;
     
             if row(5)='1' then
@@ -243,10 +430,14 @@ begin
         when idle =>
           if transfer='1' then
             -- Load shift registers.
-            shiftout <= shiftdata;
+            for i in 0 to 1 loop
+              shiftout_r(i) <= shiftdata_r(i);
+              shiftout_g(i) <= shiftdata_g(i);
+              shiftout_b(i) <= shiftdata_b(i);
+            end loop;
             in_transfer<='1';
             transfer_count <= WITDH-1;
-            shstate<=shift;
+            shstate<=clock;
             ack_transfer <='1';
           end if;
 
@@ -255,12 +446,11 @@ begin
           -- Shift data out.
 
           for i in 0 to 1 loop -- Array number
-            for n in 1 to WITDH-1 loop -- Number of leds
-              for c in 0 to 2 loop -- Color number
-                shiftout(i)(n-1)(c) <= shiftout(i)(n)(c);
-              end loop;
-            end loop;
+              shiftout_r(i)(31 downto 0) <= '0' & shiftout_r(i)(31 downto 1);
+              shiftout_g(i)(31 downto 0) <= '0' & shiftout_g(i)(31 downto 1);
+              shiftout_b(i)(31 downto 0) <= '0' & shiftout_b(i)(31 downto 1);
           end loop;
+
           shstate<=clock;
 
         when clock =>
@@ -286,9 +476,9 @@ begin
 
   -- Assign outputs
   ol: for i in 0 to 1 generate
-    R(i) <= shiftout(i)(0)(0);
-    G(i) <= shiftout(i)(0)(1);
-    B(i) <= shiftout(i)(0)(2);
+    R(i) <= shiftout_r(i)(0);
+    G(i) <= shiftout_g(i)(0);
+    B(i) <= shiftout_b(i)(0);
   end generate;
 
 end behave;
