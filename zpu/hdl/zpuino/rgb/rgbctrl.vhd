@@ -40,20 +40,10 @@ end entity zpuino_rgbctrl;
 architecture behave of zpuino_rgbctrl is
 
   constant WITDH: integer := 32;
-  --constant HEIGHT: integer := 16;
 
   signal clken: std_logic;
-
-  subtype pwmtype is unsigned(4 downto 0); -- 32 values.
-
-  type rgbpwm is array (0 to 3) of pwmtype;
-
-  type tworgbpwm is array(0 to 1) of rgbpwm;
-
   signal transfer: std_logic;
   signal in_transfer: std_logic := '0';
-
-
 
   subtype shreg is std_logic_vector(WITDH-1 downto 0);
 
@@ -75,196 +65,26 @@ architecture behave of zpuino_rgbctrl is
 
   -- Memory
   subtype memwordtype is std_logic_vector(31 downto 0);
-  type memtype is array(0 to (32*16)-1) of memwordtype;
+
+  type memtype is array(0 to (32*32)-1) of memwordtype;
 
   constant RED:   std_logic_vector(15 downto 0) := "0111110000000000";
   constant GREEN: std_logic_vector(15 downto 0) := "0000001111100000";
   constant BLUE:  std_logic_vector(15 downto 0) := "0000000000011111";
 
-  shared variable mem: memtype := (
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE, --, /* 30 */
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN,  BLUE & BLUE,
-    RED & RED,   GREEN & GREEN
-  );
+  shared variable mem: memtype := ( others => '0');
+
   signal ack_transfer: std_logic := '0';
 
   signal mraddr: unsigned(8 downto 0) := (others => '0');
   signal mrdata: std_logic_vector(31 downto 0);
   signal mren: std_logic;
-  signal cpwm: unsigned (5 downto 0) := (others => '0');
+  signal cpwm: unsigned (8 downto 0) := (others => '0');
 
   signal column, column_q: unsigned(4 downto 0) := (others => '0');
   signal row: unsigned(5 downto 0) := (others => '0');
 
-  subtype colorvaluetype is unsigned(4 downto 0);
+  subtype colorvaluetype is unsigned(7 downto 0);
   type utype is array(0 to 3) of colorvaluetype;
 
   type fillerstatetype is (
@@ -354,16 +174,17 @@ begin
 
             -- Validate if PWM bit for this LED should be '1' or '0'
     
-            genpwm: for i in 0 to 1 loop
               -- We need to decompose into the individual components
-              mword := unsigned(mrdata((16*(i+1))-1 downto 16*i));
-    
-              ucomp(2) := mword(4 downto 0);
-              ucomp(1) := mword(9 downto 5);
-              ucomp(0) := mword(14 downto 10);
+              mword := unsigned(mrdata);
+
+              ucomp(2) := mword(7 downto 0);
+              ucomp(1) := mword(15 downto 8);
+              ucomp(0) := mword(24 downto 16);
+
               -- Compare output for each of them
+
               comparepwm: for j in 0 to 2 loop
-                if (ucomp(j)>cpwm(4 downto 0)) then
+                if (ucomp(j)>cpwm(7 downto 0)) then
                   compresult(j):='1';
                 else
                   compresult(j):='0';
@@ -395,9 +216,9 @@ begin
             mren<='1';
             fillerstate<=compute;
             transfer<='0';
-            if cpwm(5)='1' then
+            if cpwm(cpwm'HIGH)='1' then
               column <= column + 1;
-              cpwm(5)<='0';
+              cpwm(cpwm'HIGH)<='0';
             end if;
           end if;
   
