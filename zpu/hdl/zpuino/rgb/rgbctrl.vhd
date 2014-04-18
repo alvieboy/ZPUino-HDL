@@ -63,21 +63,11 @@ architecture behave of zpuino_rgbctrl is
 
   signal transfer_count: integer;
 
-  -- Memory
-  subtype memwordtype is std_logic_vector(31 downto 0);
-
-  type memtype is array(0 to (32*32)-1) of memwordtype;
-
-  constant RED:   std_logic_vector(15 downto 0) := "0111110000000000";
-  constant GREEN: std_logic_vector(15 downto 0) := "0000001111100000";
-  constant BLUE:  std_logic_vector(15 downto 0) := "0000000000011111";
-
-  shared variable mem: memtype := ( others => '0');
-
   signal ack_transfer: std_logic := '0';
 
-  signal mraddr: unsigned(8 downto 0) := (others => '0');
+  signal mraddr: unsigned(9 downto 0) := (others => '0');
   signal mrdata: std_logic_vector(31 downto 0);
+
   signal mren: std_logic;
   signal cpwm: unsigned (8 downto 0) := (others => '0');
 
@@ -99,12 +89,52 @@ architecture behave of zpuino_rgbctrl is
 
   signal ack_q: std_logic;
 
+  signal ramsel: std_logic;
+  signal panelsel: std_logic := '0';
+
+  constant zerovec: std_logic_vector(31 downto 0):=(others => '0');
+
+  function reverse (a: in std_logic_vector)
+  return std_logic_vector is
+    variable result: std_logic_vector(a'RANGE);
+    alias aa: std_logic_vector(a'REVERSE_RANGE) is a;
+  begin
+    for i in aa'RANGE loop
+      result(i) := aa(i);
+    end loop;
+    return result;
+  end;
+
 begin
 
   wb_ack_o <= ack_q;
   wb_inta_o <= '0';
 
   OE <='0';
+
+  ramsel <= wb_cyc_i and wb_stb_i;
+
+  displayram: generic_dp_ram
+    generic map (
+      address_bits => 10,
+      data_bits => 32
+    )
+    port map (
+      clka  => wb_clk_i,
+      ena   => ramsel,
+      wea   => wb_we_i,
+      addra => wb_adr_i(11 downto 2),
+      dia   => wb_dat_i,
+      doa   => wb_dat_o,
+      clkb  => displayclk,
+      enb   => mren,
+      web   => '0',
+      addrb => std_logic_vector(mraddr),
+      dib   => zerovec,
+      dob   => mrdata
+    );
+  
+
 
   process(wb_clk_i)
   begin
@@ -113,27 +143,15 @@ begin
         ack_q<='0';
       else
         ack_q<='0';
-        if wb_cyc_i='1' and wb_stb_i='1' then
+        if wb_cyc_i='1' and wb_stb_i='1' and ack_q='0' then
           ack_q<='1';
-          if wb_we_i='1' then
-            mem( to_integer(unsigned(wb_adr_i(11 downto 2))) ) := wb_dat_i;
-          end if;
-
-          wb_dat_o <= mem( to_integer(unsigned(wb_adr_i(11 downto 2))));
         end if;
       end if;
     end if;
   end process;
 
-  process(displayclk)
-  begin
-    if rising_edge(displayclk) then
-      if mren='1' then
-        mrdata <= mem( to_integer(mraddr) );
-      end if;
-    end if;
-  end process;
 
+  mraddr (9) <= not panelsel;
   mraddr (8 downto 5) <= column(3 downto 0);
   mraddr (4 downto 0) <= row(4 downto 0);
 
@@ -143,8 +161,9 @@ begin
 
   process(displayclk)
     variable ucomp: utype;
-    variable mword: unsigned(15 downto 0);
+    variable mword: unsigned(31 downto 0);
     variable compresult: std_logic_vector(2 downto 0);
+    variable panel: integer;
   begin
     if rising_edge(displayclk) then
 
@@ -155,21 +174,28 @@ begin
 
           mren <= '1';
           if mren='1' and row(5)='0' then
-           row <= row + 1;
+           if panelsel='1' then
+            row <= row + 1;
+           end if;
+           panelsel <= not panelsel;
           end if;
 
           if memvalid='1' then
             -- We have valid data;
+
             if (row(5)='1') then
-              --fillerstate <= preparesend;
               fillerstate <= send;
               mren<='0';
               row(5)<='0';
               transfer<='1';
               column_q <= column;
-              --column <= column + 1 ;
             end if;
 
+            if panelsel='1' then
+              panel:=1;
+            else
+              panel:=0;
+            end if;
         
 
             -- Validate if PWM bit for this LED should be '1' or '0'
@@ -179,7 +205,7 @@ begin
 
               ucomp(2) := mword(7 downto 0);
               ucomp(1) := mword(15 downto 8);
-              ucomp(0) := mword(24 downto 16);
+              ucomp(0) := mword(23 downto 16);
 
               -- Compare output for each of them
 
@@ -193,17 +219,10 @@ begin
 
               -- At this point we have the comparation. Shift it into the correct
               -- registers.
-              shiftdata_r(i)(31 downto 1) <= shiftdata_r(i)(30 downto 0);
-              shiftdata_r(i)(0) <= compresult(0);
+              shiftdata_r(panel) <= shiftdata_r(panel)(30 downto 0) & compresult(0);
+              shiftdata_g(panel) <= shiftdata_g(panel)(30 downto 0) & compresult(1);
+              shiftdata_b(panel) <= shiftdata_b(panel)(30 downto 0) & compresult(2);
 
-              shiftdata_g(i)(31 downto 1) <= shiftdata_g(i)(30 downto 0);
-              shiftdata_g(i)(0) <= compresult(1);
-
-              shiftdata_b(i)(31 downto 1) <= shiftdata_b(i)(30 downto 0);
-              shiftdata_b(i)(0) <= compresult(2);
-
-            end loop;
-    
             if row(5)='1' then
               -- Advance pwm counter
               cpwm <= cpwm + 1;
@@ -229,16 +248,6 @@ begin
 
   end process;
 
-  -- 32x32 leds. if we use a whole 16-bit for each....
-  -- we can read two RGB per clock. ..
-
-
-
-  process(wb_clk_i)
-  begin
-    
-  end process;
-
   -- Main outputter process.
 
   process(displayclk)
@@ -252,9 +261,10 @@ begin
           if transfer='1' then
             -- Load shift registers.
             for i in 0 to 1 loop
-              shiftout_r(i) <= shiftdata_r(i);
-              shiftout_g(i) <= shiftdata_g(i);
-              shiftout_b(i) <= shiftdata_b(i);
+              -- Reverse all bits here.
+              shiftout_r(i) <= reverse( shiftdata_r(i) );
+              shiftout_g(i) <= reverse( shiftdata_g(i) );
+              shiftout_b(i) <= reverse( shiftdata_b(i) );
             end loop;
             in_transfer<='1';
             transfer_count <= WITDH-1;
@@ -267,9 +277,9 @@ begin
           -- Shift data out.
 
           for i in 0 to 1 loop -- Array number
-              shiftout_r(i)(31 downto 0) <= '0' & shiftout_r(i)(31 downto 1);
-              shiftout_g(i)(31 downto 0) <= '0' & shiftout_g(i)(31 downto 1);
-              shiftout_b(i)(31 downto 0) <= '0' & shiftout_b(i)(31 downto 1);
+              shiftout_r(i)(31 downto 0) <= 'X' & shiftout_r(i)(31 downto 1);
+              shiftout_g(i)(31 downto 0) <= 'X' & shiftout_g(i)(31 downto 1);
+              shiftout_b(i)(31 downto 0) <= 'X' & shiftout_b(i)(31 downto 1);
           end loop;
 
           shstate<=clock;
@@ -284,6 +294,7 @@ begin
           else
             shstate <= shift;
           end if;
+
         when strobe =>
           STB <= '1';
           COL <= std_logic_vector(column_q(3 downto 0));

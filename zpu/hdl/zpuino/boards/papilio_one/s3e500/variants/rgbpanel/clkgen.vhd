@@ -105,7 +105,7 @@ begin
 
   rrbclkfb_inst: BUFG
     port map (
-      I=> rgbclk_i,
+      I=> clkin_i,
       O=> rgbclk
     );
 
@@ -134,7 +134,7 @@ DCM_inst : DCM
     CLK2X => open, -- 2X DCM CLK output
     CLK2X180 => open, -- 2X, 180 degree DCM CLK out
     CLK90 => open, -- 90 degree DCM CLK output
-    CLKDV => rgbclk_i, -- Divided DCM CLK out (CLKDV_DIVIDE)
+    CLKDV => open,--rgbclk_i, -- Divided DCM CLK out (CLKDV_DIVIDE)
     CLKFX => dcmclock, -- DCM CLK synthesis out (M/D)
     CLKFX180 => open, -- 180 degree CLK synthesis out
     LOCKED => dcmlocked, -- DCM LOCK status output
