@@ -8,6 +8,9 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_rgbctrl is
+  generic (
+      WIDTH_BITS: integer := 5
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -39,13 +42,13 @@ end entity zpuino_rgbctrl;
 
 architecture behave of zpuino_rgbctrl is
 
-  constant WITDH: integer := 32;
+  constant WIDTH: integer := 2**WIDTH_BITS;
 
   signal clken: std_logic;
   signal transfer: std_logic;
   signal in_transfer: std_logic := '0';
 
-  subtype shreg is std_logic_vector(WITDH-1 downto 0);
+  subtype shreg is std_logic_vector(WIDTH-1 downto 0);
 
   type shifteddatatype is array(0 to 1) of shreg;
 
@@ -65,14 +68,14 @@ architecture behave of zpuino_rgbctrl is
 
   signal ack_transfer: std_logic := '0';
 
-  signal mraddr: unsigned(9 downto 0) := (others => '0');
+  signal mraddr: unsigned((5+WIDTH_BITS)-1 downto 0) := (others => '0');
   signal mrdata: std_logic_vector(31 downto 0);
 
   signal mren: std_logic;
   signal cpwm: unsigned (8 downto 0) := (others => '0');
 
   signal column, column_q: unsigned(4 downto 0) := (others => '0');
-  signal row: unsigned(5 downto 0) := (others => '0');
+  signal row: unsigned(WIDTH_BITS downto 0) := (others => '0');
 
   subtype colorvaluetype is unsigned(7 downto 0);
   type utype is array(0 to 3) of colorvaluetype;
@@ -91,6 +94,7 @@ architecture behave of zpuino_rgbctrl is
 
   signal ramsel: std_logic;
   signal panelsel: std_logic := '0';
+  signal invpanelsel: std_logic := '1';
 
   constant zerovec: std_logic_vector(31 downto 0):=(others => '0');
 
@@ -116,14 +120,14 @@ begin
 
   displayram: generic_dp_ram
     generic map (
-      address_bits => 10,
+      address_bits => 5+WIDTH_BITS,
       data_bits => 32
     )
     port map (
       clka  => wb_clk_i,
       ena   => ramsel,
       wea   => wb_we_i,
-      addra => wb_adr_i(11 downto 2),
+      addra => wb_adr_i(5+WIDTH_BITS+1 downto 2),
       dia   => wb_dat_i,
       doa   => wb_dat_o,
       clkb  => displayclk,
@@ -150,10 +154,13 @@ begin
     end if;
   end process;
 
+  invpanelsel<=not panelsel;
 
-  mraddr (9) <= not panelsel;
-  mraddr (8 downto 5) <= column(3 downto 0);
-  mraddr (4 downto 0) <= row(4 downto 0);
+  --mraddr (9) <= not panelsel;
+  --mraddr (8 downto 5) <= column(3 downto 0);
+  --mraddr (4 downto 0) <= row(4 downto 0);
+
+  mraddr <= invpanelsel & column(3 downto 0) & row(WIDTH_BITS-1 downto 0);
 
   -- This is an odd way for processing the PWM. Perhaps
   -- we can reorganize the memory ?
@@ -173,7 +180,7 @@ begin
         when compute =>
 
           mren <= '1';
-          if mren='1' and row(5)='0' then
+          if mren='1' and row(WIDTH_BITS)='0' then
            if panelsel='1' then
             row <= row + 1;
            end if;
@@ -183,10 +190,10 @@ begin
           if memvalid='1' then
             -- We have valid data;
 
-            if (row(5)='1') then
+            if (row(WIDTH_BITS)='1') then
               fillerstate <= send;
               mren<='0';
-              row(5)<='0';
+              row(WIDTH_BITS)<='0';
               transfer<='1';
               column_q <= column;
             end if;
@@ -219,11 +226,11 @@ begin
 
               -- At this point we have the comparation. Shift it into the correct
               -- registers.
-              shiftdata_r(panel) <= shiftdata_r(panel)(30 downto 0) & compresult(0);
-              shiftdata_g(panel) <= shiftdata_g(panel)(30 downto 0) & compresult(1);
-              shiftdata_b(panel) <= shiftdata_b(panel)(30 downto 0) & compresult(2);
+              shiftdata_r(panel) <= shiftdata_r(panel)(WIDTH-2 downto 0) & compresult(0);
+              shiftdata_g(panel) <= shiftdata_g(panel)(WIDTH-2 downto 0) & compresult(1);
+              shiftdata_b(panel) <= shiftdata_b(panel)(WIDTH-2 downto 0) & compresult(2);
 
-            if row(5)='1' then
+            if row(WIDTH_BITS)='1' then
               -- Advance pwm counter
               cpwm <= cpwm + 1;
               --column(4)<='0';
@@ -267,7 +274,7 @@ begin
               shiftout_b(i) <= reverse( shiftdata_b(i) );
             end loop;
             in_transfer<='1';
-            transfer_count <= WITDH-1;
+            transfer_count <= WIDTH-1;
             shstate<=clock;
             ack_transfer <='1';
           end if;
@@ -277,9 +284,9 @@ begin
           -- Shift data out.
 
           for i in 0 to 1 loop -- Array number
-              shiftout_r(i)(31 downto 0) <= 'X' & shiftout_r(i)(31 downto 1);
-              shiftout_g(i)(31 downto 0) <= 'X' & shiftout_g(i)(31 downto 1);
-              shiftout_b(i)(31 downto 0) <= 'X' & shiftout_b(i)(31 downto 1);
+              shiftout_r(i) <= 'X' & shiftout_r(i)(WIDTH-1 downto 1);
+              shiftout_g(i) <= 'X' & shiftout_g(i)(WIDTH-1 downto 1);
+              shiftout_b(i) <= 'X' & shiftout_b(i)(WIDTH-1 downto 1);
           end loop;
 
           shstate<=clock;
