@@ -367,7 +367,7 @@ begin
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
   oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
-  zpuino:zpuino_top
+  zpuino:zpuino_top_icache
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
