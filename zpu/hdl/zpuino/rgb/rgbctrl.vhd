@@ -9,7 +9,8 @@ use work.zpuinopkg.all;
 
 entity zpuino_rgbctrl is
   generic (
-      WIDTH_BITS: integer := 5
+      WIDTH_BITS: integer := 5;
+      REVERSE_SHIFT: boolean := true
   );
   port (
     wb_clk_i: in std_logic;
@@ -247,9 +248,15 @@ begin
 
               -- At this point we have the comparation. Shift it into the correct
               -- registers.
-              shiftdata_r(panel) <= shiftdata_r(panel)(WIDTH-2 downto 0) & compresult(0);
-              shiftdata_g(panel) <= shiftdata_g(panel)(WIDTH-2 downto 0) & compresult(1);
-              shiftdata_b(panel) <= shiftdata_b(panel)(WIDTH-2 downto 0) & compresult(2);
+              if REVERSE_SHIFT then
+                shiftdata_r(panel) <= compresult(0) & shiftdata_r(panel)(WIDTH-1 downto 1);
+                shiftdata_g(panel) <= compresult(1) & shiftdata_g(panel)(WIDTH-1 downto 1);
+                shiftdata_b(panel) <= compresult(2) & shiftdata_b(panel)(WIDTH-1 downto 1);
+              else
+                shiftdata_r(panel) <= shiftdata_r(panel)(WIDTH-2 downto 0) & compresult(0);
+                shiftdata_g(panel) <= shiftdata_g(panel)(WIDTH-2 downto 0) & compresult(1);
+                shiftdata_b(panel) <= shiftdata_b(panel)(WIDTH-2 downto 0) & compresult(2);
+              end if;
 
             if row(WIDTH_BITS)='1' then
               -- Advance pwm counter
