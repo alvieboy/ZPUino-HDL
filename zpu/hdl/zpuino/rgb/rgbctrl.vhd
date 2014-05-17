@@ -109,6 +109,9 @@ architecture behave of zpuino_rgbctrl is
     return result;
   end;
 
+  signal config_data: std_logic_vector(31 downto 0);
+  signal ram_out    : std_logic_vector(31 downto 0);
+
 begin
 
   wb_ack_o <= ack_q;
@@ -116,7 +119,25 @@ begin
 
   OE <='0';
 
-  ramsel <= wb_cyc_i and wb_stb_i;
+  ramsel <= wb_cyc_i and wb_stb_i and wb_adr_i(5+WIDTH_BITS+1+1);
+
+  wb_dat_o <= ram_out when wb_adr_i(5+WIDTH_BITS+1+1)='1' else config_data;
+
+  process(wb_adr_i)
+  begin
+    config_data <= (others => 'X');
+    case wb_adr_i(3 downto 2) is
+      when "01" =>
+        config_data(15 downto 0) <= std_logic_vector(to_unsigned(32,16));
+        config_data(31 downto 16) <= std_logic_vector(to_unsigned(WIDTH,16));
+      when "10" =>
+        -- Pixel format....
+        config_data <= (others => 'X');
+
+      when others =>
+    end case;
+  end process;
+
 
   displayram: generic_dp_ram
     generic map (
@@ -129,7 +150,7 @@ begin
       wea   => wb_we_i,
       addra => wb_adr_i(5+WIDTH_BITS+1 downto 2),
       dia   => wb_dat_i,
-      doa   => wb_dat_o,
+      doa   => ram_out,
       clkb  => displayclk,
       enb   => mren,
       web   => '0',
