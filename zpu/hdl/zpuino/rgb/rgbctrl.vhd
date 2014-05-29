@@ -10,7 +10,7 @@ use work.zpuinopkg.all;
 entity zpuino_rgbctrl is
   generic (
       WIDTH_BITS: integer := 5;
-      REVERSE_SHIFT: boolean := true
+      REVERSE_SHIFT: boolean := false
   );
   port (
     wb_clk_i: in std_logic;
