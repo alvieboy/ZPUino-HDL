@@ -4,8 +4,9 @@
 #define CLK_FREQ 96000000UL
 
 /* LX9 bitfile is 0x5327C in size */
+/* LX25 bitfile is 0xC48BE in size */
 
-#define SPIOFFSET 0x60000
+#define SPIOFFSET 0xD0000
 
 #ifndef BOARD_MEMORYSIZE
 #error Undefined board memory size
