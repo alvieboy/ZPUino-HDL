@@ -10,6 +10,8 @@ use work.zpuinopkg.all;
 entity zpuino_rgbctrl is
   generic (
       WIDTH_BITS: integer := 5;
+      WIDTH_LEDS: integer := 64;
+      PWM_WIDTH: integer := 8;
       REVERSE_SHIFT: boolean := false
   );
   port (
@@ -73,12 +75,12 @@ architecture behave of zpuino_rgbctrl is
   signal mrdata: std_logic_vector(31 downto 0);
 
   signal mren: std_logic;
-  signal cpwm: unsigned (8 downto 0) := (others => '0');
+  signal cpwm: unsigned (PWM_WIDTH downto 0) := (others => '0');
 
   signal column, column_q: unsigned(4 downto 0) := (others => '0');
   signal row: unsigned(WIDTH_BITS downto 0) := (others => '0');
 
-  subtype colorvaluetype is unsigned(7 downto 0);
+  subtype colorvaluetype is unsigned(PWM_WIDTH-1 downto 0);
   type utype is array(0 to 3) of colorvaluetype;
 
   type fillerstatetype is (
@@ -112,6 +114,8 @@ architecture behave of zpuino_rgbctrl is
 
   signal config_data: std_logic_vector(31 downto 0);
   signal ram_out    : std_logic_vector(31 downto 0);
+
+  constant PWMIGNORE: integer := 8 - PWM_WIDTH;
 
 begin
 
@@ -232,14 +236,14 @@ begin
               -- We need to decompose into the individual components
               mword := unsigned(mrdata);
 
-              ucomp(2) := mword(7 downto 0);
-              ucomp(1) := mword(15 downto 8);
-              ucomp(0) := mword(23 downto 16);
+              ucomp(2) := mword(7 downto 0+PWMIGNORE);
+              ucomp(1) := mword(15 downto 8+PWMIGNORE);
+              ucomp(0) := mword(23 downto 16+PWMIGNORE);
 
               -- Compare output for each of them
 
               comparepwm: for j in 0 to 2 loop
-                if (ucomp(j)>cpwm(7 downto 0)) then
+                if (ucomp(j)>cpwm(PWM_WIDTH-1 downto 0)) then
                   compresult(j):='1';
                 else
                   compresult(j):='0';
