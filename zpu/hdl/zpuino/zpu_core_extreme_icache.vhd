@@ -894,7 +894,7 @@ begin
   end process;
 
   -- Prefetch/Load unit.
-  
+
   sp_load <= exr.tos(spMaxBit downto 2); -- Will be delayed one clock cycle
 
   process(wb_clk_i, wb_rst_i, decr, prefr, exu_busy, decode_jump, sp_load,
@@ -1398,6 +1398,8 @@ begin
                   exu_busy<='1';
                   w.state:=State_Loadh;
                 end if;
+              else
+                wroteback := '0';
               end if;
             end if;
 
