@@ -74,8 +74,8 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	ioctl(fd, TIOCMSET, &status);
 	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) |O_NONBLOCK);
 
-    *conn = fd;
-	return fd;
+        *conn = fd;
+	return -1;
 }
 
 void conn_reset(connection_t conn)
