@@ -136,7 +136,7 @@ pll_base_inst : PLL_ADV
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKOUT3_DIVIDE       => 30,
+    CLKOUT3_DIVIDE       => 15,
     CLKOUT3_PHASE        => 0.0,
     CLKOUT3_DUTY_CYCLE   => 0.500,
     CLKIN1_PERIOD        => 31.250,
