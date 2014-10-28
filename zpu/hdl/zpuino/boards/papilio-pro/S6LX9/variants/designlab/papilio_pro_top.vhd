@@ -1117,9 +1117,7 @@ begin
   -- IO SLOT 15 - do not use
   --
 
-  process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
-          sigmadelta_spp_data,timers_pwm,
-          spi2_mosi,spi2_sck)
+  process(gpio_spp_read, timers_pwm)
   begin
 
     gpio_spp_data <= (others => DontCareValue);

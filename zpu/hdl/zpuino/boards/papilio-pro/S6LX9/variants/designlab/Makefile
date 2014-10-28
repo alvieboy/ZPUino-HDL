@@ -8,7 +8,7 @@ SIZE=16384
 DEFINES="-DBOARD_ID=0xA4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE"
 #define ZPUINO_HAS_ICACHE
 
-all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
+all: ${PROJECT}_routed.ncd
 
 prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../../bootloader -f Makefile BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)

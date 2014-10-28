@@ -77,6 +77,6 @@ package zpuino_config is
   constant PPSCOUNT_OUT: integer := 2;
 
   -- Set this to the max. number of input pps on the system
-  constant PPSCOUNT_IN: integer := 2;
+  constant PPSCOUNT_IN: integer := 0;
 
 end package zpuino_config;
