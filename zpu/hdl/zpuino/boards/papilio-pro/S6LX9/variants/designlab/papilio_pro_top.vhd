@@ -563,6 +563,7 @@ begin
   wishbone_slot_5_in_record.wb_clk_i <= sysclk;
   wishbone_slot_5_in_record.wb_rst_i <= sysrst;
   slot_read(5) <= wishbone_slot_5_out_record.wb_dat_o;
+  slot_ids(5) <= wishbone_slot_5_out_record.wb_id_o;
   wishbone_slot_5_in_record.wb_dat_i <= slot_write(5);
   wishbone_slot_5_in_record.wb_adr_i <= slot_address(5);
   wishbone_slot_5_in_record.wb_we_i <= slot_we(5);
@@ -575,6 +576,7 @@ begin
   wishbone_slot_6_in_record.wb_clk_i <= sysclk;
   wishbone_slot_6_in_record.wb_rst_i <= sysrst;
   slot_read(6) <= wishbone_slot_6_out_record.wb_dat_o;
+  slot_ids(6) <= wishbone_slot_6_out_record.wb_id_o;
   wishbone_slot_6_in_record.wb_dat_i <= slot_write(6);
   wishbone_slot_6_in_record.wb_adr_i <= slot_address(6);
   wishbone_slot_6_in_record.wb_we_i <= slot_we(6);
@@ -587,6 +589,7 @@ begin
   wishbone_slot_8_in_record.wb_clk_i <= sysclk;
   wishbone_slot_8_in_record.wb_rst_i <= sysrst;
   slot_read(8) <= wishbone_slot_8_out_record.wb_dat_o;
+  slot_ids(8) <= wishbone_slot_8_out_record.wb_id_o;
   wishbone_slot_8_in_record.wb_dat_i <= slot_write(8);
   wishbone_slot_8_in_record.wb_adr_i <= slot_address(8);
   wishbone_slot_8_in_record.wb_we_i <= slot_we(8);
@@ -599,6 +602,7 @@ begin
   wishbone_slot_9_in_record.wb_clk_i <= sysclk;
   wishbone_slot_9_in_record.wb_rst_i <= sysrst;
   slot_read(9) <= wishbone_slot_9_out_record.wb_dat_o;
+  slot_ids(9) <= wishbone_slot_9_out_record.wb_id_o;
   wishbone_slot_9_in_record.wb_dat_i <= slot_write(9);
   wishbone_slot_9_in_record.wb_adr_i <= slot_address(9);
   wishbone_slot_9_in_record.wb_we_i <= slot_we(9);
@@ -611,6 +615,7 @@ begin
   wishbone_slot_10_in_record.wb_clk_i <= sysclk;
   wishbone_slot_10_in_record.wb_rst_i <= sysrst;
   slot_read(10) <= wishbone_slot_10_out_record.wb_dat_o;
+  slot_ids(10) <= wishbone_slot_10_out_record.wb_id_o;
   wishbone_slot_10_in_record.wb_dat_i <= slot_write(10);
   wishbone_slot_10_in_record.wb_adr_i <= slot_address(10);
   wishbone_slot_10_in_record.wb_we_i <= slot_we(10);
@@ -623,6 +628,7 @@ begin
   wishbone_slot_11_in_record.wb_clk_i <= sysclk;
   wishbone_slot_11_in_record.wb_rst_i <= sysrst;
   slot_read(11) <= wishbone_slot_11_out_record.wb_dat_o;
+  slot_ids(11) <= wishbone_slot_11_out_record.wb_id_o;
   wishbone_slot_11_in_record.wb_dat_i <= slot_write(11);
   wishbone_slot_11_in_record.wb_adr_i <= slot_address(11);
   wishbone_slot_11_in_record.wb_we_i <= slot_we(11);
@@ -635,6 +641,7 @@ begin
   wishbone_slot_12_in_record.wb_clk_i <= sysclk;
   wishbone_slot_12_in_record.wb_rst_i <= sysrst;
   slot_read(12) <= wishbone_slot_12_out_record.wb_dat_o;
+  slot_ids(12) <= wishbone_slot_12_out_record.wb_id_o;
   wishbone_slot_12_in_record.wb_dat_i <= slot_write(12);
   wishbone_slot_12_in_record.wb_adr_i <= slot_address(12);
   wishbone_slot_12_in_record.wb_we_i <= slot_we(12);
@@ -647,6 +654,7 @@ begin
   wishbone_slot_13_in_record.wb_clk_i <= sysclk;
   wishbone_slot_13_in_record.wb_rst_i <= sysrst;
   slot_read(13) <= wishbone_slot_13_out_record.wb_dat_o;
+  slot_ids(13) <= wishbone_slot_13_out_record.wb_id_o;
   wishbone_slot_13_in_record.wb_dat_i <= slot_write(13);
   wishbone_slot_13_in_record.wb_adr_i <= slot_address(13);
   wishbone_slot_13_in_record.wb_we_i <= slot_we(13);
@@ -659,6 +667,7 @@ begin
   wishbone_slot_14_in_record.wb_clk_i <= sysclk;
   wishbone_slot_14_in_record.wb_rst_i <= sysrst;
   slot_read(14) <= wishbone_slot_14_out_record.wb_dat_o;
+  slot_ids(14) <= wishbone_slot_14_out_record.wb_id_o;
   wishbone_slot_14_in_record.wb_dat_i <= slot_write(14);
   wishbone_slot_14_in_record.wb_adr_i <= slot_address(14);
   wishbone_slot_14_in_record.wb_we_i <= slot_we(14);
@@ -1106,25 +1115,25 @@ begin
   -- IO SLOT 15 - do not use
   --
 
-  -- process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
-          -- sigmadelta_spp_data,timers_pwm,
-          -- spi2_mosi,spi2_sck)
-  -- begin
+  process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
+          sigmadelta_spp_data,timers_pwm,
+          spi2_mosi,spi2_sck)
+  begin
 
-    -- gpio_spp_data <= (others => DontCareValue);
+    gpio_spp_data <= (others => DontCareValue);
 
-    -- -- PPS Outputs
+    -- PPS Outputs
     -- gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
     -- ppsout_info_slot(0) <= 5; -- Slot 5
     -- ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
 
-    -- gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
-    -- ppsout_info_slot(1) <= 3; -- Slot 3
-    -- ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+    gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    ppsout_info_slot(1) <= 3; -- Slot 3
+    ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
 
-    -- gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
-    -- ppsout_info_slot(2) <= 3; -- Slot 3
-    -- ppsout_info_pin(2) <= 1;  -- PPS OUT pin 1 (TIMER 0)
+    gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
+    ppsout_info_slot(2) <= 3; -- Slot 3
+    ppsout_info_pin(2) <= 1;  -- PPS OUT pin 1 (TIMER 0)
 
     -- gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     -- ppsout_info_slot(3) <= 6; -- Slot 6
@@ -1142,7 +1151,7 @@ begin
     -- ppsout_info_slot(6) <= 8; -- Slot 8
     -- ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (Channel 1)
 
-    -- -- PPS inputs
+    -- PPS inputs
     -- spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
     -- ppsin_info_slot(0) <= 6;                    -- USPI is in slot 6
     -- ppsin_info_pin(0) <= 0;                     -- PPS pin of USPI is 0
@@ -1151,7 +1160,7 @@ begin
     -- ppsin_info_slot(1) <= 8;                    -- USPI is in slot 6
     -- ppsin_info_pin(1) <= 0;                     -- PPS pin of USPI is 0
 
-  -- end process;
+  end process;
 
 
 end behave;
