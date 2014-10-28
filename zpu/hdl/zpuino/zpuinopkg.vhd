@@ -46,13 +46,13 @@ package zpuinopkg is
 
   constant num_devices: integer := (2**zpuino_number_io_select_bits);
 
-  type slot_std_logic_type is array(1 to num_devices-1) of std_logic;
+  type slot_std_logic_type is array(0 to num_devices-1) of std_logic;
   subtype cpuword_type     is std_logic_vector(31 downto 0);
-  type slot_cpuword_type   is array(1 to num_devices-1) of cpuword_type;
+  type slot_cpuword_type   is array(0 to num_devices-1) of cpuword_type;
   subtype address_type     is std_logic_vector(maxIObit downto minIObit);
-  type slot_address_type   is array(1 to num_devices-1) of address_type;
+  type slot_address_type   is array(0 to num_devices-1) of address_type;
   subtype slot_id          is std_logic_vector(15 downto 0);
-  type slot_id_type        is array(1 to num_devices-1) of slot_id;
+  type slot_id_type        is array(0 to num_devices-1) of slot_id;
 
   type ppsoutinfotype is array(PPSCOUNT_OUT-1 downto 0) of integer;
   type ppsininfotype is array(PPSCOUNT_IN-1 downto 0) of integer;
