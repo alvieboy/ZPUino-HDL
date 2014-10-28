@@ -10,6 +10,8 @@ use work.zpuinopkg.all;
 entity zpuino_rgbctrl is
   generic (
       WIDTH_BITS: integer := 5;
+      WIDTH_LEDS: integer := 64;
+      PWM_WIDTH: integer := 8;
       REVERSE_SHIFT: boolean := false
   );
   port (
@@ -49,7 +51,7 @@ architecture behave of zpuino_rgbctrl is
   signal transfer: std_logic;
   signal in_transfer: std_logic := '0';
 
-  subtype shreg is std_logic_vector(WIDTH-1 downto 0);
+  subtype shreg is std_logic_vector(WIDTH_LEDS-1 downto 0);
 
   type shifteddatatype is array(0 to 1) of shreg;
 
@@ -73,12 +75,12 @@ architecture behave of zpuino_rgbctrl is
   signal mrdata: std_logic_vector(31 downto 0);
 
   signal mren: std_logic;
-  signal cpwm: unsigned (8 downto 0) := (others => '0');
+  signal cpwm: unsigned (PWM_WIDTH downto 0) := (others => '0');
 
   signal column, column_q: unsigned(4 downto 0) := (others => '0');
-  signal row: unsigned(WIDTH_BITS downto 0) := (others => '0');
+  signal row: unsigned(WIDTH_BITS-1 downto 0) := (others => '0');
 
-  subtype colorvaluetype is unsigned(7 downto 0);
+  subtype colorvaluetype is unsigned(PWM_WIDTH-1 downto 0);
   type utype is array(0 to 3) of colorvaluetype;
 
   type fillerstatetype is (
@@ -113,6 +115,8 @@ architecture behave of zpuino_rgbctrl is
   signal config_data: std_logic_vector(31 downto 0);
   signal ram_out    : std_logic_vector(31 downto 0);
 
+  constant PWMIGNORE: integer := 8 - PWM_WIDTH;
+
 begin
 
   wb_ack_o <= ack_q;
@@ -130,7 +134,7 @@ begin
     case wb_adr_i(3 downto 2) is
       when "01" =>
         config_data(15 downto 0) <= std_logic_vector(to_unsigned(32,16));
-        config_data(31 downto 16) <= std_logic_vector(to_unsigned(WIDTH,16));
+        config_data(31 downto 16) <= std_logic_vector(to_unsigned(WIDTH_LEDS,16));
       when "10" =>
         -- Pixel format....
         config_data <= (others => 'X');
@@ -202,7 +206,7 @@ begin
         when compute =>
 
           mren <= '1';
-          if mren='1' and row(WIDTH_BITS)='0' then
+          if mren='1' and row/=WIDTH_LEDS then
            if panelsel='1' then
             row <= row + 1;
            end if;
@@ -212,10 +216,10 @@ begin
           if memvalid='1' then
             -- We have valid data;
 
-            if (row(WIDTH_BITS)='1') then
+            if (row=WIDTH_LEDS) then
               fillerstate <= send;
               mren<='0';
-              row(WIDTH_BITS)<='0';
+              row<=(others =>'0');
               transfer<='1';
               column_q <= column;
             end if;
@@ -232,14 +236,14 @@ begin
               -- We need to decompose into the individual components
               mword := unsigned(mrdata);
 
-              ucomp(2) := mword(7 downto 0);
-              ucomp(1) := mword(15 downto 8);
-              ucomp(0) := mword(23 downto 16);
+              ucomp(2) := mword(7 downto 0+PWMIGNORE);
+              ucomp(1) := mword(15 downto 8+PWMIGNORE);
+              ucomp(0) := mword(23 downto 16+PWMIGNORE);
 
               -- Compare output for each of them
 
               comparepwm: for j in 0 to 2 loop
-                if (ucomp(j)>cpwm(7 downto 0)) then
+                if (ucomp(j)>cpwm(PWM_WIDTH-1 downto 0)) then
                   compresult(j):='1';
                 else
                   compresult(j):='0';
@@ -249,16 +253,16 @@ begin
               -- At this point we have the comparation. Shift it into the correct
               -- registers.
               if REVERSE_SHIFT then
-                shiftdata_r(panel) <= compresult(0) & shiftdata_r(panel)(WIDTH-1 downto 1);
-                shiftdata_g(panel) <= compresult(1) & shiftdata_g(panel)(WIDTH-1 downto 1);
-                shiftdata_b(panel) <= compresult(2) & shiftdata_b(panel)(WIDTH-1 downto 1);
+                shiftdata_r(panel) <= compresult(0) & shiftdata_r(panel)(WIDTH_LEDS-1 downto 1);
+                shiftdata_g(panel) <= compresult(1) & shiftdata_g(panel)(WIDTH_LEDS-1 downto 1);
+                shiftdata_b(panel) <= compresult(2) & shiftdata_b(panel)(WIDTH_LEDS-1 downto 1);
               else
-                shiftdata_r(panel) <= shiftdata_r(panel)(WIDTH-2 downto 0) & compresult(0);
-                shiftdata_g(panel) <= shiftdata_g(panel)(WIDTH-2 downto 0) & compresult(1);
-                shiftdata_b(panel) <= shiftdata_b(panel)(WIDTH-2 downto 0) & compresult(2);
+                shiftdata_r(panel) <= shiftdata_r(panel)(WIDTH_LEDS-2 downto 0) & compresult(0);
+                shiftdata_g(panel) <= shiftdata_g(panel)(WIDTH_LEDS-2 downto 0) & compresult(1);
+                shiftdata_b(panel) <= shiftdata_b(panel)(WIDTH_LEDS-2 downto 0) & compresult(2);
               end if;
 
-            if row(WIDTH_BITS)='1' then
+            if row=WIDTH_LEDS then
               -- Advance pwm counter
               cpwm <= cpwm + 1;
               --column(4)<='0';
@@ -302,7 +306,7 @@ begin
               shiftout_b(i) <= reverse( shiftdata_b(i) );
             end loop;
             in_transfer<='1';
-            transfer_count <= WIDTH-1;
+            transfer_count <= WIDTH_LEDS-1;
             shstate<=clock;
             ack_transfer <='1';
           end if;
@@ -312,9 +316,9 @@ begin
           -- Shift data out.
 
           for i in 0 to 1 loop -- Array number
-              shiftout_r(i) <= 'X' & shiftout_r(i)(WIDTH-1 downto 1);
-              shiftout_g(i) <= 'X' & shiftout_g(i)(WIDTH-1 downto 1);
-              shiftout_b(i) <= 'X' & shiftout_b(i)(WIDTH-1 downto 1);
+              shiftout_r(i) <= 'X' & shiftout_r(i)(WIDTH_LEDS-1 downto 1);
+              shiftout_g(i) <= 'X' & shiftout_g(i)(WIDTH_LEDS-1 downto 1);
+              shiftout_b(i) <= 'X' & shiftout_b(i)(WIDTH_LEDS-1 downto 1);
           end loop;
 
           shstate<=clock;

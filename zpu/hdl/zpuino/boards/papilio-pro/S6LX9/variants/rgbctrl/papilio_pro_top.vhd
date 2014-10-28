@@ -328,7 +328,10 @@ architecture behave of papilio_pro_top is
 
   component zpuino_rgbctrl is
   generic (
-      WIDTH_BITS: integer := 5
+      WIDTH_BITS: integer := 5;
+      WIDTH_LEDS: integer := 64;
+      PWM_WIDTH: integer := 8;
+      REVERSE_SHIFT: boolean := false
   );
   port (
     wb_clk_i: in std_logic;
@@ -428,8 +431,8 @@ begin
   pin00: IOBUF port map(I => scl_pad_o, O => scl_pad_i, T => scl_padoen_o, IO => WING_A(0) );
   pin01: IOBUF port map(I => sda_pad_o, O => sda_pad_i, T => sda_padoen_o, IO => WING_A(1) );
 
-  --pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
-  --pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => WING_A(1) );
+--  pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
+--  pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => WING_A(1) );
   --pin02: IOPAD port map(I => gpio_o(2),O => gpio_i(2),T => gpio_t(2),C => sysclk,PAD => WING_A(2) );
   --pin03: IOPAD port map(I => gpio_o(3),O => gpio_i(3),T => gpio_t(3),C => sysclk,PAD => WING_A(3) );
   --pin04: IOPAD port map(I => gpio_o(4),O => gpio_i(4),T => gpio_t(4),C => sysclk,PAD => WING_A(4) );
@@ -446,20 +449,21 @@ begin
   pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
   pin16: IOPAD port map(I => gpio_o(16),O => gpio_i(16),T => gpio_t(16),C => sysclk,PAD => WING_B(0) );
   pin17: IOPAD port map(I => gpio_o(17),O => gpio_i(17),T => gpio_t(17),C => sysclk,PAD => WING_B(1) );
-  pin18: IOPAD port map(I => gpio_o(18),O => gpio_i(18),T => gpio_t(18),C => sysclk,PAD => WING_B(2) );
-  pin19: IOPAD port map(I => gpio_o(19),O => gpio_i(19),T => gpio_t(19),C => sysclk,PAD => WING_B(3) );
-  pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) );
-  pin21: IOPAD port map(I => gpio_o(21),O => gpio_i(21),T => gpio_t(21),C => sysclk,PAD => WING_B(5) );
-  pin22: IOPAD port map(I => gpio_o(22),O => gpio_i(22),T => gpio_t(22),C => sysclk,PAD => WING_B(6) );
-  pin23: IOPAD port map(I => gpio_o(23),O => gpio_i(23),T => gpio_t(23),C => sysclk,PAD => WING_B(7) );
-  pin24: IOPAD port map(I => gpio_o(24),O => gpio_i(24),T => gpio_t(24),C => sysclk,PAD => WING_B(8) );
-  pin25: IOPAD port map(I => gpio_o(25),O => gpio_i(25),T => gpio_t(25),C => sysclk,PAD => WING_B(9) );
-  pin26: IOPAD port map(I => gpio_o(26),O => gpio_i(26),T => gpio_t(26),C => sysclk,PAD => WING_B(10) );
-  pin27: IOPAD port map(I => gpio_o(27),O => gpio_i(27),T => gpio_t(27),C => sysclk,PAD => WING_B(11) );
-  pin28: IOPAD port map(I => gpio_o(28),O => gpio_i(28),T => gpio_t(28),C => sysclk,PAD => WING_B(12) );
-  pin29: IOPAD port map(I => gpio_o(29),O => gpio_i(29),T => gpio_t(29),C => sysclk,PAD => WING_B(13) );
-  pin30: IOPAD port map(I => gpio_o(30),O => gpio_i(30),T => gpio_t(30),C => sysclk,PAD => WING_B(14) );
+  --pin18: IOPAD port map(I => gpio_o(18),O => gpio_i(18),T => gpio_t(18),C => sysclk,PAD => WING_B(2) );
+  --pin19: IOPAD port map(I => gpio_o(19),O => gpio_i(19),T => gpio_t(19),C => sysclk,PAD => WING_B(3) );
+  --pin20: IOPAD port map(I => gpio_o(20),O => gpio_i(20),T => gpio_t(20),C => sysclk,PAD => WING_B(4) );
+  --pin21: IOPAD port map(I => gpio_o(21),O => gpio_i(21),T => gpio_t(21),C => sysclk,PAD => WING_B(5) );
+  --pin22: IOPAD port map(I => gpio_o(22),O => gpio_i(22),T => gpio_t(22),C => sysclk,PAD => WING_B(6) );
+  --pin23: IOPAD port map(I => gpio_o(23),O => gpio_i(23),T => gpio_t(23),C => sysclk,PAD => WING_B(7) );
+  --pin24: IOPAD port map(I => gpio_o(24),O => gpio_i(24),T => gpio_t(24),C => sysclk,PAD => WING_B(8) );
+  --pin25: IOPAD port map(I => gpio_o(25),O => gpio_i(25),T => gpio_t(25),C => sysclk,PAD => WING_B(9) );
+  --pin26: IOPAD port map(I => gpio_o(26),O => gpio_i(26),T => gpio_t(26),C => sysclk,PAD => WING_B(10) );
+  --pin27: IOPAD port map(I => gpio_o(27),O => gpio_i(27),T => gpio_t(27),C => sysclk,PAD => WING_B(11) );
+  --pin28: IOPAD port map(I => gpio_o(28),O => gpio_i(28),T => gpio_t(28),C => sysclk,PAD => WING_B(12) );
+  --pin29: IOPAD port map(I => gpio_o(29),O => gpio_i(29),T => gpio_t(29),C => sysclk,PAD => WING_B(13) );
+  --pin30: IOPAD port map(I => gpio_o(30),O => gpio_i(30),T => gpio_t(30),C => sysclk,PAD => WING_B(14) );
   pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
+
   pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
   pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
@@ -777,7 +781,9 @@ begin
 
   slot9: zpuino_rgbctrl
   generic map (
-    WIDTH_BITS => 6
+    WIDTH_BITS => 7,
+    PWM_WIDTH => 7,
+    WIDTH_LEDS => 96
   )
   port map (
     wb_clk_i       => wb_clk_i,
@@ -814,20 +820,45 @@ begin
   --
   -- IO SLOT 10
   --
-  slot10: zpuino_empty_device
+
+
+  slot10: zpuino_rgbctrl
+  generic map (
+    WIDTH_BITS => 7,
+    PWM_WIDTH => 7,
+    WIDTH_LEDS => 96
+  )
   port map (
-    wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(10),
-    wb_dat_i      => slot_write(10),
-    wb_adr_i      => slot_address(10),
-    wb_we_i       => slot_we(10),
-    wb_cyc_i      => slot_cyc(10),
-    wb_stb_i      => slot_stb(10),
+    wb_dat_i     => slot_write(10),
+    wb_adr_i   => slot_address(10),
+    wb_we_i        => slot_we(10),
+    wb_cyc_i        => slot_cyc(10),
+    wb_stb_i        => slot_stb(10),
     wb_ack_o      => slot_ack(10),
-    wb_inta_o     => slot_interrupt(10),
-    id            => slot_ids(10)
+    wb_inta_o => slot_interrupt(10),
+
+    displayclk => rgbclk,
+
+    R(0) => WING_B(2),
+    R(1) => WING_B(5),
+    G(0) => WING_B(3),
+    G(1) => WING_B(6),
+    B(0) => WING_B(4),
+    B(1) => WING_B(7),
+
+    COL(0) => WING_B(8),
+    COL(1) => WING_B(9),
+    COL(2) => WING_B(10),
+    COL(3) => WING_B(11),
+
+    CLK => WING_B(12),
+    STB => WING_B(13),
+    OE  => WING_B(14)
   );
+  slot_ids(10) <= x"08" & x"20";
 
   --
   -- IO SLOT 11
