@@ -542,13 +542,15 @@ begin
   wishbone_slot_14_out_record.wb_ack_o <= wishbone_slot_14_out(1);
   wishbone_slot_14_out_record.wb_inta_o <= wishbone_slot_14_out(0); 
   
-  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(97 downto 49);
+  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(49+(PPSCOUNT_OUT-1) downto 49);
+  --gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(97 downto 49);
   gpio_bus_in_record.gpio_i <= gpio_bus_in(48 downto 0);
 
   gpio_bus_out(147) <= gpio_bus_out_record.gpio_clk;
   gpio_bus_out(146 downto 98) <= gpio_bus_out_record.gpio_o;
   gpio_bus_out(97 downto 49) <= gpio_bus_out_record.gpio_t;
-  gpio_bus_out(48 downto 0) <= gpio_bus_out_record.gpio_spp_read;
+  gpio_bus_out(PPSCOUNT_IN-1 downto 0) <= gpio_bus_out_record.gpio_spp_read;
+  --gpio_bus_out(48 downto 0) <= gpio_bus_out_record.gpio_spp_read;
 
   gpio_bus_out_record.gpio_o <= gpio_o_reg;
   gpio_bus_out_record.gpio_clk <= sysclk;
@@ -803,8 +805,8 @@ begin
     wb_inta_o     => slot_interrupt(2),
     id            => slot_ids(2),
 
-    spp_data  => gpio_bus_in_record.gpio_spp_data,
-    spp_read  => gpio_bus_out_record.gpio_spp_read,
+    spp_data  => gpio_bus_in_record.gpio_spp_data(PPSCOUNT_OUT-1 downto 0),
+    spp_read  => gpio_bus_out_record.gpio_spp_read(PPSCOUNT_IN-1 downto 0),
 
     gpio_i      => gpio_bus_in_record.gpio_i,
     gpio_t      => gpio_bus_out_record.gpio_t,
@@ -1127,13 +1129,13 @@ begin
     -- ppsout_info_slot(0) <= 5; -- Slot 5
     -- ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
 
-    gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
-    ppsout_info_slot(1) <= 3; -- Slot 3
-    ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+    gpio_spp_data(0)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    ppsout_info_slot(0) <= 3; -- Slot 3
+    ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (TIMER 0)
 
-    gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
-    ppsout_info_slot(2) <= 3; -- Slot 3
-    ppsout_info_pin(2) <= 1;  -- PPS OUT pin 1 (TIMER 0)
+    gpio_spp_data(1)  <= timers_pwm(1);            -- PPS2 : TIMER1
+    ppsout_info_slot(1) <= 3; -- Slot 3
+    ppsout_info_pin(1) <= 1;  -- PPS OUT pin 1 (TIMER 0)
 
     -- gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     -- ppsout_info_slot(3) <= 6; -- Slot 6
