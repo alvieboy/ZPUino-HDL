@@ -200,29 +200,29 @@ architecture behave of ZPUino_SDRAM_Wrapper is
 --  signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_o_reg:      std_logic_vector(48 downto 0);
 
-  constant spp_cap_in: std_logic_vector(48 downto 0) :=
-    "0" &                -- SPI CS 
-    "0000000000000000" &  -- Wing C
-    "0000000000000000" &  -- Wing B
-    "0000000000000000";   -- Wing A
+  -- constant spp_cap_in: std_logic_vector(48 downto 0) :=
+    -- "0" &                -- SPI CS 
+    -- "0000000000000000" &  -- Wing C
+    -- "0000000000000000" &  -- Wing B
+    -- "0000000000000000";   -- Wing A
 
-  constant spp_cap_out: std_logic_vector(48 downto 0) :=
-    "0" &                -- SPI CS 
-    "0000000000000000" &  -- Wing C
-    "0000000000000000" &  -- Wing B
-    "0000000000000000";   -- Wing A
+  -- constant spp_cap_out: std_logic_vector(48 downto 0) :=
+    -- "0" &                -- SPI CS 
+    -- "0000000000000000" &  -- Wing C
+    -- "0000000000000000" &  -- Wing B
+    -- "0000000000000000";   -- Wing A
 
---  constant spp_cap_in: std_logic_vector(48 downto 0) :=
---    "0" &                -- SPI CS 
---    "1111111111111111" &  -- Wing C
---    "1111111111111111" &  -- Wing B
---    "1111111111111111";   -- Wing A
---
---  constant spp_cap_out: std_logic_vector(48 downto 0) :=
---    "0" &                -- SPI CS 
---    "1111111111111111" &  -- Wing C
---    "1111111111111111" &  -- Wing B
---    "1111111111111111";   -- Wing A
+ constant spp_cap_in: std_logic_vector(48 downto 0) :=
+   "0" &                -- SPI CS 
+   "1111111111111111" &  -- Wing C
+   "1111111111111111" &  -- Wing B
+   "1111111111111111";   -- Wing A
+
+ constant spp_cap_out: std_logic_vector(48 downto 0) :=
+   "0" &                -- SPI CS 
+   "1111111111111111" &  -- Wing C
+   "1111111111111111" &  -- Wing B
+   "1111111111111111";   -- Wing A
 
   -- I/O Signals
   signal slot_cyc:    slot_std_logic_type;
