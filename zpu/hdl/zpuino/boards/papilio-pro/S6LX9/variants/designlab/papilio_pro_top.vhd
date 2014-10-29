@@ -46,7 +46,7 @@ use work.pad.all;
 use work.wishbonepkg.all;
 use work.papilio_pkg.all;
 
-entity ZPUino_SDRAM_Wrapper is
+entity ZPUino_Papilio_Pro_V2_blackbox is
   port (
     CLK:        in std_logic;
 	
@@ -128,9 +128,9 @@ entity ZPUino_SDRAM_Wrapper is
 	
  	
   );
-end entity ZPUino_SDRAM_Wrapper;
+end entity ZPUino_Papilio_Pro_V2_blackbox;
 
-architecture behave of ZPUino_SDRAM_Wrapper is
+architecture behave of ZPUino_Papilio_Pro_V2_blackbox is
 
   component zpuino_debug_jtag_spartan6 is
   port (

@@ -1,4 +1,4 @@
-PROJECT=papilio_pro
+PROJECT=ZPUino_Papilio_Pro_V2_blackbox
 PART=xc6slx9-2-tqg144
 VARIANT=zpuino-1.0-PapilioPro-S6LX9-Vanilla-1.0.bit
 
@@ -8,7 +8,7 @@ SIZE=16384
 DEFINES="-DBOARD_ID=0xA4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE"
 #define ZPUINO_HAS_ICACHE
 
-all: ${PROJECT}_routed.ncd
+all: ${PROJECT}.ngc
 
 prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../../bootloader -f Makefile BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
