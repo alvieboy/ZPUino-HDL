@@ -541,8 +541,8 @@ begin
   wishbone_slot_14_out_record.wb_dat_o <= wishbone_slot_14_out(33 downto 2);
   wishbone_slot_14_out_record.wb_ack_o <= wishbone_slot_14_out(1);
   wishbone_slot_14_out_record.wb_inta_o <= wishbone_slot_14_out(0); 
-  
-  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(49+(PPSCOUNT_OUT-1) downto 49);
+
+  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(49+(PPSCOUNT_OUT-1) downto 49); -- Subtract two pins for the Timer PPS pins
   --gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(97 downto 49);
   gpio_bus_in_record.gpio_i <= gpio_bus_in(48 downto 0);
 
@@ -1120,20 +1120,38 @@ begin
   process(gpio_spp_read, timers_pwm)
   begin
 
-    gpio_spp_data <= (others => DontCareValue);
+    --gpio_bus_in_record.gpio_spp_data <= (others => DontCareValue);
 
     -- PPS Outputs
     -- gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
     -- ppsout_info_slot(0) <= 5; -- Slot 5
     -- ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
-
-    gpio_spp_data(0)  <= timers_pwm(0);            -- PPS1 : TIMER0
+	
     ppsout_info_slot(0) <= 3; -- Slot 3
     ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (TIMER 0)
 
-    gpio_spp_data(1)  <= timers_pwm(1);            -- PPS2 : TIMER1
     ppsout_info_slot(1) <= 3; -- Slot 3
-    ppsout_info_pin(1) <= 1;  -- PPS OUT pin 1 (TIMER 0)
+    ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    ppsout_info_slot(2) <= 3; -- Slot 3
+    ppsout_info_pin(2) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    ppsout_info_slot(3) <= 3; -- Slot 3
+    ppsout_info_pin(3) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    ppsout_info_slot(4) <= 3; -- Slot 3
+    ppsout_info_pin(4) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    ppsout_info_slot(5) <= 3; -- Slot 3
+    ppsout_info_pin(5) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    --gpio_bus_in_record.gpio_spp_data(6)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    ppsout_info_slot(6) <= 3; -- Slot 3
+    ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    --gpio_bus_in_record.gpio_spp_data(7)  <= timers_pwm(1);            -- PPS2 : TIMER1
+    ppsout_info_slot(7) <= 3; -- Slot 3
+    ppsout_info_pin(7) <= 1;  -- PPS OUT pin 1 (TIMER 0)
 
     -- gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     -- ppsout_info_slot(3) <= 6; -- Slot 6
