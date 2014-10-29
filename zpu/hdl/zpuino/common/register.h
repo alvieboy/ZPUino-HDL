@@ -9,6 +9,8 @@
 # include "board_papilio_plus.h"
 #elif defined( __ZPUINO_PAPILIO_PRO__ )
 # include "board_papilio_pro.h"
+#elif defined( __ZPUINO_PAPILIO_DUO__ )
+# include "board_papilio_duo.h"
 #elif defined( __ZPUINO_NEXYS2__ )
 # include "board_nexys2.h"
 #elif defined( __ZPUINO_OHO_GODIL__ )
