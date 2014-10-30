@@ -47,7 +47,7 @@ use work.papilio_pkg.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity ZPUino_Papilio_One_V1 is
+entity ZPUino_Papilio_One_V2_blackbox is
   port (
     CLK:        in std_logic;
     --RST:        in std_logic; -- No reset on papilio
@@ -58,21 +58,21 @@ entity ZPUino_Papilio_One_V1 is
 	 clk_osc_32Mhz:   out std_logic;		--This is the 32Mhz clock from external oscillator.
 
 	 -- Connection to the main SPI flash
-    SPI_FLASH_SCK:    out std_logic;
-    SPI_FLASH_MISO:   in std_logic;
-    SPI_FLASH_MOSI:   out std_logic;
-    SPI_FLASH_CS:     inout std_logic;
+    SPI_SCK:    out std_logic;
+    SPI_MISO:   in std_logic;
+    SPI_MOSI:   out std_logic;
+    SPI_CS:     inout std_logic;
 	 
-	 gpio_bus_in : in std_logic_vector(97 downto 0);
-	 gpio_bus_out : out std_logic_vector(147 downto 0);
+	 gpio_bus_in : in std_logic_vector(200 downto 0);
+	 gpio_bus_out : out std_logic_vector(200 downto 0);
 		
 	 -- UART (FTDI) connection
     TXD:        out std_logic;
     RXD:        in std_logic;
 
 	 --There are more bits in the address for this wishbone connection
-	 wishbone_slot_video_in : in std_logic_vector(63 downto 0);
-	 wishbone_slot_video_out : out std_logic_vector(33 downto 0);
+	 wishbone_slot_video_in : in std_logic_vector(100 downto 0);
+	 wishbone_slot_video_out : out std_logic_vector(100 downto 0);
 	 vgaclkout: out std_logic;	
 
 -- Unfortunately the Xilinx Schematic Editor does not support records, so we have to put all wishbone signals into one array.
@@ -114,40 +114,40 @@ entity ZPUino_Papilio_One_V1 is
 --  wishbone_out(0) <= wishbone_out_record.wb_inta_o; 
 
 	 --Input and output reversed for the master
-	 wishbone_slot_5_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_5_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_5_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_5_out : in std_logic_vector(100 downto 0);
 	 
-	 wishbone_slot_6_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_6_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_6_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_6_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_8_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_8_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_8_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_8_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_9_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_9_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_9_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_9_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_10_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_10_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_10_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_10_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_11_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_11_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_11_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_11_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_12_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_12_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_12_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_12_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_13_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_13_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_13_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_13_out : in std_logic_vector(100 downto 0);
 
-	 wishbone_slot_14_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_14_out : in std_logic_vector(33 downto 0);
+	 wishbone_slot_14_in : out std_logic_vector(100 downto 0);
+	 wishbone_slot_14_out : in std_logic_vector(100 downto 0)
 
-	 wishbone_slot_15_in : out std_logic_vector(61 downto 0);
-	 wishbone_slot_15_out : in std_logic_vector(33 downto 0)	 
+	 -- wishbone_slot_15_in : out std_logic_vector(61 downto 0);
+	 -- wishbone_slot_15_out : in std_logic_vector(33 downto 0)	 
 
   );
-end entity ZPUino_Papilio_One_V1;
+end entity ZPUino_Papilio_One_V2_blackbox;
 
-architecture behave of ZPUino_Papilio_One_V1 is
+architecture behave of ZPUino_Papilio_One_V2_blackbox is
 
   component clkgen is
   port (
@@ -184,27 +184,27 @@ architecture behave of ZPUino_Papilio_One_V1 is
   signal rx: std_logic;
   signal tx: std_logic;
 
-  constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0" &
-    "0000000000000000" &
-    "0000000000000000" &
-    "0000000000000000";
-  constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "0" &
-    "0000000000000000" &
-    "0000000000000000" &
-    "0000000000000000";
+  -- constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+    -- "0" &
+    -- "0000000000000000" &
+    -- "0000000000000000" &
+    -- "0000000000000000";
+  -- constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+    -- "0" &
+    -- "0000000000000000" &
+    -- "0000000000000000" &
+    -- "0000000000000000";
 
---  constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
---    "0" &
---    "1111111111111111" &
---    "1111111111111111" &
---    "1111111111111111";
---  constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
---    "0" &
---    "1111111111111111" &
---    "1111111111111111" &
---    "1111111111111111";
+ constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+   "0" &
+   "1111111111111111" &
+   "1111111111111111" &
+   "1111111111111111";
+ constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
+   "0" &
+   "1111111111111111" &
+   "1111111111111111" &
+   "1111111111111111";
 
   -- I/O Signals
   signal slot_cyc:   slot_std_logic_type;
@@ -215,7 +215,7 @@ architecture behave of ZPUino_Papilio_One_V1 is
   signal slot_address:  slot_address_type;
   signal slot_ack:   slot_std_logic_type;
   signal slot_interrupt: slot_std_logic_type;
-  signal slot_id:    slot_id_type;
+  signal slot_ids:    slot_id_type;
 
   signal spi_enabled:  std_logic;
 
@@ -412,18 +412,18 @@ begin
   wishbone_slot_14_out_record.wb_ack_o <= wishbone_slot_14_out(1);
   wishbone_slot_14_out_record.wb_inta_o <= wishbone_slot_14_out(0); 
 
-  wishbone_slot_15_in(61) <= wishbone_slot_15_in_record.wb_clk_i;
-  wishbone_slot_15_in(60) <= wishbone_slot_15_in_record.wb_rst_i;
-  wishbone_slot_15_in(59 downto 28) <= wishbone_slot_15_in_record.wb_dat_i;
-  wishbone_slot_15_in(27 downto 3) <= wishbone_slot_15_in_record.wb_adr_i;
-  wishbone_slot_15_in(2) <= wishbone_slot_15_in_record.wb_we_i;
-  wishbone_slot_15_in(1) <= wishbone_slot_15_in_record.wb_cyc_i;
-  wishbone_slot_15_in(0) <= wishbone_slot_15_in_record.wb_stb_i; 
-  wishbone_slot_15_out_record.wb_dat_o <= wishbone_slot_15_out(33 downto 2);
-  wishbone_slot_15_out_record.wb_ack_o <= wishbone_slot_15_out(1);
-  wishbone_slot_15_out_record.wb_inta_o <= wishbone_slot_15_out(0);   
+  -- wishbone_slot_15_in(61) <= wishbone_slot_15_in_record.wb_clk_i;
+  -- wishbone_slot_15_in(60) <= wishbone_slot_15_in_record.wb_rst_i;
+  -- wishbone_slot_15_in(59 downto 28) <= wishbone_slot_15_in_record.wb_dat_i;
+  -- wishbone_slot_15_in(27 downto 3) <= wishbone_slot_15_in_record.wb_adr_i;
+  -- wishbone_slot_15_in(2) <= wishbone_slot_15_in_record.wb_we_i;
+  -- wishbone_slot_15_in(1) <= wishbone_slot_15_in_record.wb_cyc_i;
+  -- wishbone_slot_15_in(0) <= wishbone_slot_15_in_record.wb_stb_i; 
+  -- wishbone_slot_15_out_record.wb_dat_o <= wishbone_slot_15_out(33 downto 2);
+  -- wishbone_slot_15_out_record.wb_ack_o <= wishbone_slot_15_out(1);
+  -- wishbone_slot_15_out_record.wb_inta_o <= wishbone_slot_15_out(0);   
 
-  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(97 downto 49);
+  gpio_bus_in_record.gpio_spp_data <= gpio_bus_in(49+(PPSCOUNT_OUT-1) downto 49);
   gpio_bus_in_record.gpio_i <= gpio_bus_in(48 downto 0);
 
   gpio_bus_out(147) <= gpio_bus_out_record.gpio_clk;
@@ -441,6 +441,7 @@ begin
   wishbone_slot_5_in_record.wb_clk_i <= sysclk;
   wishbone_slot_5_in_record.wb_rst_i <= sysrst;
   slot_read(5) <= wishbone_slot_5_out_record.wb_dat_o;
+  slot_ids(5) <= wishbone_slot_5_out_record.wb_id_o;
   wishbone_slot_5_in_record.wb_dat_i <= slot_write(5);
   wishbone_slot_5_in_record.wb_adr_i <= slot_address(5);
   wishbone_slot_5_in_record.wb_we_i <= slot_we(5);
@@ -453,6 +454,7 @@ begin
   wishbone_slot_6_in_record.wb_clk_i <= sysclk;
   wishbone_slot_6_in_record.wb_rst_i <= sysrst;
   slot_read(6) <= wishbone_slot_6_out_record.wb_dat_o;
+  slot_ids(6) <= wishbone_slot_6_out_record.wb_id_o;
   wishbone_slot_6_in_record.wb_dat_i <= slot_write(6);
   wishbone_slot_6_in_record.wb_adr_i <= slot_address(6);
   wishbone_slot_6_in_record.wb_we_i <= slot_we(6);
@@ -465,6 +467,7 @@ begin
   wishbone_slot_8_in_record.wb_clk_i <= sysclk;
   wishbone_slot_8_in_record.wb_rst_i <= sysrst;
   slot_read(8) <= wishbone_slot_8_out_record.wb_dat_o;
+  slot_ids(8) <= wishbone_slot_8_out_record.wb_id_o;
   wishbone_slot_8_in_record.wb_dat_i <= slot_write(8);
   wishbone_slot_8_in_record.wb_adr_i <= slot_address(8);
   wishbone_slot_8_in_record.wb_we_i <= slot_we(8);
@@ -477,6 +480,7 @@ begin
   wishbone_slot_9_in_record.wb_clk_i <= sysclk;
   wishbone_slot_9_in_record.wb_rst_i <= sysrst;
   slot_read(9) <= wishbone_slot_9_out_record.wb_dat_o;
+  slot_ids(9) <= wishbone_slot_9_out_record.wb_id_o;
   wishbone_slot_9_in_record.wb_dat_i <= slot_write(9);
   wishbone_slot_9_in_record.wb_adr_i <= slot_address(9);
   wishbone_slot_9_in_record.wb_we_i <= slot_we(9);
@@ -489,6 +493,7 @@ begin
   wishbone_slot_10_in_record.wb_clk_i <= sysclk;
   wishbone_slot_10_in_record.wb_rst_i <= sysrst;
   slot_read(10) <= wishbone_slot_10_out_record.wb_dat_o;
+  slot_ids(10) <= wishbone_slot_10_out_record.wb_id_o;
   wishbone_slot_10_in_record.wb_dat_i <= slot_write(10);
   wishbone_slot_10_in_record.wb_adr_i <= slot_address(10);
   wishbone_slot_10_in_record.wb_we_i <= slot_we(10);
@@ -501,6 +506,7 @@ begin
   wishbone_slot_11_in_record.wb_clk_i <= sysclk;
   wishbone_slot_11_in_record.wb_rst_i <= sysrst;
   slot_read(11) <= wishbone_slot_11_out_record.wb_dat_o;
+  slot_ids(11) <= wishbone_slot_11_out_record.wb_id_o;
   wishbone_slot_11_in_record.wb_dat_i <= slot_write(11);
   wishbone_slot_11_in_record.wb_adr_i <= slot_address(11);
   wishbone_slot_11_in_record.wb_we_i <= slot_we(11);
@@ -513,6 +519,7 @@ begin
   wishbone_slot_12_in_record.wb_clk_i <= sysclk;
   wishbone_slot_12_in_record.wb_rst_i <= sysrst;
   slot_read(12) <= wishbone_slot_12_out_record.wb_dat_o;
+  slot_ids(12) <= wishbone_slot_12_out_record.wb_id_o;
   wishbone_slot_12_in_record.wb_dat_i <= slot_write(12);
   wishbone_slot_12_in_record.wb_adr_i <= slot_address(12);
   wishbone_slot_12_in_record.wb_we_i <= slot_we(12);
@@ -525,6 +532,7 @@ begin
   wishbone_slot_13_in_record.wb_clk_i <= sysclk;
   wishbone_slot_13_in_record.wb_rst_i <= sysrst;
   slot_read(13) <= wishbone_slot_13_out_record.wb_dat_o;
+  slot_ids(13) <= wishbone_slot_13_out_record.wb_id_o;
   wishbone_slot_13_in_record.wb_dat_i <= slot_write(13);
   wishbone_slot_13_in_record.wb_adr_i <= slot_address(13);
   wishbone_slot_13_in_record.wb_we_i <= slot_we(13);
@@ -537,6 +545,7 @@ begin
   wishbone_slot_14_in_record.wb_clk_i <= sysclk;
   wishbone_slot_14_in_record.wb_rst_i <= sysrst;
   slot_read(14) <= wishbone_slot_14_out_record.wb_dat_o;
+  slot_ids(14) <= wishbone_slot_14_out_record.wb_id_o;
   wishbone_slot_14_in_record.wb_dat_i <= slot_write(14);
   wishbone_slot_14_in_record.wb_adr_i <= slot_address(14);
   wishbone_slot_14_in_record.wb_we_i <= slot_we(14);
@@ -546,16 +555,16 @@ begin
   slot_interrupt(14) <= wishbone_slot_14_out_record.wb_inta_o;
   
    --Wishbone 15
-  wishbone_slot_15_in_record.wb_clk_i <= sysclk;
-  wishbone_slot_15_in_record.wb_rst_i <= sysrst;
-  slot_read(15) <= wishbone_slot_15_out_record.wb_dat_o;
-  wishbone_slot_15_in_record.wb_dat_i <= slot_write(15);
-  wishbone_slot_15_in_record.wb_adr_i <= slot_address(15);
-  wishbone_slot_15_in_record.wb_we_i <= slot_we(15);
-  wishbone_slot_15_in_record.wb_cyc_i <= slot_cyc(15);
-  wishbone_slot_15_in_record.wb_stb_i <= slot_stb(15);
-  slot_ack(15) <= wishbone_slot_15_out_record.wb_ack_o;
-  slot_interrupt(15) <= wishbone_slot_15_out_record.wb_inta_o;
+  -- wishbone_slot_15_in_record.wb_clk_i <= sysclk;
+  -- wishbone_slot_15_in_record.wb_rst_i <= sysrst;
+  -- slot_read(15) <= wishbone_slot_15_out_record.wb_dat_o;
+  -- wishbone_slot_15_in_record.wb_dat_i <= slot_write(15);
+  -- wishbone_slot_15_in_record.wb_adr_i <= slot_address(15);
+  -- wishbone_slot_15_in_record.wb_we_i <= slot_we(15);
+  -- wishbone_slot_15_in_record.wb_cyc_i <= slot_cyc(15);
+  -- wishbone_slot_15_in_record.wb_stb_i <= slot_stb(15);
+  -- slot_ack(15) <= wishbone_slot_15_out_record.wb_ack_o;
+  -- slot_interrupt(15) <= wishbone_slot_15_out_record.wb_inta_o;
   
   rstgen: zpuino_serialreset
     generic map (
@@ -596,7 +605,7 @@ begin
       slot_address  => slot_address,
       slot_ack      => slot_ack,
       slot_interrupt=> slot_interrupt,
-      slot_id       => slot_id,
+      slot_id       => slot_ids,
 
       pps_in_slot   => ppsin_info_slot,
       pps_in_pin    => ppsin_info_pin,
@@ -681,7 +690,7 @@ begin
     wb_stb_i  => slot_stb(4),
     wb_ack_o  => slot_ack(4),
     -- Taken by timer controller, wb_inta_o => slot_interrupt(4),
-    id        => slot_id(4),
+    id        => slot_ids(4),
 
     mosi      => spi_pf_mosi,
     miso      => spi_pf_miso,
@@ -705,7 +714,7 @@ begin
     wb_stb_i  => slot_stb(1),
     wb_ack_o  => slot_ack(1),
     wb_inta_o => slot_interrupt(1),
-    id        => slot_id(1),
+    id        => slot_ids(1),
 
     enabled   => uart_enabled,
     tx        => tx,
@@ -731,8 +740,8 @@ begin
     wb_stb_i       => slot_stb(2),
     wb_ack_o      => slot_ack(2),
     wb_inta_o => slot_interrupt(2),
-    id        => slot_id(2),
-    spp_data  => gpio_bus_in_record.gpio_spp_data(PPSCOUNT_OUT-1 downto 0),
+    id        => slot_ids(2),
+    spp_data  => gpio_spp_data(PPSCOUNT_OUT-1 downto 0),
     spp_read  => gpio_bus_out_record.gpio_spp_read(PPSCOUNT_IN-1 downto 0),
 
     gpio_i      => gpio_bus_in_record.gpio_i,
@@ -772,7 +781,7 @@ begin
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
-    id        => slot_id(3),
+    id        => slot_ids(3),
     pwm_a_out   => timers_pwm(0 downto 0),
     pwm_b_out   => timers_pwm(1 downto 1)
   );
@@ -841,7 +850,7 @@ begin
     wb_stb_i        => slot_stb(7),
     wb_ack_o      => slot_ack(7),
     wb_inta_o => slot_interrupt(7),
-    id        => slot_id(7)
+    id        => slot_ids(7)
   );
 
   --
@@ -1074,68 +1083,77 @@ begin
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
-  ibufmiso: IPAD port map ( PAD => SPI_FLASH_MISO,   O => spi_pf_miso, C => sysclk );
+  ibufmiso: IPAD port map ( PAD => SPI_MISO,   O => spi_pf_miso, C => sysclk );
   obuftx:   OPAD port map ( I => tx,   PAD => TXD );
-  ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_FLASH_SCK );
-  ospics:   OPAD port map ( I => gpio_o_reg(48),   PAD => SPI_FLASH_CS );
-  ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_FLASH_MOSI );
+  ospiclk:  OPAD port map ( I => spi_pf_sck,   PAD => SPI_SCK );
+  ospics:   OPAD port map ( I => gpio_o_reg(48),   PAD => SPI_CS );
+  ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 
+  gpio_spp_data(5 downto 0) <= gpio_bus_in_record.gpio_spp_data(5 downto 0);
+  
+  process(gpio_spp_read, timers_pwm)
+  begin
 
+    --gpio_bus_in_record.gpio_spp_data <= (others => DontCareValue);
 
-  -- process(gpio_spp_read,
-          -- sigmadelta_spp_data,
-          -- timers_pwm,
-          -- spi2_mosi,spi2_sck)
-  -- begin
-
-    
-    -- NOTE NOTE
-    
-    -- If you add or remove the number of PPS pins, please update the
-    -- constants PPSCOUNT_OUT, PPSCOUNT_IN in zpuino_config.vhd
-    
-
-    -- gpio_spp_data <= (others => DontCareValue);
-
-    -- gpio_spp_data(0) <= sigmadelta_spp_data(0); -- PPS0 : SIGMADELTA DATA
+    -- PPS Outputs
+    -- gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
     -- ppsout_info_slot(0) <= 5; -- Slot 5
     -- ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
+	
+    ppsout_info_slot(0) <= 20; -- Slot 
+    ppsout_info_pin(0) <= 0;  -- PPS OUT pin
 
-    -- gpio_spp_data(1) <= timers_pwm(0);          -- PPS1 : TIMER0
-    -- ppsout_info_slot(1) <= 3; -- Slot 3
-    -- ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER0)
+    ppsout_info_slot(1) <= 20; -- Slot
+    ppsout_info_pin(1) <= 0;  -- PPS OUT pin 
 
-    -- gpio_spp_data(2) <= timers_pwm(1);          -- PPS2 : TIMER1
-    -- ppsout_info_slot(2) <= 3; -- Slot 3
-    -- ppsout_info_pin(2) <= 1;  -- PPS OUT pin 0 (TIMER0)
+    ppsout_info_slot(2) <= 20; -- Slot
+    ppsout_info_pin(2) <= 0;  -- PPS OUT pin
 
-    -- gpio_spp_data(3) <= spi2_mosi;              -- PPS3 : USPI MOSI
+    ppsout_info_slot(3) <= 20; -- Slot
+    ppsout_info_pin(3) <= 0;  -- PPS OUT pin
+
+    ppsout_info_slot(4) <= 20; -- Slot
+    ppsout_info_pin(4) <= 0;  -- PPS OUT pin 
+
+    ppsout_info_slot(5) <= 20; -- Slot
+    ppsout_info_pin(5) <= 0;  -- PPS OUT pin
+
+    gpio_spp_data(6)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    ppsout_info_slot(6) <= 3; -- Slot 3
+    ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+
+    gpio_spp_data(7)  <= timers_pwm(1);            -- PPS2 : TIMER1
+    ppsout_info_slot(7) <= 3; -- Slot 3
+    ppsout_info_pin(7) <= 1;  -- PPS OUT pin 1 (TIMER 0)
+
+    -- gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
     -- ppsout_info_slot(3) <= 6; -- Slot 6
     -- ppsout_info_pin(3) <= 0;  -- PPS OUT pin 0 (MOSI)
 
-    -- gpio_spp_data(4) <= spi2_sck;               -- PPS4 : USPI SCK
+    -- gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
     -- ppsout_info_slot(4) <= 6; -- Slot 6
     -- ppsout_info_pin(4) <= 1;  -- PPS OUT pin 1 (SCK)
 
-    -- gpio_spp_data(5) <= sigmadelta_spp_data(1); -- PPS5 : SIGMADELTA1 DATA
+    -- gpio_spp_data(5)  <= sigmadelta_spp_data(1);   -- PPS5 : SIGMADELTA1 DATA
     -- ppsout_info_slot(5) <= 5; -- Slot 5
     -- ppsout_info_pin(5) <= 1;  -- PPS OUT pin 0 (Channel 1)
 
-    -- gpio_spp_data(6) <= uart2_tx;               -- PPS6 : UART2 DATA
-    -- ppsout_info_slot(6) <= 11; -- Slot 11
-    -- ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (UART TX)
+    -- gpio_spp_data(6)  <= uart2_tx;   -- PPS6 : UART2 TX
+    -- ppsout_info_slot(6) <= 8; -- Slot 8
+    -- ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (Channel 1)
 
-
-    -- spi2_miso <= gpio_spp_read(0);              -- PPS0 : USPI MISO
+    -- PPS inputs
+    -- spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
     -- ppsin_info_slot(0) <= 6;                    -- USPI is in slot 6
     -- ppsin_info_pin(0) <= 0;                     -- PPS pin of USPI is 0
 
-    -- uart2_rx <= gpio_spp_read(1);               -- PPS1 : UART RX
-    -- ppsin_info_slot(1) <= 11;                    -- USPI is in slot 6
-    -- ppsin_info_pin(1) <= 0;                     -- UART RX
+    -- uart2_rx          <= gpio_spp_read(1);         -- PPS1 : UART2 RX
+    -- ppsin_info_slot(1) <= 8;                    -- USPI is in slot 6
+    -- ppsin_info_pin(1) <= 0;                     -- PPS pin of USPI is 0
 
-  -- end process;
+  end process;
 
 
 end behave;

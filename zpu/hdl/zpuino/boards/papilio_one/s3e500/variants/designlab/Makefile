@@ -1,4 +1,4 @@
-PROJECT=papilio_one
+PROJECT=ZPUino_Papilio_One_V2_blackbox
 PART=xc3s500e-vq100-4
 VARIANT=zpuino-1.0-PapilioOne-S3E500-Vanilla-1.0.bit
 
@@ -9,7 +9,7 @@ DEFINES="-D__S3E_500__ -DBOARD_ID=0xB4010F00 -DBOARD_MEMORYSIZE=0x8000"
 
 BOOTPATH=../../../../../
 
-all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
+all: ${PROJECT}.ngc
 
 prom-generic-dp-32.vhd:
 	$(MAKE) -C $(BOOTPATH)bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)

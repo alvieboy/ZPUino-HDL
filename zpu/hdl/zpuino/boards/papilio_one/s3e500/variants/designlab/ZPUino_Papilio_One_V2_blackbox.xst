@@ -1,12 +1,12 @@
 set -tmpdir "xst/projnav.tmp"
 set -xsthdpdir "xst"
 run
--ifn papilio_one.prj
+-ifn ZPUino_Papilio_One_V2_blackbox.prj
 -ifmt mixed
--ofn papilio_one
+-ofn ZPUino_Papilio_One_V2_blackbox
 -ofmt NGC
 -p xc3s500e-4-vq100
--top ZPUino_Papilio_One_V1
+-top ZPUino_Papilio_One_V2_blackbox
 -opt_mode Speed
 -opt_level 2
 -iuc NO
