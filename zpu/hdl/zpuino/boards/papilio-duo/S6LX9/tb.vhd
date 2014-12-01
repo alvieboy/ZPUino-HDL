@@ -25,6 +25,11 @@ architecture sim of tb is
     WING_B:     inout std_logic_vector(15 downto 0);
     WING_C:     inout std_logic_vector(15 downto 0);
 
+    AVR_nCS:  in std_logic;
+    AVR_SCK:  in std_logic;
+    AVR_MOSI: in std_logic;
+    AVR_MISO: out std_logic;
+
     -- UART (FTDI) connection
     TXD:        out std_logic;
     RXD:        in std_logic;
@@ -206,6 +211,9 @@ begin
     SPI_MOSI => spi_mosi,
     SPI_SCK => spi_sck,
     SPI_CS   => spi_cs,
+    AVR_nCS => '1',
+    AVR_SCK => '0',
+    AVR_MOSI => '0',
     sram_ce     => sram_ce_i,
     sram_oe     => sram_oe_i,
     sram_we     => sram_we_i,

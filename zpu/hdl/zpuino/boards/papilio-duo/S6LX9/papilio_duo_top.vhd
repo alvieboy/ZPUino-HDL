@@ -60,6 +60,8 @@ entity papilio_duo_top is
     WING_B:     inout std_logic_vector(15 downto 0);
     WING_C:     inout std_logic_vector(15 downto 0);
 
+    ARD_RESET:  out std_logic;
+
     -- UART (FTDI) connection
     TXD:        out std_logic;
     RXD:        in std_logic;
@@ -222,6 +224,15 @@ architecture behave of papilio_duo_top is
   signal sram_wb_we_i:        std_logic;
   signal sram_wb_stall_o:     std_logic;
 
+  signal spiwb_wb_ack_o:       std_logic;
+  signal spiwb_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal spiwb_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal spiwb_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal spiwb_wb_cyc_i:       std_logic;
+  signal spiwb_wb_stb_i:       std_logic;
+  signal spiwb_wb_sel_i:       std_logic_vector(3 downto 0);
+  signal spiwb_wb_we_i:        std_logic;
+
   signal rom_wb_ack_o:       std_logic;
   signal rom_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
   signal rom_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
@@ -284,8 +295,29 @@ architecture behave of papilio_duo_top is
   );
   end component;
 
+  component spiwb is
+  port (
+    nCS:  in std_logic;
+    SCK:  in std_logic;
+    MOSI: in std_logic;
+    MISO: out std_logic;
+
+    clk:    in std_logic;
+    rst:    in std_logic;
+
+    wb_we_o:  out std_logic;
+    wb_cyc_o:  out std_logic;
+    wb_stb_o:  out std_logic;
+    wb_adr_o:  out std_logic_vector(maxIObit downto minIObit);
+    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    wb_ack_i: in std_logic
+  );
+  end component;
+
   signal uart2_rx: std_logic;
   signal uart2_tx: std_logic;  
+
 
 begin
 
@@ -323,10 +355,10 @@ begin
   pin07: IOPAD port map(I => gpio_o(7),O => gpio_i(7),T => gpio_t(7),C => sysclk,PAD => WING_A(7) );
   pin08: IOPAD port map(I => gpio_o(8),O => gpio_i(8),T => gpio_t(8),C => sysclk,PAD => WING_A(8) );
   pin09: IOPAD port map(I => gpio_o(9),O => gpio_i(9),T => gpio_t(9),C => sysclk,PAD => WING_A(9) );
-  pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
-  pin11: IOPAD port map(I => gpio_o(11),O => gpio_i(11),T => gpio_t(11),C => sysclk,PAD => WING_A(11) );
-  pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
-  pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
+  --pin10: IOPAD port map(I => gpio_o(10),O => gpio_i(10),T => gpio_t(10),C => sysclk,PAD => WING_A(10) );
+  --pin11: IOPAD port map(I => gpio_o(11),O => gpio_i(11),T => gpio_t(11),C => sysclk,PAD => WING_A(11) );
+  --pin12: IOPAD port map(I => gpio_o(12),O => gpio_i(12),T => gpio_t(12),C => sysclk,PAD => WING_A(12) );
+  --pin13: IOPAD port map(I => gpio_o(13),O => gpio_i(13),T => gpio_t(13),C => sysclk,PAD => WING_A(13) );
   pin14: IOPAD port map(I => gpio_o(14),O => gpio_i(14),T => gpio_t(14),C => sysclk,PAD => WING_A(14) );
   pin15: IOPAD port map(I => gpio_o(15),O => gpio_i(15),T => gpio_t(15),C => sysclk,PAD => WING_A(15) );
   pin16: IOPAD port map(I => gpio_o(16),O => gpio_i(16),T => gpio_t(16),C => sysclk,PAD => WING_B(0) );
@@ -374,7 +406,29 @@ begin
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
   --oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
-  zpuino:zpuino_top_icache
+
+  spiwb_inst: spiwb
+    port map (
+      nCS   => WING_A(10), --AVR_nCS,
+      SCK   => WING_A(13), --AVR_SCK,
+      MOSI  => WING_A(11), --AVR_MOSI,
+      MISO  => WING_A(12), --AVR_MISO,
+
+      clk   => sysclk,
+      rst   => sysrst,
+
+      wb_we_o   => spiwb_wb_we_i,
+      wb_cyc_o  => spiwb_wb_cyc_i,
+      wb_stb_o  => spiwb_wb_stb_i,
+      wb_adr_o  => spiwb_wb_adr_i(maxIObit downto 2),
+      wb_dat_i  => spiwb_wb_dat_o,
+      wb_dat_o  => spiwb_wb_dat_i,
+      wb_ack_i  => spiwb_wb_ack_o
+
+    );
+
+
+  zpuino:zpuino_top_icache_iom
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
@@ -402,6 +456,14 @@ begin
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
       m_wb_ack_o    => open,
+
+      io_m_wb_dat_o => spiwb_wb_dat_o,
+      io_m_wb_dat_i => spiwb_wb_dat_i,
+      io_m_wb_adr_i => spiwb_wb_adr_i,
+      io_m_wb_we_i  => spiwb_wb_we_i,
+      io_m_wb_cyc_i => spiwb_wb_cyc_i,
+      io_m_wb_stb_i => spiwb_wb_stb_i,
+      io_m_wb_ack_o => spiwb_wb_ack_o,
 
       wb_ack_i      => sram_wb_ack_o,
       wb_stall_i    => sram_wb_stall_o,
@@ -971,5 +1033,6 @@ begin
 
   end process;
 
+  ARD_RESET <= '1';
 
 end behave;
