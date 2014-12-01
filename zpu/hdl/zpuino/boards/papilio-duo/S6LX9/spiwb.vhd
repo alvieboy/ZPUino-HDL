@@ -32,16 +32,6 @@ end entity spiwb;
 
 architecture behave of spiwb is
 
-  component pulse is
-  port (
-    pulse_in: in std_logic;
-    pulse_out: out std_logic;
-    clk: in std_logic;
-    rst: in std_logic
-  );
-  end component;
-
-
   signal tris: std_logic;
   signal shreg_in_q: std_logic_vector(31 downto 0);
   signal shreg_out_q: std_logic_vector(31 downto 0);
@@ -74,7 +64,6 @@ architecture behave of spiwb is
   );
 
   signal state_q: state_type;
-  signal CS: std_logic;
   signal load,data_out,data_out_q: std_logic;
 
   type wbstate_type is (
@@ -94,8 +83,6 @@ architecture behave of spiwb is
   signal conf: std_logic_vector(31 downto 0);
 begin
 
-  CS <= not nCS;
-
   eow<=true when (count_q=7 or count_q=15 or count_q=23 or count_q=31) else false;
   eofw<=true when count_q=7 else false;
 
@@ -106,7 +93,7 @@ begin
   input8 <= shreg_in_q(6 downto 0) & MOSI;
   input32 <= shreg_in_q(30 downto 0) & MOSI;
 
-  process(state_q, process_ack, eow)
+  process(state_q, process_ack, eow, datar_wb, conf)
   begin
       load<='0';
       shreg_load <= (others => 'X');
