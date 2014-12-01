@@ -1,20 +1,16 @@
-PROJECT=ZPUino_Papilio_One_V2_blackbox
-PART=xc3s500e-vq100-4
-VARIANT=zpuino-1.0-PapilioOne-S3E500-Vanilla-1.0.bit
+PROJECT=ZPUino_Papilio_One_250K_V2_blackbox
+PART=xc3s250e-vq100-4
 
 # For bootloader
 BOARD=PAPILIO_ONE
-SIZE=32768
-DEFINES="-D__S3E_500__ -DBOARD_ID=0xB4010F00 -DBOARD_MEMORYSIZE=0x8000"
+SIZE=16384
+DEFINES="-D__S3E_250__ -DBOARD_ID=0xA5020E00 -DBOARD_MEMORYSIZE=0x4000"
 
-BOOTPATH=../../../../../
-
-all: ${PROJECT}.ngc
+all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 prom-generic-dp-32.vhd:
-	$(MAKE) -C $(BOOTPATH)bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp $(BOOTPATH)bootloader/prom-generic-dp-32.vhd .
-	cp ../../../bootloader/bootloader.vhd .
+	$(MAKE) -C ../../../../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
+	cp ../../../../../bootloader/prom-generic-dp-32.vhd .
 	
 ${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
@@ -37,9 +33,7 @@ ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 
 ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
-	cp ${PROJECT}_routed.bit ${VARIANT}
 
 clean:
-	rm -rf ${PROJECT}{.ngc,.ngd,.ncd,_routed.ncd,.pcf,_routed_pad*} prom-generic-dp-32.vhd bootloader.vhd
-	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
-	$(MAKE) -C $(BOOTPATH)bootloader clean
+	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} prom-generic-dp-32.vhd
+	$(MAKE) -C ../../../../../bootloader clean

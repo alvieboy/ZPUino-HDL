@@ -1,12 +1,12 @@
 set -tmpdir "xst/projnav.tmp"
 set -xsthdpdir "xst"
 run
--ifn papilio_pro.prj
+-ifn ZPUino_Papilio_One_250K_V2_blackbox.prj
 -ifmt mixed
--ofn papilio_pro
+-ofn ZPUino_Papilio_One_250K_V2_blackbox
 -ofmt NGC
--p xc6slx9-2-tqg144
--top ZPUino_SDRAM_Wrapper
+-p xc3s500e-4-vq100
+-top ZPUino_Papilio_One_250K_V2_blackbox
 -opt_mode Speed
 -opt_level 2
 -iuc NO
@@ -22,30 +22,37 @@ run
 -case Maintain
 -slice_utilization_ratio 100
 -bram_utilization_ratio 100
--fsm_extract Yes 
--fsm_encoding Auto
+-verilog2001 YES
+-fsm_extract YES -fsm_encoding Auto
 -safe_implementation No
 -fsm_style LUT
 -ram_extract Yes
 -ram_style Auto
 -rom_extract Yes
+-mux_style Auto
+-decoder_extract YES
+-priority_extract Yes
 -shreg_extract YES
+-shift_extract YES
+-xor_collapse YES
 -rom_style Auto
--auto_bram_packing No
+-auto_bram_packing NO
+-mux_extract Yes
 -resource_sharing NO
 -async_to_sync NO
 -mult_style Auto
--iobuf No
+-iobuf NO
 -max_fanout 500
 -bufg 0
 -register_duplication YES
 -register_balancing Yes
 -move_first_stage YES
 -move_last_stage YES
+-slice_packing YES
 -optimize_primitives YES
--use_clock_enable YES
+-use_clock_enable Auto
 -use_sync_set Auto
 -use_sync_reset Auto
 -iob False
--equivalent_register_removal No
+-equivalent_register_removal YES
 -slice_utilization_ratio_maxmargin 5

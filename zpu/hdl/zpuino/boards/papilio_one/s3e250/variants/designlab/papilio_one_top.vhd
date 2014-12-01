@@ -47,7 +47,7 @@ use work.papilio_pkg.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity ZPUino_Papilio_One_V2_blackbox is
+entity ZPUino_Papilio_One_250K_V2_blackbox is
   port (
     CLK:        in std_logic;
     --RST:        in std_logic; -- No reset on papilio
@@ -145,9 +145,9 @@ entity ZPUino_Papilio_One_V2_blackbox is
 	 -- wishbone_slot_15_out : in std_logic_vector(33 downto 0)	 
 
   );
-end entity ZPUino_Papilio_One_V2_blackbox;
+end entity ZPUino_Papilio_One_250K_V2_blackbox;
 
-architecture behave of ZPUino_Papilio_One_V2_blackbox is
+architecture behave of ZPUino_Papilio_One_250K_V2_blackbox is
 
   component clkgen is
   port (
