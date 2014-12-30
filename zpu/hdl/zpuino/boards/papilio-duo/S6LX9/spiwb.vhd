@@ -51,6 +51,7 @@ entity spiwb is
     SCK:  in std_logic;
     MOSI: in std_logic;
     MISO: out std_logic;
+    MISOTRIS: out std_logic;
 
     clk:    in std_logic;
     rst:    in std_logic;
@@ -340,6 +341,7 @@ begin
   wb_dat_o <= dataw_wb;
   wb_adr_o <= addr_wb(wb_adr_o'range);
 
-  MISO<='Z' when tris='1' else data_out;
+  MISO <= data_out;
+  MISOTRIS <= tris;
 
 end behave;

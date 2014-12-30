@@ -109,6 +109,68 @@ package zpuinopkg is
   );
   end component zpuino_top_icache;
 
+  component zpuino_top_icache_iom is
+  port (
+    clk:      in std_logic;
+	 	rst:      in std_logic;
+
+    -- Connection to board IO module
+
+    slot_cyc:   out slot_std_logic_type;
+    slot_we:    out slot_std_logic_type;
+    slot_stb:   out slot_std_logic_type;
+    slot_read:  in slot_cpuword_type;
+    slot_write: out slot_cpuword_type;
+    slot_address:  out slot_address_type;
+    slot_ack:   in slot_std_logic_type;
+    slot_interrupt: in slot_std_logic_type;
+    slot_id:    in slot_id_type;
+    -- Wishbone MASTER interface (for DMA)
+    m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+    m_wb_we_i:  in std_logic;
+    m_wb_cyc_i: in std_logic;
+    m_wb_stb_i: in std_logic;
+    m_wb_ack_o: out std_logic;
+    m_wb_stall_o: out std_logic;
+
+    -- IO accesses
+    -- This is a master interface
+
+    io_m_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
+    io_m_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
+    io_m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
+    io_m_wb_we_i:  in std_logic;
+    io_m_wb_cyc_i: in std_logic;
+    io_m_wb_stb_i: in std_logic;
+    io_m_wb_ack_o: out std_logic;
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:  in ppsininfotype;
+    pps_out_slot:  in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype;
+
+    -- Memory connection
+
+    wb_ack_i:       in std_logic;
+    wb_stall_i:     in std_logic;
+    wb_dat_i:       in std_logic_vector(wordSize-1 downto 0);
+    wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
+    wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
+    wb_cyc_o:       out std_logic;
+    wb_stb_o:       out std_logic;
+    wb_cti_o:       out std_logic_vector(2 downto 0);
+    wb_sel_o:       out std_logic_vector(3 downto 0);
+    wb_we_o:        out std_logic;
+
+    dbg_reset: out std_logic;
+    jtag_data_chain_out: out std_logic_vector(98 downto 0);
+    jtag_ctrl_chain_in: in std_logic_vector(11 downto 0)
+
+  );
+  end component zpuino_top_icache_iom;
+
   component zpuino_top is
   port (
     clk:      in std_logic;

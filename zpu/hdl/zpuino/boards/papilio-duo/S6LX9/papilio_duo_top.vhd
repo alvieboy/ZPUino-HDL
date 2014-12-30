@@ -301,6 +301,7 @@ architecture behave of papilio_duo_top is
     SCK:  in std_logic;
     MOSI: in std_logic;
     MISO: out std_logic;
+    MISOTRIS: out std_logic;
 
     clk:    in std_logic;
     rst:    in std_logic;
@@ -318,6 +319,7 @@ architecture behave of papilio_duo_top is
   signal uart2_rx: std_logic;
   signal uart2_tx: std_logic;  
 
+  signal avrspimiso, avrspimisotris: std_logic;
 
 begin
 
@@ -407,13 +409,14 @@ begin
   --oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
 
+
   spiwb_inst: spiwb
     port map (
       nCS   => WING_A(10), --AVR_nCS,
       SCK   => WING_A(13), --AVR_SCK,
       MOSI  => WING_A(11), --AVR_MOSI,
-      MISO  => WING_A(12), --AVR_MISO,
-
+      MISO  =>    avrspimiso, --WING_A(12), --AVR_MISO,
+      MISOTRIS  => avrspimisotris,--WING_A(12), --AVR_MISO,
       clk   => sysclk,
       rst   => sysrst,
 

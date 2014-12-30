@@ -20,7 +20,7 @@ OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o loader.o
 
 CFLAGS= -O2 -g -Wall -fno-gcse -mno-callpcrel -mno-pushspadd -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ -DZPUINO_HAS_ICACHE
 LDFLAGS= -O2 -g -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
-ASFLAGS=-g -I../common -DPRELOADED -DZPU20 -DASSEMBLY -DBOARD_ID=0xA5030E00 -D__ZPUINO_PAPILIO_PRO__ -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE
+ASFLAGS=-g -I../common -DPRELOADED -DZPU20 -DASSEMBLY -DBOARD_ID=0xA5030E00 -D__ZPUINO_PAPILIO_DUO__ -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE
 
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
