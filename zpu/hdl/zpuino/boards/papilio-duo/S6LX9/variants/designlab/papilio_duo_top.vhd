@@ -765,6 +765,7 @@ begin
       SCK           => AVRSPI_SCK,
       MOSI          => AVRSPI_MOSI,
       MISO          => AVRSPI_MISO,
+      MISOTRIS          => AVRSPI_MISOTRIS,
 
       -- No debug unit connected
       dbg_reset     => open,
