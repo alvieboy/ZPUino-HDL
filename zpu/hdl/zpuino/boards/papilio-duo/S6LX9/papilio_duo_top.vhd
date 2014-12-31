@@ -409,6 +409,8 @@ begin
   --oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
 
+  WING_A(12)<='Z' when avrspimisotris='1' else avrspimiso;
+
 
   spiwb_inst: spiwb
     port map (
