@@ -30,3 +30,9 @@
 	01 I2C Master Controller
 	02 CORDIC
         03 PS/2 Controller
+
+81 Critical Software
+	-- Proprietary devices
+
+88 Alvie
+	-- Proprietary devices
