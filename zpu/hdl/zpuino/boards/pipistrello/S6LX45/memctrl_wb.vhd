@@ -28,6 +28,7 @@ entity memctrl_wb is
     wb_stb_i: in std_logic;
     wb_sel_i: in std_logic_vector(3 downto 0);
     wb_cti_i: in std_logic_vector(2 downto 0);
+    wb_bte_i: in std_logic_vector(1 downto 0);
     wb_ack_o: out std_logic;
     wb_stall_o: out std_logic;
 
@@ -169,7 +170,7 @@ architecture rtl of memctrl_wb is
     READPIPE
   );
 
-  constant READBURSTSIZE: std_logic_vector(5 downto 0) := "010000";
+ -- constant READBURSTSIZE: std_logic_vector(5 downto 0) := "010000";
 
   type regs_type is record
     state: state_type;
@@ -236,6 +237,7 @@ begin
   )
     variable canprocess: boolean;
     variable w: regs_type;
+    variable bsize: std_logic_vector(5 downto 0);
   begin
     wr_en     <= '0';
     rd_en     <= '0';
@@ -271,29 +273,39 @@ begin
             end if;
           else
             -- Read process
-            if cmd_full='1' then
-              wb_stall_o<='1';
-            else
-              cmd_en <= '1';
-              cmd_instr <= INSTR_READ;
-              cmd_addr <= (others => '0');
-              cmd_addr(wb_adr_i'HIGH downto 2) <= wb_adr_i(wb_adr_i'HIGH downto 2);
+            wb_stall_o <= cmd_full;
 
-              w.addr := (others => '0');
-              w.addr(wb_adr_i'HIGH downto 2) := wb_adr_i(wb_adr_i'HIGH downto 2);
+            cmd_en <= '1';
+            cmd_instr <= INSTR_READ;
+            cmd_addr <= (others => '0');
+            cmd_addr(wb_adr_i'HIGH downto 2) <= wb_adr_i(wb_adr_i'HIGH downto 2);
 
-              case wb_cti_i is
-                when CTI_CYCLE_INCRADDR =>
+            w.addr := (others => '0');
+            w.addr(wb_adr_i'HIGH downto 2) := wb_adr_i(wb_adr_i'HIGH downto 2);
+
+            case wb_cti_i is
+              when CTI_CYCLE_INCRADDR =>
+                if cmd_full='0' then
                   w.state := READPIPE;
-                  cmd_bl <= READBURSTSIZE;
-                  w.bl := READBURSTSIZE;
-                when others =>
+                end if;
+                case wb_bte_i is
+                  when BTE_BURST_LINEAR =>
+                    bsize := "000000";
+                  when BTE_BURST_4BEATWRAP => bsize := "000011";
+                  when BTE_BURST_8BEATWRAP => bsize := "000111";
+                  when BTE_BURST_16BEATWRAP => bsize := "001111";
+                  when others => null;
+                end case;
+                cmd_bl <= bsize;
+                w.bl := bsize;
+              when others =>
+                if cmd_full='0' then
                   w.state := READ;
-                  cmd_bl <= "000000";
-                  w.bl := (others => 'X');
-              end case;
+                end if;
+                cmd_bl <= "000000";
+                w.bl := (others => 'X');
+            end case;
 
-            end if;
           end if;
         end if;
 
@@ -314,14 +326,16 @@ begin
         wb_ack_o <= not rd_empty;
         rd_en<='1';
         if rd_empty='0' then
-          w.bl := std_logic_vector(unsigned(r.bl) - 1);
+          if r.bl="000000" then
+            --wb_ack_o<='0';
+            w.state := IDLE;
+          else
+            w.bl := std_logic_vector(unsigned(r.bl) - 1);
+          end if;
         end if;
 
+        -- TODO: Check for aborted requests.
 
-        if r.bl="000000" then
-          wb_ack_o<='0';
-          w.state := IDLE;
-        end if;
 
       when WRITE =>
         wb_stall_o<='1';

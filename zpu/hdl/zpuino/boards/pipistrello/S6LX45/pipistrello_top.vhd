@@ -286,6 +286,7 @@ architecture behave of pipistrello_top is
     wb_stb_i: in std_logic;
     wb_sel_i: in std_logic_vector(3 downto 0);
     wb_cti_i: in std_logic_vector(2 downto 0);
+    wb_bte_i: in std_logic_vector(1 downto 0);
     wb_ack_o: out std_logic;
     wb_stall_o: out std_logic;
 
@@ -798,6 +799,7 @@ begin
       wb_sel_i    => sram_wb_sel_i,
       wb_ack_o    => sram_wb_ack_o,
       wb_cti_i    => sram_wb_cti_i,
+      wb_bte_i    => BTE_BURST_16BEATWRAP, -- Hardcoded.
       wb_stall_o  => sram_wb_stall_o,
 
       mcb3_dram_dq    =>      mcb3_dram_dq,
