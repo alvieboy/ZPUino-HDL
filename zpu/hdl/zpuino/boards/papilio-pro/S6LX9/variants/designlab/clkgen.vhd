@@ -77,6 +77,7 @@ signal clkin_i_2: std_logic;
 signal clkin_i_1mhz: std_logic;
 signal clkfb_1mhz: std_logic;
 signal clk0_1mhz: std_logic;
+signal clkvga_i: std_ulogic;
 
 begin
 
@@ -122,9 +123,10 @@ begin
       O=> clkfb
     );
 	 
+  --This vga clock is tailored for the vga_640_480 adapter.
   vgainst: BUFG
     port map (
-      I =>  clkin_i,
+      I =>  clkvga_i,
       O =>  vgaclkout
     );	 
 
@@ -148,6 +150,9 @@ pll_base_inst : PLL_ADV
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
+    CLKOUT3_DIVIDE       => 35, --11,--10,
+    CLKOUT3_PHASE        => 0.0,
+    CLKOUT3_DUTY_CYCLE   => 0.500,	
     CLKIN1_PERIOD         => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
@@ -157,7 +162,7 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => clk0,
     CLKOUT1             => clk1,
     CLKOUT2             => clk2,
-    CLKOUT3             => open,
+    CLKOUT3             => clkvga_i,
     CLKOUT4             => open,
     CLKOUT5             => open,
     LOCKED              => dcmlocked,
