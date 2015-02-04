@@ -423,16 +423,16 @@ architecture behave of ZPUino_Papilio_Pro_V2_blackbox is
 begin
 -- Unpack the wishbone array into a record so the modules code is not confusing.
 -- These are backwards for the master.
---  wishbone_slot_video_in_record.wb_clk_i <= wishbone_slot_video_in(61);
---  wishbone_slot_video_in_record.wb_rst_i <= wishbone_slot_video_in(60);
---  wishbone_slot_video_in_record.wb_dat_i <= wishbone_slot_video_in(59 downto 28);
---  wishbone_slot_video_in_record.wb_adr_i <= wishbone_slot_video_in(27 downto 3);
---  wishbone_slot_video_in_record.wb_we_i <= wishbone_slot_video_in(2);
---  wishbone_slot_video_in_record.wb_cyc_i <= wishbone_slot_video_in(1);
---  wishbone_slot_video_in_record.wb_stb_i <= wishbone_slot_video_in(0); 
---  wishbone_slot_video_out(33 downto 2) <= wishbone_slot_video_out_record.wb_dat_o;
---  wishbone_slot_video_out(1) <= wishbone_slot_video_out_record.wb_ack_o;
---  wishbone_slot_video_out(0) <= wishbone_slot_video_out_record.wb_inta_o;  
+ -- wishbone_slot_video_in_record.wb_clk_i <= wishbone_slot_video_in(61);
+ -- wishbone_slot_video_in_record.wb_rst_i <= wishbone_slot_video_in(60);
+ -- wishbone_slot_video_in_record.wb_dat_i <= wishbone_slot_video_in(59 downto 28);
+ -- wishbone_slot_video_in_record.wb_adr_i <= wishbone_slot_video_in(27 downto 3);
+ -- wishbone_slot_video_in_record.wb_we_i <= wishbone_slot_video_in(2);
+ -- wishbone_slot_video_in_record.wb_cyc_i <= wishbone_slot_video_in(1);
+ -- wishbone_slot_video_in_record.wb_stb_i <= wishbone_slot_video_in(0); 
+ -- wishbone_slot_video_out(33 downto 2) <= wishbone_slot_video_out_record.wb_dat_o;
+ -- wishbone_slot_video_out(1) <= wishbone_slot_video_out_record.wb_ack_o;
+ -- wishbone_slot_video_out(0) <= wishbone_slot_video_out_record.wb_inta_o;  
 
   wishbone_slot_5_in(61) <= wishbone_slot_5_in_record.wb_clk_i;
   wishbone_slot_5_in(60) <= wishbone_slot_5_in_record.wb_rst_i;
@@ -734,16 +734,16 @@ begin
       pps_in_pin    => ppsin_info_pin,
 
       pps_out_slot => ppsout_info_slot,
-      pps_out_pin  => ppsout_info_pin,
-
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
-      m_wb_ack_o    => open,
-      m_wb_stall_o  => open,
+      pps_out_pin  => ppsout_info_pin,	  
+	  
+      m_wb_dat_o    => wishbone_slot_video_out(31 downto 0),
+      m_wb_dat_i    => wishbone_slot_video_in(31 downto 0),
+      m_wb_adr_i    => wishbone_slot_video_in(77 downto 50),
+      m_wb_we_i     => wishbone_slot_video_in(100),
+      m_wb_cyc_i    => wishbone_slot_video_in(99),
+      m_wb_stb_i    => wishbone_slot_video_in(98),
+      m_wb_ack_o    => wishbone_slot_video_out(100),
+      m_wb_stall_o  => wishbone_slot_video_out(99),
 
       wb_ack_i      => sram_wb_ack_o,
       wb_stall_i    => sram_wb_stall_o,
