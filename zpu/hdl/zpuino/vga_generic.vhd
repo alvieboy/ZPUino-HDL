@@ -471,35 +471,19 @@ begin
     end if;
   end process;
 
-  -- Cache clear.
-
-  vclear: process(vgaclk)
-  begin
-    if rising_edge(vgaclk) then
-      if vgarst='1' then
-        cache_clear <= '1';
-      else
-        cache_clear<='0';
-        --if  vcount_q = VGA_V_DISPLAY and h_sync_tick='1' then
-        --  cache_clear<='1';
-        --end if;
-        if not (vcount_q < VGA_V_DISPLAY) then
-          cache_clear <='1';
-        end if;
-      end if;
-    end if;
-  end process;
-
   vsyncgen: process(vgaclk)
   begin
     if rising_edge(vgaclk) then
       if vgarst='1' then
+        cache_clear<='1';
         vga_vsync<=v_polarity;
       else
         if vcount_q = VGA_V_D_BACKPORCH then
           vga_vsync <= not v_polarity;
+          cache_clear<='1';
         elsif vcount_q = VGA_V_D_B_SYNC then
           vga_vsync <= v_polarity;
+          cache_clear<='0';
         end if;
       end if;
     end if;
@@ -563,7 +547,7 @@ begin
   myfifo: gh_fifo_async_rrd_sr_wf
   generic map (
     data_width => 30,
-    add_width => 8
+    add_width => 11
   )
   port map (
 		clk_WR  => wb_clk_i,
