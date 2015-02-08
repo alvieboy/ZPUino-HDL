@@ -43,7 +43,7 @@ entity vga_generic is
     vga_vsync:  out std_logic;
     vga_b:      out std_logic_vector(4 downto 0);
     vga_r:      out std_logic_vector(4 downto 0);
-    vga_g:      out std_logic_vector(4 downto 0);
+    vga_g:      out std_logic_vector(5 downto 0);
     blank:      out std_logic
   );
 end entity;
@@ -79,7 +79,7 @@ architecture behave of vga_generic is
 --  signal readclk: std_logic:='0';
   signal fifo_clear: std_logic:='0';
   signal read_enable: std_logic:='0';
-  signal fifo_write, read: std_logic_vector(29 downto 0);
+  signal fifo_write, read: std_logic_vector(31 downto 0);
   signal fifo_empty: std_logic;
 
 
@@ -152,7 +152,7 @@ architecture behave of vga_generic is
   signal v_display_in_wbclk: std_logic;           
   signal v_display_q: std_logic;
 
-  --signal v_border: std_logic;
+  signal mode332:  std_logic;
 
   signal cache_clear: std_logic;
 
@@ -161,7 +161,7 @@ architecture behave of vga_generic is
   signal ack_i: std_logic;
   signal hdup: std_logic := '1';
 
-  signal hflip: std_logic;
+  signal hflip, hflip2: std_logic;
 
   constant BURST_SIZE: integer := 16;
 
@@ -233,6 +233,7 @@ begin
        ack_i <= '0';
        membase<=(others => 'X');
        disp_enable<='0';
+       mode332<='0';
 
        VGA_H_D_B_SYNC     <= (others => '0');
        VGA_H_D_BACKPORCH  <= (others => '0');
@@ -260,7 +261,7 @@ begin
                 membase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
               when "0010" =>
                 disp_enable <= wb_dat_i(0);
-              
+                mode332<=wb_dat_i(1);
               when "0011" =>
                 h_polarity <= wb_dat_i(0);
                 v_polarity <= wb_dat_i(1);
@@ -375,8 +376,7 @@ begin
 
     end if;
 
-    fifo_write(14 downto 0) <= mi_wb_dat_i(14 downto 0);--mi_wb_dat_i(29 downto 0);
-    fifo_write(29 downto 15) <= mi_wb_dat_i(30 downto 16);
+    fifo_write <= mi_wb_dat_i;
 
     if rising_edge(wb_clk_i) then
 
@@ -491,7 +491,10 @@ begin
 
   -- Synchronous output
   process(vgaclk)
+    variable sel: std_logic_vector(1 downto 0);
   begin
+    sel := hflip2 & hflip;
+
     if rising_edge(vgaclk) then
       if v_display='0' then
           vga_b <= (others => '0');
@@ -500,14 +503,36 @@ begin
           blank <= '1';
       else
           blank <= '0';
-          if hflip='1' then
-            vga_b <= read(4 downto 0);
-            vga_r <= read(9 downto 5);
-            vga_g <= read(14 downto 10);
+          if mode332='0' then
+            if sel(0)='1' then
+              vga_r <= read(15 downto 11);
+              vga_g <= read(10 downto 5);
+              vga_b <= read(4 downto 0);
+            else
+              vga_r <= read(31 downto 27);
+              vga_g <= read(26 downto 21);
+              vga_b <= read(20 downto 16);
+            end if;
           else
-            vga_b <= read(19 downto 15);
-            vga_r <= read(24 downto 20);
-            vga_g <= read(29 downto 25);
+            case sel is
+              when "00" =>
+                vga_r <= read(31 downto 29) & "00";
+                vga_g <= read(28 downto 26) & "000";
+                vga_b <= read(25 downto 24) & "000";
+              when "01" =>
+                vga_r <= read(23 downto 21) & "00";
+                vga_g <= read(20 downto 18) & "000";
+                vga_b <= read(17 downto 16) & "000";
+              when "10" =>
+                vga_r <= read(15 downto 13) & "00";
+                vga_g <= read(12 downto 10) & "000";
+                vga_b <= read(9 downto 8) & "000";
+              when "11" =>
+                vga_r <= read(7 downto 5) & "00";
+                vga_g <= read(4 downto 2) & "000";
+                vga_b <= read(1 downto 0) & "000";
+              when others =>
+            end case;
           end if;
       end if;
     end if;
@@ -530,23 +555,32 @@ begin
     if rising_edge(vgaclk) then
       if v_display='1' and v_display_q='0' then
         hflip <= '1';
+        hflip2 <= '1';
       else
         if v_display='0' then
           hflip <='0';
+          hflip2 <='0';
         else
           hflip <= hflip xor hdup;
+          hflip2 <= hflip2 xor hflip;
         end if;
       end if;                     
     end if;
   end process;
 
-  read_enable <= v_display and not hflip;
-
+  process(v_display,hflip,hflip2,mode332)
+  begin
+    if mode332='0' then
+      read_enable <= v_display and not hflip;
+    else
+      read_enable <= v_display and not hflip2;
+    end if;
+  end process;
 
 
   myfifo: gh_fifo_async_rrd_sr_wf
   generic map (
-    data_width => 30,
+    data_width => 32,
     add_width => 11
   )
   port map (
