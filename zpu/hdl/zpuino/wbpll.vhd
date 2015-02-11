@@ -86,7 +86,8 @@ begin
   wb_ack_o <= r.ack;
   wb_dat_o <= r.dat;
 
-  process(wb_adr_i,wb_dat_i,wb_stb_i,wb_cyc_i,wb_rst_i,wb_we_i,wb_clk_i,wb_rst_i,r)
+  process(wb_adr_i,wb_dat_i,wb_stb_i,wb_cyc_i,wb_rst_i,wb_we_i,wb_clk_i,wb_rst_i,r,
+    pll_locked,pll_reg_out,pll_data_out,pll_do,pll_drdy)
     variable w: regs_type;
   begin
     w := r;
@@ -249,7 +250,7 @@ begin
 
   pll_index <= unsigned(wb_adr_i(5 downto 2));
 
-  process(pll_index)
+  process(pll_index,CLKOUT0,CLKFBOUT,LOCK,DIGITAL_FILT)
   begin
 
       case pll_index is
