@@ -48,9 +48,10 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
-	 clk_1Mhz_out: out std_logic;
-	 clk_osc_32Mhz: out std_logic;
-	 vgaclkout: out std_logic;
+	clk_1Mhz_out: out std_logic;
+	clk_osc_32Mhz: out std_logic;
+	clk27: out std_logic;
+	clk42:   out std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -78,6 +79,7 @@ signal clkin_i_1mhz: std_logic;
 signal clkfb_1mhz: std_logic;
 signal clk0_1mhz: std_logic;
 signal clkvga_i: std_ulogic;
+signal clk42_i: std_ulogic;
 
 begin
 
@@ -123,15 +125,15 @@ begin
       O=> clkfb
     );
 	 
-  --This vga clock is tailored for the vga_640_480 adapter.
   vgainst: BUFG
     port map (
       I =>  clkvga_i,
-      O =>  vgaclkout
+      O =>  clk27
     );	 
 
   clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
   clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
+  clk42_inst: BUFG port map ( I => clk42_i, O => clk42 );
   
 pll_base_inst : PLL_ADV
   generic map
@@ -139,20 +141,23 @@ pll_base_inst : PLL_ADV
     CLK_FEEDBACK         => "CLKFBOUT",
     COMPENSATION         => "SYSTEM_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 30,
+    CLKFBOUT_MULT        => 21,
     CLKFBOUT_PHASE       => 0.000,
-    CLKOUT0_DIVIDE       => 10,
+    CLKOUT0_DIVIDE       => 7,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
-    CLKOUT1_DIVIDE       => 10,
-    CLKOUT1_PHASE        => 250.0,--300.0,--155.52,--103.700,--343.125,
+    CLKOUT1_DIVIDE       => 7,
+    CLKOUT1_PHASE        => 319.500,--343.125,
     CLKOUT1_DUTY_CYCLE   => 0.500,
-    CLKOUT2_DIVIDE       => 10,
-    CLKOUT2_PHASE        => 0.0,
+    CLKOUT2_DIVIDE       => 7,
+    CLKOUT2_PHASE        => 189.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKOUT3_DIVIDE       => 35, --11,--10,
+    CLKOUT3_DIVIDE       => 16,
     CLKOUT3_PHASE        => 0.0,
-    CLKOUT3_DUTY_CYCLE   => 0.500,	
+    CLKOUT3_DUTY_CYCLE   => 0.500,
+    CLKOUT4_DIVIDE       => 25,
+    CLKOUT4_PHASE        => 0.0,
+    CLKOUT4_DUTY_CYCLE   => 0.500,	
     CLKIN1_PERIOD         => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
@@ -162,8 +167,8 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => clk0,
     CLKOUT1             => clk1,
     CLKOUT2             => clk2,
-    CLKOUT3             => clkvga_i,
-    CLKOUT4             => open,
+    CLKOUT3             => clk42_i,
+    CLKOUT4             => clkvga_i,
     CLKOUT5             => open,
     LOCKED              => dcmlocked,
     RST                 => '0',
