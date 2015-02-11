@@ -101,7 +101,7 @@ entity ZPUino_Papilio_DUO_V2_blackbox is
 	 --There are more bits in the address for this wishbone connection
 	 wishbone_slot_video_in : in std_logic_vector(100 downto 0);
 	 wishbone_slot_video_out : out std_logic_vector(100 downto 0);
-	 vgaclkout: out std_logic;	
+	 --vgaclkout: out std_logic;	
 
 	 --Input and output reversed for the master
 	 wishbone_slot_5_in : out std_logic_vector(100 downto 0);
@@ -158,9 +158,10 @@ architecture behave of ZPUino_Papilio_DUO_V2_blackbox is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
-	 clk_1Mhz_out: out std_logic;
-	 clk_osc_32Mhz: out std_logic;
-	 vgaclkout: out std_logic;
+	clk_1Mhz_out: out std_logic;
+	clk_osc_32Mhz: out std_logic;
+	clk27: out std_logic;
+	clk42:   out std_logic;
     rstout: out std_logic
   );
   end component;
@@ -700,9 +701,10 @@ begin
     clkout  => sysclk,
     clkout1  => sysclk_sram_we,
     clkout2  => sysclk_sram_wen,
-	 clk_1Mhz_out => clk_1Mhz,
-	 clk_osc_32Mhz => clk_osc_32Mhz,
-	 vgaclkout => vgaclkout,
+	clk_1Mhz_out => clk_1Mhz,
+	clk_osc_32Mhz => clk_osc_32Mhz,
+	clk27 => wishbone_slot_video_out(98),
+	clk42 => wishbone_slot_video_out(97),
     rstout  => clkgen_rst
   );
 	clk_96Mhz <= sysclk;

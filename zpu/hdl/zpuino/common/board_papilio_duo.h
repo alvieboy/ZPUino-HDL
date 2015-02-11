@@ -16,6 +16,8 @@
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
 
+#define __SST_FLASH__
+
 #define WING_AL0 0
 #define WING_AL1 1
 #define WING_AL2 2
@@ -189,6 +191,12 @@
 #define WDH5 27
 #define WDH6 25
 #define WDH7 23
-#endif
+
+// Other pins
+#define FPGA_PIN_P24 48
+
+#define FPGA_PIN_FLASHCS     FPGA_PIN_P24
+
+#define SPI_FLASH_SEL_PIN FPGA_PIN_FLASHCS
 
 #endif
