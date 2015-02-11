@@ -13,6 +13,9 @@ library unisim;
 use unisim.vcomponents.all;
 
 entity vga_generic is
+  generic (
+    ENABLE_DUPLICATION: boolean := true
+  );
   port(
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -79,6 +82,7 @@ architecture behave of vga_generic is
 --  signal readclk: std_logic:='0';
   signal fifo_clear: std_logic:='0';
   signal read_enable: std_logic:='0';
+  signal fifo_read_enable: std_logic:='0';
   signal fifo_write, read: std_logic_vector(31 downto 0);
   signal fifo_empty: std_logic;
 
@@ -92,7 +96,7 @@ architecture behave of vga_generic is
 
                       -- Mem size: 614400 bytes.
                         -- Page:
-  signal membase:       std_logic_vector(wordSize-1 downto 0) := (others => '0');
+  signal membase:       std_logic_vector(mi_wb_adr_o'high downto 2) := (others => '0');
   --signal palletebase:   std_logic_vector(wordSize-1 downto 0) := (others => '0');
 
   type state_type is (
@@ -100,7 +104,7 @@ architecture behave of vga_generic is
     fill
   );
 
-  subtype counter_type is unsigned(10 downto 0);
+  subtype counter_type is unsigned(11 downto 0); -- limit 0-2047 on each counter. Limits resolution.
 
   type vgaregs_type is record
 
@@ -109,14 +113,15 @@ architecture behave of vga_generic is
     hptr:     counter_type;
     hoff:     unsigned(4 downto 0);
     voff:     unsigned(4 downto 0);
-    memptr:   unsigned(wordSize-1 downto 0);
+    memptr:   unsigned(mi_wb_adr_o'high downto 2);
+
     rburst, wburst: integer;
 
     -- Wishbone
     cyc:  std_logic;
     stb:  std_logic;
     adr:  std_logic_vector(31 downto 0);
-
+    fillcount: counter_type;
   end record;
 
   signal r: vgaregs_type;
@@ -133,7 +138,7 @@ architecture behave of vga_generic is
 
   signal VGA_HCOUNT:          counter_type;
   signal VGA_VCOUNT:          counter_type;
-
+ 
   signal v_polarity:        std_logic := '1';
   signal h_polarity:        std_logic := '1';
 
@@ -161,11 +166,12 @@ architecture behave of vga_generic is
   signal ack_i: std_logic;
   signal hdup: std_logic := '1';
 
-  signal hflip, hflip2: std_logic;
+  signal hflip, hflip2, hflip3: std_logic;
 
   constant BURST_SIZE: integer := 16;
 
   signal disp_enable: std_logic;
+  signal duplicate:   std_logic;
 
   component wbpll is
   generic (
@@ -194,6 +200,11 @@ architecture behave of vga_generic is
   signal vga_stb, pll_stb: std_logic;
   signal vga_ack, pll_ack: std_logic;
   signal vgaclk: std_ulogic;
+
+  signal lineram_ena, lineram_enb, lineram_wea: std_logic;
+  signal lineram_dia, lineram_dob: std_logic_vector(31 downto 0);
+  signal lineram_addra, lineram_addrb: unsigned(9 downto 0);
+  signal read_enable_q: std_logic;
 begin
 
   -- Wishbone register access
@@ -234,6 +245,7 @@ begin
        membase<=(others => 'X');
        disp_enable<='0';
        mode332<='0';
+       duplicate<='0';
 
        VGA_H_D_B_SYNC     <= (others => '0');
        VGA_H_D_BACKPORCH  <= (others => '0');
@@ -258,29 +270,32 @@ begin
 
             case wb_adr_i(5 downto 2) is
               when "0000" =>
-                membase(maxAddrBit downto 0) <= wb_dat_i(maxAddrBit downto 0);
+                membase <= wb_dat_i(membase'range);
               when "0010" =>
                 disp_enable <= wb_dat_i(0);
-                mode332<=wb_dat_i(1);
               when "0011" =>
                 h_polarity <= wb_dat_i(0);
                 v_polarity <= wb_dat_i(1);
+                mode332    <= wb_dat_i(2);
+                if ENABLE_DUPLICATION then
+                  duplicate  <= wb_dat_i(3);
+                end if;
               when "1000" =>
-                VGA_H_DISPLAY             <= unsigned(wb_dat_i(10 downto 0));
+                VGA_H_DISPLAY             <= unsigned(wb_dat_i(counter_type'range));
               when "1001" =>
-                VGA_H_D_BACKPORCH         <= unsigned(wb_dat_i(10 downto 0));
+                VGA_H_D_BACKPORCH         <= unsigned(wb_dat_i(counter_type'range));
               when "1010" =>
-                VGA_H_D_B_SYNC            <= unsigned(wb_dat_i(10 downto 0));
+                VGA_H_D_B_SYNC            <= unsigned(wb_dat_i(counter_type'range));
               when "1011" =>
-                VGA_HCOUNT                <= unsigned(wb_dat_i(10 downto 0));
+                VGA_HCOUNT                <= unsigned(wb_dat_i(counter_type'range));
               when "1100" =>
-                VGA_V_DISPLAY             <= unsigned(wb_dat_i(10 downto 0));
+                VGA_V_DISPLAY             <= unsigned(wb_dat_i(counter_type'range));
               when "1101" =>
-                VGA_V_D_BACKPORCH         <= unsigned(wb_dat_i(10 downto 0));
+                VGA_V_D_BACKPORCH         <= unsigned(wb_dat_i(counter_type'range));
               when "1110" =>
-                VGA_V_D_B_SYNC            <= unsigned(wb_dat_i(10 downto 0));
+                VGA_V_D_B_SYNC            <= unsigned(wb_dat_i(counter_type'range));
               when "1111" =>
-                VGA_VCOUNT                <= unsigned(wb_dat_i(10 downto 0));
+                VGA_VCOUNT                <= unsigned(wb_dat_i(counter_type'range));
               when others =>
             end case;
           end if;
@@ -303,9 +318,9 @@ begin
   mi_wb_stb_o <= r.stb;
   mi_wb_cyc_o <= r.cyc;
 --  mi_wb_adr_o <= r.adr;
-  mi_wb_adr_o <= std_logic_vector( r.memptr(maxAddrBitIncIO downto 0) );
+  mi_wb_adr_o <= std_logic_vector( r.memptr ) & "00";
 
-  process(wb_clk_i, wb_rst_i, r, mi_wb_ack_i, mi_wb_dat_i,membase)
+  process(wb_clk_i, wb_rst_i, r, mi_wb_ack_i, mi_wb_dat_i, membase, fifo_almost_full, vga_reset_q1,mi_wb_stall_i,disp_enable)
     variable w: vgaregs_type;
   begin
 
@@ -344,6 +359,7 @@ begin
           if vga_reset_q1='1' then
             fifo_clear<='1';
             w.memptr := unsigned(membase);
+            --w.fillcount := V;
           end if;
 
         when fill =>
@@ -358,7 +374,7 @@ begin
           fifo_write_enable <= mi_wb_ack_i;
 
           if (mi_wb_stall_i='0' and r.wburst/=0) then
-            w.memptr := r.memptr + 4;
+            w.memptr := r.memptr + 1;
             w.wburst := r.wburst - 1;
           end if;
 
@@ -390,7 +406,7 @@ begin
   --  VGA part
   --
   --
-  process(vgaclk, wb_rst_i)
+  process(vgaclk, wb_rst_i,disp_enable)
   begin
     if wb_rst_i='1' or disp_enable='0' then
       rstq1 <= '1';
@@ -419,7 +435,7 @@ begin
     end if;
   end process;
 
-  process(hcount_q, vcount_q)
+  process(hcount_q, vcount_q,VGA_H_DISPLAY,VGA_V_DISPLAY)
   begin
     if hcount_q < VGA_H_DISPLAY  and vcount_q < VGA_V_DISPLAY then
       v_display<='1';
@@ -480,22 +496,122 @@ begin
       else
         if vcount_q = VGA_V_D_BACKPORCH then
           vga_vsync <= not v_polarity;
-          cache_clear<='1';
         elsif vcount_q = VGA_V_D_B_SYNC then
           vga_vsync <= v_polarity;
           cache_clear<='0';
         end if;
+
+        if vcount_q = VGA_V_DISPLAY then
+          cache_clear<='1';
+        elsif vcount_q = VGA_V_D_B_SYNC then
+          cache_clear<='0';
+        end if;
+
       end if;
     end if;
   end process;
 
+  dupmem: if ENABLE_DUPLICATION generate
+
+    lineram: generic_dp_ram
+      generic map (
+        address_bits    => 10,
+        data_bits       => 32
+      )
+      port map (
+        clka  => vgaclk,
+        ena   => lineram_ena,
+        wea   => lineram_wea,
+        addra => std_logic_vector(lineram_addra),
+        dia   => lineram_dia,
+        doa   => open,
+        clkb  => vgaclk,
+        enb   => lineram_enb,
+        web   => '0',
+        addrb => std_logic_vector(lineram_addrb),
+        dib   => x"00000000",
+        dob   => lineram_dob
+      );
+
+      --lineram_addra <= hcount_q(10 downto 1) when mode332='1' else hcount_q(10 downto 1);
+      --lineram_addra <= lineram_addrb;
+
+      process(v_display,hflip,hflip2,mode332,duplicate,read_enable,read_enable_q,vcount_q)
+      begin
+        --if mode332='0' then
+        --  read_enable <= v_display and not hflip;
+        --  lineram_wea <= hflip and not vcount_q(0);
+        --  lineram_enb <= ((hflip) or not v_display) and duplicate;
+        --else
+        --  lineram_wea <= hflip and hflip2 and not vcount_q(0);
+        --  lineram_enb <= ((hflip and not hflip2) or not v_display) and duplicate;
+
+        --  read_enable <= v_display and hflip2 and not hflip;
+        --end if;
+        lineram_wea <= read_enable_q and not vcount_q(0);
+        lineram_enb <= (read_enable_q or not v_display) and duplicate;
+      end process;
+
+
+      --lineram_wea <= hflip and hflip2 and not vcount_q(0);
+      --lineram_enb <= ((hflip and hflip2) or not v_display) and duplicate;
+      lineram_ena <= duplicate;
+      lineram_dia <= read;
+
+      process(vgaclk)
+      begin
+        if rising_edge(vgaclk) then
+          lineram_addra<=lineram_addrb;
+          if v_display='0' then
+            lineram_addrb <= (others => '0');
+            read_enable_q<='0';
+          else
+            read_enable_q<=read_enable;
+            --if mode332='1' then
+            --  if (v_display and hflip2 and not hflip)='1' then
+            --   lineram_addrb<=lineram_addrb+1;
+            --  end if;
+            --else
+            --  if (v_display and hflip)='1' then
+            --    lineram_addrb<=lineram_addrb+1;
+            --  end if;
+            --end if;
+            if read_enable='1' then
+              lineram_addrb<=lineram_addrb+1;
+            end if;
+          end if;
+        end if;
+      end process;
+
+  end generate;
+
+  
+  so: block
+      signal dbg_vgadata: std_logic_vector(31 downto 0);
+      signal dbg_lowhigh: std_logic;
+  begin
+
   -- Synchronous output
-  process(vgaclk)
+  process(vgaclk,vcount_q,hflip,hflip2,duplicate)
     variable sel: std_logic_vector(1 downto 0);
+    variable vga_data: std_logic_vector(31 downto 0);
+    variable lowhigh: std_logic;
   begin
     sel := hflip2 & hflip;
+    if duplicate='1' and vcount_q(0)='1' then
+      vga_data := lineram_dob;
+    else
+      vga_data := read;
+    end if;
+
+    if duplicate='1' then
+      lowhigh:=hflip2;
+    else
+      lowhigh:=hflip;
+    end if;
 
     if rising_edge(vgaclk) then
+
       if v_display='0' then
           vga_b <= (others => '0');
           vga_r <= (others => '0');
@@ -504,42 +620,48 @@ begin
       else
           blank <= '0';
           if mode332='0' then
-            if sel(0)='1' then
-              vga_r <= read(15 downto 11);
-              vga_g <= read(10 downto 5);
-              vga_b <= read(4 downto 0);
+            if lowhigh='1' then
+              vga_r <= vga_data(15 downto 11);
+              vga_g <= vga_data(10 downto 5);
+              vga_b <= vga_data(4 downto 0);
             else
-              vga_r <= read(31 downto 27);
-              vga_g <= read(26 downto 21);
-              vga_b <= read(20 downto 16);
+              vga_r <= vga_data(31 downto 27);
+              vga_g <= vga_data(26 downto 21);
+              vga_b <= vga_data(20 downto 16);
             end if;
           else
             case sel is
               when "00" =>
-                vga_r <= read(31 downto 29) & "00";
-                vga_g <= read(28 downto 26) & "000";
-                vga_b <= read(25 downto 24) & "000";
+                vga_r <= vga_data(31 downto 29) & "00";
+                vga_g <= vga_data(28 downto 26) & "000";
+                vga_b <= vga_data(25 downto 24) & "000";
               when "01" =>
-                vga_r <= read(23 downto 21) & "00";
-                vga_g <= read(20 downto 18) & "000";
-                vga_b <= read(17 downto 16) & "000";
+                vga_r <= vga_data(23 downto 21) & "00";
+                vga_g <= vga_data(20 downto 18) & "000";
+                vga_b <= vga_data(17 downto 16) & "000";
               when "10" =>
-                vga_r <= read(15 downto 13) & "00";
-                vga_g <= read(12 downto 10) & "000";
-                vga_b <= read(9 downto 8) & "000";
+                vga_r <= vga_data(15 downto 13) & "00";
+                vga_g <= vga_data(12 downto 10) & "000";
+                vga_b <= vga_data(9 downto 8) & "000";
               when "11" =>
-                vga_r <= read(7 downto 5) & "00";
-                vga_g <= read(4 downto 2) & "000";
-                vga_b <= read(1 downto 0) & "000";
+                vga_r <= vga_data(7 downto 5) & "00";
+                vga_g <= vga_data(4 downto 2) & "000";
+                vga_b <= vga_data(1 downto 0) & "000";
               when others =>
             end case;
           end if;
       end if;
+
     end if;
+
+    dbg_vgadata<=vga_data;
+    dbg_lowhigh<=lowhigh;
+
   end process;
 
+  end block;
 
-  process(wb_clk_i,cache_clear)
+  process(wb_clk_i,cache_clear,disp_enable)
   begin
     if cache_clear='1' or disp_enable='0' then
       vga_reset_q1<='1';
@@ -550,31 +672,45 @@ begin
     end if;
   end process;
 
-  process(vgaclk,v_display,v_display_q)
+  fifo_read_enable<=read_enable when duplicate='0' else (read_enable and not vcount_q(0));
+  
+  process(vgaclk)
   begin
     if rising_edge(vgaclk) then
       if v_display='1' and v_display_q='0' then
         hflip <= '1';
-        hflip2 <= '1';
+        hflip2 <= '0';
+        hflip3 <= '0';
       else
         if v_display='0' then
           hflip <='0';
           hflip2 <='0';
         else
           hflip <= hflip xor hdup;
-          hflip2 <= hflip2 xor hflip;
+          if hflip='1' then
+            hflip2 <= not hflip2;-- hflip2 xor hdup;
+          end if;
+          if hflip2='1' and hflip='1' then
+            hflip3<= not hflip3;
+          end if;
         end if;
       end if;                     
     end if;
   end process;
 
-  process(v_display,hflip,hflip2,mode332)
+  process(v_display,hflip,hflip2,hflip3,mode332,duplicate)
+    variable m: std_logic_vector(1 downto 0);
   begin
-    if mode332='0' then
-      read_enable <= v_display and not hflip;
-    else
-      read_enable <= v_display and not hflip2;
-    end if;
+    m := mode332 & duplicate;
+    case m is
+      when "00" =>
+        read_enable <= v_display and not hflip;
+      when "10" | "01" =>
+        read_enable <= v_display and hflip2 and not hflip;
+      when "11" =>
+        read_enable <= v_display and hflip2 and hflip3 and not hflip;
+      when others =>
+    end case;
   end process;
 
 
@@ -589,7 +725,7 @@ begin
 		rst     => '0',
 		srst    => fifo_clear,
 		WR      => fifo_write_enable,
-		RD      => read_enable,
+		RD      => fifo_read_enable,
 		D       => fifo_write,
 		Q       => read,
 		empty   => fifo_empty,
