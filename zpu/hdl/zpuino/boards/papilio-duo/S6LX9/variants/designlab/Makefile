@@ -4,9 +4,7 @@ PART=xc6slx9-2-tqg144
 # For bootloader
 BOARD=PAPILIO_DUO
 SIZE=16384
-DEFINES="-D__PAPILIO_DUO__ -DBOARD_ID=0xB4051300 -DBOARD_MEMORYSIZE=0x80000 -DZPU20 -DZPUINO_HAS_ICACHE"
-#DEFINES="-DBOARD_ID=0xB4051300 -DBOARD_MEMORYSIZE=0x80000 -DZPUINO_HAS_ICACHE"
-#define ZPUINO_HAS_ICACHE
+DEFINES="-D__PAPILIO_DUO__ -DZPU20 -DBOARD_ID=0xB4051300 -DBOARD_MEMORYSIZE=0x200000 -DZPUINO_HAS_ICACHE"
 
 all: ${PROJECT}.ngc
 
@@ -39,4 +37,4 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 
 clean:
 	@rm -f ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}_routed.bit bootloader.vhd prom-generic-dp-32.vhd
-	$(MAKE) -C ../../../bootloader clean
+	$(MAKE) -C ../../../../../bootloader clean
