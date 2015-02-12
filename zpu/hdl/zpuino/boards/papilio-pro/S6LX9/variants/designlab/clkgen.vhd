@@ -48,8 +48,8 @@ entity clkgen is
     clkout: out std_logic;
     clkout1: out std_logic;
     clkout2: out std_logic;
-	clk_1Mhz_out: out std_logic;
-	clk_osc_32Mhz: out std_logic;
+	 clk_1Mhz_out: out std_logic;
+	 clk_osc_32Mhz: out std_logic;
 	clk27: out std_logic;
 	clk42:   out std_logic;
     rstout: out std_logic
@@ -125,6 +125,7 @@ begin
       O=> clkfb
     );
 	 
+  --This vga clock is tailored for the vga_640_480 adapter.
   vgainst: BUFG
     port map (
       I =>  clkvga_i,
@@ -147,12 +148,12 @@ pll_base_inst : PLL_ADV
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
     CLKOUT1_DIVIDE       => 7,
-    CLKOUT1_PHASE        => 319.500,--343.125,
+    CLKOUT1_PHASE        => 250.0,--300.0,--155.52,--103.700,--343.125,
     CLKOUT1_DUTY_CYCLE   => 0.500,
     CLKOUT2_DIVIDE       => 7,
-    CLKOUT2_PHASE        => 189.0,
+    CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-    CLKOUT3_DIVIDE       => 16,
+    CLKOUT3_DIVIDE       => 16, --11,--10,
     CLKOUT3_PHASE        => 0.0,
     CLKOUT3_DUTY_CYCLE   => 0.500,
     CLKOUT4_DIVIDE       => 25,
