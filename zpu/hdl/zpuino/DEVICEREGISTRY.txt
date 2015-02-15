@@ -17,6 +17,8 @@
         1A VGA (640x480) 15-bit Graphics Adaptor
         1B VGA Text-mode (640x480) 80x30 3-bit Adaptor
         1C ZX Spectrum Graphics Adaptor
+	1D VGA Generic Interface (8/16-bit)
+        1E PLL Clock Generator
         20 RGB LED Controller
 
 02 FPGAArcade
