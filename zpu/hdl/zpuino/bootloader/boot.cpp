@@ -10,12 +10,9 @@
 #define BOOTLOADER_SIZE 0x1000
 
 #ifdef SIMULATION
-# define SPICODESIZE 0x1000
 # define FPGA_SS_B 40
 # undef SPI_FLASH_SEL_PIN
 # define SPI_FLASH_SEL_PIN FPGA_SS_B
-#else
-# define SPICODESIZE (BOARD_MEMORYSIZE - BOOTLOADER_SIZE - 128)
 #endif
 #define VERSION_HIGH 0x01
 #define VERSION_LOW  0x09
@@ -63,15 +60,15 @@ struct bootloader_data_t {
 
 struct bootloader_data_t bdata BDATA;
 
-const unsigned char vstring[] = {
+unsigned char vstring[] = {
 	VERSION_HIGH,
 	VERSION_LOW,
 	SPIOFFSET>>16,
 	SPIOFFSET>>8,
 	SPIOFFSET&0xff,
-	SPICODESIZE>>16,
-	SPICODESIZE>>8,
-	SPICODESIZE&0xff,
+	0,
+	0,
+	0,
 	CLK_FREQ >> 24,
 	CLK_FREQ >> 16,
 	CLK_FREQ >> 8,
@@ -79,7 +76,11 @@ const unsigned char vstring[] = {
 	BOARD_ID >> 24,
 	BOARD_ID >> 16,
 	BOARD_ID >> 8,
-	BOARD_ID
+        BOARD_ID,
+        0,
+        0,
+        0,
+        0  /* Memory top, to pass on to application */
 };
 
 
@@ -326,14 +327,19 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	bdata.vstring=vstring;
 	spiwrite(spidata,0);
 	spiwrite(spidata,0);
-	sketchcrc= spiread(spidata) & 0xffff;
-
-	if (sketchsize>SPICODESIZE) {
+        sketchcrc= spiread(spidata) & 0xffff;
+#if 0
+        unsigned spicodesize = (unsigned)vstring[5]<<16 +
+            (unsigned)vstring[6]<<8 +
+            (unsigned)vstring[7];
+	if (sketchsize>spicodesize) {
 #ifdef VERBOSE_LOADER
-		printstring("SLK");
-		//printhexbyte((sketchsize>>8)&0xff);
-		//printhexbyte((sketchsize)&0xff);
-		printstring("\r\n");
+            printstring("SLK ");
+            printhex(spicodesize);
+            printhex(sketchsize);;
+            //printhexbyte((sketchsize>>8)&0xff);
+            //printhexbyte((sketchsize)&0xff);
+            printstring("\r\n");
 #endif
 #ifdef __ZPUINO_NEXYS3__
 		digitalWrite(FPGA_LED_2, HIGH);
@@ -341,6 +347,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 
 		while(1) {}
 	}
+#endif
 
 	//CRC16ACC=0xFFFF;
 	REGISTER(crc16base,ROFF_CRC16ACC) = 0xffff;
@@ -842,6 +849,16 @@ extern "C" int main(int argc,char**argv)
 	unsigned char buffer[256 + 32];
 	int syncSeen;
 	int unescaping;
+        unsigned memtop = (unsigned)argv;
+        unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
+        /* Patch data */
+        vstring[5] = sketchsize>>16;
+        vstring[6] = sketchsize>>8;
+        vstring[7] = sketchsize;
+        vstring[16] = memtop>>24;
+        vstring[16] = memtop>>16;
+        vstring[16] = memtop>>8;
+        vstring[16] = memtop;
 
 	ivector = &_zpu_interrupt;
 
