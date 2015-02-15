@@ -505,6 +505,9 @@ package zpuinopkg is
   end component sram_ctrl;
 
   component sram_ctrl8 is
+  generic (
+    WIDTH_BITS: integer := 19
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -522,7 +525,7 @@ package zpuinopkg is
     clk_wen: in std_logic;
 
     -- SRAM signals
-    sram_addr:  out std_logic_vector(18 downto 0);
+    sram_addr:  out std_logic_vector(WIDTH_BITS-1 downto 0);
     sram_data:  inout std_logic_vector(7 downto 0);
     sram_ce:    out std_logic;
     sram_we:    out std_logic;

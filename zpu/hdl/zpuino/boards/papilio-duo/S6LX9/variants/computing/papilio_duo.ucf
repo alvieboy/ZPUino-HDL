@@ -84,8 +84,8 @@ NET SRAM_ADDR(15) LOC="P27"  | IOSTANDARD=LVTTL;                                
 NET SRAM_ADDR(16) LOC="P29"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR16
 NET SRAM_ADDR(17) LOC="P33"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR17
 NET SRAM_ADDR(18) LOC="P32"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR18
-#NET SRAM_ADDR(19) LOC="P44"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR19
-#NET SRAM_ADDR(20) LOC="P30"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR20
+NET SRAM_ADDR(19) LOC="P44"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR19
+NET SRAM_ADDR(20) LOC="P30"  | IOSTANDARD=LVTTL;                                # SRAM_ADDR20
 NET SRAM_DATA(0)  LOC="P14"  | IOSTANDARD=LVTTL;                                # SRAM_DATA0
 NET SRAM_DATA(1)  LOC="P15"  | IOSTANDARD=LVTTL;                                # SRAM_DATA1
 NET SRAM_DATA(2)  LOC="P16"  | IOSTANDARD=LVTTL;                                # SRAM_DATA2

@@ -132,7 +132,7 @@ pll_base_inst : PLL_ADV
     CLKOUT3_DIVIDE       => 16,
     CLKOUT3_PHASE        => 0.0,
     CLKOUT3_DUTY_CYCLE   => 0.500,
-    CLKIN1_PERIOD         => 31.250,
+    CLKIN1_PERIOD        => 31.250,
     REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
@@ -150,14 +150,13 @@ pll_base_inst : PLL_ADV
     CLKFBIN             => clkfb,
     CLKIN1               => clkin_i,
     CLKIN2 => '0',
-      CLKINSEL => '1',
-      DADDR => (others => '0'),
-      DCLK => '0',
-      DEN => '0',
-      DI => (others => '0'),
-      DWE => '0',
-      REL => '0'
-
+    CLKINSEL => '1',
+    DADDR => (others => '0'),
+    DCLK => '0',
+    DEN => '0',
+    DI => (others => '0'),
+    DWE => '0',
+    REL => '0'
    );
 
 end behave;
