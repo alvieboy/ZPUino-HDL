@@ -82,6 +82,17 @@ component dac_dsm3v is
     n_rst   : in  std_logic);
 end component;
 
+component dac_simplesd is
+  generic (
+    nbits : integer := 16);
+  port (
+    din     : in  signed((nbits-1) downto 0);
+    dout    : out std_logic;
+    clk     : in  std_logic;
+    clk_ena : in  std_logic;
+    rst     : in  std_logic);
+end component;
+
 component dac_dsm2v is
   generic (
     nbits : integer := 16);
@@ -198,22 +209,22 @@ begin
   end if;
 end process;
 
-chan0: dac_dsm3v
+chan0: dac_simplesd
   port map (
     din     => sync_dat_q1(15 downto 0),
     dout    => sdout(0),
     clk     => wb_clk_i,
     clk_ena => '1',
-    n_rst   => nrst
+    rst     => wb_rst_i
   );
 
-chan1: dac_dsm3v
+chan1: dac_simplesd
   port map (
     din     => sync_dat_q2(15 downto 0),
     dout    => sdout(1),
     clk     => wb_clk_i,
     clk_ena => '1',
-    n_rst   => nrst
+    rst     => wb_rst_i
   );
 
 
