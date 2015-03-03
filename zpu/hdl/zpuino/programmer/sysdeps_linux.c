@@ -57,7 +57,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	termset.c_oflag &= ~OPOST;
 	termset.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	termset.c_cflag &= ~(CSIZE | PARENB| HUPCL);
+	termset.c_cflag &= ~(CSIZE | PARENB| HUPCL | CRTSCTS);
 	termset.c_cflag |= CS8;
 	termset.c_cc[VMIN]=1;
 	termset.c_cc[VTIME]=5;
@@ -75,7 +75,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) |O_NONBLOCK);
 
         *conn = fd;
-	return -1;
+	return 0;
 }
 
 void conn_reset(connection_t conn)
