@@ -152,8 +152,8 @@ architecture behave of pwm is
   constant LOADBOTH:    std_logic_vector(1 downto 0) := "11";
   constant LOADNONE:    std_logic_vector(1 downto 0) := "00";
 
-  constant ACTIONCLEAR: std_logic_vector(1 downto 0) := "01";
-  constant ACTIONSET:   std_logic_vector(1 downto 0) := "10";
+  constant ACTIONSET:   std_logic_vector(1 downto 0) := "01";
+  constant ACTIONCLEAR: std_logic_vector(1 downto 0) := "10";
   constant ACTIONTOGGLE:std_logic_vector(1 downto 0) := "11";
   constant ACTIONNONE:  std_logic_vector(1 downto 0) := "00";
 
@@ -276,29 +276,34 @@ begin
     
   begin
     process(wb_clk_i)
-      procedure act(action: in std_logic_vector(1 downto 0);
-        variable sig: inout std_logic) is
+      procedure act(clause: in std_logic;
+                    name:   in string;
+                    action: in std_logic_vector(1 downto 0);
+                    variable sig: inout std_logic;
+                    orig: in std_logic) is
       begin
+        if clause='1' then
         case action is
           when ACTIONSET =>
             -- synthesis translate_off
-            report "setting signal";
+            report "setting signal due to " & name;
             -- synthesis translate_on
             sig := '1';
           when ACTIONCLEAR =>
             -- synthesis translate_off
-            report "clearing signal";
+            report "clearing signal due to " & name;
             -- synthesis translate_on
             sig := '0';
           when ACTIONTOGGLE =>
             -- synthesis translate_off
-            report "toggling signal";
+            report "toggling signal due to " & name & " original " & str(orig);
             -- synthesis translate_on
-            sig := not sig;
+            sig := not orig;
           when others =>
         end case;
+        end if;
       end procedure;
-      variable p: std_logic_vector(1 downto 0);
+      variable p,pin: std_logic_vector(1 downto 0);
       variable ev: std_logic_vector(1 downto 0);
 
     begin
@@ -311,7 +316,10 @@ begin
         else
             for N in 0 to PWMBLOCKS-1 loop
               --ev(0) := force_event_a(N) & force_event_b(N);
-              p := pwma(N) & pwmb(N);
+              p(0) := pwma(N);
+              p(1) := pwmb(N);
+              pin(0) := pwma(N);
+              pin(1) := pwmb(N);
 
               for OUTPUT in 0 to 1 loop
 
@@ -321,43 +329,24 @@ begin
 
                   case r.countmode is
                     when COUNTUP =>
-                      if cntperiod='1' then
-                        act( r.action(N)(OUTPUT).prd, p(OUTPUT) );
-                      elsif cmpbmatch(N)='1' then
-                        act( r.action(N)(OUTPUT).cmpbu, p(OUTPUT) );
-                      elsif cmpamatch(N)='1' then
-                        act( r.action(N)(OUTPUT).cmpau, p(OUTPUT) );
-                      elsif cntzero='1' then
-                        act( r.action(N)(OUTPUT).zero, p(OUTPUT) );
-                      end if;
+                      act( cntzero,     "ZERO",   r.action(N)(OUTPUT).zero,   p(OUTPUT), pin(OUTPUT) );
+                      act( cmpamatch(N),"CMPAU",  r.action(N)(OUTPUT).cmpau,  p(OUTPUT), pin(OUTPUT) );
+                      act( cmpbmatch(N),"CMPBU",  r.action(N)(OUTPUT).cmpbu,  p(OUTPUT), pin(OUTPUT) );
+                      act( cntperiod,   "Period", r.action(N)(OUTPUT).prd,    p(OUTPUT), pin(OUTPUT) );
                     when COUNTDOWN =>
-                      if cntzero='1' then
-                        act( r.action(N)(OUTPUT).zero, p(OUTPUT) );
-                      elsif cmpbmatch(N)='1' then
-                        act( r.action(N)(OUTPUT).cmpbd, p(OUTPUT) );
-                      elsif cmpamatch(N)='1' then
-                        act( r.action(N)(OUTPUT).cmpad, p(OUTPUT) );
-                      elsif cntperiod='1' then
-                        act( r.action(N)(OUTPUT).prd, p(OUTPUT) );
-                      end if;
+                      act( cntperiod,   "Period", r.action(N)(OUTPUT).prd,    p(OUTPUT), pin(OUTPUT) );
+                      act( cmpamatch(N),"CMPAD",  r.action(N)(OUTPUT).cmpad,  p(OUTPUT), pin(OUTPUT) );
+                      act( cmpbmatch(N),"CMPBD",  r.action(N)(OUTPUT).cmpbd,  p(OUTPUT), pin(OUTPUT) );
+                      act( cntzero,     "ZERO",   r.action(N)(OUTPUT).zero,   p(OUTPUT), pin(OUTPUT) );
                     when COUNTUPDOWN =>
                       if updown='1' then
-                        if cmpbmatch(N)='1' then
-                          act( r.action(N)(OUTPUT).cmpbu, p(OUTPUT) );
-                        elsif cmpamatch(N)='1' then
-                          act( r.action(N)(OUTPUT).cmpau, p(OUTPUT) );
-                        elsif cntzero='1' then
-                          act( r.action(N)(OUTPUT).zero, p(OUTPUT) );
-                        end if;
+                        act( cntzero,     "ZERO",   r.action(N)(OUTPUT).zero,   p(OUTPUT), pin(OUTPUT) );
+                        act( cmpamatch(N),"CMPAU",  r.action(N)(OUTPUT).cmpau,  p(OUTPUT), pin(OUTPUT) );
+                        act( cmpbmatch(N),"CMPBU",  r.action(N)(OUTPUT).cmpbu,  p(OUTPUT), pin(OUTPUT) );
                       else  -- going down
-                        if cmpbmatch(N)='1' then
-                          act( r.action(N)(OUTPUT).cmpbd, p(OUTPUT) );
-                        elsif cmpamatch(N)='1' then
-                          act( r.action(N)(OUTPUT).cmpad, p(OUTPUT) );
-                        elsif cntperiod='1' then
-                          act( r.action(N)(OUTPUT).prd, p(OUTPUT) );
-                        end if;
-
+                        act( cntperiod,   "Period", r.action(N)(OUTPUT).prd,    p(OUTPUT), pin(OUTPUT) );
+                        act( cmpamatch(N),"CMPAD",  r.action(N)(OUTPUT).cmpad,  p(OUTPUT), pin(OUTPUT) );
+                        act( cmpbmatch(N),"CMPBD",  r.action(N)(OUTPUT).cmpbd,  p(OUTPUT), pin(OUTPUT) );
                       end if;
                     when others =>
 
@@ -368,7 +357,12 @@ begin
 
               pwma(N) <= p(0);
               pwmb(N) <= p(1);
+
             end loop;
+
+
+
+
           end if;
       end if;
     end process;
