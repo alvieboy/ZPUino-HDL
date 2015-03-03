@@ -232,7 +232,7 @@ begin
         spi_txblock_q<='1';
         --spi_transfersize_q<=(others => '0');
       else
-      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
+      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' and trans='0' then
         if wb_adr_i(2)='0' then
           spi_clk_pres <= wb_dat_i(3 downto 1);
           cpol <= wb_dat_i(4);
