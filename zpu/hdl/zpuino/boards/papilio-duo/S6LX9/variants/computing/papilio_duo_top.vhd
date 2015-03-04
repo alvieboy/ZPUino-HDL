@@ -72,6 +72,17 @@ entity papilio_duo_top is
     VGA_GREEN:  out std_logic_vector(3 downto 0);
     VGA_BLUE:   out std_logic_vector(3 downto 0);
 
+    SD_MOSI:    out std_logic;
+    SD_MISO:    in  std_logic;
+    SD_SCK:     out std_logic;
+    SD_nCS:     out std_logic;
+
+    SW_LEFT:    in std_logic;
+    SW_UP:      in std_logic;
+    SW_DOWN:    in std_logic;
+    SW_RIGHT:   in std_logic;
+    RESET:      in std_logic;
+
     -- SRAM connections
     sram_addr:  out std_logic_vector(20 downto 0);
     sram_data:  inout std_logic_vector(7 downto 0);
@@ -418,6 +429,15 @@ begin
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => FLASH_SI );
   --oled:     OPAD port map ( I => gpio_o(49),   PAD => LED );
 
+  osdcs:    OPAD port map ( I => gpio_o(0),   PAD => SD_nCS );
+
+  -- Buttons
+  iswup:   IPAD port map ( PAD => SW_UP,        O => gpio_i(1),           C => sysclk );
+  iswdown: IPAD port map ( PAD => SW_DOWN,      O => gpio_i(2),           C => sysclk );
+  iswleft: IPAD port map ( PAD => SW_LEFT,      O => gpio_i(3),           C => sysclk );
+  iswright:IPAD port map ( PAD => SW_RIGHT,     O => gpio_i(4),           C => sysclk );
+  iswrst:  IPAD port map ( PAD => RESET,        O => gpio_i(5),           C => sysclk );
+
 
   --WING_A(12)<='Z' when avrspimisotris='1' else avrspimiso;
 
@@ -647,9 +667,9 @@ begin
     wb_inta_o     => slot_interrupt(6),
     id            => slot_ids(6),
 
-    mosi          => spi2_mosi,
-    miso          => spi2_miso,
-    sck           => spi2_sck,
+    mosi          => SD_MOSI,
+    miso          => SD_MISO,
+    sck           => SD_SCK,
     enabled       => open
   );
 
@@ -879,15 +899,15 @@ begin
     gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
     gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
     gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
-    gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
-    gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
+    --gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
+    --gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
     gpio_spp_data(5)  <= sigmadelta_spp_data(1);   -- PPS5 : SIGMADELTA1 DATA
 
     -- PPS inputs
-    spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
+    --spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
 
   end process;
 
-  ARDUINO_RESET <= '1';
+  ARDUINO_RESET <= '0';
 
 end behave;

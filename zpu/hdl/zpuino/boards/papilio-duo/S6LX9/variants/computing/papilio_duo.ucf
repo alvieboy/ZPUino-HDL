@@ -13,7 +13,7 @@ NET TXD           LOC="P141" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          
 NET ARDUINO_RESET LOC="P139" | IOSTANDARD=LVTTL;                                # ARDUINO_RESET
 #NET RS232_RX      LOC="P116" | IOSTANDARD=LVTTL;                                # A0
 #NET RS232_TX      LOC="P117" | IOSTANDARD=LVTTL;                                # A1
-#NET SD_MISO       LOC="P118" | IOSTANDARD=LVTTL;                                # A2
+NET SD_MISO       LOC="P118" | IOSTANDARD=LVTTL;                                # A2
 #NET SD_CD         LOC="P119" | IOSTANDARD=LVTTL;                                # A3
 #NET PS2_DAT1      LOC="P120" | IOSTANDARD=LVTTL;                                # A4
 #NET PS2_CLK1      LOC="P121" | IOSTANDARD=LVTTL;                                # A5
@@ -25,14 +25,14 @@ NET ARDUINO_RESET LOC="P139" | IOSTANDARD=LVTTL;                                
 #NET JOYSTICK1_2   LOC="P132" | IOSTANDARD=LVTTL;                                # A11
 #NET JOYSTICK1_6   LOC="P133" | IOSTANDARD=LVTTL;                                # A12
 #NET JOYSTICK1_1   LOC="P134" | IOSTANDARD=LVTTL;                                # A13
-#NET SD_MOSI       LOC="P115" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B0
-#NET SD_SCK        LOC="P114" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B1
-#NET SD_nCS        LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B2
-#NET SW_LEFT       LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3
-#NET SW_UP         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4
-#NET RESET         LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B5
-#NET SW_DOWN       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6
-#NET SW_RIGHT      LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7
+NET SD_MOSI       LOC="P115" | IOSTANDARD=LVTTL | DRIVE=12 | SLEW=FAST;          # B0
+NET SD_SCK        LOC="P114" | IOSTANDARD=LVTTL | DRIVE=12 | SLEW=FAST;          # B1
+NET SD_nCS        LOC="P112" | IOSTANDARD=LVTTL | DRIVE=12 | SLEW=FAST;          # B2
+NET SW_LEFT       LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3
+NET SW_UP         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4
+NET RESET         LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B5
+NET SW_DOWN       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6
+NET SW_RIGHT      LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7
 NET VGA_HSYNC     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
 NET VGA_VSYNC     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
 NET VGA_BLUE(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
