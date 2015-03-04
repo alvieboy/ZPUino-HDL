@@ -45,16 +45,16 @@ NET ADC_SPI_CS         LOC="P88"  | IOSTANDARD=LVTTL;                           
 NET ADC_SPI_MISO       LOC="P93"  | IOSTANDARD=LVTTL;                                # A13
 NET ADC_SPI_MOSI       LOC="P98"  | IOSTANDARD=LVTTL;                                # A14
 NET ADC_SPI_SCLK       LOC="P100" | IOSTANDARD=LVTTL;                                # A15
-NET VSYNC      LOC="P99"  | IOSTANDARD=LVTTL;                                # B0
-NET HSYNC      LOC="P97"  | IOSTANDARD=LVTTL;                                # B1
-NET BLUE(0)    LOC="P92"  | IOSTANDARD=LVTTL;                                # B2
-NET BLUE(1)    LOC="P87"  | IOSTANDARD=LVTTL;                                # B3
-NET GREEN(0)   LOC="P84"  | IOSTANDARD=LVTTL;                                # B4
-NET GREEN(1)   LOC="P82"  | IOSTANDARD=LVTTL;                                # B5
-NET GREEN(2)   LOC="P80"  | IOSTANDARD=LVTTL;                                # B6
-NET RED(0)     LOC="P78"  | IOSTANDARD=LVTTL;                                # B7
-NET RED(1)     LOC="P74"  | IOSTANDARD=LVTTL;                                # B8
-NET RED(2)     LOC="P95"  | IOSTANDARD=LVTTL;                                # B9
+NET VSYNC      LOC="P99"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B0
+NET HSYNC      LOC="P97"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B1
+NET BLUE(0)    LOC="P92"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B2
+NET BLUE(1)    LOC="P87"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B3
+NET GREEN(0)   LOC="P84"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B4
+NET GREEN(1)   LOC="P82"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B5
+NET GREEN(2)   LOC="P80"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B6
+NET RED(0)     LOC="P78"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B7
+NET RED(1)     LOC="P74"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B8
+NET RED(2)     LOC="P95"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # B9
 NET AUDIO          LOC="P62"  | IOSTANDARD=LVTTL;                                # B10
 NET JOY_RIGHT      LOC="P59"  | IOSTANDARD=LVTTL;                                # B11
 NET JOY_LEFT       LOC="P57"  | IOSTANDARD=LVTTL;                                # B12
