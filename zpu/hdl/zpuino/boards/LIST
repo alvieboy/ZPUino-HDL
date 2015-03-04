@@ -1,5 +1,7 @@
 Current board listing
 
+ZPUino 1.0
+
 |     ID     |     Board     |   FPGA   | Notes                               |
 +------------+---------------+----------+-------------------------------------+
 | 0xA4010F00 | GF PapilioOne | S3E500   | 32Kb                                |
@@ -16,3 +18,16 @@ Current board listing
 | 0xA4051300 | GF Papilio Duo| S6 LX9   | 32Kb                                |
 | 0xA5010F00 | OHO GODIL     | S3E500   | 32Kb                                |
 | 0xA6011900 | Xess XuLA2    | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
+
+
+ZPUino 2.0
+
+|     ID     |         Board        |   FPGA   | Notes                               |
++------------+----------------------+----------+-------------------------------------+
+| 0x93011A00 | S3ESK                | S3E500   | 64MB (8K Inst Cache)                |
+| 0xB4041700 | GF PapilioPro        | S6 LX9   | 8MB SDRAM (8K Inst Cache)	     |
+| 0xB4010F00 | GF PapilioOne        | S3E500   | 32Kb                                |
+| 0xB4051300 | GF Papilio Duo	    | S6 LX9   | SRAM                                |
+| 0xB6011900 | Xess XuLA2           | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
+| 0xB8011A00 | EMS11-22             | S6 LX45  | 64MB SDRAM (8K Inst Cache)          |
+| 0xBA011A00 | Saanlima Pipistrello | S6 LX45  | 64MB LPDDR (8K Inst Cache)          |

@@ -66,7 +66,14 @@ entity zpuino_io is
     slot_write: out slot_cpuword_type;
     slot_address:  out slot_address_type;
     slot_ack:   in slot_std_logic_type := (others => '1');
-    slot_interrupt: in slot_std_logic_type := (others => '0')
+    slot_interrupt: in slot_std_logic_type := (others => '0' );
+    slot_id:    in slot_id_type;
+
+    -- PPS information
+    pps_in_slot:  in ppsininfotype;
+    pps_in_pin:  in ppsininfotype;
+    pps_out_slot:  in ppsoutinfotype;
+    pps_out_pin:  in ppsoutinfotype
 
   );
 end entity zpuino_io;
@@ -104,8 +111,9 @@ architecture behave of zpuino_io is
   signal slot_interrupt_i: slot_std_logic_type;
 
 
-  signal timer_read:  std_logic_vector(wordSize-1 downto 0);
-  signal timer_ack: std_logic;
+  signal sysctl_read:  std_logic_vector(wordSize-1 downto 0);
+  signal sysctl_ack: std_logic;
+  signal sysctl_stb, sysctl_we, sysctl_cyc: std_logic;
 
 begin
 
@@ -120,19 +128,19 @@ begin
 
 
 
-  -- Ack generator  (We have an hack for slot4 here)
+  -- Ack generator  (We have an hack for slot0 here)
 
-  process(slot_ack_i, timer_ack)
+  process(slot_ack_i, sysctl_ack)
   begin
     io_device_ack <= '0';
     for i in 0 to num_devices-1 loop
-      if i/=4 then
+      if i/=0 then
         if slot_ack_i(i) = '1' then
           io_device_ack<='1';
         end if;
       end if;
     end loop;
-    if timer_ack='1' then
+    if sysctl_ack='1' then
       io_device_ack<='1';
     end if;
   end process;
@@ -221,10 +229,11 @@ begin
   end generate;
 
   -- Interrupt vectors
+  ivecs(0) <= '0';
 
   process(slot_interrupt_i)
   begin
-    for i in 0 to num_devices-1 loop
+    for i in 1 to num_devices-1 loop
       ivecs(i) <= slot_interrupt_i(i);
     end loop;
   end process;
@@ -232,21 +241,21 @@ begin
   -- Write and address signals, shared by all slots
   process(wb_dat_i,wb_adr_i,io_write,io_address)
   begin
-    for i in 0 to num_devices-1 loop
+    for i in 1 to num_devices-1 loop
       slot_write_i(i) <= io_write;
       slot_address_i(i) <= io_address(maxAddrBitIncIO-1 downto 2);
     end loop;
   end process;
 
-  process(io_address,slot_read_i,timer_read)
+  process(io_address,slot_read_i,sysctl_read)
     variable slotNumber: integer range 0 to num_devices-1;
   begin
 
     slotNumber := to_integer(unsigned(io_address(maxAddrBitIncIO-1 downto maxAddrBitIncIO-zpuino_number_io_select_bits)));
-    if slotNumber/=4 then
+    if slotNumber/=0 then
       io_read_selected <= slot_read_i(slotNumber);
     else
-      io_read_selected <= timer_read;
+      io_read_selected <= sysctl_read;
     end if;
 
   end process;
@@ -259,7 +268,7 @@ begin
 
     slotNumber := to_integer(unsigned(io_address(maxAddrBitIncIO-1 downto maxAddrBitIncIO-zpuino_number_io_select_bits)));
 
-    for i in 0 to num_devices-1 loop
+    for i in 1 to num_devices-1 loop
 
       slot_stb_i(i) <= io_stb;
       slot_we_i(i) <= io_we;
@@ -271,27 +280,44 @@ begin
       end if;
     end loop;
 
+    -- Sysctl
+
+    sysctl_cyc<='0';
+    if slotNumber=0 then
+      sysctl_cyc <= io_cyc;
+    end if;
+
   end process;
+  
+  sysctl_stb  <= io_stb;
+  sysctl_we   <= io_we;
 
   --
-  -- IO SLOT 4
+  -- IO SLOT 0 - reserved
   --
 
-  intr_inst: zpuino_intr
+  ctlinst: zpuino_sysctl
   generic map (
     INTERRUPT_LINES =>  18
   )
   port map (
-    wb_clk_i       => wb_clk_i,
+    wb_clk_i    => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
-    wb_dat_o     => timer_read,
-    wb_dat_i    => slot_write_i(4),
-    wb_adr_i   => slot_address_i(4),
-    wb_we_i        => slot_we_i(4),
-    wb_cyc_i        => slot_cyc_i(4),
-    wb_stb_i        => slot_stb_i(4),
-    wb_ack_o      => timer_ack,--slot_ack_i(4),
-    wb_inta_o => wb_inta_o, -- Interrupt signal to core
+    wb_dat_o    => sysctl_read,
+    wb_dat_i    => io_write,
+    wb_adr_i    => io_address(maxAddrBitIncIO-1 downto 2),
+    wb_we_i     => sysctl_we,
+    wb_cyc_i    => sysctl_cyc,
+    wb_stb_i    => sysctl_stb,
+    wb_ack_o    => sysctl_ack,
+    wb_inta_o   => wb_inta_o, -- Interrupt signal to core
+    slot_id     => slot_id,
+
+    pps_in_slot => pps_in_slot,
+    pps_in_pin  => pps_in_pin,
+
+    pps_out_slot => pps_out_slot,
+    pps_out_pin  => pps_out_pin,
 
     poppc_inst=> intready,
     cache_flush => cache_flush,

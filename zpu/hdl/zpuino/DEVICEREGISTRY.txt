@@ -1,0 +1,40 @@
+00 None
+	00 No device
+
+08 ZPUino
+	01 System Controller
+        02 Bootloader Code
+        03 Internal SPI-Flash SPI controller
+        10 SPI interface
+        11 UART
+        12 GPIO Controller
+        13 Dual Timer Interface with PWM
+        14 16-Bit Dual SigmaDelta
+        15 Hardware CRC16 engine
+        16 Seven Segment Display Driver
+        18 HQVGA (240x160) 8-bit Graphics Adaptor
+        19 8-bit single-port Character RAM
+        1A VGA (640x480) 15-bit Graphics Adaptor
+        1B VGA Text-mode (640x480) 80x30 3-bit Adaptor
+        1C ZX Spectrum Graphics Adaptor
+	1D VGA Generic Interface (8/16-bit)
+        1E PLL Clock Generator
+        20 RGB LED Controller
+
+02 FPGAArcade
+	01 YM2149 Sound Chip
+        02 POKEY Sound Chip
+
+03 ZPUIno Contrib
+	01 SID6581 Sound Chip
+
+04 OpenCores
+	01 I2C Master Controller
+	02 CORDIC
+        03 PS/2 Controller
+
+81 Critical Software
+	-- Proprietary devices
+
+88 Alvie
+	-- Proprietary devices

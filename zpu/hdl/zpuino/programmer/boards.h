@@ -4,5 +4,6 @@
 #include <inttypes.h>
 
 const char* getBoardById(uint32_t id);
+int loadBoardsFromFile(const char *path);
 
 #endif

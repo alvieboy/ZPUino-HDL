@@ -43,6 +43,9 @@ use work.zpupkg.all;
 use work.zpuinopkg.all;
 
 entity zpuino_spi is
+  generic (
+    INTERNAL_SPI: boolean := false
+  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -54,6 +57,7 @@ entity zpuino_spi is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
+    id:       out slot_id;
 
     mosi:     out std_logic;
     miso:     in std_logic;
@@ -63,7 +67,6 @@ entity zpuino_spi is
 end entity zpuino_spi;
 
 architecture behave of zpuino_spi is
-
 
   component spi is
     port (
@@ -115,6 +118,11 @@ architecture behave of zpuino_spi is
   signal spi_transfersize_q: std_logic_vector(1 downto 0);
   signal trans: std_logic;
 begin
+
+
+  id <= x"08" & x"10"  -- Vendor: ZPUino  Device: SPI
+    when INTERNAL_SPI=false
+  else x"08" & x"03";
 
   zspi: spi
     port map (
@@ -224,7 +232,7 @@ begin
         spi_txblock_q<='1';
         --spi_transfersize_q<=(others => '0');
       else
-      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
+      if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' and trans='0' then
         if wb_adr_i(2)='0' then
           spi_clk_pres <= wb_dat_i(3 downto 1);
           cpol <= wb_dat_i(4);

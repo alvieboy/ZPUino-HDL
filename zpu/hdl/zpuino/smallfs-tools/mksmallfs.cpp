@@ -166,6 +166,7 @@ struct fileinfo {
 
 int help()
 {
+	fprintf(stderr,"This is mksmallfs, version " VERSION "\n\n");
 	fprintf(stderr,"Usage: mksmallfs outputfile directory\n");
 	return -1;
 }

@@ -1,5 +1,6 @@
 #include "makeargv.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define PARSER_MAX_ARGS 128
 

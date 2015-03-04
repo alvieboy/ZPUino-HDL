@@ -4,17 +4,16 @@ PART=xc6slx9-2-ftg256
 # For bootloader
 BOARD=XULA2
 SIZE=16384
-DEFINES="-DBOARD_ID=0xA6011900 -DBOARD_MEMORYSIZE=0x2000000 -DZPUINO_HAS_ICACHE"
+DEFINES="-DBOARD_ID=0xB6011900 -DZPU20 -DBOARD_MEMORYSIZE=0x2000000 -DZPUINO_HAS_ICACHE"
 #define ZPUINO_HAS_ICACHE
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
-prom-generic-dp-32.vhd:
+bootloader.vhd:
 	$(MAKE) -C ../../../bootloader -f Makefile BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp ../../../bootloader/prom-generic-dp-32.vhd .
 	cp ../../../bootloader/bootloader.vhd .
 	
-${PROJECT}.ngc: prom-generic-dp-32.vhd
+${PROJECT}.ngc: bootloader.vhd
 	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
@@ -37,5 +36,5 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 
 clean:
-	@rm -f *.ngc *.ngd *.ncd *._routed.ncd *.pcf *.bit *._routed.bit prom-generic-dp-32.vhd bootloader.vhd 
+	@rm -f *.ngc *.ngd *.ncd *._routed.ncd *.pcf *.bit *._routed.bit bootloader.vhd 
 	$(MAKE) -C ../../../bootloader clean

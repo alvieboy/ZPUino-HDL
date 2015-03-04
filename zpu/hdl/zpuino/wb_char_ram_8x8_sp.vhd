@@ -54,7 +54,8 @@ entity wb_char_ram_8x8_sp is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
+    wb_inta_o:out std_logic;
+    id:       out slot_id
   );
 end entity wb_char_ram_8x8_sp;
 
@@ -72,8 +73,9 @@ x"00",x"00",x"00",x"00",x"00",x"00",x"00",x"00",x"7e",x"81",x"a5",x"81",x"bd",x"
 
 begin
 
+  id <= x"08" & x"19"; -- Vendor: ZPUino  Product: Single-Port 8x8 Character RAM
   selected <= '1' when wb_cyc_i='1' and wb_stb_i='1' else '0';
-
+  
   wb_dat_o(31 downto 8) <= (others => '0');
 
   process(wb_clk_i)

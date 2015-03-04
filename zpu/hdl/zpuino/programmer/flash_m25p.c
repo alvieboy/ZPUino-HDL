@@ -145,6 +145,7 @@ static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned in
 }
 
 flash_driver_t m25p_flash = {
+        .name          = "micron",
 	.erase_sector  = &m25p_erase_sector,
 	.enable_writes = &m25p_enable_writes,
 	.read_page     = &m25p_read_page,

@@ -335,14 +335,58 @@ void conn_close(connection_t conn)
 {
 }
 
+static unsigned int baudrates[] = {
+    1000000,
+    921600,
+    576000,
+    500000,
+    460800,
+    230400,
+    115200,
+    57600,
+    38400,
+    19200,
+    9600,
+    0
+};
+
+unsigned int *conn_get_baudrates()
+{
+    return baudrates;
+}
+
 int conn_parse_speed(unsigned baudrate,speed_t *speed)
 {
 	switch (baudrate) {
 	case 1000000:
 		*speed = CBR_1000000;
 		break;
+	case 921600:
+		*speed = CBR_921600;
+		break;
+	case 576000:
+		*speed = CBR_576000;
+		break;
+	case 500000:
+		*speed = CBR_500000;
+		break;
+	case 460800:
+		*speed = CBR_460800;
+		break;
+	case 230400:
+		*speed = CBR_230400;
+		break;
 	case 115200:
 		*speed = CBR_115200;
+		break;
+	case 38400:
+		*speed = CBR_38400;
+		break;
+	case 19200:
+		*speed = CBR_19200;
+		break;
+	case 9600:
+		*speed = CBR_9600;
 		break;
 	default:
 		printf("Baud rate '%d' not supported\n",baudrate);
