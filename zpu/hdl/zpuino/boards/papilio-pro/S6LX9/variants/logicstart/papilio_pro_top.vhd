@@ -366,7 +366,7 @@ architecture behave of papilio_pro_top is
   signal uart2_rx: std_logic;
   signal uart2_tx: std_logic;
 
-  component vga_640_480 is
+  component vga_generic is
   port(
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -392,12 +392,12 @@ architecture behave of papilio_pro_top is
     mi_wb_stall_i: in std_logic;
 
     -- VGA signals
-    vgaclk:     in std_logic;
+    clk_42mhz:     in std_logic;
     vga_hsync:  out std_logic;
     vga_vsync:  out std_logic;
     vga_b:      out std_logic_vector(4 downto 0);
     vga_r:      out std_logic_vector(4 downto 0);
-    vga_g:      out std_logic_vector(4 downto 0)
+    vga_g:      out std_logic_vector(5 downto 0)
   );
   end component;
 
@@ -407,7 +407,7 @@ architecture behave of papilio_pro_top is
   signal vga_vsync:   std_logic;
   signal vga_b:       std_logic_vector(4 downto 0);
   signal vga_r:       std_logic_vector(4 downto 0);
-  signal vga_g:       std_logic_vector(4 downto 0);
+  signal vga_g:       std_logic_vector(5 downto 0);
 
   signal sevenseg_data: std_logic_vector(6 downto 0);
   signal sevenseg_dp:  std_logic;
@@ -853,7 +853,7 @@ begin
     id            => slot_ids(12)
   );
 
-  vga: vga_640_480
+  vga: vga_generic
     port map (
     wb_clk_i    => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -878,7 +878,7 @@ begin
     mi_wb_ack_i   => m_wb_ack_o,
     mi_wb_stall_i => m_wb_stall_o,
 
-    vgaclk          => vgaclk,
+    clk_42mhz       => vgaclk,
     vga_hsync       => vga_hsync,
     vga_vsync       => vga_vsync,
     vga_b           => vga_b,
@@ -890,7 +890,7 @@ begin
   VSYNC <= vga_vsync;
 
   RED <= vga_r(4 downto 2);
-  GREEN <= vga_g(4 downto 2);
+  GREEN <= vga_g(5 downto 3);
   BLUE <= vga_b(4 downto 3);
 
   slot14: zpuino_sevenseg
