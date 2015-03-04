@@ -17,12 +17,9 @@ architecture sim of tb is
 
 
   signal CLKPERIOD: time := 10 ns;
-  signal DISPLAYPERIOD: time := 31.25 ns;
+  signal DISPLAYPERIOD: time := 100 ns;
 
   component zpuino_rgbctrl is
-  generic (
-      WIDTH_BITS: integer := 5
-  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -82,9 +79,6 @@ begin
 
 
   ctrl: zpuino_rgbctrl
-  generic map (
-    WIDTH_BITS => 6
-    )
   port map (
     wb_clk_i  => clk,
 	 	wb_rst_i  => rst,

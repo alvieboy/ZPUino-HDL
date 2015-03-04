@@ -10,21 +10,24 @@ OBJCOPY=$(CROSS)objcopy
 OBJDUMP=$(CROSS)objdump
 
 BOARD?=
-SIZE?=16384
+SIZE=16384
 
 DHRYSRC=.
 
 SKETCHBIN?=InvalidSketch.bin
 
 OBJ=boot-simulation.o boot-c.o syscall.o boot-s.o loader.o
+#crt0.o
 
+#-nostartfiles -nostdlib
 CFLAGS= -O2 -g -Wall -fno-gcse -mno-callpcrel -mno-pushspadd -fdata-sections -ffunction-sections -I../common -DBOARD_MEMORYSIZE=$(SIZE) -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ -DZPUINO_HAS_ICACHE
 LDFLAGS= -O2 -g -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
-ASFLAGS=-g -I../common -DPRELOADED -DZPU20 -DASSEMBLY -DBOARD_ID=0xA5030E00 -D__ZPUINO_PAPILIO_DUO__ -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE
+ASFLAGS=-g -I../common -DASSEMBLY -DBOARD_ID=0xA4030E00 -D__ZPUINO_PAPILIO_PLUS__ -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE
+#-nostartfiles
 
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
-all: bootloader-sim.vhd Makefile
+all: prom-generic-dp-32.vhd Makefile
 
 .PHONY: boot.cpp $(TARGET).bin.merged
 
@@ -42,9 +45,8 @@ $(TARGET).bin: $(TARGET).elf
 $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
 
-bootloader-sim.vhd: $(TARGET).bin.merged
-	perl ../gen-prom-generic-dualport-simple_32.pl $(TARGET).bin 4096 bootloader_dp_32 > bootloader-sim.vhd || rm -f bootloader-sim.vhd	
+prom-generic-dp-32.vhd: $(TARGET).bin.merged
+	perl ../gen-prom-generic-dualport-simple_32.pl $(TARGET).bin 4096 bootloader_dp_32 > bootloader.vhd || rm -f bootloader.vhd	
 	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin.merged $(SIZE) > prom-simulation.vhd || rm -f prom-simulation.vhd	
-	$(OBJCOPY) -I binary -O srec --srec-len=8 $(TARGET).bin.merged sdram.srec
 clean:	
 	@rm -f $(TARGET).o $(OBJ) $(TARGET) $(TARGET).bin $(TARGET).bin.merged $(TARGET).s $(TARGET).S prom-simulation.vhd

@@ -58,7 +58,6 @@ entity zpuino_sigmadelta is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
 
     sync_in:  in std_logic;
 
@@ -71,44 +70,21 @@ end entity zpuino_sigmadelta;
 
 architecture behave of zpuino_sigmadelta is
 
-component dac_dsm3v is
-  generic (
-    nbits : integer := 16);
-  port (
-    din     : in  signed((nbits-1) downto 0);
-    dout    : out std_logic;
-    clk     : in  std_logic;
-    clk_ena : in  std_logic;
-    n_rst   : in  std_logic);
-end component;
+signal delta_adder1: unsigned(17 downto 0);
+signal sigma_adder1: unsigned(17 downto 0);
+signal sigma_latch1: unsigned(17 downto 0);
+signal delta_b1:     unsigned(17 downto 0);
 
-component dac_simplesd is
-  generic (
-    nbits : integer := 16);
-  port (
-    din     : in  signed((nbits-1) downto 0);
-    dout    : out std_logic;
-    clk     : in  std_logic;
-    clk_ena : in  std_logic;
-    rst     : in  std_logic);
-end component;
+signal delta_adder2: unsigned(17 downto 0);
+signal sigma_adder2: unsigned(17 downto 0);
+signal sigma_latch2: unsigned(17 downto 0);
+signal delta_b2:     unsigned(17 downto 0);
 
-component dac_dsm2v is
-  generic (
-    nbits : integer := 16);
-  port (
-    din     : in  signed((nbits-1) downto 0);
-    dout    : out std_logic;
-    clk     : in  std_logic;
-    clk_ena : in  std_logic;
-    n_rst   : in  std_logic);
-end component;
+signal dat_q1: unsigned(17 downto 0);
+signal dat_q2: unsigned(17 downto 0);
 
-signal dat_q1: unsigned(15 downto 0);
-signal dat_q2: unsigned(15 downto 0);
-
-signal sync_dat_q1: signed(15 downto 0);
-signal sync_dat_q2: signed(15 downto 0);
+signal sync_dat_q1: unsigned(17 downto 0);
+signal sync_dat_q2: unsigned(17 downto 0);
 
 signal sd_en_q: std_logic_vector(1 downto 0);
 signal sdout: std_logic_vector(1 downto 0);
@@ -118,12 +94,9 @@ signal sdcnt: integer;
 signal le_q: std_logic;
 signal do_sync: std_logic;
 signal extsync_q: std_logic;
-signal nrst: std_logic;
-signal sign_q: std_logic;
 
 begin
 
-  id <= x"08" & x"14"; -- Vendor: ZPUino  Device: 16-Bit Dual SigmaDelta
   wb_dat_o <= (others => DontCareValue);
   wb_inta_o <= '0';
   wb_ack_o <= wb_cyc_i and wb_stb_i;
@@ -140,7 +113,6 @@ begin
       dat_q2 <= (others =>'0');
       dat_q2(15) <= '1';
       sd_en_q <= (others =>'0');
-      sign_q <= '0';
     else 
 	    if wb_cyc_i='1' and wb_stb_i='1' and wb_we_i='1' then
         case wb_adr_i(2) is
@@ -149,7 +121,6 @@ begin
             sd_en_q(1) <= wb_dat_i(1);
             le_q <= wb_dat_i(2);
             extsync_q <= wb_dat_i(3);
-            sign_q <= wb_dat_i(5);
           when '1' =>
             --report "SigmaDelta set: " & hstr(wb_dat_i(15 downto 0)) severity note;
             case le_q is
@@ -187,46 +158,92 @@ process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
     if do_sync='1' then
-      if sign_q='0' then
-        sync_dat_q1 <= signed(dat_q1)-32768;
-        sync_dat_q2 <= signed(dat_q2)-32768;
-      else
-        sync_dat_q1 <= signed(dat_q1);
-        sync_dat_q2 <= signed(dat_q2);
-      end if;
+      sync_dat_q1 <= dat_q1;
+      sync_dat_q2 <= dat_q2;
     end if;
   end if;
 end process;
+
+process(sigma_latch1)
+begin
+  delta_b1(17) <= sigma_latch1(17);
+  delta_b1(16) <= sigma_latch1(17);
+  delta_b1(15 downto 0) <= (others => '0');
+end process;
+
+process(sigma_latch2)
+begin
+  delta_b2(17) <= sigma_latch2(17);
+  delta_b2(16) <= sigma_latch2(17);
+  delta_b2(15 downto 0) <= (others => '0');
+end process;
+
+process(sync_dat_q1, delta_b1)
+begin
+  delta_adder1 <= sync_dat_q1 + delta_b1;
+end process;
+
+process(sync_dat_q2, delta_b2)
+begin
+  delta_adder2 <= sync_dat_q2 + delta_b2;
+end process;
+
+process(delta_adder1,sigma_latch1)
+begin
+  sigma_adder1 <= delta_adder1 + sigma_latch1;
+end process;
+
+process(delta_adder2,sigma_latch2)
+begin
+  sigma_adder2 <= delta_adder2 + sigma_latch2;
+end process;
+
+-- Divider
+
+
+-- process(wb_clk_i)
+-- begin
+--   if rising_edge(wb_clk_i) then
+--     if wb_rst_i='1' then
+--       sdtick<='0';
+--       sdcnt<=3;
+--     else
+--       if sdcnt/=0 then
+--         sdcnt<=sdcnt-1;
+--         sdtick<='0';
+--       else
+--         sdtick<='1';
+--         sdcnt<=3;
+--       end if;
+--     end if;
+--   end if;
+-- end process;
+sdtick <= '1'; -- for now
+
 
 process(wb_clk_i)
 begin
   if rising_edge(wb_clk_i) then
-    if wb_rst_i='1' then
-      nrst<='0';
-    else
-      nrst<='1';
-    end if;
+   if wb_rst_i='1' then
+      sigma_latch1 <= (others => '0');
+		  sigma_latch1(17) <= '1';
+		  sdout <= (others=>'0');
+      sigma_latch2 <= (others => '0');
+		  sigma_latch2(17) <= '1';
+	  else
+      if sdtick='1' then
+        if sd_en_q(0)='1' then
+    		  sigma_latch1 <= sigma_adder1;
+    		  sdout(0) <= sigma_latch1(17);
+        end if;
+        if sd_en_q(1)='1' then
+          sdout(1) <= sigma_latch2(17);
+          sigma_latch2 <= sigma_adder2;
+        end if;
+      end if;
+  	end if;
   end if;
 end process;
-
-chan0: dac_simplesd
-  port map (
-    din     => sync_dat_q1(15 downto 0),
-    dout    => sdout(0),
-    clk     => wb_clk_i,
-    clk_ena => '1',
-    rst     => wb_rst_i
-  );
-
-chan1: dac_simplesd
-  port map (
-    din     => sync_dat_q2(15 downto 0),
-    dout    => sdout(1),
-    clk     => wb_clk_i,
-    clk_ena => '1',
-    rst     => wb_rst_i
-  );
-
 
 spp_data <= sdout;
 spp_en <= sd_en_q;

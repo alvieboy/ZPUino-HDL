@@ -58,10 +58,9 @@ entity zpuino_gpio is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
 
-    spp_data: in std_logic_vector(PPSCOUNT_OUT-1 downto 0);
-    spp_read: out std_logic_vector(PPSCOUNT_IN-1 downto 0);
+    spp_data: in std_logic_vector(gpio_count-1 downto 0);
+    spp_read: out std_logic_vector(gpio_count-1 downto 0);
 
     gpio_o:   out std_logic_vector(gpio_count-1 downto 0);
     gpio_t:   out std_logic_vector(gpio_count-1 downto 0);
@@ -86,14 +85,10 @@ signal input_mapper_q:  mapper_q_type; -- Mapper for output pins (input data)
 signal output_mapper_q: mapper_q_type; -- Mapper for input pins (output data)
 
 signal gpio_r_i:        std_logic_vector(127 downto 0);
-signal gpio_tris_r_i:   std_logic_vector(127 downto 0);
-signal gpio_i_q:        std_logic_vector(127 downto 0);
-signal gpio_inten_q:    std_logic_vector(127 downto 0); -- Interrupt enable
-signal gpio_intline_q:  input_number; -- Interrupt line
-signal gpio_int_q:      std_logic; -- Interrupt being processed
-begin
+signal gpio_tris_r_i:    std_logic_vector(127 downto 0);
+signal gpio_i_q: std_logic_vector(127 downto 0);
 
-id <= x"08" & x"12"; -- Vendor: ZPUino  Device: GPIO
+begin
 
 wb_ack_o <= wb_cyc_i and wb_stb_i;
 wb_inta_o <= '0';
@@ -128,20 +123,12 @@ spprgen: for i in 0 to gpio_count-1 generate
 
   gpio_i_q(i) <= gpio_i(i) when spp_cap_in(i)='1' else DontCareValue;
 
-end generate;
-
-
-spprgen2: for i in 0 to PPSCOUNT_IN-1 generate
-
   process( gpio_i_q(i), output_mapper_q(i) )
   begin
-    if i<PPSCOUNT_IN then
-      spp_read(i) <= gpio_i_q( output_mapper_q(i) );
-    end if;
+    spp_read(i) <= gpio_i_q( output_mapper_q(i) );
   end process;
 
 end generate;
-
 
 ilink1: for i in 0 to gpio_count-1 generate
   gpio_r_i(i) <= gpio_i(i);
@@ -156,8 +143,8 @@ end generate;
 
 process(wb_adr_i,gpio_r_i,gpio_tris_r_i,ppspin_q)
 begin
-  case wb_adr_i(6 downto 4) is
-    when "000" =>
+  case wb_adr_i(5 downto 4) is
+    when "00" =>
 
       case wb_adr_i(3 downto 2) is
         when "00" =>
@@ -171,7 +158,7 @@ begin
         when others =>
       end case;
 
-    when "001" =>
+    when "01" =>
       case wb_adr_i(3 downto 2) is
         when "00" =>
           wb_dat_o <= gpio_tris_r_i(31 downto 0);
@@ -184,7 +171,7 @@ begin
         when others =>
       end case;
 
-    when "010" =>
+    when "10" =>
       case wb_adr_i(3 downto 2) is
         when "00" =>
           wb_dat_o <= ppspin_q(31 downto 0);
@@ -196,28 +183,6 @@ begin
           wb_dat_o <= ppspin_q(127 downto 96);
         when others =>
       end case;
-
-    when "011" =>
-      case wb_adr_i(3 downto 2) is
-        when "00" =>
-          wb_dat_o <= gpio_inten_q(31 downto 0);
-        when "01" =>
-          wb_dat_o <= gpio_inten_q(63 downto 32);
-        when "10" =>
-          wb_dat_o <= gpio_inten_q(95 downto 64);
-        when "11" =>
-          wb_dat_o <= gpio_inten_q(127 downto 96);
-        when others =>
-      end case;
-
-    when "100" =>
-      case wb_adr_i(3 downto 2) is
-        when "00" =>
-          wb_dat_o <= std_logic_vector(to_unsigned(gpio_intline_q,32));
-        when others =>
-          wb_dat_o <= (others => DontCareValue);
-      end case;
-
     when others =>
       wb_dat_o <= (others => DontCareValue);
   end case;
@@ -229,7 +194,6 @@ begin
     if wb_rst_i='1' then
       gpio_tris_q <= (others => '1');
       ppspin_q <= (others => '0');
-      gpio_inten_q <= (others => '0');
       gpio_q <= (others => DontCareValue);
       -- Default values for input/output mapper
       --for i in 0 to 127 loop

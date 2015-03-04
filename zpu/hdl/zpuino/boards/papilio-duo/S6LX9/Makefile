@@ -4,15 +4,16 @@ PART=xc6slx9-2-tqg144
 # For bootloader
 BOARD=PAPILIO_DUO
 SIZE=16384
-DEFINES="-D__PAPILIO_DUO__ -DZPU20 -DBOARD_ID=0xB4051500 -DBOARD_MEMORYSIZE=0x200000 -DZPUINO_HAS_ICACHE"
+DEFINES="-D__PAPILIO_DUO__ -DBOARD_ID=0xA4051300 -DBOARD_MEMORYSIZE=0x80000 -DZPUINO_HAS_ICACHE"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
-bootloader.vhd:
+prom-generic-dp-32.vhd:
 	$(MAKE) -C ../../../bootloader BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
+	cp ../../../bootloader/prom-generic-dp-32.vhd .
 	cp ../../../bootloader/bootloader.vhd .
 	
-${PROJECT}.ngc: bootloader.vhd
+${PROJECT}.ngc: prom-generic-dp-32.vhd
 	mkdir -p xst/projnav.tmp/
 	xst -intstyle ise -ifn ${PROJECT}.xst -ofn ${PROJECT}.syr
         
@@ -35,5 +36,5 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 
 clean:
-	@rm -f ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}_routed.bit
+	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit} bootloader.vhd prom-generic-dp-32.vhd
 	$(MAKE) -C ../../../bootloader clean

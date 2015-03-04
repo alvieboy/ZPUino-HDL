@@ -62,7 +62,7 @@ entity zpuino_vga is
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
     wb_intb_o:out std_logic;
-    id:       out slot_id;
+
     -- VGA interface
     vgaclk:     in std_logic;
 
@@ -147,8 +147,6 @@ begin
 
   wb_inta_o <= '0';
   wb_intb_o <= '0';
-
-  id <= x"08" & x"18"; -- Vendor: ZPUino  Product: HQVGA 8-bit
 
   process(wb_clk_i)
   begin

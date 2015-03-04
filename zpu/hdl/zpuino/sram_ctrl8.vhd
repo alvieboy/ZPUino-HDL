@@ -14,9 +14,6 @@ library unisim;
 use unisim.vcomponents.all;
 
 entity sram_ctrl8 is
-  generic (
-    WIDTH_BITS: integer := 19
-  );
   port (
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -35,7 +32,7 @@ entity sram_ctrl8 is
     clk_we: in std_logic;
     clk_wen: in std_logic;
     -- SRAM signals
-    sram_addr:  out std_logic_vector(WIDTH_BITS-1 downto 0);
+    sram_addr:  out std_logic_vector(18 downto 0);
     sram_data:  inout std_logic_vector(7 downto 0);
     sram_ce:    out std_logic := '1';
     sram_we:    out std_logic;
@@ -62,7 +59,7 @@ signal state: state_type;
 
 signal strobe_addr: std_logic;
 signal even_odd: std_logic_vector(1 downto 0);
-signal sram_addr_q: std_logic_vector(WIDTH_BITS-1 downto 0);
+signal sram_addr_q: std_logic_vector(18 downto 0);
 signal bus_tristate: std_logic;
 signal sram_data_read: std_logic_vector(7 downto 0);
 signal sram_data_write_i: std_logic_vector(7 downto 0);
@@ -151,7 +148,7 @@ ODDR2_nWE : ODDR2
    );
 
 
-saq: for index in 2 to WIDTH_BITS-1 generate
+saq: for index in 2 to 18 generate
 
   addrff: ODDR2
     generic map (

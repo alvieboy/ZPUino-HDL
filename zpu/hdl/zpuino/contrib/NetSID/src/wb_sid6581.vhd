@@ -56,7 +56,6 @@ entity wb_sid6581 is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
 
     clk_1MHZ: in std_logic;
     audio_data: out std_logic_vector(17 downto 0)
@@ -95,7 +94,6 @@ architecture rtl of wb_sid6581 is
 
 begin
 
-  id <= x"03" & x"01"; -- Vendor: ZPUino Contrib   Product: SID6581
   wb_dat_o(wordSize-1 downto 8) <= (others => '0');
   wb_dat_o(7 downto 0) <= do;
 

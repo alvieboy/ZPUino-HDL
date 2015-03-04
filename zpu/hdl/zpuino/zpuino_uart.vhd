@@ -56,7 +56,7 @@ entity zpuino_uart is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
+
     enabled:  out std_logic;
     tx:       out std_logic;
     rx:       in std_logic
@@ -143,7 +143,6 @@ begin
   enabled <= enabled_q;
   wb_inta_o <= '0';
   wb_ack_o <= wb_cyc_i and wb_stb_i;
-  id <= x"08" & x"11"; -- Vendor: ZPUino  Device: UART
 
   rx_inst: zpuino_uart_rx
     port map(

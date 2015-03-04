@@ -20,7 +20,6 @@ entity vga_zxspectrum is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    id:       out slot_id;
 
     -- Wishbone MASTER interface
     mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
@@ -195,7 +194,6 @@ architecture behave of vga_zxspectrum is
 
 begin
 
-  id <= x"08" & x"1C"; -- Vendor: ZPUIno  Product: ZX Spectrum over VGA
       -- Wishbone register access
 
   wb_dat_o(31 downto 1) <= (others => DontCareValue);

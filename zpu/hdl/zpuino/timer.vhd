@@ -219,7 +219,6 @@ end generate;
         w.ccm := '0';
         w.dir := '0';
         w.ien := '0';
-        w.intr := '0';
         w.pres := (others => '0');
         w.presrst := '1';
         w.updp := UPDATE_ZERO_SYNC;

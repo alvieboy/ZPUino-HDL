@@ -61,7 +61,6 @@ entity zpuino_sevenseg is
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
     wb_inta_o:out std_logic;
-    id:       out slot_id;
 
     segdata:  out std_logic_vector(6 downto 0);
     dot:      out std_logic;
@@ -96,7 +95,6 @@ architecture behave of zpuino_sevenseg is
 
 begin
 
-  id <= x"08" & x"16"; -- Vendor: ZPUino  Product: Seven Segment Display Driver
   invsig <= '1' when INVERT=true else '0';
 
   enloop: for i in 0 to COUNT-1 generate
