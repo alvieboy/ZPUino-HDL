@@ -48,12 +48,12 @@ package zpu_config is
 	constant	ZPU_Frequency		: std_logic_vector(7 downto 0) := x"32";
 	-- This is the msb address bit. bytes=2^(maxAddrBitIncIO+1)
 	constant 	maxAddrBitIncIO		: integer := 27;
-	constant 	maxAddrBitBRAM		: integer := 14;
+	constant 	maxAddrBitBRAM		: integer := 25;-- 32Mb
 
   constant maxIOBit: integer := maxAddrBitIncIO - 1;
   constant minIOBit: integer := 2;
 
-  constant stackSize_bits: integer := 9;
+  constant stackSize_bits: integer := 13;
 	
 	-- start byte address of stack. 
 	-- point to top of RAM - 2*words

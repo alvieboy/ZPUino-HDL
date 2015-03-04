@@ -18,7 +18,8 @@ entity zpuino_crc16 is
     wb_cyc_i: in std_logic;
     wb_stb_i: in std_logic;
     wb_ack_o: out std_logic;
-    wb_inta_o:out std_logic
+    wb_inta_o:out std_logic;
+    id:       out slot_id
   );
 end entity zpuino_crc16;
 
@@ -34,6 +35,7 @@ signal ready_q: std_logic;
 
 begin
 
+id <= x"08" & x"15"; -- Vendor: ZPUino  Device: CRC16 Engine
 wb_ack_o<='1' when ready_q='1' and ( wb_cyc_i='1' and wb_stb_i='1') else '0';
 wb_inta_o <= '0';
 

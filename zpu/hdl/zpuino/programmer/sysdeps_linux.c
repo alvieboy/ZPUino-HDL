@@ -57,7 +57,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	termset.c_oflag &= ~OPOST;
 	termset.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	termset.c_cflag &= ~(CSIZE | PARENB| HUPCL);
+	termset.c_cflag &= ~(CSIZE | PARENB| HUPCL | CRTSCTS);
 	termset.c_cflag |= CS8;
 	termset.c_cc[VMIN]=1;
 	termset.c_cc[VTIME]=5;
@@ -74,8 +74,8 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	ioctl(fd, TIOCMSET, &status);
 	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) |O_NONBLOCK);
 
-    *conn = fd;
-	return fd;
+        *conn = fd;
+	return 0;
 }
 
 void conn_reset(connection_t conn)
@@ -248,6 +248,26 @@ int conn_set_speed(connection_t conn, speed_t speed)
 	return 0;
 }
 
+static unsigned int baudrates[] = {
+    1000000,
+    921600,
+    576000,
+    500000,
+    460800,
+    230400,
+    115200,
+    57600,
+    38400,
+    19200,
+    9600,
+    0
+};
+
+unsigned int *conn_get_baudrates()
+{
+    return baudrates;
+}
+
 int conn_parse_speed(unsigned int value,speed_t *speed)
 {
 	int v = value;
@@ -255,11 +275,35 @@ int conn_parse_speed(unsigned int value,speed_t *speed)
 	case 1000000:
 		*speed = B1000000;
 		break;
+	case 921600:
+		*speed = B921600;
+		break;
+	case 576000:
+		*speed = B576000;
+		break;
+	case 500000:
+		*speed = B500000;
+		break;
+	case 460800:
+		*speed = B460800;
+		break;
+	case 230400:
+		*speed = B230400;
+		break;
 	case 115200:
 		*speed = B115200;
 		break;
+	case 38400:
+		*speed = B38400;
+		break;
+	case 19200:
+		*speed = B19200;
+		break;
+	case 9600:
+		*speed = B9600;
+		break;
 	default:
-		printf("Baud rate '%s' not supported\n",value);
+		printf("Baud rate '%d' not supported\n",value);
 		return -1;
 	}
 	return 0;

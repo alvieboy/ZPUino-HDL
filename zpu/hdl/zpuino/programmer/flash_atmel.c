@@ -180,6 +180,7 @@ static int atmel_program_page(flash_info_t *flash, connection_t conn, unsigned i
 }
 
 flash_driver_t atmel_flash = {
+        .name          = "atmel",
 	.erase_sector  = &atmel_erase_sector,
 	.enable_writes = &atmel_enable_writes,
 	.read_page     = &atmel_read_page,

@@ -1,0 +1,99 @@
+SRC= \../../../tx_unit_sim.vhd \
+../../../lsu.vhd \
+../../../zpuino_top_icache.vhd \
+../../../pty.vhd \
+mt48lc16m16a2.vhd \
+sim.vhd \
+sdram_wrap.vhd \
+../../../sim/Internal_Logic.vhd \
+../../../sim/Memory_Access.vhd \
+../../../sim/M25P16.vhd \
+../../../wb_master_np_to_slave_p.vhd \
+wb_bootloader.vhd \
+clkgen-sim.vhd \
+../../../zpuino_icache.vhd \
+tb.vhd \
+zpu_config.vhd \
+../../../zpupkg.vhd \
+zpuino_config.vhd \
+../../../zpuinopkg.vhd \
+../../../prescaler.vhd \
+../../../uart_brgen.vhd \
+../../../timer.vhd \
+../../../spiclkgen.vhd \
+../../../spi.vhd  \
+../../../zpuino_uart_rx.vhd \
+../../../zpuino_uart_mv_filter.vhd \
+../../../fifo.vhd                  \
+../../../zpuino_uart.vhd           \
+../../../zpuino_timers.vhd         \
+../../../zpuino_spi.vhd            \
+../../../zpuino_sigmadelta.vhd     \
+../../../zpuino_gpio.vhd           \
+../../../zpuino_serialreset.vhd    \
+../../../zpuino_crc16.vhd          \
+../../../zpuino_adc.vhd            \
+../../../zpuino_empty_device.vhd   \
+../../../dualport_ram.vhd          \
+../../../zpuino_io.vhd             \
+stack.vhd                          \
+../../../pad-sim.vhd                   \
+../../../cachefill.vhd             \
+../../../wbarb2_1.vhd              \
+../../../wishbonepkg.vhd           \
+../../../wbmux2.vhd                \
+../../../wb_rom_ram.vhd            \
+../../../shifter.vhd               \
+../../../mult.vhd                  \
+../../../pulse.vhd                \
+../../../zpuino_debug_core.vhd    \
+../../../zpuino_debug_jtag.vhd    \
+../../../jtag_chain.vhd           \
+../../../gh_vhdl_lib/memory/gh_fifo_async_rrd_sr_wf.vhd \
+../../../gh_vhdl_lib/memory/gh_sram_1wp_2rp_sc.vhd      \
+../../../gh_vhdl_lib/custom_MSI/gh_binary2gray.vhd      \
+../../../gh_vhdl_lib/custom_MSI/gh_gray2binary.vhd      \
+../../../txt_util.vhd                                   \
+../../../zpu_core_extreme_icache.vhd                    \
+../../../generic_dp_ram.vhd                             \
+../../../trace.vhd                                      \
+../../../wbbootloadermux.vhd                            \
+bootloader-sim.vhd                                          \
+../../../sim/M25P16_driver.vhd                          \
+../../../sim/ACDC_check.vhd                             \
+../../../sim/mem_util_pkg.vhd                           \
+sdram_hamster.vhd                                       \
+papilio_pro_top.vhd                                     \
+../../../zpuino_sysctl.vhd                              
+							
+							
+all: sim
+
+.PHONY: sim
+
+sim: unisim-obj93.cf work-obj93.cf ../../../pty-impl.o
+	ghdl -m -fexplicit --ieee=synopsys -Wl,../../../pty-impl.o tb
+     
+../../../pty-impl.o: ../../../pty-impl.c
+	$(CC) -O2 -c -o ../../../pty-impl.o ../../../pty-impl.c
+     
+clean:
+	rm -f ../../../pty-impl.o work-obj93.cf unisim-obj93.cf
+     
+work-obj93.cf:
+	@for i in $(SRC); do \
+	echo Importing $$i; \
+	ghdl -i $$i || exit 1; \
+	done
+
+unisim-obj93.cf:
+	@if [ -z $$XILINX ]; then \
+		echo "You don't seem to have XILINX ISE. Variable XILINX does not exist."; \
+		exit 1; \
+	fi;
+	ghdl -i --work=unisim  $$XILINX/vhdl/src/unisims/unisim_VCOMP.vhd 
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/unisim_VPKG.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S36_S36.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/RAMB16_S9_S9.vhd
+	ghdl -i --work=unisim $$XILINX/vhdl/src/unisims/primitive/ODDR2.vhd	
+	

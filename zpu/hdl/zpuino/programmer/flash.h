@@ -36,6 +36,7 @@ typedef struct {
 } flash_info_t;
 
 typedef struct flash_driver_t {
+	const char *name;
 	int (*erase_sector)(flash_info_t *flash, connection_t conn, unsigned sector);
 	int (*enable_writes)(flash_info_t *flash, connection_t conn);
 	buffer_t *(*read_page)(flash_info_t *flash, connection_t conn, unsigned page);
@@ -47,5 +48,6 @@ typedef struct flash_driver_t {
 extern flash_info_t flash_list[];
 
 flash_info_t *find_flash(unsigned int manufacturer,unsigned int product, unsigned int density);
+flash_driver_t *find_flash_driver(const char *name);
 
 #endif

@@ -308,6 +308,7 @@ static int sst25vf_program_page(flash_info_t *flash, connection_t conn, unsigned
 
 
 flash_driver_t sst25vf_flash = {
+        .name          = "sst",
 	.erase_sector  = &sst25vf_erase_sector,
 	.enable_writes = &sst25vf_enable_writes,
 	.read_page     = &sst25vf_read_page,
