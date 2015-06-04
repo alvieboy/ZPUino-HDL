@@ -49,7 +49,8 @@ entity timer is
     PWMCOUNT: integer range 1 to 8 := 2;
     WIDTH: integer range 1 to 32 := 16;
     PRESCALER_ENABLED: boolean := true;
-    BUFFERS: boolean := true
+    BUFFERS: boolean := true;
+    FREQ:  integer := 96000000
   );
   port (
     wb_clk_i:   in std_logic;
@@ -112,6 +113,8 @@ signal tmr0_prescale_rst: std_logic;
 signal tmr0_prescale_event: std_logic;
 
 signal TSC_q: unsigned(wordSize-1 downto 0);
+signal millis: unsigned(63 downto 0);
+signal millis_div: integer range 0 to (FREQ/1000)-1;
 
 signal tmrr: timerregs;
 
@@ -160,12 +163,29 @@ end generate;
   end process;
   end generate;
 
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
+        millis <= (others => '0');
+        millis_div<= ((FREQ/1000)-1);
+      else
+        if millis_div=0 then
+          millis <= millis + 1;
+          millis_div<=((FREQ/1000)-1);
+        else
+          millis_div <= millis_div -1;
+        end if;
+      end if;
+    end if;
+  end process;
+
   -- Read
   process(wb_adr_i, tmrr,TSC_q)
   begin
 
-    case wb_adr_i(1 downto 0) is
-      when "00" =>
+    case wb_adr_i(2 downto 0) is
+      when "000" =>
         wb_dat_o <= (others => Undefined);
         wb_dat_o(0) <= tmrr.en;
         wb_dat_o(1) <= tmrr.ccm;
@@ -175,19 +195,25 @@ end generate;
         wb_dat_o(7) <= tmrr.intr;
         wb_dat_o(10 downto 9) <= tmrr.updp;
 
-      when "01" =>
+      when "001" =>
         wb_dat_o <= (others => '0');
         wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cnt);
-      when "10" =>
+      when "010" =>
         wb_dat_o <= (others => '0');
         wb_dat_o(WIDTH-1 downto 0) <= std_logic_vector(tmrr.cmp);
-      when others =>
+      when "011" =>
         if TSCENABLED then
           wb_dat_o <= (others => '0');
           wb_dat_o <= std_logic_vector(TSC_q);
         else
           wb_dat_o <= (others => DontCareValue );
         end if;
+      when "100" =>
+        wb_dat_o <= std_logic_vector(millis(31 downto 0));
+      when "101" =>
+        wb_dat_o <= std_logic_vector(millis(63 downto 32));
+      when others =>
+        wb_dat_o <= (others => DontCareValue );
     end case;
   end process;
 
