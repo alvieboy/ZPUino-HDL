@@ -99,6 +99,30 @@ architecture Behavioral of sid6581 is
 		);
 	end component;
 
+  component sid_filters is
+  port (
+    clk:      in std_logic; -- At least 12Mhz
+    rst:      in std_logic;
+    -- SID registers.
+    Fc_lo:    in std_logic_vector(7 downto 0);
+    Fc_hi:    in std_logic_vector(7 downto 0);
+    Res_Filt: in std_logic_vector(7 downto 0);
+    Mode_Vol: in std_logic_vector(7 downto 0);
+    -- Voices - resampled to 13 bit
+    voice1:   in signed(12 downto 0);
+    voice2:   in signed(12 downto 0);
+    voice3:   in signed(12 downto 0);
+    --
+    input_valid: in std_logic;
+    ext_in:   in signed(12 downto 0);
+
+    sound:    out signed(18 downto 0);
+    valid:    out std_logic
+
+  );
+  end component;
+
+
 -------------------------------------------------------------------------------
 --constant <name>: <type> := <value>;
 -- DC offset required to play samples, this is actually a bug of the real 6581,
@@ -167,7 +191,6 @@ begin
 			dac_i			=> voice_volume(17 downto 8),
 			dac_o			=> audio_out
 		);
-	audio_data <= voice_volume(17 downto 0);
 	
 	paddle_x: pwm_sdadc
 		port map (
@@ -242,11 +265,76 @@ begin
 -------------------------------------------------------------------------------------
 do						<= do_buf;
 
--- add voice 1+2 and 3, we must do this in this way to create the shortest
--- timing path (keep in mind that a basic adder can only add two variables)
-voice_mixed		<= (("00" & voice_1) + ("00" & voice_2)) + (voice_3 + DC_offset);
--- multiply the volume register with the voices
-voice_volume	<= "000000000000000000" & (voice_mixed * Filter_Mode_Vol(3 downto 0));
+-- SID filters
+
+fblk: block
+  signal voice1_signed: signed(12 downto 0);
+  signal voice2_signed: signed(12 downto 0);
+  signal voice3_signed: signed(12 downto 0);
+  constant ext_in_signed: signed(12 downto 0) := to_signed(0,13);
+  signal filtered_audio: signed(18 downto 0);
+  signal tick_q1, tick_q2: std_logic;
+  signal input_valid: std_logic;
+  signal unsigned_audio: std_logic_vector(17 downto 0);
+  signal unsigned_filt: std_logic_vector(18 downto 0);
+  signal ff1: std_logic;
+begin
+
+  process (clk_1MHz,reset)
+  begin
+      if reset='1' then
+        ff1<='0';
+      else
+
+    if rising_edge(clk_1MHz) then
+        ff1<=not ff1;
+    end if;
+    end if;
+  end process;
+
+  process(clk32)
+  begin
+    if rising_edge(clk32) then
+      tick_q1 <= ff1;
+      tick_q2 <= tick_q1;
+    end if;
+  end process;
+
+  input_valid<='1' when tick_q1 /=tick_q2 else '0';
+
+
+  voice1_signed <= signed(voice_1 & "0") - 4096;
+  voice2_signed <= signed(voice_2 & "0") - 4096;
+  voice3_signed <= signed(voice_3 & "0") - 4096;
+
+  filters: sid_filters 
+  port map (
+    clk       => clk32,
+    rst       => reset,
+    -- SID registers.
+    Fc_lo     => Filter_Fc_lo,
+    Fc_hi     => Filter_Fc_hi,
+    Res_Filt  => Filter_Res_Filt,
+    Mode_Vol  => Filter_Mode_Vol,
+    -- Voices - resampled to 13 bit
+    voice1    => voice1_signed,
+    voice2    => voice2_signed,
+    voice3    => voice3_signed,
+    --
+    input_valid => input_valid,
+    ext_in    => ext_in_signed,
+
+    sound     => filtered_audio,
+    valid     => open
+  );
+
+    unsigned_filt <= std_logic_vector(filtered_audio + "1000000000000000000");
+    unsigned_audio <= unsigned_filt(18 downto 1);
+    audio_data <= unsigned_audio;
+
+end block;
+
+
 
 -- Register decoding
 register_decoder:process(clk32)

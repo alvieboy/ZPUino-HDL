@@ -73,7 +73,7 @@
 --
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 entity i2c_master_byte_ctrl is
 	port (

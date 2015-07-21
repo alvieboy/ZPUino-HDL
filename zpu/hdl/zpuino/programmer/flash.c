@@ -40,15 +40,18 @@ extern flash_driver_t m25p_flash;
 extern flash_driver_t sst25vf_flash;
 extern flash_driver_t atmel_flash;
 
-
 flash_info_t flash_list[] =
 {
 	/* Dummy flash driver, for direct upload */
 	{ 0xAA, 0xAA, 0xAA, 256, 256, 65536, "Direct", NULL },
 	{ 0x20, 0x20, 0x15, 256, 65536, 32, "M25P16", &m25p_flash },
-	{ 0x20, 0x20, 0x16, 256, 65536, 64, "M25P32", &m25p_flash },
+        { 0x20, 0x20, 0x16, 256, 65536, 64, "M25P32", &m25p_flash },
+        { 0x20, 0xba, 0x18, 256, 65536, 256, "N25Q128A", &m25p_flash },
 	{ 0xBF, 0x25, 0x8D, 256, 4096, 128, "SST25VF040B", &sst25vf_flash },
+	{ 0x1F, 0x23, 0x00, 264, 1056, 256, "AT45DB021D", &atmel_flash }, /* Note: we use blocks here, not sectors */
 	{ 0x1F, 0x25, 0x00, 264, 2112, 512, "AT45DB081D", &atmel_flash }, /* Note: we use blocks here, not sectors */
 	{ 0xC2, 0x20, 0x17, 256, 65536, 128, "MX25L6445E", &m25p_flash },
+        { 0xEF, 0x40, 0x14, 256, 65536, 16, "W25Q80BV", &m25p_flash },
+        { 0x01, 0x02, 0x16, 256, 65536, 128, "S25FL064P", &m25p_flash },
 	{ 0, 0, 0, 0, 0, 0, NULL, NULL }
 };

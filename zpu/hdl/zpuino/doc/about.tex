@@ -3,26 +3,29 @@ ZPUino is a SoC (System-on-a-Chip) based on Zylin's ZPU 32-bit processor core.
 
 \subsection{What is inside ZPUino}
 
-Hardware-wise, ZPUino currently integrates the following devices:
+ZPUino is a very modular system, and it can integrate a whole set of devices.
+On the hardware side, a stock ZPUino image usually contains:
 
 \begin{itemize}
 \item ZPU Extreme Core, a modified ZPU core
-\item One or two UART
+\item One or two UART interfaces
 \item Two SPI interfaces
 \item A 16-bit and a 24-bit timer.
 \item One TSC (Time Stamp Counter)
 \item 128-bit GPIO interface
-\item Interrupt Controller
+\item System Controller
 \item Two SigmaDelta outputs
 \item Peripheral Pin Select
-\item VGA (optional)
+\item Optional VGA and/or HDMI outputs.
 \end{itemize}
+
+See chapter \ref{iodevices} which discuss IO devices for more information.
 
 Software-wise, it supports the following features:
 
 \begin{itemize}
 \item 4Kb Bootloader, which includes required emulation code for ZPU.
-\item Bootstraps code from program flash (shadows into FPGA blockram)
+\item Bootstraps code from program flash (shadows into RAM)
 \item Serial programming of program flash.
 \end{itemize}
 
@@ -32,6 +35,14 @@ Right now it runs on other many boards, see chapter \ref{boards} for more inform
 unning speed: up to 100MHz, 96MHz recommended.
 
 \subsection{IO Device features}
+Main features:
+\begin{itemize}
+\item All IO Devices should be wishbone compatible.
+\item IO Devices are placed in slots. A total of 15 slot exist, and can be extended using hubs.
+\item All devices have an ID, and their mapping can be automatically detected in software. Anyone can request a Vendor ID from
+ZPUino project for his own devices.
+\end{itemize}
+
 
 UART features:
 \begin{itemize}
@@ -41,7 +52,6 @@ UART features:
 
 SPI features:
 \begin{itemize}
-\item Two independent SPI master controllers
 \item Programmable prescaler
 \item Configurable CPOL
 \item Configurable SRE (Sample on Rising Edge)
@@ -52,7 +62,7 @@ SPI features:
 Timer features:
 \begin{itemize}
 \item Two independent timers
-\item 10-bit prescaler
+\item 10-bit prescaler (or no prescaler)
 \item 16-bit and 24-bit counter
 \item Count-up and Count-down mode
 \item 16-bit Compare register
@@ -71,7 +81,8 @@ SigmaDelta features:
 \begin{itemize}
 \item Two 16-bit channel
 \item Runs at system clock speed
-\item Configurable endianness
+\item Configurable endianness and signed/unsigned.
+\item Based in OpenCores SigmaDelta.
 \end{itemize}
 
 PPS (Peripheral pin select) features:
@@ -80,29 +91,37 @@ PPS (Peripheral pin select) features:
 \item Fully configurable in run-time
 \end{itemize}
 
-VGA features:
+Main VGA/HDMI features:
 \begin{itemize}
-\item HQVGA (160x120), using 800x600@75Hz output.
-\item 8-bit color (3 bits red, 3 bits green, 2 bits blue).
-\item Integrated programable character ram (8x8)
+\item Generic VGA up to 2048x2048 (including blanking, software controlled).
+\item Configurable bit depth (RGB332 or RGB565)
+\item Configurable H/V duplication for lower-resolution modes.
 \end{itemize}
 
 ZPUino programmer:
 \begin{itemize}
-\item 1Mbps programming speed
+\item Up to 1Mbps programming speed
 \item Supports programming both sketches and FPGA bitfile [if ZPUino bootloader already loaded]
 \item Support for upload-to-ram
 \end{itemize}
 
 \subsection{Hardware support}
 
-Currently ZPUino should run on any Spartan3E FPGA (from 250 and beyond), and Spartan6 FPGA (LX4 and beyond). \\
+Currently ZPUino should run on any Spartan3E FPGA (from 500 and beyond), and Spartan6 FPGA (LX4 and beyond). \\
 List of flash devices currently supported by programmer:
 \begin{itemize}
 \item ST M25P16
+\item ST M25P32
+\item MICRON N25Q128A
 \item SST SST25VF040B
 \item ATMEL AT45DB081D
+\item ATMEL AT45DB081D
+\item MACRONIX MX25L6445E
+\item WINBOND W25Q80BV
+\item SPANSION S25FL064P
 \end{itemize}
 Other flash might be supported. Specifically flash from same series, but with different capacities, can be easily added to programmer.
-For other flash vendors or models contact us by e-mail.
+For other flash vendors or models contact us by e-mail. \\
+External memory modules are supported, such as SRAM, SDRAM and DDR SDRAM.\\
+For more information on which modules are currently tested, contact us.
 

@@ -43,15 +43,12 @@ use UNISIM.VCOMPONENTS.all;
 
 entity clkgen is
   port (
-    clkin:        in std_ulogic;
-    rstin:        in std_ulogic;
-
-    sysclk:       out std_ulogic;
-    sysclk_shift: out std_ulogic;
-    pixelclk:     out std_ulogic;
-    tdmsclk_p:    out std_ulogic;
-    tdmsclk_n:    out std_ulogic;
-    rstout:       out std_ulogic
+    clkin:  in std_logic;
+    rstin:  in std_logic;
+    clkout: out std_logic;
+    clkout1: out std_logic;
+    clkout2: out std_logic;
+    rstout: out std_logic
   );
 end entity clkgen;
 
@@ -60,33 +57,25 @@ architecture behave of clkgen is
 signal dcmlocked: std_ulogic;
 signal dcmclock: std_ulogic;
 
-signal rst1_q: std_ulogic := '1';
-signal rst2_q: std_ulogic := '1';
+signal rst1_q: std_logic := '1';
+signal rst2_q: std_logic := '1';
 signal clkout_i: std_ulogic;
-signal sysclk_i: std_ulogic;
 signal clkin_i: std_ulogic;
-
-signal dcmin_clk0, dcmin_fb, clk_to_pll1: std_ulogic;
-signal pll1_locked, pll2_locked, dcmin_locked: std_ulogic;
-signal not_pll1_locked, not_dcmin_locked: std_ulogic;
-
-signal sysclk_shift_i: std_ulogic;
-signal pixelclk_i:     std_ulogic;
-signal tdmsclk_p_i:    std_ulogic;
-signal tdmsclk_n_i:    std_ulogic;
-
-signal clk_to_pll2_i, clk_to_pll2: std_ulogic;
-signal pll2_to_clkfb, clkfb_to_pll2: std_ulogic;
-signal clkfb_to_pll1, pll1_to_clkfb: std_ulogic;
+signal clkfb: std_ulogic;
+signal clk0: std_ulogic;
+signal clk1: std_ulogic;
+signal clk2: std_ulogic;
+signal clkin_i_2: std_logic;
 
 begin
 
-  rstout <= rst1_q;
-  sysclk <= clkout_i;
+  clkout <= clkout_i;
 
-  process(clkout_i, rstin, dcmin_locked, pll1_locked, pll2_locked)
+  rstout <= rst1_q;
+
+  process(dcmlocked, clkout_i, rstin)
   begin
-    if pll1_locked='0' or dcmin_locked='0' or pll2_locked='0' or rstin='1' then
+    if dcmlocked='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -97,147 +86,73 @@ begin
     end if;
   end process;
 
-  -- Clock buffers - input
+  -- Clock buffers
 
-  clkin_inst: IBUFG  port map ( I => clkin,       O =>  clkin_i );
+  clkfx_inst: BUFG
+    port map (
+      I =>  clk0,
+      O =>  clkout_i
+    );
+   
+  clkin_inst: IBUFG
+    port map (
+      I =>  clkin,
+      O =>  clkin_i
+    );
+   
+  clkfb_inst: BUFG
+    port map (
+      I=> dcmclock,
+      O=> clkfb
+    );
 
-  -- Clock buffers - output
-
-  clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
-  clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
-  clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
-  clkp_inst: BUFG port map ( I => tdmsclk_p_i,    O => tdmsclk_p );
-  clkn_inst: BUFG port map ( I => tdmsclk_n_i,    O => tdmsclk_n );
-
-  -- Clock buffers - internal
-
-  -- 1st DCM feedback clock
-  dcmfb:      BUFG   port map ( I => dcmin_clk0,  O => dcmin_fb );
-
-  -- pll1 to pll2 BUFG
-  pll2_in_bufg_inst: BUFG port map ( I => clk_to_pll2_i, O => clk_to_pll2 );
-
-  -- pll1 feedback clock
-  pll1_fb_bufg_inst: BUFG port map ( I => pll1_to_clkfb, O => clkfb_to_pll1 );
-  -- pll2 feedback clock
-  pll2_fb_bufg_inst: BUFG port map ( I => pll2_to_clkfb, O => clkfb_to_pll2 );
+  clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
+  clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
 
 
-  not_pll1_locked <= not pll1_locked;
-  not_dcmin_locked <= not dcmin_locked;
-
-  indcm: DCM
-    generic map (
-      CLKDV_DIVIDE => 2.0,
-      CLKFX_DIVIDE => 32,--16,
-      CLKFX_MULTIPLY => 27,--25,
-      CLKIN_DIVIDE_BY_2 => FALSE,
-      CLKIN_PERIOD => 31.250,
-      CLKOUT_PHASE_SHIFT => "NONE",
-      CLK_FEEDBACK => "1X"
-  )
-  port map (
-    CLK0      => dcmin_clk0,
-    CLKFX     => clk_to_pll1, -- no bufg
-    LOCKED    => dcmin_locked,
-    CLKFB     => dcmin_fb,
-    CLKIN     => clkin_i,
-    RST       => '0'
-  );
 
 pll_base_inst : PLL_ADV
   generic map
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "DCM2PLL",
+    COMPENSATION         => "SYSTEM_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 22,
+    CLKFBOUT_MULT        => 30,
     CLKFBOUT_PHASE       => 0.000,
-
-    CLKOUT0_DIVIDE       => 6,      -- 99Mhz
-    CLKOUT0_PHASE        => 120.000,
+    CLKOUT0_DIVIDE       => 10,
+    CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
-
-    CLKOUT1_DIVIDE       => 6,      -- 99Mhz
-    CLKOUT1_PHASE        => 10.0,--300.0,--155.52,--103.700,--343.125,
+    CLKOUT1_DIVIDE       => 10,
+    CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
-
-    CLKOUT2_DIVIDE       => 8,  -- 74.25MHz - to next PLL
+    CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-
---    CLKOUT3_DIVIDE       => 8,  -- 74.25MHz - pixel clock
---    CLKOUT3_PHASE        => 0.0,
---    CLKOUT3_DUTY_CYCLE   => 0.500,
-
-    CLKIN1_PERIOD         => 37.037037, -- 27 MHz
-   -- REF_JITTER           => 0.010,
+    CLKIN1_PERIOD        => 31.250,
+    REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
-   (CLKFBOUT            => pll1_to_clkfb,
-    CLKOUT0             => sysclk_i,
-    CLKOUT1             => sysclk_shift_i,
-    CLKOUT2             => clk_to_pll2_i,
- --   CLKOUT3             => pixelclk_i,
-    LOCKED              => pll1_locked,
-    RST                 => not_dcmin_locked,   -- Keep in reset while DCM does not lock
+   (CLKFBOUT            => dcmclock,
+    CLKOUT0             => clk0,
+    CLKOUT1             => clk1,
+    CLKOUT2             => clk2,
+    CLKOUT3             => open,
+    CLKOUT4             => open,
+    CLKOUT5             => open,
+    LOCKED              => dcmlocked,
+    RST                 => '0',
     -- Input clock control
-    CLKFBIN             => clkfb_to_pll1,
-    CLKIN1              => clk_to_pll1,
-    CLKIN2 => '0',
-    CLKINSEL => '1',
-    DADDR => (others => '0'),
-    DCLK => '0',
-    DEN => '0',
-    DI => (others => '0'),
-    DWE => '0',
-    REL => '0'
-   );
-
-pll_base_inst2 : PLL_ADV
-  generic map
-   (BANDWIDTH            => "OPTIMIZED",
-    CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "SOURCE_SYNCHRONOUS",
-    DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 10,
-    CLKFBOUT_PHASE       => 0.000,
-
-    CLKOUT0_DIVIDE       => 2,      -- 371.25Mhz
-    CLKOUT0_PHASE        => 00.000,
-    CLKOUT0_DUTY_CYCLE   => 0.500,
-
-    CLKOUT1_DIVIDE       => 2,      -- 371.25Mhz, inverted clock
-    CLKOUT1_PHASE        => 180.0,
-    CLKOUT1_DUTY_CYCLE   => 0.500,
-
-    CLKOUT2_DIVIDE       => 10,      -- 74.25Mhz
-    CLKOUT2_PHASE        => 0.0,
-    CLKOUT2_DUTY_CYCLE   => 0.500,
-
-    CLKIN1_PERIOD         => 13.46, -- 74.25 MHz
-    --REF_JITTER           => 0.010,
-    SIM_DEVICE           => "SPARTAN6")
-  port map
-    -- Output clocks
-   (CLKFBOUT            => pll2_to_clkfb,
-    CLKOUT0             => tdmsclk_p_i,
-    CLKOUT1             => tdmsclk_n_i,
-    CLKOUT2             => pixelclk_i,
-    LOCKED              => pll2_locked,
-    RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
-    -- Input clock control
-    CLKFBIN             => clkfb_to_pll2,
-    CLKIN1              => clk_to_pll2,
-    CLKIN2 => '0',
-    CLKINSEL => '1',
-    DADDR => (others => '0'),
-    DCLK => '0',
-    DEN => '0',
-    DI => (others => '0'),
-    DWE => '0',
-    REL => '0'
+    CLKFBIN             => clkfb,
+    CLKIN1              => clkin_i,
+    CLKIN2              => '0',
+    CLKINSEL            => '1',
+    DADDR               => (others => '0'),
+    DCLK                => '0',
+    DEN                 => '0',
+    DI                  => (others => '0'),
+    DWE                 => '0',
+    REL                 => '0'
    );
 
 end behave;

@@ -1,6 +1,6 @@
 AC_INIT(programmer.h)
 
-AM_INIT_AUTOMAKE(zpuinoprogrammer,1.0)
+AM_INIT_AUTOMAKE(zpuinoprogrammer,2.0)
 AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX

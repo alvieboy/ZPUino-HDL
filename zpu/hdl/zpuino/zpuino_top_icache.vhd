@@ -89,6 +89,7 @@ entity zpuino_top_icache is
     wb_dat_o:       out std_logic_vector(wordSize-1 downto 0);
     wb_adr_o:       out std_logic_vector(maxAddrBit downto 0);
     wb_cyc_o:       out std_logic;
+    wb_cti_o:       out std_logic_vector(2 downto 0);
     wb_stb_o:       out std_logic;
     wb_sel_o:       out std_logic_vector(3 downto 0);
     wb_we_o:        out std_logic;
@@ -111,7 +112,6 @@ architecture behave of zpuino_top_icache is
   signal i_slot_interrupt: slot_std_logic_type;
   signal i_slot_id:    slot_id_type;
 
-
   signal io_read:    std_logic_vector(wordSize-1 downto 0);
   signal io_write:   std_logic_vector(wordSize-1 downto 0);
   signal io_address: std_logic_vector(maxAddrBitIncIO downto 0);
@@ -126,10 +126,10 @@ architecture behave of zpuino_top_icache is
   signal wb_stb:     std_logic;
   signal wb_cyc:     std_logic;
   signal wb_sel:     std_logic_vector(3 downto 0);
+  signal wb_cti:     std_logic_vector(2 downto 0);
   signal wb_we:       std_logic;
   signal wb_ack:     std_logic;
 
-  --signal interrupt:  std_logic;
   signal poppc_inst: std_logic;
 
   signal dbg_pc:         std_logic_vector(maxAddrBit downto 0);
@@ -395,7 +395,7 @@ begin
     m_wb_dat_i    => (others => DontCareValue),
     m_wb_adr_i    => rom_wb_adr_i(maxAddrBit downto 2),
     m_wb_sel_i    => (others => '1'),
-    m_wb_cti_i    => CTI_CYCLE_CLASSIC,
+    m_wb_cti_i    => CTI_CYCLE_INCRADDR,  -- Fix me.
     m_wb_we_i     => '0',
     m_wb_cyc_i    => rom_wb_cyc_i,
     m_wb_stb_i    => rom_wb_stb_i,
@@ -408,7 +408,7 @@ begin
     s0_wb_dat_o   => open,
     s0_wb_adr_o   => sram_rom_wb_adr_i(maxAddrBit downto 2),
     s0_wb_sel_o   => open,
-    s0_wb_cti_o   => open,
+    s0_wb_cti_o   => sram_rom_wb_cti_i,
     s0_wb_we_o    => open,
     s0_wb_cyc_o   => sram_rom_wb_cyc_i,
     s0_wb_stb_o   => sram_rom_wb_stb_i,
@@ -454,7 +454,7 @@ begin
     m1_wb_dat_i   => (others => DontCareValue),
     m1_wb_adr_i   => sram_rom_wb_adr_i(maxAddrBit downto 2),
     m1_wb_sel_i   => (others => '1'),
-    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m1_wb_cti_i   => sram_rom_wb_cti_i,
     m1_wb_we_i    => '0',--rom_wb_we_i,
     m1_wb_cyc_i   => sram_rom_wb_cyc_i,
     m1_wb_stb_i   => sram_rom_wb_stb_i,
@@ -465,7 +465,7 @@ begin
     s0_wb_dat_o   => wb_dat_o,
     s0_wb_adr_o   => wb_adr_o(maxAddrBit downto 2),
     s0_wb_sel_o   => wb_sel_o,
-    s0_wb_cti_o   => open,
+    s0_wb_cti_o   => wb_cti_o,
     s0_wb_we_o    => wb_we_o,
     s0_wb_cyc_o   => wb_cyc_o,
     s0_wb_stb_o   => wb_stb_o,

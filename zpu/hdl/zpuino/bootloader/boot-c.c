@@ -20,12 +20,13 @@ static void __copy_data(void)
 extern int main(int,char**);
 extern void __sys_load();
 extern void __tests();
-void _premain()
+
+void _premain2(unsigned memtop)
 {
    /* __tests(); */
 #ifdef ZPUINO_HAS_ICACHE
 	__sys_load();
 #endif
-	main(0,0);
+	main(0,(char**)memtop);
 }
 
