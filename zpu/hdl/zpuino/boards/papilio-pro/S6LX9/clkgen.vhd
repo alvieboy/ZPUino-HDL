@@ -43,14 +43,6 @@ use UNISIM.VCOMPONENTS.all;
 
 entity clkgen is
   port (
-<<<<<<< HEAD
-    clkin:  in std_logic;
-    rstin:  in std_logic;
-    clkout: out std_logic;
-    clkout1: out std_logic;
-    clkout2: out std_logic;
-    rstout: out std_logic
-=======
     clkin:        in std_ulogic;
     rstin:        in std_ulogic;
 
@@ -62,7 +54,6 @@ entity clkgen is
     pll_locked:   out std_ulogic;
     clk_x2:       out std_ulogic;
     rstout:       out std_ulogic
->>>>>>> Serdes version
   );
 end entity clkgen;
 
