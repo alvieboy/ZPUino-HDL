@@ -55,7 +55,8 @@ entity async_fifo is
     write:    in std_logic_vector(data_bits-1 downto 0);
     read :    out std_logic_vector(data_bits-1 downto 0);
 
-    almost_full: out std_logic
+    almost_full: out std_logic;
+    empty:    out std_logic
   );
 end entity async_fifo;
 
@@ -87,6 +88,9 @@ architecture behave of async_fifo is
   signal wrptr: unsigned(address_bits-1 downto 0);
   signal rdptr_in_clkw_1: unsigned(address_bits-1 downto 0);
   signal rdptr_in_clkw_2: unsigned(address_bits-1 downto 0);
+
+  signal wrptr_in_clkr_1: unsigned(address_bits-1 downto 0);
+  signal wrptr_in_clkr_2: unsigned(address_bits-1 downto 0);
 
   constant nothing: std_logic_vector(data_bits-1 downto 0) := (others => 'X');
   constant threshcmp: unsigned(address_bits-1 downto 0) := to_unsigned( threshold, address_bits);
@@ -132,6 +136,16 @@ begin
       rdptr_in_clkw_1 <= rdptr;
     end if;
   end process;
+
+  process(clk_r)
+  begin
+    if rising_edge(clk_r) then
+      wrptr_in_clkr_2 <= wrptr_in_clkr_1;
+      wrptr_in_clkr_1 <= wrptr;
+    end if;
+  end process;
+
+  empty <= '1' when wrptr_in_clkr_2=rdptr else '0';
 
   mem: generic_dp_ram
     generic map (
