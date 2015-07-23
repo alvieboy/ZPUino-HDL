@@ -59,9 +59,6 @@ end entity clkgen;
 
 architecture behave of clkgen is
 
-signal dcmlocked: std_ulogic;
-signal dcmclock: std_ulogic;
-
 signal rst1_q: std_logic := '1';
 signal rst2_q: std_logic := '1';
 signal clkout_i: std_ulogic;
@@ -72,17 +69,24 @@ signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
 
-signal tdmsclk_x2: std_ulogic;
+signal pll1_locked: std_ulogic;
+signal pll2_locked: std_ulogic;
+signal not_pll1_locked: std_ulogic;
 
+signal pll2_to_clkfb, clkfb_to_pll2: std_ulogic;
+signal pll1_to_clkfb, clkfb_to_pll1: std_ulogic;
+signal clk_to_pll2_i, clk_to_pll2:   std_ulogic;
+
+signal sysclk_i, sysclk_shift_i, pixelclk_i, tdmsclk_p_i, tdmsclk_x2: std_ulogic;
 begin
 
-  clkout <= clkout_i;
+  sysclk <= clkout_i;
 
   rstout <= rst1_q;
 
-  process(dcmlocked, clkout_i, rstin)
+  process(pll2_locked, clkout_i, rstin)
   begin
-    if dcmlocked='0' or rstin='1' then
+    if pll2_locked='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -102,34 +106,20 @@ begin
   clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
   clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
   clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
-  --clkp_inst: BUFG port map ( I => tdmsclk_p_i,    O => tdmsclk_p );
+  clkp_inst: BUFG port map ( I => tdmsclk_p_i,    O => tdmsclk_p );
   clkx2_inst: BUFG port map ( I => tdmsclk_x2,    O => clk_x2 );
-  --clkn_inst: BUFG port map ( I => tdmsclk_n_i,    O => tdmsclk_n );
+
   -- Clock buffers - internal
 
-  -- 1st DCM feedback clock
-  dcmfb:      BUFG   port map ( I => dcmin_clk0,  O => dcmin_fb );
-
-  clkfx_inst: BUFG
-    port map (
-      I =>  clk0,
-      O =>  clkout_i
-    );
-   
-  clkin_inst: IBUFG
-    port map (
-      I =>  clkin,
-      O =>  clkin_i
-    );
    
   clkfb_inst: BUFG
     port map (
-      I=> dcmclock,
-      O=> clkfb
+      O=> clkfb_to_pll1,
+      I=> pll1_to_clkfb
     );
 
-  clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
-  clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
+  clk1f_inst: BUFG port map ( I => clk_to_pll2_i, O => clk_to_pll2 );
+  clk2f_inst: BUFG port map ( I => pll2_to_clkfb, O => clkfb_to_pll2 );
 
 
 
@@ -141,22 +131,20 @@ pll_base_inst : PLL_ADV
     DIVCLK_DIVIDE        => 1,
     CLKFBOUT_MULT        => 30,
     CLKFBOUT_PHASE       => 0.000,
+
     CLKOUT0_DIVIDE       => 10,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
+
     CLKOUT1_DIVIDE       => 10,
     CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
+
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
 
---    CLKOUT3_DIVIDE       => 8,  -- 74.25MHz - pixel clock
---    CLKOUT3_PHASE        => 0.0,
---    CLKOUT3_DUTY_CYCLE   => 0.500,
-
     CLKIN1_PERIOD         => 37.037037, -- 27 MHz
-   -- REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
@@ -164,12 +152,12 @@ pll_base_inst : PLL_ADV
     CLKOUT0             => sysclk_i,
     CLKOUT1             => sysclk_shift_i,
     CLKOUT2             => clk_to_pll2_i,
- --   CLKOUT3             => pixelclk_i,
     LOCKED              => pll1_locked,
-    RST                 => not_dcmin_locked,   -- Keep in reset while DCM does not lock
+
+    RST                 => '0',
     -- Input clock control
     CLKFBIN             => clkfb_to_pll1,
-    CLKIN1              => clk_to_pll1,
+    CLKIN1              => clkin_i,
     CLKIN2 => '0',
     CLKINSEL => '1',
     DADDR => (others => '0'),
@@ -207,14 +195,14 @@ pll_base_inst2 : PLL_ADV
   port map
     -- Output clocks
    (CLKFBOUT            => pll2_to_clkfb,
-    CLKOUT0             => tdmsclk_p,--_i,
+    CLKOUT0             => tdmsclk_p_i,--_i,
     CLKOUT1             => tdmsclk_x2,--tdmsclk_n_i,
     CLKOUT2             => pixelclk_i,
     LOCKED              => pll2_locked,
     RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
     -- Input clock control
-    CLKFBIN             => clkfb,
-    CLKIN1              => clkin_i,
+    CLKFBIN             => clkfb_to_pll2,
+    CLKIN1              => clk_to_pll2,
     CLKIN2              => '0',
     CLKINSEL            => '1',
     DADDR               => (others => '0'),
@@ -225,6 +213,7 @@ pll_base_inst2 : PLL_ADV
     REL                 => '0'
    );
 
+  not_pll1_locked <= not pll1_locked;
   pll_locked <= pll2_locked;
 
 
