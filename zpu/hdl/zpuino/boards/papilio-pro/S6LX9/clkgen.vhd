@@ -49,8 +49,8 @@ entity clkgen is
     sysclk:       out std_ulogic;
     sysclk_shift: out std_ulogic;
     pixelclk:     out std_ulogic;
-    tdmsclk_p:    out std_ulogic;
-    tdmsclk_n:    out std_ulogic;
+    tmdsclk_p:    out std_ulogic;
+    tmdsclk_n:    out std_ulogic;
     pll_locked:   out std_ulogic;
     clk_x2:       out std_ulogic;
     rstout:       out std_ulogic
@@ -77,7 +77,7 @@ signal pll2_to_clkfb, clkfb_to_pll2: std_ulogic;
 signal pll1_to_clkfb, clkfb_to_pll1: std_ulogic;
 signal clk_to_pll2_i, clk_to_pll2:   std_ulogic;
 
-signal sysclk_i, sysclk_shift_i, pixelclk_i, tdmsclk_p_i, tdmsclk_x2: std_ulogic;
+signal sysclk_i, sysclk_shift_i, pixelclk_i, tmdsclk_p_i, tmdsclk_x2: std_ulogic;
 begin
 
   sysclk <= clkout_i;
@@ -106,8 +106,8 @@ begin
   clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
   clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
   clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
-  clkp_inst: BUFG port map ( I => tdmsclk_p_i,    O => tdmsclk_p );
-  clkx2_inst: BUFG port map ( I => tdmsclk_x2,    O => clk_x2 );
+  clkp_inst: BUFG port map ( I => tmdsclk_p_i,    O => tmdsclk_p );
+  clkx2_inst: BUFG port map ( I => tmdsclk_x2,    O => clk_x2 );
 
   -- Clock buffers - internal
 
@@ -195,8 +195,8 @@ pll_base_inst2 : PLL_ADV
   port map
     -- Output clocks
    (CLKFBOUT            => pll2_to_clkfb,
-    CLKOUT0             => tdmsclk_p_i,--_i,
-    CLKOUT1             => tdmsclk_x2,--tdmsclk_n_i,
+    CLKOUT0             => tmdsclk_p_i,--_i,
+    CLKOUT1             => tmdsclk_x2,--tmdsclk_n_i,
     CLKOUT2             => pixelclk_i,
     LOCKED              => pll2_locked,
     RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
