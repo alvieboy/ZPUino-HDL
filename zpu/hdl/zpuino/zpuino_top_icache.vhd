@@ -77,6 +77,7 @@ entity zpuino_top_icache is
     m_wb_adr_i: in std_logic_vector(maxAddrBitIncIO downto 0);
     m_wb_we_i:  in std_logic;
     m_wb_cyc_i: in std_logic;
+    m_wb_cti_i: in std_logic_vector(2 downto 0);
     m_wb_stb_i: in std_logic;
     m_wb_ack_o: out std_logic;
     m_wb_stall_o: out std_logic;
@@ -191,6 +192,7 @@ architecture behave of zpuino_top_icache is
   signal ram_wb_cyc_i:       std_logic;
   signal ram_wb_stb_i:       std_logic;
   signal ram_wb_sel_i:       std_logic_vector(3 downto 0);
+  signal ram_wb_cti_i:       std_logic_vector(2 downto 0);
   signal ram_wb_we_i:        std_logic;
 
   signal rom_wb_ack_o:       std_logic;
@@ -443,7 +445,7 @@ begin
     m0_wb_dat_i   => ram_wb_dat_i,
     m0_wb_adr_i   => ram_wb_adr_i(maxAddrBit downto 2),
     m0_wb_sel_i   => ram_wb_sel_i,
-    m0_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m0_wb_cti_i   => ram_wb_cti_i,
     m0_wb_we_i    => ram_wb_we_i,
     m0_wb_cyc_i   => ram_wb_cyc_i,
     m0_wb_stb_i   => ram_wb_stb_i,
@@ -586,7 +588,7 @@ begin
     m1_wb_dat_i   => m_wb_dat_i,
     m1_wb_adr_i   => m_wb_adr_i(maxAddrBit downto 0),
     m1_wb_sel_i   => (others => '1'),
-    m1_wb_cti_i   => CTI_CYCLE_CLASSIC,
+    m1_wb_cti_i   => m_wb_cti_i,
     m1_wb_we_i    => m_wb_we_i,
     m1_wb_cyc_i   => m_wb_cyc_i,
     m1_wb_stb_i   => m_wb_stb_i,
@@ -599,7 +601,7 @@ begin
     s0_wb_dat_o   => ram_wb_dat_i,
     s0_wb_adr_o   => ram_wb_adr_i(maxAddrBit downto 0),
     s0_wb_sel_o   => ram_wb_sel_i,
-    s0_wb_cti_o   => open,
+    s0_wb_cti_o   => ram_wb_cti_i,
     s0_wb_we_o    => ram_wb_we_i,
     s0_wb_cyc_o   => ram_wb_cyc_i,
     s0_wb_stb_o   => ram_wb_stb_i,
