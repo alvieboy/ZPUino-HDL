@@ -45,7 +45,7 @@ use work.zpu_config.all;
 use work.pad.all;
 use work.wishbonepkg.all;
 library unisim;
-use unisim.vcomponents.oddr2;
+use unisim.vcomponents.all;
 
 entity pipistrello_top is
   port (
@@ -83,11 +83,24 @@ entity pipistrello_top is
     WING_B:           inout std_logic_vector(15 downto 0);
     WING_C:           inout std_logic_vector(15 downto 0);
 
+    TMDS:             out std_logic_vector(3 downto 0);
+    TMDSB:            out std_logic_vector(3 downto 0);
+
     USB_RXD:          in std_logic;
     USB_TXD:          out std_logic;
     USB_CTS:          in std_logic;
-    USB_RTS:          out std_logic
+    USB_RTS:          out std_logic;
 
+    SD_MISO:          in std_logic;
+    SD_MOSI:          out std_logic;
+    SD_CS:            out std_logic;
+    SD_SCK:           out std_logic;
+
+    AUDIO_L:          out std_logic;
+    AUDIO_R:          out std_logic;
+
+    EDID_SDA:         inout std_logic;
+    EDID_SCL:         inout std_logic
   );
 end entity pipistrello_top;
 
@@ -149,13 +162,13 @@ architecture behave of pipistrello_top is
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "000000" &
+    "0000000" &
     "1111111111111111" &
     "1111111111111111" &
     "1111111111111111";
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "000000" &
+    "0000000" &
     "1111111111111111" &
     "1111111111111111" &
     "1111111111111111";
@@ -325,6 +338,18 @@ architecture behave of pipistrello_top is
   signal vga_blank:   std_logic;
 
   signal extrst:      std_logic;
+  signal dcmlocked:   std_logic;
+  signal mcb_clkin:   std_ulogic;
+  signal clkfb_in, clkfb_out: std_ulogic;
+  signal hdmi_pre_clock, hdmi_pre_clock_in:   std_ulogic; -- 22.5MHz.
+
+  signal scl_pad_i     : std_logic;                    -- i2c clock line input
+  signal scl_pad_o     : std_logic;                    -- i2c clock line output
+  signal scl_padoen_o  : std_logic;                    -- i2c clock line output enable, active low
+  signal sda_pad_i     : std_logic;                    -- i2c data line input
+  signal sda_pad_o     : std_logic;                    -- i2c data line output
+  signal sda_padoen_o  : std_logic;                    -- i2c data line output enable, active low
+
 begin
 
 
@@ -342,7 +367,7 @@ begin
       rstout    => sysrst
     );
 
-    extrst <= switch;
+    extrst <= switch or not dcmlocked;
 
 
   buffers: block
@@ -407,6 +432,11 @@ begin
       ledbuf: OPAD port map ( I => gpio_o(49+i), PAD => led(i+1) );
     end generate;
 
+    sdspics:   OPAD port map ( I => gpio_o(54),   PAD => sd_cs );
+
+    i2csclbuf: IOBUF port map(I => scl_pad_o, O => scl_pad_i, T => scl_padoen_o, IO => EDID_SCL );
+    i2csdabuf: IOBUF port map(I => sda_pad_o, O => sda_pad_i, T => sda_padoen_o, IO => EDID_SDA );
+
     USB_RTS <= '1';
     flash_hold<='1';
     flash_wp<='1';
@@ -440,6 +470,7 @@ begin
       m_wb_we_i     => m_wb_we_i,
       m_wb_cyc_i    => m_wb_cyc_i,
       m_wb_stb_i    => m_wb_stb_i,
+      m_wb_cti_i    => m_wb_cti_i,
       m_wb_ack_o    => m_wb_ack_o,
       m_wb_stall_o  => m_wb_stall_o,
 
@@ -618,9 +649,9 @@ begin
     wb_inta_o     => slot_interrupt(6),
     id            => slot_ids(6),
 
-    mosi          => spi2_mosi,
-    miso          => spi2_miso,
-    sck           => spi2_sck,
+    mosi          => sd_mosi,
+    miso          => sd_miso,
+    sck           => sd_sck,
     enabled       => open
   );
 
@@ -670,7 +701,7 @@ begin
   -- IO SLOT 9
   --
 
-  slot9: zpuino_empty_device
+  slot9: entity work.hdmi_generic
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -681,29 +712,56 @@ begin
     wb_cyc_i      => slot_cyc(9),
     wb_stb_i      => slot_stb(9),
     wb_ack_o      => slot_ack(9),
-    wb_inta_o     => slot_interrupt(9),
-    id            => slot_ids(9)
+    --wb_inta_o     => slot_interrupt(9),
+    id            => slot_ids(9),
+
+    -- Wishbone MASTER interface
+    mi_wb_dat_i   => m_wb_dat_o,
+    mi_wb_dat_o   => m_wb_dat_i,
+    mi_wb_adr_o   => m_wb_adr_i,
+    --mi_wb_sel_o   => m_wb_sel_i,
+    mi_wb_cti_o   => m_wb_cti_i,
+    mi_wb_we_o    => m_wb_we_i,
+    mi_wb_cyc_o   => m_wb_cyc_i,
+    mi_wb_stb_o   => m_wb_stb_i,
+    mi_wb_ack_i   => m_wb_ack_o,
+    mi_wb_stall_i => m_wb_stall_o,
+
+    -- clocking
+
+    -- Base clock (goes to PLL)
+    BCLK        => hdmi_pre_clock,
+    tmds        => TMDS,
+    tmdsb       => TMDSB
   );
 
 
   --
   -- IO SLOT 10
   --
-
-  slot10: zpuino_empty_device
+                        
+  slot10: entity work.i2c_master_top
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
-    wb_dat_o      => slot_read(10),
-    wb_dat_i      => slot_write(10),
-    wb_adr_i      => slot_address(10),
+    wb_dat_o      => slot_read(10)(7 downto 0),
+    wb_dat_i      => slot_write(10)(7 downto 0),
+    wb_adr_i      => slot_address(10)(4 downto 2),
     wb_we_i       => slot_we(10),
     wb_cyc_i      => slot_cyc(10),
     wb_stb_i      => slot_stb(10),
     wb_ack_o      => slot_ack(10),
     wb_inta_o     => slot_interrupt(10),
-    id            => slot_ids(10)
+    id            => slot_ids(10),
+    scl_pad_i     => scl_pad_i,
+    scl_pad_o     => scl_pad_o,                    -- i2c clock line output
+    scl_padoen_o  => scl_padoen_o,                    -- i2c clock line output enable, active low
+    sda_pad_i     => sda_pad_i,                    -- i2c data line input
+    sda_pad_o     => sda_pad_o,                    -- i2c data line output
+    sda_padoen_o  => sda_padoen_o                     -- i2c data line output enable, active low
   );
+  slot_read(10)(31 downto 8)<=(others => '0');
+
 
   --
   -- IO SLOT 11
@@ -817,11 +875,47 @@ begin
       mcb3_dram_ck    =>      mcb3_dram_ck,
       mcb3_dram_ck_n  =>      mcb3_dram_ck_n,
 
-      clkin     => clkin,
+      clkin     => mcb_clkin,
       rstin     => extrst,
       clkout    => sysclk,
       rstout    => clkgen_rst
   );
+
+  DCM_inst : DCM
+  generic map (
+    CLKDV_DIVIDE => 2.0,          -- Divide by: 1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0 or 16.0
+    CLKFX_DIVIDE => 20,
+    CLKFX_MULTIPLY => 9,
+    CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
+    CLKIN_PERIOD => 20.00,         -- Specify period of input clock
+    CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
+    CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
+    DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15
+    DFS_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for frequency synthesis
+    DLL_FREQUENCY_MODE => "LOW",            -- HIGH or LOW frequency mode for DLL
+    DUTY_CYCLE_CORRECTION => TRUE,          -- Duty cycle correction, TRUE or FALSE
+    FACTORY_JF => X"C080",                  -- FACTORY JF Values
+    PHASE_SHIFT => 0,                       -- Amount of fixed phase shift from -255 to 255
+    STARTUP_WAIT => FALSE                   -- Delay configuration DONE until DCM LOCK, TRUE/FALSE
+    ) 
+  port map (
+    CLK0  => clkfb_in,
+    CLK90 => mcb_clkin, -- 
+    CLKFX => hdmi_pre_clock_in,
+    CLKFB => clkfb_out,
+    LOCKED => dcmlocked, -- DCM LOCK status output
+    CLKIN => clkin, -- Clock input (from IBUFG, BUFG or DCM)
+    PSCLK => '0', -- Dynamic phase adjust clock input
+    PSEN => '0', -- Dynamic phase adjust enable input
+    PSINCDEC => '0', -- Dynamic phase adjust increment/decrement
+    RST => '0' -- DCM asynchronous reset input
+  );
+
+  fbbuf: BUFG port map (I=>clkfb_in, O=>clkfb_out);
+  hdmibuf: BUFG port map (I=>hdmi_pre_clock_in, O=>hdmi_pre_clock);
+
+  AUDIO_L <= sigmadelta_spp_data(0);
+  AUDIO_R <= sigmadelta_spp_data(1);
 
   process(gpio_spp_read, spi_pf_mosi, spi_pf_sck,
           sigmadelta_spp_data,timers_pwm,
@@ -830,43 +924,21 @@ begin
 
     gpio_spp_data <= (others => DontCareValue);
 
-    -- PPS Outputs
-    gpio_spp_data(0)  <= sigmadelta_spp_data(0);   -- PPS0 : SIGMADELTA DATA
-    ppsout_info_slot(0) <= 5; -- Slot 5
-    ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (Channel 0)
+    gpio_spp_data(0)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    ppsout_info_slot(0) <= 3; -- Slot 3
+    ppsout_info_pin(0) <= 0;  -- PPS OUT pin 0 (TIMER 0)
 
-    gpio_spp_data(1)  <= timers_pwm(0);            -- PPS1 : TIMER0
+    gpio_spp_data(1)  <= timers_pwm(1);            -- PPS2 : TIMER1
     ppsout_info_slot(1) <= 3; -- Slot 3
-    ppsout_info_pin(1) <= 0;  -- PPS OUT pin 0 (TIMER 0)
+    ppsout_info_pin(1) <= 1;  -- PPS OUT pin 1 (TIMER 0)
 
-    gpio_spp_data(2)  <= timers_pwm(1);            -- PPS2 : TIMER1
-    ppsout_info_slot(2) <= 3; -- Slot 3
-    ppsout_info_pin(2) <= 1;  -- PPS OUT pin 1 (TIMER 0)
+    gpio_spp_data(2)  <= uart2_tx;   -- PPS6 : UART2 TX
+    ppsout_info_slot(2) <= 8; -- Slot 8
+    ppsout_info_pin(2) <= 0;  -- PPS OUT pin 0 (Channel 1)
 
-    gpio_spp_data(3)  <= spi2_mosi;                -- PPS3 : USPI MOSI
-    ppsout_info_slot(3) <= 6; -- Slot 6
-    ppsout_info_pin(3) <= 0;  -- PPS OUT pin 0 (MOSI)
-
-    gpio_spp_data(4)  <= spi2_sck;                 -- PPS4 : USPI SCK
-    ppsout_info_slot(4) <= 6; -- Slot 6
-    ppsout_info_pin(4) <= 1;  -- PPS OUT pin 1 (SCK)
-
-    gpio_spp_data(5)  <= sigmadelta_spp_data(1);   -- PPS5 : SIGMADELTA1 DATA
-    ppsout_info_slot(5) <= 5; -- Slot 5
-    ppsout_info_pin(5) <= 1;  -- PPS OUT pin 0 (Channel 1)
-
-    gpio_spp_data(6)  <= uart2_tx;   -- PPS6 : UART2 TX
-    ppsout_info_slot(6) <= 8; -- Slot 8
-    ppsout_info_pin(6) <= 0;  -- PPS OUT pin 0 (Channel 1)
-
-    -- PPS inputs
-    spi2_miso         <= gpio_spp_read(0);         -- PPS0 : USPI MISO
-    ppsin_info_slot(0) <= 6;                    -- USPI is in slot 6
-    ppsin_info_pin(0) <= 0;                     -- PPS pin of USPI is 0
-
-    uart2_rx          <= gpio_spp_read(1);         -- PPS1 : UART2 RX
-    ppsin_info_slot(1) <= 8;                    -- USPI is in slot 6
-    ppsin_info_pin(1) <= 0;                     -- PPS pin of USPI is 0
+    uart2_rx          <= gpio_spp_read(0);         -- PPS1 : UART2 RX
+    ppsin_info_slot(0) <= 8;                    -- Slot 8
+    ppsin_info_pin(0) <= 0;                     -- 
 
   end process;
 

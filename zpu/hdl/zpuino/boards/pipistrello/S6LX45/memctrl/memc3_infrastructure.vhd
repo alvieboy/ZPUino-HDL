@@ -160,7 +160,7 @@ begin
           );
   end generate;   
   
-  
+  se_buffer: if false generate
   se_input_clk : if(C_INPUT_CLK_TYPE = "SINGLE_ENDED") generate   
       --***********************************************************************
       -- SINGLE_ENDED input clock input buffers
@@ -170,7 +170,11 @@ begin
           I  => sys_clk,
           O  => sys_clk_ibufg
           );
-  end generate;   
+  end generate;
+  end generate;
+  se_buffer2: if true generate
+    sys_clk_ibufg<=sys_clk; -- No buffer - this comes from DCM
+  end generate;
 
   --***************************************************************************
   -- Global clock generation and distribution
@@ -201,7 +205,7 @@ begin
          CLKOUT4_DUTY_CYCLE => 0.500,
          CLKOUT5_DUTY_CYCLE => 0.500,
 	 SIM_DEVICE         => "SPARTAN6",
-         COMPENSATION       => "INTERNAL",
+         COMPENSATION       => "DCM2PLL",
          DIVCLK_DIVIDE      => C_DIVCLK_DIVIDE,
          CLKFBOUT_MULT      => C_CLKFBOUT_MULT,
          CLKFBOUT_PHASE     => 0.0,

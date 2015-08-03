@@ -61,7 +61,7 @@ package zpuino_config is
   constant zpuino_spiblocking: boolean := true;
 
   -- Number of GPIO to map (number of FPGA pins)
-  constant zpuino_gpio_count: integer := 54;
+  constant zpuino_gpio_count: integer := 55;
 
   -- Peripheral Pin Select
   constant zpuino_pps_enabled: boolean := true;
