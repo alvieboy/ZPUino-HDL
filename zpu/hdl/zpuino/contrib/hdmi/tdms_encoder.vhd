@@ -20,6 +20,7 @@ entity TDMS_encoder is
            c       : in  STD_LOGIC_VECTOR (1 downto 0);
            blank   : in  STD_LOGIC;
            guard   : in  STD_LOGIC;
+           indata  : in  STD_LOGIC;
            encoded : out  STD_LOGIC_VECTOR (9 downto 0));
 end TDMS_encoder;
 
@@ -32,7 +33,7 @@ architecture Behavioral of TDMS_encoder is
    signal data_word_inv       : STD_LOGIC_VECTOR (8 downto 0);
    signal data_word_disparity : STD_LOGIC_VECTOR (3 downto 0);
    signal dc_bias             : STD_LOGIC_VECTOR (3 downto 0) := (others => '0');
-   signal bg                  : STD_LOGIC_VECTOR (1 downto 0);
+   signal bg                  : STD_LOGIC_VECTOR (2 downto 0);
 begin
    -- Work our the two different encodings for the byte
    xored(0) <= data(0);
@@ -75,13 +76,13 @@ begin
    data_word_disparity  <= "1100" + data_word(0) + data_word(1) + data_word(2) + data_word(3) 
                                     + data_word(4) + data_word(5) + data_word(6) + data_word(7);
 
-   bg <= blank & guard;
+   bg <= blank & guard & indata;
    -- Now work out what the output should be
    process(clk)
    begin
       if rising_edge(clk) then
         case bg is
-          when "11"  =>
+          when "110"  =>
             -- Video guard band (two pixels wide)
             case CHANNEL is
               when 0 => encoded <= "1011001100";
@@ -89,7 +90,15 @@ begin
               when 2 => encoded <= "1011001100";
               when others => encoded <= (others => 'X');
             end case;
-          when "10" =>
+          when "111"  =>
+            -- Data guard band (two pixels wide)
+            case CHANNEL is
+              when 0 => encoded <= "0101100011";
+              when 1 => encoded <= "0100110011";
+              when 2 => encoded <= "0100110011";
+              when others => encoded <= (others => 'X');
+            end case;
+          when "100" | "101" =>
             -- In the control periods, all values have and have balanced bit count
             case c is            
                when "00"   => encoded <= "1101010100";
@@ -99,7 +108,7 @@ begin
             end case;
             dc_bias <= (others => '0');
 
-          when "00" =>
+          when "000"|"001" =>
             if dc_bias = "00000" or data_word_disparity = 0 then
                -- dataword has no disparity
                if data_word(8) = '1' then

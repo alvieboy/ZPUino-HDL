@@ -6,7 +6,7 @@ use UNISIM.vcomponents.all;
 entity ser10 is
   port (
     clk:    in std_ulogic;
-    --nclk:   in std_ulogic;
+    rst:    in std_ulogic;
     locked: in std_ulogic;
     clkdiv: in std_ulogic;
     serdesstrobe: in std_ulogic;
@@ -19,23 +19,21 @@ architecture behave of ser10 is
 
   signal cdi,cti,cdo,cto: std_ulogic;
   signal data: std_logic_vector(4 downto 0);
-  signal sel: std_logic := '0';
+  signal sel: std_logic;
 
   signal nlock: std_logic;
 begin
 
-  process(clkdiv)
+  process(clkdiv, rst)
   begin
-    if rising_edge(clkdiv) then
-      if locked='0' then
-        sel <= '1';
+    if rst='1' then
+      sel <= '1';
+    elsif rising_edge(clkdiv) then
+      sel <= not sel;
+      if sel='1' then
+        data <= datain(4 downto 0);
       else
-        sel <= not sel;
-        if sel='1' then
-          data <= datain(4 downto 0);
-        else
-          data <= datain(9 downto 5);
-        end if;
+        data <= datain(9 downto 5);
       end if;
     end if;
   end process;
@@ -71,7 +69,7 @@ begin
       T3 => '0',
       T4 => '0',
       TCE => '1',
-      RST => '0',
+      RST => rst,
       TRAIN => '0',
       OQ  => dataout
     );
@@ -107,7 +105,7 @@ begin
       T3 => '0',
       T4 => '0',
       TCE => '1',
-      RST => '0',
+      RST => rst,
       TRAIN => '0'
     );
 
