@@ -106,9 +106,9 @@ begin
   clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
   clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
   clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
-  clkp_inst: BUFG port map ( I => tmdsclk_p_i,    O => tmdsclk_p );
-  clkx2_inst: BUFG port map ( I => tmdsclk_x2,    O => clk_x2 );
-
+  --clkp_inst: BUFG port map ( I => tmdsclk_p_i,    O => tmdsclk_p );
+  --clkx2_inst: BUFG port map ( I => tmdsclk_x2,    O => clk_x2 );
+  clk_x2 <= tmdsclk_x2;
   -- Clock buffers - internal
 
    
@@ -129,18 +129,18 @@ pll_base_inst : PLL_ADV
     CLK_FEEDBACK         => "CLKFBOUT",
     COMPENSATION         => "SYSTEM_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 30,
+    CLKFBOUT_MULT        => 15,
     CLKFBOUT_PHASE       => 0.000,
 
-    CLKOUT0_DIVIDE       => 10,
+    CLKOUT0_DIVIDE       => 5,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
 
-    CLKOUT1_DIVIDE       => 10,
+    CLKOUT1_DIVIDE       => 5,
     CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
 
-    CLKOUT2_DIVIDE       => 10,
+    CLKOUT2_DIVIDE       => 11,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
 
@@ -174,18 +174,18 @@ pll_base_inst2 : PLL_ADV
     CLK_FEEDBACK         => "CLKFBOUT",
     COMPENSATION         => "SOURCE_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 10,
+    CLKFBOUT_MULT        => 17,
     CLKFBOUT_PHASE       => 0.000,
 
-    CLKOUT0_DIVIDE       => 1,      -- 371.25Mhz
+    CLKOUT0_DIVIDE       => 2,      -- 371.25Mhz
     CLKOUT0_PHASE        => 00.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
 
-    CLKOUT1_DIVIDE       => 5,      -- 371.25Mhz, inverted clock
+    CLKOUT1_DIVIDE       => 10,      -- 371.25Mhz, inverted clock
     CLKOUT1_PHASE        => 0.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
 
-    CLKOUT2_DIVIDE       => 10,      -- 74.25Mhz
+    CLKOUT2_DIVIDE       => 20,      -- 74.25Mhz
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
 
@@ -195,7 +195,7 @@ pll_base_inst2 : PLL_ADV
   port map
     -- Output clocks
    (CLKFBOUT            => pll2_to_clkfb,
-    CLKOUT0             => tmdsclk_p_i,--_i,
+    CLKOUT0             => tmdsclk_p,--_i,
     CLKOUT1             => tmdsclk_x2,--tmdsclk_n_i,
     CLKOUT2             => pixelclk_i,
     LOCKED              => pll2_locked,
