@@ -92,24 +92,6 @@ architecture behave of papilio_pro_top is
   signal jtag_data_chain_in: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_out: std_logic_vector(11 downto 0);
 
-  component clkgen is
-  port (
-    clkin:        in std_ulogic;
-    rstin:        in std_ulogic;
-
-    sysclk:       out std_ulogic;
-    sysclk_shift: out std_ulogic;
-    pixelclk:     out std_ulogic;
-    tdmsclk_p:    out std_ulogic;
-    tdmsclk_n:    out std_ulogic;
-
-    pll_locked:   out std_ulogic;
-    clk_x2:       out std_ulogic;
-
-    rstout: out std_logic
-  );
-  end component;
-
   component zpuino_serialreset is
   generic (
     SYSTEM_CLOCK_MHZ: integer := 96
@@ -189,8 +171,7 @@ architecture behave of papilio_pro_top is
   signal wb_clk_i:    std_logic;
   signal wb_rst_i:    std_logic;
 
-  signal hdmi_clk_pix, hdmi_clk_p, hdmi_clk_n: std_ulogic;
-  signal hdmi_clk_x2: std_ulogic;
+  signal hdmibaseclk: std_ulogic;
   signal pll_locked: std_ulogic;
 
   signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -408,16 +389,13 @@ begin
 
   sysclk_sram_wen <= sysclk;
 
-  clkgen_inst: clkgen
+  clkgen_inst: entity work.clkgen
   port map (
     clkin         => clk,
     rstin         => '0',
     sysclk        => sysclk,
     sysclk_shift  => sysclk_sram_we,
-    pixelclk      => hdmi_clk_pix,
-    tdmsclk_p     => hdmi_clk_p,
-    tdmsclk_n     => hdmi_clk_n,
-    clk_x2        => hdmi_clk_x2,
+    hdmibaseclk   => hdmibaseclk,
     pll_locked    => pll_locked,
     rstout        => clkgen_rst
   );
@@ -459,14 +437,14 @@ begin
   WING_C(0) <= tmds_b(3);
   WING_C(1) <= tmds(3);
 
-  WING_C(2) <= tmds_b(2);   -- TX0 - red
-  WING_C(3) <= tmds(2);
+  WING_C(2) <= tmds_b(0);   -- TX0 - red
+  WING_C(3) <= tmds(0);
 
   WING_C(4) <= tmds_b(1);   -- TX1 - green
   WING_C(5) <= tmds(1);
 
-  WING_C(6) <= tmds_b(0);   -- TX2 - blue/sync
-  WING_C(7) <= tmds(0);
+  WING_C(6) <= tmds_b(2);   -- TX2 - blue/sync
+  WING_C(7) <= tmds(2);
 
   --pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
   --pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
@@ -523,6 +501,7 @@ begin
       m_wb_adr_i    => m_wb_adr_i,
       m_wb_we_i     => m_wb_we_i,
       m_wb_cyc_i    => m_wb_cyc_i,
+      m_wb_cti_i    => m_wb_cti_i,
       m_wb_stb_i    => m_wb_stb_i,
       m_wb_ack_o    => m_wb_ack_o,
       m_wb_stall_o  => m_wb_stall_o,
@@ -878,7 +857,14 @@ begin
   -- IO SLOT 14
   --
 
-  hdmi_inst: hdmi_640_480
+  hdmi_inst: entity work.hdmi_generic
+  generic map (
+    CLKIN_PERIOD  => 44.792,
+    CLKFB_MULT => 43,
+    CLK0_DIV => 10,
+    CLK1_DIV => 10,
+    CLK2_DIV => 10
+  )
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -889,25 +875,22 @@ begin
     wb_cyc_i      => slot_cyc(14),
     wb_stb_i      => slot_stb(14),
     wb_ack_o      => slot_ack(14),
-    wb_inta_o     => slot_interrupt(14),
+    --wb_inta_o     => slot_interrupt(14),
     id            => slot_ids(14),
 
     mi_wb_dat_i   => m_wb_dat_o,
     mi_wb_dat_o   => m_wb_dat_i,
     mi_wb_adr_o   => m_wb_adr_i,
     mi_wb_sel_o   => m_wb_sel_i,
-    mi_wb_cti_o   => m_wb_cti_i,
     mi_wb_we_o    => m_wb_we_i,
     mi_wb_cyc_o   => m_wb_cyc_i,
+    mi_wb_cti_o   => m_wb_cti_i,
     mi_wb_stb_o   => m_wb_stb_i,
     mi_wb_ack_i   => m_wb_ack_o,
     mi_wb_stall_i => m_wb_stall_o,
 
 
-    CLK_PIX => hdmi_clk_pix,
-    CLK_P   => hdmi_clk_p,
-    CLK_X2   => hdmi_clk_x2,
-    PLL_LOCKED => pll_locked,
+    BCLK => hdmibaseclk,
 
     tmds    => tmds,
     tmdsb  => tmds_b

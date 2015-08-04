@@ -1,9 +1,9 @@
-PROMGEN: Xilinx Prom Generator P.15xf
-Copyright (c) 1995-2012 Xilinx, Inc.  All rights reserved.
+PROMGEN: Xilinx Prom Generator P.20131013
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
 
 promgen -w -spi -p bin -o papilio_pro_routed.bin -s 1024 -u 0 papilio_pro_routed.bit 
 
-PROM papilio_pro_routed.prm map: Tue Oct 28 16:58:34 2014
+PROM papilio_pro_routed.prm map: Tue Aug  4 10:51:39 2015
 
 Format        Bin
 Size          1024K
@@ -11,4 +11,4 @@ PROM start    00000000
 PROM end      000fffff
 
         Addr1        Addr2                     Date File(s)
-     00000000     000536cf     Oct 28 16:58:32 2014 papilio_pro_routed.bit
+     00000000     00053393     Aug  4 10:51:37 2015 papilio_pro_routed.bit

@@ -48,11 +48,8 @@ entity clkgen is
 
     sysclk:       out std_ulogic;
     sysclk_shift: out std_ulogic;
-    pixelclk:     out std_ulogic;
-    tmdsclk_p:    out std_ulogic;
-    tmdsclk_n:    out std_ulogic;
+    hdmibaseclk:  out std_ulogic;
     pll_locked:   out std_ulogic;
-    clk_x2:       out std_ulogic;
     rstout:       out std_ulogic
   );
 end entity clkgen;
@@ -70,23 +67,20 @@ signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
 
 signal pll1_locked: std_ulogic;
-signal pll2_locked: std_ulogic;
 signal not_pll1_locked: std_ulogic;
 
-signal pll2_to_clkfb, clkfb_to_pll2: std_ulogic;
 signal pll1_to_clkfb, clkfb_to_pll1: std_ulogic;
-signal clk_to_pll2_i, clk_to_pll2:   std_ulogic;
 
-signal sysclk_i, sysclk_shift_i, pixelclk_i, tmdsclk_p_i, tmdsclk_x2: std_ulogic;
+signal sysclk_i, sysclk_shift_i, hdmi_base_clk_i: std_ulogic;
 begin
 
   sysclk <= clkout_i;
-
+  pll_locked <= pll1_locked;
   rstout <= rst1_q;
 
-  process(pll2_locked, clkout_i, rstin)
+  process(pll1_locked, clkout_i, rstin)
   begin
-    if pll2_locked='0' or rstin='1' then
+    if pll1_locked='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -105,53 +99,44 @@ begin
 
   clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
   clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
-  clk2_inst: BUFG port map ( I => pixelclk_i,     O => pixelclk );
-  --clkp_inst: BUFG port map ( I => tmdsclk_p_i,    O => tmdsclk_p );
-  --clkx2_inst: BUFG port map ( I => tmdsclk_x2,    O => clk_x2 );
-  clk_x2 <= tmdsclk_x2;
-  -- Clock buffers - internal
-
+  clk2_inst: BUFG port map ( I => hdmi_base_clk_i,O => hdmibaseclk );
    
-  clkfb_inst: BUFG
-    port map (
-      O=> clkfb_to_pll1,
-      I=> pll1_to_clkfb
-    );
-
-  clk1f_inst: BUFG port map ( I => clk_to_pll2_i, O => clk_to_pll2 );
-  clk2f_inst: BUFG port map ( I => pll2_to_clkfb, O => clkfb_to_pll2 );
-
-
+  --clkfb_inst: BUFG
+  --  port map (
+  --    O=> clkfb_to_pll1,
+  --    I=> pll1_to_clkfb
+  --  );
+  clkfb_to_pll1 <= pll1_to_clkfb;
 
 pll_base_inst : PLL_ADV
   generic map
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "SYSTEM_SYNCHRONOUS",
+    COMPENSATION         => "INTERNAL",
     DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 15,
+    CLKFBOUT_MULT        => 30,
     CLKFBOUT_PHASE       => 0.000,
 
-    CLKOUT0_DIVIDE       => 5,
+    CLKOUT0_DIVIDE       => 10,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
 
-    CLKOUT1_DIVIDE       => 5,
+    CLKOUT1_DIVIDE       => 10,
     CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
 
-    CLKOUT2_DIVIDE       => 11,
+    CLKOUT2_DIVIDE       => 43,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
 
-    CLKIN1_PERIOD         => 37.037037, -- 27 MHz
+    CLKIN1_PERIOD         => 31.25, -- 27 MHz
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
    (CLKFBOUT            => pll1_to_clkfb,
     CLKOUT0             => sysclk_i,
     CLKOUT1             => sysclk_shift_i,
-    CLKOUT2             => clk_to_pll2_i,
+    CLKOUT2             => hdmi_base_clk_i,
     LOCKED              => pll1_locked,
 
     RST                 => '0',
@@ -167,54 +152,5 @@ pll_base_inst : PLL_ADV
     DWE => '0',
     REL => '0'
    );
-
-pll_base_inst2 : PLL_ADV
-  generic map
-   (BANDWIDTH            => "OPTIMIZED",
-    CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "SOURCE_SYNCHRONOUS",
-    DIVCLK_DIVIDE        => 1,
-    CLKFBOUT_MULT        => 17,
-    CLKFBOUT_PHASE       => 0.000,
-
-    CLKOUT0_DIVIDE       => 2,      -- 371.25Mhz
-    CLKOUT0_PHASE        => 00.000,
-    CLKOUT0_DUTY_CYCLE   => 0.500,
-
-    CLKOUT1_DIVIDE       => 10,      -- 371.25Mhz, inverted clock
-    CLKOUT1_PHASE        => 0.0,
-    CLKOUT1_DUTY_CYCLE   => 0.500,
-
-    CLKOUT2_DIVIDE       => 20,      -- 74.25Mhz
-    CLKOUT2_PHASE        => 0.0,
-    CLKOUT2_DUTY_CYCLE   => 0.500,
-
-    CLKIN1_PERIOD         => 13.46, -- 74.25 MHz
-    --REF_JITTER           => 0.010,
-    SIM_DEVICE           => "SPARTAN6")
-  port map
-    -- Output clocks
-   (CLKFBOUT            => pll2_to_clkfb,
-    CLKOUT0             => tmdsclk_p,--_i,
-    CLKOUT1             => tmdsclk_x2,--tmdsclk_n_i,
-    CLKOUT2             => pixelclk_i,
-    LOCKED              => pll2_locked,
-    RST                 => not_pll1_locked, -- Keep reset while PLL1 does not lock
-    -- Input clock control
-    CLKFBIN             => clkfb_to_pll2,
-    CLKIN1              => clk_to_pll2,
-    CLKIN2              => '0',
-    CLKINSEL            => '1',
-    DADDR               => (others => '0'),
-    DCLK                => '0',
-    DEN                 => '0',
-    DI                  => (others => '0'),
-    DWE                 => '0',
-    REL                 => '0'
-   );
-
-  not_pll1_locked <= not pll1_locked;
-  pll_locked <= pll2_locked;
-
 
 end behave;
