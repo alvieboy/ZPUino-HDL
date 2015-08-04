@@ -23,7 +23,8 @@ entity wbpll2 is
     CLK2_ENABLE: boolean := false;
     BUFFER0:  boolean := true;
     BUFFER1:  boolean := true;
-    BUFFER2:  boolean := true
+    BUFFER2:  boolean := true;
+    COMPENSATION: string := "INTERNAL"
   );
   port(
     wb_clk_i: in std_logic;
@@ -251,7 +252,7 @@ begin
   generic map
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "SYSTEM_SYNCHRONOUS",
+    COMPENSATION         => COMPENSATION,
     DIVCLK_DIVIDE        => 1,
     CLKFBOUT_MULT        => CLKFB_MULT,
     CLKFBOUT_PHASE       => 0.000,
@@ -291,11 +292,17 @@ begin
     REL                 => '0'
    );
 
+   fbbuf: if COMPENSATION="INTERNAL" generate
+    clk_from_fb<=clk_to_fb;
+   end generate;
+
+   fbbuf2: if COMPENSATION/="INTERNAL" generate
    clkfbinst: BUFG
     port map (
       I =>  clk_to_fb,
       O =>  clk_from_fb
     );
+   end generate;
 
    b0: if BUFFER0 generate
     c0buf: BUFG port map (I => c0, O => clk0);

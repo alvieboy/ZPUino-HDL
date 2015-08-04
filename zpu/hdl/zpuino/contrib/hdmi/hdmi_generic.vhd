@@ -14,6 +14,13 @@ use work.zpuinopkg.all;
 use work.wishbonepkg.all;
 
 entity hdmi_generic is
+  generic (
+    CLKIN_PERIOD: real := 0.001;
+    CLKFB_MULT: integer := 10;
+    CLK0_DIV: integer := 10;
+    CLK1_DIV: integer := 10;
+    CLK2_DIV: integer := 10
+  );
   port(
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
@@ -693,11 +700,11 @@ begin
 
   pllinst: entity work.wbpll2
     generic map (
-    --CLKIN_PERIOD  => 23.809524,
-    CLKFB_MULT    => 40,
-    CLK0_DIV      => 9,
-    CLK1_DIV      => 9,
-    CLK2_DIV      => 18,
+    CLKIN_PERIOD  => CLKIN_PERIOD,
+    CLKFB_MULT    => CLKFB_MULT,
+    CLK0_DIV      => CLK0_DIV,
+    CLK1_DIV      => CLK1_DIV,
+    CLK2_DIV      => CLK2_DIV,
     CLK1_ENABLE   => true,
     CLK2_ENABLE   => true,
     BUFFER0       => false,
