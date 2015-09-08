@@ -81,9 +81,11 @@ unsigned short get_programmer_version()
 
 int parse_arguments(int argc,char **const argv)
 {
+	unsigned spd;
 	int p;
+
 	while (1) {
-		switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:U"))) {
+            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:U"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -95,6 +97,11 @@ int parse_arguments(int argc,char **const argv)
 		case 's':
 			serial_speed_int = atoi(optarg);
 			if (conn_parse_speed(serial_speed_int,&serial_speed)<0)
+				return -1;
+			break;
+		case 'S':
+			spd = atoi(optarg);
+			if (conn_parse_speed(spd,&serial_speed)<0)
 				return -1;
 			break;
 		case 'b':
