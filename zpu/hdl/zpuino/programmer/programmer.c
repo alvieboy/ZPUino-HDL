@@ -166,7 +166,8 @@ int help(char *name)
 	printf("  -R\t\tPerform serial reset before programming\n");
 	printf("  -U\t\tUpload only, do not program flash\n");
 	printf("  -t\t\tTest/verify flash after programming\n");
-	printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
+        printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
+        printf("  -S speed\tUse specified initial serial port speed (default: 115200)\n");
 	printf("  -v\t\tIncrease verbosity\n");
 	return -1;
 }
