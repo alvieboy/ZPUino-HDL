@@ -23,6 +23,10 @@
 # include "board_ems11.h"
 #elif defined( __ZPUINO_PIPISTRELLO__ )
 # include "board_pipistrello.h"
+#elif defined( __ZPUINO_SATURN__ )
+# include "board_saturn.h"
+#elif defined( __ZPUINO_MIMASV2__ )
+# include "board_mimasv2.h"
 #else
 #  error Unknown board.
 # endif

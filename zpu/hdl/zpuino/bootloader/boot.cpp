@@ -796,6 +796,22 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_SATURN__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
+#ifdef __ZPUINO_MIMASV2__
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
 #if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ ) || defined ( __ZPUINO_PAPILIO_DUO__ )
 inline void configure_pins()
 {
@@ -860,9 +876,9 @@ extern "C" int main(int argc,char**argv)
         vstring[16] = memtop>>8;
         vstring[16] = memtop;
 
-	ivector = &_zpu_interrupt;
+        ivector = &_zpu_interrupt;
 
-	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+        UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 
 	configure_pins();
 
