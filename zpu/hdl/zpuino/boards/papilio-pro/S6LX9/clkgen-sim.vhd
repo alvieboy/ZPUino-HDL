@@ -49,9 +49,6 @@ entity clkgen is
     clkout1: out std_logic;
     clkout2: out std_logic;
     clkvga: out  std_logic;
-    clkp:   out  std_logic;
-    clkn:   out  std_logic;
-    clkdiv: out  std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -61,39 +58,17 @@ architecture behave of clkgen is
 signal nclk: std_logic := '0';
 signal irst: std_logic := '0';
 signal vclk: std_logic := '0';
-signal diffclk: std_logic := '0';
 
-constant nclk_period: time := 10.1010101010101 ns;
-constant vclk_period: time := 13.4680134680135 ns;
-
-constant diffclk_period: time := vclk_period/5;
-
-signal divff1: std_logic := '0';
-signal divff2: std_logic := '0';
-
+constant nclk_period: time := 10.4166666667 ns;
+constant vclk_period: time := 39.583 ns;
 begin
 
   nclk <= not nclk after nclk_period/2;
   vclk <= not vclk after vclk_period/2;
-  diffclk <= not diffclk after diffclk_period/2;
-
   clkvga <= vclk;
-  clkp <= diffclk;
-  clkn <= not diffclk;
   clkout1 <= transport nclk after 3 ns;
   clkout <= nclk;
   rstout<=irst;
-  clkdiv <= divff2;
-  -- Clkdiv
-  process(nclk)
-  begin
-    if rising_edge(nclk) then
-      divff1<=not divff1;
-      if divff1='1' then
-        divff2<=not divff2;
-      end if;
-    end if;
-  end process;
 
   process
   begin

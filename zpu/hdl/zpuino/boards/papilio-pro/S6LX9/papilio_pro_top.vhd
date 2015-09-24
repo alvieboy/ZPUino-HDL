@@ -92,6 +92,17 @@ architecture behave of papilio_pro_top is
   signal jtag_data_chain_in: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_out: std_logic_vector(11 downto 0);
 
+  component clkgen is
+  port (
+    clkin:  in std_logic;
+    rstin:  in std_logic;
+    clkout: out std_logic;
+    clkout1: out std_logic;
+    clkout2: out std_logic;
+    rstout: out std_logic
+  );
+  end component;
+
   component zpuino_serialreset is
   generic (
     SYSTEM_CLOCK_MHZ: integer := 96
@@ -103,46 +114,6 @@ architecture behave of papilio_pro_top is
     rstout:   out std_logic
   );
   end component zpuino_serialreset;
-
-  component hdmi_640_480 is
-  port(
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-    wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    wb_adr_i: in std_logic_vector(maxIObit downto minIObit);
-    wb_we_i:  in std_logic;
-    wb_cyc_i: in std_logic;
-    wb_stb_i: in std_logic;
-    wb_ack_o: out std_logic;
-    id:       out slot_id;
-
-    -- Wishbone MASTER interface
-    mi_wb_dat_i: in std_logic_vector(wordSize-1 downto 0);
-    mi_wb_dat_o: out std_logic_vector(wordSize-1 downto 0);
-    mi_wb_adr_o: out std_logic_vector(maxAddrBitIncIO downto 0);
-    mi_wb_sel_o: out std_logic_vector(3 downto 0);
-    mi_wb_cti_o: out std_logic_vector(2 downto 0);
-    mi_wb_we_o:  out std_logic;
-    mi_wb_cyc_o: out std_logic;
-    mi_wb_stb_o: out std_logic;
-    mi_wb_ack_i: in std_logic;
-    mi_wb_stall_i: in std_logic;
-
-    -- clocking
-
-    CLK_PIX           : in     std_logic;
-    CLK_P             : in     std_logic;
-    --CLK_N             : in     std_logic;
-    clk_X2            : in std_ulogic;
-    PLL_LOCKED:       in std_ulogic;
-
-    -- HDMI signals
-
-    tmds    : out  STD_LOGIC_VECTOR(3 downto 0);
-    tmdsb   : out  STD_LOGIC_VECTOR(3 downto 0)
-  );
-  end component;
 
   component wb_bootloader is
   port (
@@ -170,9 +141,6 @@ architecture behave of papilio_pro_top is
   signal clkgen_rst:  std_logic;
   signal wb_clk_i:    std_logic;
   signal wb_rst_i:    std_logic;
-
-  signal hdmibaseclk: std_ulogic;
-  signal pll_locked: std_ulogic;
 
   signal gpio_o:      std_logic_vector(zpuino_gpio_count-1 downto 0);
   signal gpio_t:      std_logic_vector(zpuino_gpio_count-1 downto 0);
@@ -284,20 +252,7 @@ architecture behave of papilio_pro_top is
   signal prom_rom_wb_cti_i:       std_logic_vector(2 downto 0);
   signal prom_rom_wb_stall_o:     std_logic;
 
-  signal   m_wb_dat_i:  std_logic_vector(wordSize-1 downto 0);
-  signal   m_wb_dat_o:  std_logic_vector(wordSize-1 downto 0);
-  signal   m_wb_adr_i:  std_logic_vector(maxAddrBitIncIO downto 0);
-  signal   m_wb_sel_i:  std_logic_vector(3 downto 0);
-  signal   m_wb_cti_i:  std_logic_vector(2 downto 0);
-  signal   m_wb_we_i:   std_logic;
-  signal   m_wb_cyc_i:  std_logic;
-  signal   m_wb_stb_i:  std_logic;
-  signal   m_wb_ack_o:  std_logic;
-  signal   m_wb_stall_o:  std_logic;
-
   signal memory_enable: std_logic;
-  signal tmds: std_logic_vector(3 downto 0);
-  signal tmds_b: std_logic_vector(3 downto 0);
 
   component sdram_ctrl is
   port (
@@ -387,17 +342,14 @@ begin
       rstout    => sysrst
     );
 
-  sysclk_sram_wen <= sysclk;
-
-  clkgen_inst: entity work.clkgen
+  clkgen_inst: clkgen
   port map (
-    clkin         => clk,
-    rstin         => '0',
-    sysclk        => sysclk,
-    sysclk_shift  => sysclk_sram_we,
-    hdmibaseclk   => hdmibaseclk,
-    pll_locked    => pll_locked,
-    rstout        => clkgen_rst
+    clkin   => clk,
+    rstin   => '0'  ,
+    clkout  => sysclk,
+    clkout1  => sysclk_sram_we,
+    clkout2  => sysclk_sram_wen,
+    rstout  => clkgen_rst
   );
 
   pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
@@ -432,28 +384,14 @@ begin
   pin29: IOPAD port map(I => gpio_o(29),O => gpio_i(29),T => gpio_t(29),C => sysclk,PAD => WING_B(13) );
   pin30: IOPAD port map(I => gpio_o(30),O => gpio_i(30),T => gpio_t(30),C => sysclk,PAD => WING_B(14) );
   pin31: IOPAD port map(I => gpio_o(31),O => gpio_i(31),T => gpio_t(31),C => sysclk,PAD => WING_B(15) );
-
-  -- starting with pin 0 on the side with the power pins: Clk-, Clk+, tx0-, tx0+, tx1-, tx1+, tx2-, tx2+
-  WING_C(0) <= tmds_b(3);
-  WING_C(1) <= tmds(3);
-
-  WING_C(2) <= tmds_b(0);   -- TX0 - red
-  WING_C(3) <= tmds(0);
-
-  WING_C(4) <= tmds_b(1);   -- TX1 - green
-  WING_C(5) <= tmds(1);
-
-  WING_C(6) <= tmds_b(2);   -- TX2 - blue/sync
-  WING_C(7) <= tmds(2);
-
-  --pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
-  --pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
-  --pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
-  --pin35: IOPAD port map(I => gpio_o(35),O => gpio_i(35),T => gpio_t(35),C => sysclk,PAD => WING_C(3) );
-  --pin36: IOPAD port map(I => gpio_o(36),O => gpio_i(36),T => gpio_t(36),C => sysclk,PAD => WING_C(4) );
-  --pin37: IOPAD port map(I => gpio_o(37),O => gpio_i(37),T => gpio_t(37),C => sysclk,PAD => WING_C(5) );
-  --pin38: IOPAD port map(I => gpio_o(38),O => gpio_i(38),T => gpio_t(38),C => sysclk,PAD => WING_C(6) );
-  --pin39: IOPAD port map(I => gpio_o(39),O => gpio_i(39),T => gpio_t(39),C => sysclk,PAD => WING_C(7) );
+  pin32: IOPAD port map(I => gpio_o(32),O => gpio_i(32),T => gpio_t(32),C => sysclk,PAD => WING_C(0) );
+  pin33: IOPAD port map(I => gpio_o(33),O => gpio_i(33),T => gpio_t(33),C => sysclk,PAD => WING_C(1) );
+  pin34: IOPAD port map(I => gpio_o(34),O => gpio_i(34),T => gpio_t(34),C => sysclk,PAD => WING_C(2) );
+  pin35: IOPAD port map(I => gpio_o(35),O => gpio_i(35),T => gpio_t(35),C => sysclk,PAD => WING_C(3) );
+  pin36: IOPAD port map(I => gpio_o(36),O => gpio_i(36),T => gpio_t(36),C => sysclk,PAD => WING_C(4) );
+  pin37: IOPAD port map(I => gpio_o(37),O => gpio_i(37),T => gpio_t(37),C => sysclk,PAD => WING_C(5) );
+  pin38: IOPAD port map(I => gpio_o(38),O => gpio_i(38),T => gpio_t(38),C => sysclk,PAD => WING_C(6) );
+  pin39: IOPAD port map(I => gpio_o(39),O => gpio_i(39),T => gpio_t(39),C => sysclk,PAD => WING_C(7) );
   pin40: IOPAD port map(I => gpio_o(40),O => gpio_i(40),T => gpio_t(40),C => sysclk,PAD => WING_C(8) );
   pin41: IOPAD port map(I => gpio_o(41),O => gpio_i(41),T => gpio_t(41),C => sysclk,PAD => WING_C(9) );
   pin42: IOPAD port map(I => gpio_o(42),O => gpio_i(42),T => gpio_t(42),C => sysclk,PAD => WING_C(10) );
@@ -496,15 +434,14 @@ begin
       pps_out_slot => ppsout_info_slot,
       pps_out_pin  => ppsout_info_pin,
 
-      m_wb_dat_o    => m_wb_dat_o,
-      m_wb_dat_i    => m_wb_dat_i,
-      m_wb_adr_i    => m_wb_adr_i,
-      m_wb_we_i     => m_wb_we_i,
-      m_wb_cyc_i    => m_wb_cyc_i,
-      m_wb_cti_i    => m_wb_cti_i,
-      m_wb_stb_i    => m_wb_stb_i,
-      m_wb_ack_o    => m_wb_ack_o,
-      m_wb_stall_o  => m_wb_stall_o,
+      m_wb_dat_o    => open,
+      m_wb_dat_i    => (others => 'X'),
+      m_wb_adr_i    => (others => 'X'),
+      m_wb_we_i     => '0',
+      m_wb_cyc_i    => '0',
+      m_wb_stb_i    => '0',
+      m_wb_ack_o    => open,
+      m_wb_stall_o  => open,
 
       wb_ack_i      => sram_wb_ack_o,
       wb_stall_i    => sram_wb_stall_o,
@@ -857,14 +794,7 @@ begin
   -- IO SLOT 14
   --
 
-  hdmi_inst: entity work.hdmi_generic
-  generic map (
-    CLKIN_PERIOD  => 44.792,
-    CLKFB_MULT => 43,
-    CLK0_DIV => 10,
-    CLK1_DIV => 10,
-    CLK2_DIV => 10
-  )
+  slot14: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -875,25 +805,8 @@ begin
     wb_cyc_i      => slot_cyc(14),
     wb_stb_i      => slot_stb(14),
     wb_ack_o      => slot_ack(14),
-    --wb_inta_o     => slot_interrupt(14),
-    id            => slot_ids(14),
-
-    mi_wb_dat_i   => m_wb_dat_o,
-    mi_wb_dat_o   => m_wb_dat_i,
-    mi_wb_adr_o   => m_wb_adr_i,
-    mi_wb_sel_o   => m_wb_sel_i,
-    mi_wb_we_o    => m_wb_we_i,
-    mi_wb_cyc_o   => m_wb_cyc_i,
-    mi_wb_cti_o   => m_wb_cti_i,
-    mi_wb_stb_o   => m_wb_stb_i,
-    mi_wb_ack_i   => m_wb_ack_o,
-    mi_wb_stall_i => m_wb_stall_o,
-
-
-    BCLK => hdmibaseclk,
-
-    tmds    => tmds,
-    tmdsb  => tmds_b
+    wb_inta_o     => slot_interrupt(14),
+    id            => slot_ids(14)
   );
 
   --

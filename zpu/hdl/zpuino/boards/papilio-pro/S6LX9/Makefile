@@ -35,5 +35,5 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 
 clean:
-	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}._routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}._routed.bit
+	@rm -rf ${PROJECT}.{ngc,ngd,ncd,_routed.ncd,pcf,bit,_routed.bit}
 	$(MAKE) -C ../../../bootloader clean

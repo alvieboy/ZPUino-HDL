@@ -26,7 +26,7 @@ CONFIG PROHIBIT=P144;
 CONFIG PROHIBIT=P69;
 CONFIG PROHIBIT=P60;
 
-NET CLK       LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns | TNM_NET="clk";               # CLK
+NET CLK      LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;               # CLK
 NET TXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
 NET RXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
 NET WING_A(0)     LOC="P48"  | IOSTANDARD=LVTTL;                                # A0
@@ -61,14 +61,14 @@ NET WING_B(12)    LOC="P57"  | IOSTANDARD=LVTTL;                                
 NET WING_B(13)    LOC="P55"  | IOSTANDARD=LVTTL;                                # B13
 NET WING_B(14)    LOC="P50"  | IOSTANDARD=LVTTL;                                # B14
 NET WING_B(15)    LOC="P47"  | IOSTANDARD=LVTTL;                                # B15
-NET WING_C(0)     LOC="P114" | IOSTANDARD=TMDS_33;                                # C0
-NET WING_C(1)     LOC="P115" | IOSTANDARD=TMDS_33;                                # C1
-NET WING_C(2)     LOC="P116" | IOSTANDARD=TMDS_33;                                # C2
-NET WING_C(3)     LOC="P117" | IOSTANDARD=TMDS_33;                                # C3
-NET WING_C(4)     LOC="P118" | IOSTANDARD=TMDS_33;                                # C4
-NET WING_C(5)     LOC="P119" | IOSTANDARD=TMDS_33;                                # C5
-NET WING_C(6)     LOC="P120" | IOSTANDARD=TMDS_33;                                # C6
-NET WING_C(7)     LOC="P121" | IOSTANDARD=TMDS_33;                                # C7
+NET WING_C(0)     LOC="P114" | IOSTANDARD=LVTTL;                                # C0
+NET WING_C(1)     LOC="P115" | IOSTANDARD=LVTTL;                                # C1
+NET WING_C(2)     LOC="P116" | IOSTANDARD=LVTTL;                                # C2
+NET WING_C(3)     LOC="P117" | IOSTANDARD=LVTTL;                                # C3
+NET WING_C(4)     LOC="P118" | IOSTANDARD=LVTTL;                                # C4
+NET WING_C(5)     LOC="P119" | IOSTANDARD=LVTTL;                                # C5
+NET WING_C(6)     LOC="P120" | IOSTANDARD=LVTTL;                                # C6
+NET WING_C(7)     LOC="P121" | IOSTANDARD=LVTTL;                                # C7
 NET WING_C(8)     LOC="P123" | IOSTANDARD=LVTTL;                                # C8
 NET WING_C(9)     LOC="P124" | IOSTANDARD=LVTTL;                                # C9
 NET WING_C(10)    LOC="P126" | IOSTANDARD=LVTTL;                                # C10
@@ -128,9 +128,3 @@ NET SPI_MOSI    LOC="P64"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # 
 NET SPI_MISO    LOC="P65"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | PULLUP; # FLASH_SO   OK
 
 NET LED LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW; # LED
-
-NET "sysclk" TNM_NET = "GRP_sysclk";
-
-NET "hdmi_inst/clocking.pllinst/c2" TNM_NET = "GRP_pixclk";
-TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
-

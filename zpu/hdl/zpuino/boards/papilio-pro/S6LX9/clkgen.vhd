@@ -43,18 +43,19 @@ use UNISIM.VCOMPONENTS.all;
 
 entity clkgen is
   port (
-    clkin:        in std_ulogic;
-    rstin:        in std_ulogic;
-
-    sysclk:       out std_ulogic;
-    sysclk_shift: out std_ulogic;
-    hdmibaseclk:  out std_ulogic;
-    pll_locked:   out std_ulogic;
-    rstout:       out std_ulogic
+    clkin:  in std_logic;
+    rstin:  in std_logic;
+    clkout: out std_logic;
+    clkout1: out std_logic;
+    clkout2: out std_logic;
+    rstout: out std_logic
   );
 end entity clkgen;
 
 architecture behave of clkgen is
+
+signal dcmlocked: std_ulogic;
+signal dcmclock: std_ulogic;
 
 signal rst1_q: std_logic := '1';
 signal rst2_q: std_logic := '1';
@@ -66,21 +67,15 @@ signal clk1: std_ulogic;
 signal clk2: std_ulogic;
 signal clkin_i_2: std_logic;
 
-signal pll1_locked: std_ulogic;
-signal not_pll1_locked: std_ulogic;
-
-signal pll1_to_clkfb, clkfb_to_pll1: std_ulogic;
-
-signal sysclk_i, sysclk_shift_i, hdmi_base_clk_i: std_ulogic;
 begin
 
-  sysclk <= clkout_i;
-  pll_locked <= pll1_locked;
+  clkout <= clkout_i;
+
   rstout <= rst1_q;
 
-  process(pll1_locked, clkout_i, rstin)
+  process(dcmlocked, clkout_i, rstin)
   begin
-    if pll1_locked='0' or rstin='1' then
+    if dcmlocked='0' or rstin='1' then
       rst1_q <= '1';
       rst2_q <= '1';
     else
@@ -91,66 +86,73 @@ begin
     end if;
   end process;
 
-  -- Clock buffers - input
+  -- Clock buffers
 
-  clkin_inst: IBUFG  port map ( I => clkin,       O =>  clkin_i );
-
-  -- Clock buffers - output
-
-  clk0_inst: BUFG port map ( I => sysclk_i,       O => clkout_i );
-  clk1_inst: BUFG port map ( I => sysclk_shift_i, O => sysclk_shift );
-  clk2_inst: BUFG port map ( I => hdmi_base_clk_i,O => hdmibaseclk );
+  clkfx_inst: BUFG
+    port map (
+      I =>  clk0,
+      O =>  clkout_i
+    );
    
-  --clkfb_inst: BUFG
-  --  port map (
-  --    O=> clkfb_to_pll1,
-  --    I=> pll1_to_clkfb
-  --  );
-  clkfb_to_pll1 <= pll1_to_clkfb;
+  clkin_inst: IBUFG
+    port map (
+      I =>  clkin,
+      O =>  clkin_i
+    );
+   
+  clkfb_inst: BUFG
+    port map (
+      I=> dcmclock,
+      O=> clkfb
+    );
+
+  clk1_inst: BUFG port map ( I => clk1, O => clkout1 );
+  clk2_inst: BUFG port map ( I => clk2, O => clkout2 );
+
+
 
 pll_base_inst : PLL_ADV
   generic map
    (BANDWIDTH            => "OPTIMIZED",
     CLK_FEEDBACK         => "CLKFBOUT",
-    COMPENSATION         => "INTERNAL",
+    COMPENSATION         => "SYSTEM_SYNCHRONOUS",
     DIVCLK_DIVIDE        => 1,
     CLKFBOUT_MULT        => 30,
     CLKFBOUT_PHASE       => 0.000,
-
     CLKOUT0_DIVIDE       => 10,
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
-
     CLKOUT1_DIVIDE       => 10,
     CLKOUT1_PHASE        => 250.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
-
-    CLKOUT2_DIVIDE       => 43,
+    CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
     CLKOUT2_DUTY_CYCLE   => 0.500,
-
-    CLKIN1_PERIOD         => 31.25, -- 27 MHz
+    CLKIN1_PERIOD        => 31.250,
+    REF_JITTER           => 0.010,
     SIM_DEVICE           => "SPARTAN6")
   port map
     -- Output clocks
-   (CLKFBOUT            => pll1_to_clkfb,
-    CLKOUT0             => sysclk_i,
-    CLKOUT1             => sysclk_shift_i,
-    CLKOUT2             => hdmi_base_clk_i,
-    LOCKED              => pll1_locked,
-
+   (CLKFBOUT            => dcmclock,
+    CLKOUT0             => clk0,
+    CLKOUT1             => clk1,
+    CLKOUT2             => clk2,
+    CLKOUT3             => open,
+    CLKOUT4             => open,
+    CLKOUT5             => open,
+    LOCKED              => dcmlocked,
     RST                 => '0',
     -- Input clock control
-    CLKFBIN             => clkfb_to_pll1,
+    CLKFBIN             => clkfb,
     CLKIN1              => clkin_i,
-    CLKIN2 => '0',
-    CLKINSEL => '1',
-    DADDR => (others => '0'),
-    DCLK => '0',
-    DEN => '0',
-    DI => (others => '0'),
-    DWE => '0',
-    REL => '0'
+    CLKIN2              => '0',
+    CLKINSEL            => '1',
+    DADDR               => (others => '0'),
+    DCLK                => '0',
+    DEN                 => '0',
+    DI                  => (others => '0'),
+    DWE                 => '0',
+    REL                 => '0'
    );
 
 end behave;
