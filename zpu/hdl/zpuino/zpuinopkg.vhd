@@ -80,6 +80,7 @@ package zpuinopkg is
     m_wb_we_i:  in std_logic;
     m_wb_cyc_i: in std_logic;
     m_wb_stb_i: in std_logic;
+    m_wb_cti_i: in std_logic_vector(2 downto 0);
     m_wb_ack_o: out std_logic;
     m_wb_stall_o: out std_logic;
 
