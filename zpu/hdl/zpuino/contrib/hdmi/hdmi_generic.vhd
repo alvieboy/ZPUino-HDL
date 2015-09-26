@@ -293,7 +293,7 @@ begin
   --mi_wb_cyc_o <= r.cyc;
   mi_wb_adr_o(maxAddrBit downto 0) <= std_logic_vector( r.memptr(maxAddrBit downto 0) );
   mi_wb_adr_o(maxAddrBitIncIO downto maxAddrBit+1) <= (others => '0');
-  mi_wb_cti_o <= CTI_CYCLE_INCRADDR;
+
 
   burstctl: entity work.wb_burstctrl
     port map (
@@ -301,6 +301,7 @@ begin
       rst     => wb_rst_i,
       sob     => bctrl_sob,
       eob     => bctrl_eob,
+      cti     => mi_wb_cti_o,
       stb     => mi_wb_stb_o,
       cyc     => mi_wb_cyc_o,
       stall   => mi_wb_stall_i,

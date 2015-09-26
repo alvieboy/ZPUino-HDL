@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
+library work;
+use work.wishbonepkg.all;
 
 entity wb_burstctrl is
   generic (
@@ -18,6 +20,7 @@ entity wb_burstctrl is
 
     stb:  out std_logic;
     cyc:  out std_logic;
+    cti:  out std_logic_vector(2 downto 0);
     stall:in std_logic;
     ack:  in std_logic;
 
@@ -39,8 +42,12 @@ architecture behave of wb_burstctrl is
   signal shr_msb:   std_logic;
   signal shw_shift: std_logic;
   signal shw_msb:   std_logic;
+  signal shw_last:  std_logic;
   signal sh_clr:    std_logic;
 begin
+
+
+  cti <= CTI_CYCLE_INCRADDR when shw_last='0' else CTI_CYCLE_ENDOFBURST;
 
   process(clk,rst,r,sob,stall,ack,shw_msb,shr_msb)
     variable w: regs_type;
@@ -125,7 +132,8 @@ begin
       rst => rst,
       clr => sh_clr,
       shift => shr_shift,
-      msb => shr_msb
+      msb => shr_msb,
+      last  => open
     );
 
   shw: entity work.burstctrl_shreg
@@ -137,7 +145,8 @@ begin
       rst => rst,
       clr => sh_clr,
       shift => shw_shift,
-      msb => shw_msb
+      msb => shw_msb,
+      last => shw_last
     );
 
 end behave;

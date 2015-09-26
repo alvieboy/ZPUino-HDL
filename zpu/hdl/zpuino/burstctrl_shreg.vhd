@@ -12,6 +12,7 @@ entity burstctrl_shreg is
     rst:    in std_logic;
     clr:    in std_logic;
     msb:    out std_logic;
+    last:   out std_logic;
     shift:  in std_logic
   );
 end entity burstctrl_shreg;
@@ -35,5 +36,6 @@ begin
 end process;
 
 msb <= shreg(WIDTH_BITS);
+last <= shreg(WIDTH_BITS) and not shreg(WIDTH_BITS-1);
 
 end behave;
