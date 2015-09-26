@@ -436,6 +436,7 @@ begin
       m_wb_we_i     => '0',
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
       m_wb_ack_o    => open,
 
       wb_ack_i      => dram_wb_ack_o,
