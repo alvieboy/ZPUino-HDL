@@ -129,8 +129,7 @@ NET SPI_MISO    LOC="P65"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | PULLUP; # 
 
 NET LED LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW; # LED
 
-# These are now in .xcf
-#NET "sysclk" TNM_NET = "GRP_sysclk";
-#NET "hdmi_inst/clocking.pllinst/c2" TNM_NET = "GRP_pixclk";
-#TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
-
+NET "sysclk" TNM_NET = "GRP_sysclk";
+NET "hdmi_inst/clocking.pllinst/c2" TNM_NET = "GRP_pixclk";
+TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
+TIMESPEC TS_SYS_TO_PIX2 = FROM GRP_pixclk TO GRP_sysclk 15 ns DATAPATHONLY;

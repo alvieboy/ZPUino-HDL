@@ -104,7 +104,7 @@ architecture behave of papilio_pro_top is
   );
   end component zpuino_serialreset;
 
-  component hdmi_640_480 is
+  component hdmi_generic is
   port(
     wb_clk_i: in std_logic;
 	 	wb_rst_i: in std_logic;
