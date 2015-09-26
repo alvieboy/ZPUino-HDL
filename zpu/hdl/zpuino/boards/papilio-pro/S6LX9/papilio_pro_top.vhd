@@ -440,6 +440,7 @@ begin
       m_wb_we_i     => '0',
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
       m_wb_ack_o    => open,
       m_wb_stall_o  => open,
 

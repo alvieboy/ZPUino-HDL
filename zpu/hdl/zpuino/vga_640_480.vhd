@@ -8,6 +8,7 @@ use work.zpu_config.all;
 use work.zpuino_config.all;
 use work.zpupkg.all;
 use work.zpuinopkg.all;
+use work.wishbonepkg.all;
 
 entity vga_640_480 is
   port(
@@ -202,7 +203,8 @@ begin
   id <= x"08" & x"1A"; -- Vendor: ZPUIno  Product: VGA 640x480 16-bit
 
   mi_wb_dat_o <= (others => DontCareValue);
-  mi_wb_we_o <= '0';
+  mi_wb_we_o  <= '0';
+  mi_wb_cti_o <= CTI_CYCLE_INCRADDR;
 
   process(wb_adr_i)
     variable r: unsigned(15 downto 0);

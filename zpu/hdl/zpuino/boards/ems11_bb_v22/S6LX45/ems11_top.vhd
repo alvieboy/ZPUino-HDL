@@ -454,6 +454,7 @@ begin
       m_wb_adr_i    => m_wb_adr_i,
       m_wb_we_i     => m_wb_we_i,
       m_wb_cyc_i    => m_wb_cyc_i,
+      m_wb_cti_i    => m_wb_cti_i,
       m_wb_stb_i    => m_wb_stb_i,
       m_wb_ack_o    => m_wb_ack_o,
       m_wb_stall_o  => m_wb_stall_o,
@@ -761,7 +762,7 @@ begin
   -- IO SLOT 13
   --
 
-  vga: vga_640_480
+  vga: vga_generic
     port map (
     wb_clk_i    => wb_clk_i,
 	 	wb_rst_i    => wb_rst_i,
@@ -779,7 +780,7 @@ begin
     mi_wb_dat_o   => m_wb_dat_i,
     mi_wb_adr_o   => m_wb_adr_i(maxAddrBitIncIO downto 0),
     mi_wb_sel_o   => open,
-    mi_wb_cti_o   => open,
+    mi_wb_cti_o   => m_wb_cti_i,
     mi_wb_we_o    => m_wb_we_i,
     mi_wb_cyc_o   => m_wb_cyc_i,
     mi_wb_stb_o   => m_wb_stb_i,
