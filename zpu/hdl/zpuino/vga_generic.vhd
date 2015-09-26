@@ -110,9 +110,6 @@ architecture behave of vga_generic is
 
     state:    state_type;
     chars:    std_logic_vector(wordSize-1 downto 0);
-    hptr:     counter_type;
-    hoff:     unsigned(4 downto 0);
-    voff:     unsigned(4 downto 0);
     memptr:   unsigned(mi_wb_adr_o'high downto 2);
 
     rburst, wburst: integer;
@@ -120,8 +117,6 @@ architecture behave of vga_generic is
     -- Wishbone
     cyc:  std_logic;
     stb:  std_logic;
-    adr:  std_logic_vector(31 downto 0);
-    fillcount: counter_type;
   end record;
 
   signal r: vgaregs_type;
@@ -205,6 +200,13 @@ architecture behave of vga_generic is
   signal lineram_dia, lineram_dob: std_logic_vector(31 downto 0);
   signal lineram_addra, lineram_addrb: unsigned(9 downto 0);
   signal read_enable_q: std_logic;
+
+  signal bctrl_sob:   std_logic;
+  signal bctrl_rnext: std_logic;
+  signal bctrl_wnext: std_logic;
+  signal bctrl_req:   std_logic;
+  signal bctrl_eob:   std_logic;
+
 begin
 
   -- Wishbone register access
@@ -315,10 +317,24 @@ begin
     end if;
   end process;
 
-  mi_wb_stb_o <= r.stb;
-  mi_wb_cyc_o <= r.cyc;
---  mi_wb_adr_o <= r.adr;
   mi_wb_adr_o <= std_logic_vector( r.memptr ) & "00";
+
+  burstctl: entity work.wb_burstctrl
+    port map (
+      clk     => wb_clk_i,
+      rst     => wb_rst_i,
+      sob     => bctrl_sob,
+      eob     => bctrl_eob,
+      cti     => mi_wb_cti_o,
+      stb     => mi_wb_stb_o,
+      cyc     => mi_wb_cyc_o,
+      stall   => mi_wb_stall_i,
+      ack     => mi_wb_ack_i,
+      req     => bctrl_req,
+      rnext   => bctrl_rnext,
+      wnext   => bctrl_wnext
+    );
+
 
   process(wb_clk_i, wb_rst_i, r, mi_wb_ack_i, mi_wb_dat_i, membase, fifo_almost_full, vga_reset_q1,mi_wb_stall_i,disp_enable)
     variable w: vgaregs_type;
@@ -330,61 +346,37 @@ begin
     
     if wb_rst_i='1' then
       w.state := idle;
-
       fifo_clear <='1';
-      w.hptr := (others =>'0');
-      w.hoff := (others =>'0');
-      w.voff := (others =>'0');
-      w.cyc := '0';
-      w.stb := '0';
-      w.adr := (others => DontCareValue);
-
+      bctrl_sob <= 'X';
     else
 
       fifo_clear<='0';
+      bctrl_sob <= '0';
 
       case r.state is
 
         when idle =>
           -- If we can proceed to FIFO fill, do it
           if fifo_almost_full='0' and vga_reset_q1='0' then
-
             w.state := fill;
-            w.rburst := BURST_SIZE-1;
-            w.wburst := BURST_SIZE;
-            w.stb :='1';
-            w.cyc :='1';
-
+            bctrl_sob <= '1';
           end if;
+
           if vga_reset_q1='1' then
-            fifo_clear<='1';
+            fifo_clear <= '1';
             w.memptr := unsigned(membase);
-            --w.fillcount := V;
           end if;
 
         when fill =>
-          w.cyc := '1';
-
-          if r.wburst/=0 then
-            w.stb := '1';
-          else
-            w.stb := '0';
-          end if;
 
           fifo_write_enable <= mi_wb_ack_i;
 
-          if (mi_wb_stall_i='0' and r.wburst/=0) then
+          if bctrl_wnext='1' then
             w.memptr := r.memptr + 1;
-            w.wburst := r.wburst - 1;
           end if;
 
-          if mi_wb_ack_i='1' then
-            w.rburst := r.rburst -1;
-            if r.rburst=0 then
-              w.state := idle;
-              w.stb := '0';
-              w.cyc := '0';
-            end if;
+          if bctrl_eob='1' then
+            w.state := idle;
           end if;
 
         when others =>
