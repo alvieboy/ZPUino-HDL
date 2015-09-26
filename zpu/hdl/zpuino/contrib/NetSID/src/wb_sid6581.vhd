@@ -43,6 +43,7 @@ library work;
 use work.zpuino_config.all;
 use work.zpu_config.all;
 use work.zpupkg.all;
+use work.zpuinopkg.all;
 
 entity wb_sid6581 is
   port (
