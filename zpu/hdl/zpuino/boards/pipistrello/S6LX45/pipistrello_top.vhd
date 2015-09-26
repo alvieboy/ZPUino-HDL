@@ -236,7 +236,7 @@ architecture behave of pipistrello_top is
   signal sram_wb_ack_o:       std_logic;
   signal sram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
   signal sram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal sram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal sram_wb_adr_i:       std_logic_vector(31 downto 0);
   signal sram_wb_cyc_i:       std_logic;
   signal sram_wb_stb_i:       std_logic;
   signal sram_wb_cti_i:       std_logic_vector(2 downto 0);
@@ -280,50 +280,6 @@ architecture behave of pipistrello_top is
 
   signal memory_enable: std_logic;
 
-
-  component memctrl_wb is
-  generic (
-    C3_NUM_DQ_PINS          : integer := 16;
-    C3_MEM_ADDR_WIDTH       : integer := 13; 
-    C3_MEM_BANKADDR_WIDTH   : integer := 2
-  );
-  port (
-    wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
-
-    wb_dat_o: out std_logic_vector(31 downto 0);
-    wb_dat_i: in std_logic_vector(31 downto 0);
-    wb_adr_i: in std_logic_vector(maxIOBit downto minIOBit);
-    wb_we_i:  in std_logic;
-    wb_cyc_i: in std_logic;
-    wb_stb_i: in std_logic;
-    wb_sel_i: in std_logic_vector(3 downto 0);
-    wb_cti_i: in std_logic_vector(2 downto 0);
-    wb_bte_i: in std_logic_vector(1 downto 0);
-    wb_ack_o: out std_logic;
-    wb_stall_o: out std_logic;
-
-    mcb3_dram_dq                            : inout  std_logic_vector(C3_NUM_DQ_PINS-1 downto 0);
-    mcb3_dram_a                             : out std_logic_vector(C3_MEM_ADDR_WIDTH-1 downto 0);
-    mcb3_dram_ba                            : out std_logic_vector(C3_MEM_BANKADDR_WIDTH-1 downto 0);
-    mcb3_dram_cke                           : out std_logic;
-    mcb3_dram_ras_n                         : out std_logic;
-    mcb3_dram_cas_n                         : out std_logic;
-    mcb3_dram_we_n                          : out std_logic;
-    mcb3_dram_dm                            : out std_logic;
-    mcb3_dram_udqs                          : inout  std_logic;
-    mcb3_rzq                                : inout  std_logic;
-    mcb3_dram_udm                           : out std_logic;
-    mcb3_dram_dqs                           : inout  std_logic;
-    mcb3_dram_ck                            : out std_logic;
-    mcb3_dram_ck_n                          : out std_logic;
-
-    clkin:  in std_logic;
-    rstin:  in std_logic;
-    clkout: out std_logic;
-    rstout: out std_logic
-  );
-  end component memctrl_wb;
 
   signal sigmadelta_raw: std_logic_vector(17 downto 0);
   
@@ -702,6 +658,13 @@ begin
   --
 
   slot9: entity work.hdmi_generic
+  generic map (
+    CLKIN_PERIOD    => 44.792,
+    CLKFB_MULT      => 20,
+    CLK0_DIV        => 9,
+    CLK1_DIV        => 9,
+    CLK2_DIV        => 9
+  )
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -844,21 +807,32 @@ begin
   -- IO SLOT 15 - do not use
   --
 
-  memctrl_inst: memctrl_wb
+  memctrl_inst: entity work.memctrl_wb
+  generic map (
+      C3_COMPENSATION     => "DCM2PLL",
+      C3_CLK_BUFFER_INPUT  => false
+  )
   port map (
-      wb_clk_i    => wb_clk_i,
-  	 	wb_rst_i    => wb_rst_i,
-      wb_dat_o    => sram_wb_dat_o,
-      wb_dat_i    => sram_wb_dat_i,
-      wb_adr_i    => sram_wb_adr_i(maxIObit downto minIObit),
-      wb_we_i     => sram_wb_we_i,
-      wb_cyc_i    => sram_wb_cyc_i,
-      wb_stb_i    => sram_wb_stb_i,
-      wb_sel_i    => sram_wb_sel_i,
-      wb_ack_o    => sram_wb_ack_o,
-      wb_cti_i    => sram_wb_cti_i,
-      wb_bte_i    => BTE_BURST_16BEATWRAP, -- Hardcoded.
-      wb_stall_o  => sram_wb_stall_o,
+      syscon.clk    => wb_clk_i,
+  	 	syscon.rst    => wb_rst_i,
+
+      wbo.dat    => sram_wb_dat_o,
+      wbo.ack    => sram_wb_ack_o,
+      wbo.stall  => sram_wb_stall_o,
+      wbo.err    => open,
+      wbo.rty    => open,
+      wbo.int    => open,
+      wbo.tag    => open,
+
+      wbi.dat    => sram_wb_dat_i,
+      wbi.adr    => sram_wb_adr_i,
+      wbi.we     => sram_wb_we_i,
+      wbi.cyc    => sram_wb_cyc_i,
+      wbi.stb    => sram_wb_stb_i,
+      wbi.sel    => sram_wb_sel_i,
+      wbi.cti    => sram_wb_cti_i,
+      wbi.bte    => BTE_BURST_16BEATWRAP, -- Hardcoded.
+      wbi.tag    => x"00000000",
 
       mcb3_dram_dq    =>      mcb3_dram_dq,
       mcb3_dram_a     =>      mcb3_dram_a,
@@ -887,7 +861,7 @@ begin
     CLKFX_DIVIDE => 20,
     CLKFX_MULTIPLY => 9,
     CLKIN_DIVIDE_BY_2 => FALSE,   -- TRUE/FALSE to enable CLKIN divide by two feature
-    CLKIN_PERIOD => 20.00,         -- Specify period of input clock
+    CLKIN_PERIOD => 20.0,         -- Specify period of input clock
     CLKOUT_PHASE_SHIFT => "NONE", -- Specify phase shift of NONE, FIXED or VARIABLE
     CLK_FEEDBACK => "1X",       -- Specify clock feedback of NONE, 1X or 2X
     DESKEW_ADJUST => "SYSTEM_SYNCHRONOUS",  -- SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or an integer from 0 to 15

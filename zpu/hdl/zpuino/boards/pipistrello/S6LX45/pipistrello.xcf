@@ -1,0 +1,7 @@
+NET "clkin" TNM_NET = "clkin" ;
+TIMESPEC "TS_clkin" = PERIOD "clkin" 20000 ps INPUT_JITTER 200 ps;
+
+NET "sysclk" TNM_NET = "GRP_sysclk";
+NET "slot9/clocking.clk2" TNM_NET = "GRP_pixclk";
+TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
+TIMESPEC TS_SYS_TO_PIXw = FROM GRP_pixclk TO GRP_sysclk 15 ns DATAPATHONLY;

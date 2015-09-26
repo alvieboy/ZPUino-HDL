@@ -3,12 +3,12 @@ CONFIG VCCAUX = "3.3" ;
 
 
 NET "clkin"           LOC = "H17"  | IOSTANDARD = LVTTL;
-NET "clkin" TNM_NET = "clkin" ;
-TIMESPEC "TS_clkin" = PERIOD "clkin" 20000 ps INPUT_JITTER 200 ps;
+#NET "clkin" TNM_NET = "clkin" ;
+#TIMESPEC "TS_clkin" = PERIOD "clkin" 20000 ps INPUT_JITTER 200 ps;
 
-NET "sysclk" TNM_NET = "GRP_sysclk";
-NET "slot9/clocking.clk2" TNM_NET = "GRP_pixclk";
-TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
+#NET "sysclk" TNM_NET = "GRP_sysclk";
+#NET "slot9/clocking.clk2" TNM_NET = "GRP_pixclk";
+#TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
 
 # JTAG
 #NET "jtag_tms"       LOC = "B18"  | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST ;

@@ -139,7 +139,8 @@ architecture rtl of memctrl_wb is
   );
   end component;
 
-  signal sysclk: std_logic;
+  signal sysclk, rstout_i: std_logic;
+  signal pll_lock: std_logic;
 
 
   constant INSTR_NOP:     std_logic_vector(2 downto 0) := "000";
@@ -170,7 +171,7 @@ architecture rtl of memctrl_wb is
     READPIPE
   );
 
- -- constant READBURSTSIZE: std_logic_vector(5 downto 0) := "010000";
+ -- constant READBURSTSIZE: std_logic_vector(5 downto 0) := "001111";
 
   type regs_type is record
     state: state_type;
@@ -183,13 +184,15 @@ architecture rtl of memctrl_wb is
 begin
 
   clkout<=sysclk;
+  rstout <= not pll_lock;
 
   ctrl: memctrl
   port map (
       c3_sys_clk      => clkin,
       c3_sys_rst_i    => rstin,
       c3_clk0         => sysclk,
-      c3_rst0         => rstout,
+      c3_rst0         => rstout_i,
+      c3_pll_lock_out => pll_lock,
 
       c3_p0_rd_clk    => sysclk,
       c3_p0_wr_clk    => sysclk,
@@ -326,16 +329,15 @@ begin
         wb_ack_o <= not rd_empty;
         rd_en<='1';
         if rd_empty='0' then
-          if r.bl="000000" then
-            --wb_ack_o<='0';
-            w.state := IDLE;
-          else
             w.bl := std_logic_vector(unsigned(r.bl) - 1);
-          end if;
         end if;
 
-        -- TODO: Check for aborted requests.
 
+        if r.bl="000000" then
+          wb_ack_o<='0';
+          tag_pop <= '0';
+          w.state := IDLE;
+        end if;
 
       when WRITE =>
         wb_stall_o<='1';
