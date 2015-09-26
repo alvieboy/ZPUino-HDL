@@ -49,3 +49,4 @@ run
 -iob Auto
 -equivalent_register_removal No
 -slice_utilization_ratio_maxmargin 5
+-uc papilio_pro.xcf
