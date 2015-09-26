@@ -40,15 +40,16 @@ use IEEE.std_logic_unsigned.all;
 
 entity fifo is
   generic (
-    bits: integer := 11
+    bits: integer := 11;
+    datawidth: integer := 8
   );
   port (
     clk:      in std_logic;
     rst:      in std_logic;
     wr:       in std_logic;
     rd:       in std_logic;
-    write:    in std_logic_vector(7 downto 0);
-    read :    out std_logic_vector(7 downto 0);
+    write:    in std_logic_vector(datawidth-1 downto 0);
+    read :    out std_logic_vector(datawidth-1 downto 0);
     full:     out std_logic;
     empty:    out std_logic
   );
@@ -56,21 +57,20 @@ end entity fifo;
 
 architecture behave of fifo is
 
-  type mem_t is array (0 to ((2**bits)-1)) of std_logic_vector(7 downto 0);
+  type mem_t is array (0 to ((2**bits)-1)) of std_logic_vector(datawidth-1 downto 0);
 
-  signal memory:  mem_t;
+  shared variable memory:  mem_t;
 
   signal wraddr: unsigned(bits-1 downto 0);
   signal rdaddr: unsigned(bits-1 downto 0);
 
 begin
 
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      read <= memory( conv_integer(std_logic_vector(rdaddr)) );
-    end if;
-  end process;
+  --process(clk)
+  --begin
+  --  if rising_edge(clk) then
+  --  end if;
+  --end process;
 
   process(clk,rdaddr,wraddr,rst)
     variable full_v: std_logic;
@@ -96,19 +96,24 @@ begin
       else
   
         if wr='1' and full_v='0' then
-          memory(conv_integer(std_logic_vector(wraddr) ) ) <= write;
+          memory(conv_integer(std_logic_vector(wraddr) ) ) := write;
           wraddr <= wraddr+1;
         end if;
   
         if rd='1' and empty_v='0' then
           rdaddr <= rdaddr+1;
         end if;
+        if rd='1' then
+          read <= memory( conv_integer(std_logic_vector(rdaddr)) );
+      end if;
       end if;
 
+
       full <= full_v;
-      empty <= empty_v;
 
     end if;
+
+    empty <= empty_v;
 
 
   end process;
