@@ -29,6 +29,7 @@ ZPUino 2.0
 | 0xB4010F00 | GF PapilioOne        | S3E500   | 32Kb                                |
 | 0xB4051300 | GF Papilio Duo       | S6 LX9   | SRAM (512/1MB)                      |
 | 0xB6011900 | Xess XuLA2           | S6 LX9   | 32MB SDRAM (8K Inst Cache)          |
+| 0xB6021900 | Xess XuLA2           | S6 LX25  | 32MB SDRAM (8K Inst Cache)          |
 | 0xB8011A00 | EMS11-22             | S6 LX45  | 64MB SDRAM (8K Inst Cache)          |
 | 0xBA011A00 | Saanlima Pipistrello | S6 LX45  | 64MB LPDDR (8K Inst Cache)          |
 | 0xBB011A00 | Numato Saturn6       | S6 LX45  | 64MB LPDDR (8K Inst Cache)          |
