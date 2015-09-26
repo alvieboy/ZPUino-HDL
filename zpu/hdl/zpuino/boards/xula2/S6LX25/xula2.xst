@@ -5,7 +5,7 @@ run
 -ifmt mixed
 -ofn xula2
 -ofmt NGC
--p xc6slx9-2-ftg256
+-p xc6slx25-2-ftg256
 -top xula2_top
 -opt_mode Speed
 -opt_level 2
