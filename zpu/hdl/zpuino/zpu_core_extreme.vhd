@@ -333,8 +333,17 @@ signal freeze_all: std_logic := '0';
 signal single_step: std_logic := '0';
 
 
+signal rom_wb_cyc_o_i:  std_logic;
+signal rom_wb_stb_o_i:  std_logic;
+signal rom_queued:  std_logic;
+signal rom_queued_data:  std_logic_vector(31 downto 0);
+signal rom_data:  std_logic_vector(31 downto 0);
+signal rom_data_valid: std_logic;
+
 begin
 
+  rom_wb_cyc_o <= rom_wb_cyc_o_i;
+  rom_wb_stb_o <= rom_wb_stb_o_i;
 
   -- Debug interface
 
@@ -385,7 +394,7 @@ begin
 
 
   decodeControl:
-  process(rom_wb_dat_i, tOpcode_sel, sp_load, decr,
+  process(rom_data, tOpcode_sel, sp_load, decr,
     do_interrupt, dbg_in.inject, dbg_in.opcode)
     variable tOpcode : std_logic_vector(OpCode_Size-1 downto 0);
     variable localspOffset: unsigned(4 downto 0);
@@ -395,13 +404,13 @@ begin
     else
       case (tOpcode_sel) is
 
-            when 0 => tOpcode := std_logic_vector(rom_wb_dat_i(31 downto 24));
+            when 0 => tOpcode := std_logic_vector(rom_data(31 downto 24));
 
-            when 1 => tOpcode := std_logic_vector(rom_wb_dat_i(23 downto 16));
+            when 1 => tOpcode := std_logic_vector(rom_data(23 downto 16));
 
-            when 2 => tOpcode := std_logic_vector(rom_wb_dat_i(15 downto 8));
+            when 2 => tOpcode := std_logic_vector(rom_data(15 downto 8));
 
-            when 3 => tOpcode := std_logic_vector(rom_wb_dat_i(7 downto 0));
+            when 3 => tOpcode := std_logic_vector(rom_data(7 downto 0));
 
             when others =>
               null;
@@ -587,9 +596,36 @@ begin
 
   end process;
 
+  process(wb_clk_i)
+  begin
+    if rising_edge(wb_clk_i) then
+      if wb_rst_i='1' then
+        rom_queued<='0';
+        rom_queued_data<=(others => 'X');
+      else
+      if rom_wb_cyc_o_i='0' then
+        rom_queued<='0';
+        rom_queued_data<=(others => 'X');
+      else
+        if rom_wb_ack_i='1' then
+          rom_queued_data<=rom_wb_dat_i;
+        end if;
+        if rom_wb_ack_i='1' and rom_wb_stb_o_i='0' then
+          rom_queued<='1';
+        end if;
+      end if;
+      end if;
+    end if;
+  end process;
+
+  rom_data_valid<='1' when rom_queued='1' or rom_wb_ack_i='1' else '0';
+
   -- Decode/Fetch unit
 
-  rom_wb_stb_o <= not exu_busy;
+  rom_data <= rom_queued_data when rom_queued='1' and (rom_wb_ack_i='0') else rom_wb_dat_i;
+
+
+  rom_wb_stb_o_i <= not exu_busy;
 
   process(decr, jump_address, decode_jump, wb_clk_i, sp_load,
           sampledDecodedOpcode,sampledOpcode,decode_load_sp,
@@ -619,10 +655,10 @@ begin
       w.im_emu:='0';
       w.state := State_Run;
       w.break := '0';
-      rom_wb_cyc_o <= '0';
+      rom_wb_cyc_o_i <= '0';
     else
 
-      rom_wb_cyc_o <= '1';
+      rom_wb_cyc_o_i <= '1';
 
       case decr.state is
         when State_Run =>
@@ -638,7 +674,7 @@ begin
               w.im := '0';
               w.break := '0'; -- Invalidate eventual break after branch instruction
               --rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
-              rom_wb_cyc_o<='0';
+              rom_wb_cyc_o_i<='0';
               --if rom_wb_stall_i='0' then
                 w.fetchpc := jump_address;
               --else
@@ -652,7 +688,7 @@ begin
                 w.im_emu := decr.im;
                 w.valid := '0';
                 --rom_wb_cti_o <= CTI_CYCLE_ENDOFBURST;
-                rom_wb_cyc_o <='0';
+                rom_wb_cyc_o_i <='0';
                 -- Wait until no work is to be done
                 if prefr.valid='0' and decr.valid='0' and exu_busy='0' then
                   w.state := State_Inject;
@@ -667,10 +703,10 @@ begin
                 if decr.break='1' then
                   w.valid := '0';
                 else
-                  w.valid := rom_wb_ack_i;
+                  w.valid := rom_data_valid;
                 end if;
 
-                if rom_wb_ack_i='1' then
+                if rom_data_valid='1' then
                   w.im := sampledOpcode(7);
                   if sampledDecodedOpcode=Decoded_Break then
                     w.break:='1';
@@ -710,7 +746,7 @@ begin
 
         when State_Inject =>
           -- NOTE: disable ROM
-          rom_wb_cyc_o <= '0';
+          rom_wb_cyc_o_i <= '0';
 
           if dbg_in.injectmode='0' then
             w.im := decr.im_emu;
