@@ -21,10 +21,16 @@ extern int main(int,char**);
 extern void __sys_load();
 extern void __tests();
 
+#ifdef ZPUINO_HAS_ICACHE
+#ifndef ZPUINO_NEED_SYSLOAD
+#define ZPUINO_NEED_SYSLOAD
+#endif
+#endif
+
 void _premain2(unsigned memtop)
 {
    /* __tests(); */
-#ifdef ZPUINO_HAS_ICACHE
+#ifdef ZPUINO_NEED_SYSLOAD
 	__sys_load();
 #endif
 	main(0,(char**)memtop);
