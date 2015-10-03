@@ -1,8 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Engineer: Mike Field <hamster@snap.net.nz>
--- Changed by Alvaro Lopes <alvieboy@alvie.com>
 -- 
--- Description: TMDS Encoder
+-- Description: TMDS Encoder 
 --     8 bits colour, 2 control bits and one blanking bits in
 --       10 bits of TMDS encoded data out
 --     Clocked at the pixel clock

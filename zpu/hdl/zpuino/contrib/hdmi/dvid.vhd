@@ -71,9 +71,9 @@ begin
     end if;
   end process;
 
-  TDMS_encoder_blue:  entity work.TDMS_encoder GENERIC MAP ( CHANNEL => 0 ) PORT MAP(clk => clk_pixel, data => blue_p,  c => c_blue,  blank => blank, guard => guard, indata => indata, encoded => encoded_blue);
-  TDMS_encoder_green: entity work.TDMS_encoder GENERIC MAP ( CHANNEL => 1 ) PORT MAP(clk => clk_pixel, data => green_p, c => c_green, blank => blank, guard => guard, indata => indata, encoded => encoded_green);
-  TDMS_encoder_red:   entity work.TDMS_encoder GENERIC MAP ( CHANNEL => 2 ) PORT MAP(clk => clk_pixel, data => red_p,   c => c_red,   blank => blank, guard => guard, indata => indata, encoded => encoded_red);
+  TMDS_encoder_blue:  entity work.TMDS_encoder GENERIC MAP ( CHANNEL => 0 ) PORT MAP(clk => clk_pixel, data => blue_p,  c => c_blue,  blank => blank, guard => guard, indata => indata, encoded => encoded_blue);
+  TMDS_encoder_green: entity work.TMDS_encoder GENERIC MAP ( CHANNEL => 1 ) PORT MAP(clk => clk_pixel, data => green_p, c => c_green, blank => blank, guard => guard, indata => indata, encoded => encoded_green);
+  TMDS_encoder_red:   entity work.TMDS_encoder GENERIC MAP ( CHANNEL => 2 ) PORT MAP(clk => clk_pixel, data => red_p,   c => c_red,   blank => blank, guard => guard, indata => indata, encoded => encoded_red);
 
   ipll: BUFPLL
     generic map (
