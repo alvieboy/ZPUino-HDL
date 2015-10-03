@@ -675,7 +675,7 @@ begin
 --		full    => fifo_full
 --  );
 
-  myfifo: entity work.async_fifo_fwft
+  myfifo: entity work.async_fifo
     generic map (
       data_bits => 32,
       address_bits => 8,
