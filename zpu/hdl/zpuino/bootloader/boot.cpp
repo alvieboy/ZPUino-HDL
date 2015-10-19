@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-#define VERBOSE_LOADER
+//#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -882,7 +882,7 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-#ifndef VERBOSE_LOADER
+#if 0//ndef VERBOSE_LOADER
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;
 	_bfunctions[2] = (unsigned)&memset;
