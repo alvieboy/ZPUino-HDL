@@ -23,6 +23,7 @@
 #include <byteswap.h>
 
 #define DEFAULT_SPEED B1000000
+#define DEFAULT_INITIAL_SPEED B115200
 #define DEFAULT_SPEED_INT 1000000
 typedef int connection_t;
 #define cpu_to_le16(x) __bswap_16(x)
