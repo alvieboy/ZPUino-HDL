@@ -50,7 +50,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	}
 
 	if (verbose>2)
-		printf("Opened device '%s'\n", device);
+		printf("Opened device '%s' with speed %u\n", device, speed);
 
 	tcgetattr(fd, &termset);
 	termset.c_iflag = IGNBRK;   
@@ -102,10 +102,7 @@ void conn_reset(connection_t conn)
 	// Send reset sequence
 
 	write(conn, reset,sizeof(reset));
-	tcflush(conn, TCOFLUSH);
-
-	// delay a bit. 
-	//usleep(400000);
+        tcdrain(conn);
 
 	cfsetospeed(&termset,txs);
 	cfsetispeed(&termset,rxs);
