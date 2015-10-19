@@ -56,6 +56,7 @@ static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
 static speed_t serial_speed = DEFAULT_SPEED;
+static speed_t initial_serial_speed = DEFAULT_INITIAL_SPEED;
 static unsigned int serial_speed_int = 0;
 static int dry_run = 0;
 static int serial_reset = 0;
@@ -101,7 +102,7 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'S':
 			spd = atoi(optarg);
-			if (conn_parse_speed(spd,&serial_speed)<0)
+			if (conn_parse_speed(spd,&initial_serial_speed)<0)
 				return -1;
 			break;
 		case 'b':
@@ -226,7 +227,7 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
         if (verbose>1) {
 		printf("Settting baudrate divider to %u\n",divider);
 	}
-	b = sendreceivecommand(conn,BOOTLOADER_CMD_SETBAUDRATE, txbuf,4,300);
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_SETBAUDRATE, txbuf,4,500);
 	if (b)
 		buffer_free(b);
 
@@ -239,7 +240,7 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 		if (verbose>2) {
 			printf("Connecting at new speed (%u)...\n",baud_int);
 		}
-		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
+		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,500);
 		if (b)
 			break;
 		retries--;
@@ -350,7 +351,7 @@ int open_device(char *device,connection_t *conn)
 	if (is_simulator)
 		return open_simulator_device(device,conn);
 	else
-		return conn_open(device,serial_speed,conn);
+		return conn_open(device,initial_serial_speed,conn);
 }
 
 
@@ -697,7 +698,7 @@ int main(int argc, char **argv)
 		if (verbose>2) {
 			printf("Connecting...\n");
 		}
-		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,200);
+		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,500);
 		if (b)
 			break;
 		retries--;
