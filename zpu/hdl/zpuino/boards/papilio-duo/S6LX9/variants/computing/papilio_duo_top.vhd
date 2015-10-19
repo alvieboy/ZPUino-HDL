@@ -490,6 +490,7 @@ begin
       m_wb_we_i     => m_wb_we_i,
       m_wb_cyc_i    => m_wb_cyc_i,
       m_wb_stb_i    => m_wb_stb_i,
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
       m_wb_ack_o    => m_wb_ack_o,
       m_wb_stall_o  => m_wb_stall_o,
 

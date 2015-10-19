@@ -356,7 +356,7 @@ begin
 
     if wb_rst_i='1' then
       w.state := idle;
-      fifo_clear <='1';
+      --fifo_clear <='1';
       w.hptr := (others =>'0');
       w.hoff := (others =>'0');
       w.voff := (others =>'0');

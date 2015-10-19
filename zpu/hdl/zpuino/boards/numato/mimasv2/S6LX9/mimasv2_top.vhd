@@ -234,7 +234,7 @@ architecture behave of mimasv2_top is
   signal sram_wb_ack_o:       std_logic;
   signal sram_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
   signal sram_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
-  signal sram_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal sram_wb_adr_i:       std_logic_vector(31 downto 0);
   signal sram_wb_cyc_i:       std_logic;
   signal sram_wb_stb_i:       std_logic;
   signal sram_wb_cti_i:       std_logic_vector(2 downto 0);
@@ -291,6 +291,7 @@ architecture behave of mimasv2_top is
   signal vga_g:       std_logic_vector(5 downto 0);
 
   signal vgaclk:      std_ulogic;
+  signal vgaclk_i:    std_ulogic;
   signal ssenable:    std_logic_vector(3 downto 0);
 
   signal extrst:      std_logic;
@@ -814,20 +815,38 @@ begin
   --
 
   memctrl_inst: entity work.memctrl_wb
+  generic map (
+      C3_COMPENSATION     => "INTERNAL",
+      C3_CLK_BUFFER_INPUT  => true,
+      C3_CLKFBOUT_MULT    => 8,
+      C3_CLKOUT0_DIVIDE   => 2,    -- 400 MHz for DDR (4x)
+      C3_CLKOUT1_DIVIDE   => 2,    -- 400 MHz for DDR (4x)
+      C3_CLKOUT2_DIVIDE   => 8,    -- 100 MHz for system
+      C3_CLKOUT3_DIVIDE   => 8,     -- 100 MHz for DDR memory
+      C3_CLKOUT4_DIVIDE   => 19    -- 42 MHz for VGA
+  )
+
   port map (
-      wb_clk_i    => wb_clk_i,
-  	 	wb_rst_i    => wb_rst_i,
-      wb_dat_o    => sram_wb_dat_o,
-      wb_dat_i    => sram_wb_dat_i,
-      wb_adr_i    => sram_wb_adr_i(maxIObit downto minIObit),
-      wb_we_i     => sram_wb_we_i,
-      wb_cyc_i    => sram_wb_cyc_i,
-      wb_stb_i    => sram_wb_stb_i,
-      wb_sel_i    => sram_wb_sel_i,
-      wb_ack_o    => sram_wb_ack_o,
-      wb_cti_i    => sram_wb_cti_i,
-      wb_bte_i    => BTE_BURST_16BEATWRAP, -- Hardcoded.
-      wb_stall_o  => sram_wb_stall_o,
+      syscon.clk    => wb_clk_i,
+  	 	syscon.rst    => wb_rst_i,
+
+      wbo.dat    => sram_wb_dat_o,
+      wbo.ack    => sram_wb_ack_o,
+      wbo.stall  => sram_wb_stall_o,
+      wbo.err    => open,
+      wbo.rty    => open,
+      wbo.int    => open,
+      wbo.tag    => open,
+
+      wbi.dat    => sram_wb_dat_i,
+      wbi.adr    => sram_wb_adr_i,
+      wbi.we     => sram_wb_we_i,
+      wbi.cyc    => sram_wb_cyc_i,
+      wbi.stb    => sram_wb_stb_i,
+      wbi.sel    => sram_wb_sel_i,
+      wbi.cti    => sram_wb_cti_i,
+      wbi.bte    => BTE_BURST_16BEATWRAP, -- Hardcoded.
+      wbi.tag    => x"00000000",
 
       mcb3_dram_dq    =>      mcb3_dram_dq,
       mcb3_dram_a     =>      mcb3_dram_a,
@@ -847,9 +866,10 @@ begin
       clkin     => mcb_clkin,
       rstin     => '0',
       clkout    => sysclk,
-      clk1out   => vgaclk,
+      clk4      => vgaclk_i,
       rstout    => clkgen_rst
   );
+  vgabuf: BUFG port map ( I => vgaclk_i, O => vgaclk );
 
   mcb_clkin <= clkin;
 

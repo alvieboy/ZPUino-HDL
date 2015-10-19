@@ -42,6 +42,7 @@ use work.zpuinopkg.all;
 use work.zpuino_config.all;
 use work.zpu_config.all;
 use work.pad.all;
+use work.wishbonepkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -201,6 +202,9 @@ architecture behave of papilio_one_top is
   );
   end component;
 
+  signal ramwbi:  wb_mosi_type;
+  signal ramwbo:  wb_p_miso_type;
+
 begin
 
   wb_clk_i <= sysclk;
@@ -229,7 +233,7 @@ begin
 
 
 
-  zpuino:zpuino_top
+  zpuino: entity work.zpuino_top
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
@@ -256,7 +260,20 @@ begin
       m_wb_we_i     => '0',
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
       m_wb_ack_o    => open,
+
+      wb_ack_i      => ramwbo.ack,
+      wb_stall_i    => ramwbo.stall,
+      wb_dat_i      => ramwbo.dat,
+      wb_dat_o      => ramwbi.dat,
+      wb_adr_o      => ramwbi.adr(maxAddrBit downto 0),
+      wb_cyc_o      => ramwbi.cyc,
+      wb_cti_o      => ramwbi.cti,
+      wb_stb_o      => ramwbi.stb,
+      wb_sel_o      => ramwbi.sel,
+      wb_we_o       => ramwbi.we,
+
 
       dbg_reset     => dbg_reset,
       jtag_data_chain_out => open,--jtag_data_chain_out,
@@ -264,47 +281,19 @@ begin
 
     );
 
---  dbgport: zpuino_debug_jtag
---    port map (
---      jtag_data_chain_in => jtag_data_chain_out,
---      jtag_ctrl_chain_out => jtag_ctrl_chain_in,
 
---      TCK         => TCK,
---      TDI         => TDI,
---      CAPTUREIR   => CAPTUREIR,
---      UPDATEIR    => UPDATEIR,
---      SHIFTIR     => SHIFTIR,
---      CAPTUREDR   => CAPTUREDR,
---      UPDATEDR    => UPDATEDR,
---      SHIFTDR     => SHIFTDR,
---      TLR         => TLR,
+  -- RAM
 
---      TDO_IR      => TDO_IR,
---      TDO_DR      => TDO_DR
- --   );
-
-
---  dbgport_s3e: zpuino_debug_spartan3e
---    port map (
---
---      TCK         => TCK,
---      TDI         => TDI,
---      CAPTUREIR   => CAPTUREIR,
---      UPDATEIR    => UPDATEIR,
---      SHIFTIR     => SHIFTIR,
- --     CAPTUREDR   => CAPTUREDR,
-  --    UPDATEDR    => UPDATEDR,
- --     SHIFTDR     => SHIFTDR,
---      TLR         => TLR,
---
---      TDO_IR      => TDO_IR,
---      TDO_DR      => TDO_DR
---
- --   );
-
-
-
-
+  ram:  entity work.ocram
+    generic map (
+      address_bits => 11
+    )
+    port map (
+      syscon.clk  => wb_clk_i,
+      syscon.rst  => wb_rst_i,
+      wbi         => ramwbi,
+      wbo         => ramwbo
+   );
   --
   --
   -- ----------------  I/O connection to devices --------------------
