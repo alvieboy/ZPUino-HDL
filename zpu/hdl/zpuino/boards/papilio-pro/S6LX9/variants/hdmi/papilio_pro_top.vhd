@@ -856,10 +856,10 @@ begin
   --
   -- IO SLOT 14
   --
-
+  --   22.325581    0.044791667us
   hdmi_inst: entity work.hdmi_generic
   generic map (
-    CLKIN_PERIOD  => 44.792,
+    CLKIN_PERIOD  => 44.7916667,
     CLKFB_MULT => 43,
     CLK0_DIV => 10,
     CLK1_DIV => 10,

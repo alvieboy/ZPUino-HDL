@@ -7,4 +7,5 @@ TIMESPEC "TS_CLK" = PERIOD CLK 31.25 ns;
 #
 #TIMESPEC TS_SYS_TO_PIX = FROM GRP_sysclk TO GRP_pixclk 15 ns DATAPATHONLY;
 #TIMESPEC TS_SYS_TO_PIX2 = FROM GRP_pixclk TO GRP_sysclk 15 ns DATAPATHONLY;
-                                             
+
+#NET "*" IOSTANDARD=LVTTL;
