@@ -117,7 +117,7 @@ begin
     end if;
   end process;
 
-  process(rdptr_in_clkw_2, wrptr)
+  process(rdptr_in_clkw_2, wrptr, rst_r)
     variable delta: unsigned(address_bits-1 downto 0);
   begin
     delta := wrptr - rdptr_in_clkw_2;
@@ -126,12 +126,18 @@ begin
     else
       almost_full <= '0';
     end if;
+    if rst_r='1' then
+      almost_full <= '0';
+    end if;
   end process;
 
 
-  process(clk_w)
+  process(clk_w, rst_w)
   begin
-    if rising_edge(clk_w) then
+    if rst_w='1' then
+       rdptr_in_clkw_2  <= ( others => '0');
+       rdptr_in_clkw_1  <= ( others => '0');
+    elsif rising_edge(clk_w) then
       rdptr_in_clkw_2 <= rdptr_in_clkw_1;
       rdptr_in_clkw_1 <= rdptr;
     end if;
@@ -139,13 +145,16 @@ begin
 
   process(clk_r)
   begin
-    if rising_edge(clk_r) then
+    if rst_r='1' then
+      wrptr_in_clkr_2 <= ( others => '0');
+      wrptr_in_clkr_1 <= ( others => '0');
+    elsif rising_edge(clk_r) then
       wrptr_in_clkr_2 <= wrptr_in_clkr_1;
       wrptr_in_clkr_1 <= wrptr;
     end if;
   end process;
 
-  empty <= '1' when wrptr_in_clkr_2=rdptr else '0';
+  empty <= '1' when wrptr_in_clkr_2=rdptr or rst_r='1' else '0';
 
   mem: generic_dp_ram
     generic map (
@@ -169,29 +178,25 @@ begin
     );
 
   -- Write process
-  process(clk_w)
+  process(clk_w, rst_w)
   begin
-    if rising_edge(clk_w) then
-      if rst_w='1' then
-        wrptr <= (others => '0');
-      else
-        if wr='1' then
-          wrptr <= wrptr + 1;
-        end if;
+    if rst_w='1' then
+      wrptr <= (others => '0');
+    elsif rising_edge(clk_w) then
+      if wr='1' then
+        wrptr <= wrptr + 1;
       end if;
     end if;
   end process;
 
   -- Read process
-  process(clk_r)
+  process(clk_r, rst_r)
   begin
-    if rising_edge(clk_r) then
-      if rst_r='1' then
-        rdptr <= (others => '0');
-      else
-        if rd='1' then
-          rdptr <= rdptr + 1;
-        end if;
+    if rst_r='1' then
+      rdptr <= (others => '0');
+    elsif rising_edge(clk_r) then
+      if rd='1' then
+        rdptr <= rdptr + 1;
       end if;
     end if;
   end process;
