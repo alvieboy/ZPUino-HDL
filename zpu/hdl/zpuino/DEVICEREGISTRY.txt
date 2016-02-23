@@ -27,6 +27,7 @@
 
 03 ZPUIno Contrib
 	01 SID6581 Sound Chip
+        02 SUMP Logic Analyser
 
 04 OpenCores
 	01 I2C Master Controller
