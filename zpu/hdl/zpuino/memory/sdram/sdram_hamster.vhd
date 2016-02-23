@@ -720,7 +720,7 @@ begin
       end if;
    end process;
 
-  dram_dq_dly <= transport dram_dq after 1.9 ns;
+  dram_dq_dly <= transport dram_dq after 0.1 ns;--1.9 ns;
 
 --   process (clock_100_delayed_3ns, dram_dq_dly)
 --   begin
