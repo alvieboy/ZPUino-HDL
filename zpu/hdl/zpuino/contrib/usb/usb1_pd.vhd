@@ -376,9 +376,9 @@ begin
 	  when ACTIVE =>
 			if (pid_ACK_i='1' and rx_err='0') then
 				pid_ack_q <= '1';
-				if rx_active='0' then
+				--if rx_active='0' then
           next_state := IDLE;
-			  end if;
+			  --end if;
 			elsif ( pid_TOKEN='1' and rx_valid='1' and rx_active='1' and rx_err='0') then
 				token_le_1 <= '1';
 				next_state := TOKEN;

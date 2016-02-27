@@ -214,7 +214,7 @@ begin
   -- final latch enable to compensate for various sync registers ...
 
   lock_en <= rx_en; -- Allow clock adjustments only when we are receiving
-
+  -- synopsys translate_off
   process
   begin
     if CLOCK/="48" and CLOCK/="96" then
@@ -222,6 +222,7 @@ begin
     end if;
     wait;
   end process;
+  -- synopsys translate_on
 
 
   pll48: if CLOCK="48" generate
