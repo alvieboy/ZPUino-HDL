@@ -1,4 +1,4 @@
-LIBRARY IEEE;
+library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
@@ -59,7 +59,6 @@ ARCHITECTURE rtl OF usbctrl is
   alias reset: std_logic is wb_rst_i;
   signal rstinv: std_logic;
   constant DriverMode: std_logic := '1';
-
 
 BEGIN
 
@@ -131,23 +130,16 @@ BEGIN
 	signal	seq_err:    std_logic;
   signal  rx_busy:    std_logic;
 
-
   type pstatetype is (IDLE, READ, READ2, CRC1, CRC2, ACK, NACK, STALL, WRITE);
 
   type headertype is array(0 to 7) of std_logic_vector(7 downto 0);
 
   constant MAX_ENDPOINTS: natural := 4;
 
-  --constant EPTYPE_CONTROL:    std_logic_vector(1 downto 0) := "00";
-  --constant EPTYPE_BULK:       std_logic_vector(1 downto 0) := "01";
-  --constant EPTYPE_INTERRUPT:  std_logic_vector(1 downto 0) := "10";
-  --constant EPTYPE_ISOCHRONOUS:std_logic_vector(1 downto 0) := "11";
-
   constant EPTYPE_BULK_IN:        std_logic_vector(1 downto 0) := "00";
   constant EPTYPE_BULK_OUT:       std_logic_vector(1 downto 0) := "01";
   constant EPTYPE_INTERRUPT_IN:   std_logic_vector(1 downto 0) := "10";
   constant EPTYPE_INTERRUPT_OUT:  std_logic_vector(1 downto 0) := "11";
-
   
   type epc_type is record
     valid:  std_logic;
@@ -178,8 +170,6 @@ BEGIN
     state:  pstatetype;
     adr:    std_logic_vector(6 downto 0);
     endp:   std_logic_vector(3 downto 0);
-    --hdr:    headertype;
-    hcnt:   unsigned(2 downto 0);
     epc:    epc_list_type;
     epmem_addr:   std_logic_vector(10 downto 0);
     epmem_size:   unsigned(9 downto 0);
@@ -195,9 +185,6 @@ BEGIN
   end record;
 
   signal r: pregstype;
-
-  -- Interrupts
-  signal ireadrequest: std_logic;
 
   type transaction_type is ( TSETUP, TIN, TOUT );
 
@@ -256,6 +243,7 @@ BEGIN
       din     => reverse(epmem_do),
       crc_out => crc_out
   );
+
   process(clk)
   begin
     if rising_edge(clk) then
@@ -285,18 +273,7 @@ BEGIN
     dob     => cpu_epmem_do
   );
 
-  -- synopsys translate_off
-  process(clk)
-  begin
-  if rising_edge(clk) then
-    if epmem_we='1' and epmem_en='1' then
-      report "Write 0x"&hstr(epmem_addr)&" value 0x"&hstr(epmem_di);
-    end if;
-  end if;
-  end process;
-  -- synopsys translate_on
-
-  epmem_di <= rx_data_st;--Phy_DataIn;
+  epmem_di <= rx_data_st;
 
   process(clk,r,token_endp,token_fadr,pid_SETUP,pid_IN,pid_OUT,Phy_TxReady,
     wb_stb_i, wb_we_i, wb_cyc_i, wb_dat_i, wb_adr_i, rx_data_valid, reset,
@@ -338,7 +315,6 @@ BEGIN
   begin
     w:=r;
 
-    ireadrequest<='0';
     Phy_DataOut <= (others => 'X');
     Phy_TxValid <= '0';
 
@@ -356,18 +332,14 @@ BEGIN
             w.endp:= token_endp;
           end if;
 
-          w.hcnt := (others => '0');
-
           if pid_SETUP='1' then
             -- TODO: skip non-control endpoints
-            --w.state := SETUP;
             epi := conv_integer( unsigned(token_endp) );
             w.epc(epi).seq := '0';
             w.epmem_addr := r.epc(epi).mbase;
             w.epc(epi).dsize := (others => '0');
             w.state := WRITE;
             w.validwrite := '1'; -- Proper validation here please
-            --w.setup := '1';
 
           elsif pid_IN='1' then
             if is_endpoint_valid( r, token_endp, TIN) then
@@ -382,13 +354,6 @@ BEGIN
 
               if r.epc(epi).hwcontrol = '0' then
                 w.state := NACK;
-                -- Check interrupt control for this EP.
-                --if r.epc(epi).int_in='1' and r.int_en='1' then
-                --w.int_ep(epi).int_in:='1';
-               -- if rising_edge(clk) then
-               --   report "Interrupting ep " & str(epi);
-               -- end if;
-                --end if;
               end if;
             else
               w.epmem_addr := (others => 'X');
@@ -416,24 +381,6 @@ BEGIN
           end if;
         end if;
 
---      when SETUP =>
---        if rx_data_valid='1' then
---          w.hdr( conv_integer(r.hcnt) ) := rx_data_st;
---          w.hcnt := r.hcnt + 1;
---        end if;
---        if rx_data_done='1' then
---
---          if is_endpoint_valid( r, r.endp, TSETUP ) then
---            if r.hdr(0)(7)='1' then
---              ireadrequest<='1';
---            end if;
---            w.state := ACK;
---          else
---            w.state := IDLE; -- Ignore. USB20-8.4.6.4
---          end if;
-
---        end if;
-
       when WRITE =>
         epmem_en<='0';
         epmem_we<='1';
@@ -454,8 +401,6 @@ BEGIN
           w.epc(epi).dsize := r.epc(epi).dsize + 1;
           w.epmem_addr := r.epmem_addr + 1;
 
-          --w.hdr( conv_integer(r.hcnt) ) := rx_data_st;
-          --w.hcnt := r.hcnt + 1;
         end if;
 
         epmem_addr<=r.epmem_addr;
@@ -484,9 +429,6 @@ BEGIN
               else
                 w.int_ep(epi).int_out:='1';
                 w.epc(epi).hwcontrol:='0'; -- Set to SW control
-                -- synopsys translate_off
-                if rising_edge(clk) then report "Setting buffer control to SW after WRITE, ep "&str(epi); end if;
-                -- synopsys translate_on
                 w.epc(epi).seq := not r.epc(epi).seq;
                 w.state := ACK;
               end if;
@@ -539,9 +481,6 @@ BEGIN
             epi := conv_integer( unsigned(r.endp) );
             -- Release to software, we're done
             w.epc(epi).hwcontrol := '0';
-            -- synopsys translate_off
-            if rising_edge(clk) then report "Setting buffer control to SW after NULL READ, ep "&str(epi); end if;
-            -- synopsys translate_on
             w.int_ep(epi).int_in:='1'; -- Notify SW
 
           else
@@ -564,9 +503,6 @@ BEGIN
           if r.epmem_size=0 then
             epi := conv_integer( unsigned(r.endp) );
             w.epc(epi).hwcontrol := '0';
-            -- synopsys translate_off
-            if rising_edge(clk) then report "Setting buffer control to SW after READ, ep "&str(epi); end if;
-            -- synopsys translate_on
             w.int_ep(epi).int_in:='1'; -- Notify SW
 
             w.state := CRC1;
@@ -610,16 +546,9 @@ BEGIN
       w.ack := '1';
       if wb_adr_i(11)='1' then
         cpu_epmem_en<='1';
-        --wb_dat_o <= cpu_epmem_do;
       else
-        --wb_dat_o <= r.dato;
         -- Register access
         if wb_we_i='1' then
-
-          -- synopsys translate_off
-          adr:= wb_adr_i(10 downto 2);
-          if rising_edge(clk) then report "WB write address 0x"&hstr(adr)&" value "&hstr(wb_dat_i); end if;
-          -- synopsys translate_on
 
           if wb_adr_i(7)='0' then
             case wb_adr_i(4 downto 2) is
@@ -633,9 +562,6 @@ BEGIN
                   if wb_dat_i((i*2))='1' then w.int_ep(i).int_in:='0'; end if;
                   if wb_dat_i((i*2)+1)='1' then w.int_ep(i).int_out:='0'; end if;
                 end loop;
-                -- synopsys translate_off
-                if rising_edge(clk) then report "CPU clearing interrupts: "&str(wb_dat_i); end if;
-                -- synopsys translate_on
               when others =>
             end case;
           else
@@ -647,12 +573,6 @@ BEGIN
                 w.epc(epi).eptype := wb_dat_i(2 downto 1);
                 -- One bit reserved for expansion
                 w.epc(epi).hwcontrol := wb_dat_i(4);
-
-                -- synopsys translate_off
-                adr:= wb_adr_i(10 downto 2);
-                if rising_edge(clk) then report "SW set "&str(wb_we_i)&"0x"&hstr(adr)&" buffer control to "&str(wb_dat_i(4)) &", ep "&str(epi); end if;
-                -- synopsys translate_on
-  
                 w.epc(epi).int_in := wb_dat_i(5);
                 w.epc(epi).int_out:= wb_dat_i(6);
                 --w.epc(epi).seq    := wb_dat_i(7);
@@ -667,12 +587,6 @@ BEGIN
           end if;
         end if; -- Writes
 
-        -- synopsys translate_off
-        adr:= wb_adr_i(10 downto 2);
-        if rising_edge(clk) then report "WB read address 0x"&hstr(adr); end if;
-        -- synopsys translate_on
-
-
         if wb_adr_i(7)='0' then
           case wb_adr_i(4 downto 2) is
             when "000" =>
@@ -684,7 +598,6 @@ BEGIN
               w.dato := (others => '0');
               w.dato(6 downto 0)  := r.adr;
               w.dato(10 downto 7) := r.endp;
-              w.dato(13 downto 11) := std_logic_vector(r.hcnt);
             when "010" =>
               -- Status register 2
               w.dato := (others => '0');
@@ -734,10 +647,10 @@ BEGIN
       w.softcon := '0';
       clearep: for i in 0 to MAX_ENDPOINTS-1 loop
         w.epc(i).valid:='0';
-        w.epc(i).hwcontrol:='0';
-        w.epc(i).seq:='0';
-        w.int_ep(i).int_in:='0';
-        w.int_ep(i).int_out:='0';
+        --w.epc(i).hwcontrol:='0';
+        --w.epc(i).seq:='0';
+        --w.int_ep(i).int_in:='0';
+        --w.int_ep(i).int_out:='0';
       end loop;
     end if;  -- Reset
 
@@ -768,23 +681,6 @@ BEGIN
   end process;
 
   wb_inta_o <= interrupt;
-  -- synopsys translate_off
-  d: block
-    signal intq: std_logic;
-  begin
-    process(clk)
-    begin
-  if rising_edge(clk) then
-      intq<=interrupt;
-      if interrupt/=intq then
-        report "Setting int line to "&str(interrupt);
-      end if;
-    end if;
-   end process;
-  end block;
-  -- synopsys translate_on
-
-
 
   pd: entity work.usb1_pd
   port map (
