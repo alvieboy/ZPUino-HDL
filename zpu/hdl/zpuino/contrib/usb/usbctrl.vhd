@@ -299,7 +299,9 @@ BEGIN
   epmem_di <= rx_data_st;--Phy_DataIn;
 
   process(clk,r,token_endp,token_fadr,pid_SETUP,pid_IN,pid_OUT,Phy_TxReady,
-    wb_stb_i, wb_we_i, wb_cyc_i, wb_dat_i, wb_adr_i, rx_data_valid, reset, cpu_epmem_do)
+    wb_stb_i, wb_we_i, wb_cyc_i, wb_dat_i, wb_adr_i, rx_data_valid, reset,
+    cpu_epmem_do, token_valid,pid_ack,pid_data0,pid_data1,rx_data_done,epmem_do,
+    txcrc)
     variable w: pregstype;
 
     function is_endpoint_valid( regs:   in pregstype;
@@ -364,6 +366,7 @@ BEGIN
             w.epmem_addr := r.epc(epi).mbase;
             w.epc(epi).dsize := (others => '0');
             w.state := WRITE;
+            w.validwrite := '1'; -- Proper validation here please
             --w.setup := '1';
 
           elsif pid_IN='1' then
@@ -644,10 +647,11 @@ BEGIN
                 w.epc(epi).eptype := wb_dat_i(2 downto 1);
                 -- One bit reserved for expansion
                 w.epc(epi).hwcontrol := wb_dat_i(4);
-                  -- synopsys translate_off
-                  adr:= wb_adr_i(10 downto 2);
-                  if rising_edge(clk) then report "SW set "&str(wb_we_i)&"0x"&hstr(adr)&" buffer control to "&str(wb_dat_i(4)) &", ep "&str(epi); end if;
-                  -- synopsys translate_on
+
+                -- synopsys translate_off
+                adr:= wb_adr_i(10 downto 2);
+                if rising_edge(clk) then report "SW set "&str(wb_we_i)&"0x"&hstr(adr)&" buffer control to "&str(wb_dat_i(4)) &", ep "&str(epi); end if;
+                -- synopsys translate_on
   
                 w.epc(epi).int_in := wb_dat_i(5);
                 w.epc(epi).int_out:= wb_dat_i(6);
