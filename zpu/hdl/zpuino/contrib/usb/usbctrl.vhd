@@ -59,7 +59,8 @@ ARCHITECTURE rtl OF usbctrl is
   alias reset: std_logic is wb_rst_i;
   signal rstinv: std_logic;
   constant DriverMode: std_logic := '1';
-
+  signal rst_event_q:   std_logic;
+  signal rst_event:     std_logic;
 BEGIN
 
   id <= x"08" & x"21";
@@ -147,7 +148,6 @@ BEGIN
     mbase:  std_logic_vector(10 downto 0);
     msize:  std_logic_vector(9 downto 0); -- Max endpoint size
     dsize:  std_logic_vector(9 downto 0); -- Current data size
-    --dready: std_logic;
     hwcontrol:  std_logic;
     int_in:  std_logic;
     int_out: std_logic;
@@ -179,6 +179,8 @@ BEGIN
     -- Interrupt registers
     int_ep: epc_interrupts;
     int_en: std_logic; -- Global interrupt enable
+    int_reset_en: std_logic; -- Interrupt on reset enable
+    int_reset: std_logic;
     ack: std_logic;
     softcon: std_logic;
     dato: std_logic_vector(31 downto 0);
@@ -256,6 +258,15 @@ BEGIN
   end process;
 
 
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      rst_event_q <= usb_rst_phy;
+    end if;
+  end process;
+
+  rst_event<='1' when rst_event_q='0' and usb_rst_phy='1' else '0';
+
   epmem: entity work.dp_ram_2k_8_32
   port map (
     clka    => clk,
@@ -273,7 +284,11 @@ BEGIN
     dob     => cpu_epmem_do
   );
 
-  epmem_di <= rx_data_st;
+  epmem_di        <= rx_data_st;
+  epmem_addr      <= r.epmem_addr;
+  cpu_epmem_we    <= wb_we_i;
+  cpu_epmem_addr  <= wb_adr_i(10 downto 2);
+  cpu_epmem_di    <= bswap(wb_dat_i);
 
   process(clk,r,token_endp,token_fadr,pid_SETUP,pid_IN,pid_OUT,Phy_TxReady,
     wb_stb_i, wb_we_i, wb_cyc_i, wb_dat_i, wb_adr_i, rx_data_valid, reset,
@@ -312,7 +327,9 @@ BEGIN
 
     variable epi: natural; -- Helper
     variable adr: std_logic_vector(8 downto 0);
+
   begin
+
     w:=r;
 
     Phy_DataOut <= (others => 'X');
@@ -320,13 +337,12 @@ BEGIN
 
     epmem_en <= '0';
     epmem_we <= 'X';
-    epmem_addr <= r.epmem_addr;
     crc_clr<='0';
     crc_stb<='0';
 
     case r.state is
       when IDLE =>
-        if token_valid='1' then
+        if token_valid='1' and crc5_err='0' and pid_cks_err='0' then
           if pid_SETUP='1' or pid_IN='1' or pid_OUT='1' then
             w.adr := token_fadr;
             w.endp:= token_endp;
@@ -351,8 +367,9 @@ BEGIN
               w.epmem_addr := r.epc(epi).mbase;
               w.epmem_size := unsigned(r.epc(epi).dsize);
 
-
               if r.epc(epi).hwcontrol = '0' then
+                w.epmem_addr := (others => 'X');
+                w.epmem_size := (others => 'X');
                 w.state := NACK;
               end if;
             else
@@ -364,6 +381,11 @@ BEGIN
           elsif pid_ACK='1' then
             epi := conv_integer( unsigned(r.endp) );
             w.epc(epi).seq := not r.epc(epi).seq;
+            w.epc(epi).hwcontrol := '0';
+            w.int_ep(epi).int_in:='1'; -- Notify SW
+
+            w.epmem_addr := (others => 'X');
+            w.epmem_size := (others => 'X');
 
           elsif pid_OUT='1' then
 
@@ -374,11 +396,18 @@ BEGIN
             end if;
 
             epi := conv_integer( unsigned(token_endp) );
-                
+
+            w.epmem_size := (others => 'X');
             w.epmem_addr := r.epc(epi).mbase;
+
             w.epc(epi).dsize := (others => '0');
+
             w.state := WRITE;
           end if;
+        else
+          -- Nothing on line or error
+            w.epmem_addr := (others => 'X');
+            w.epmem_size := (others => 'X');
         end if;
 
       when WRITE =>
@@ -386,6 +415,8 @@ BEGIN
         epmem_we<='1';
         epi := conv_integer( unsigned(r.endp) );
         w.validseq := '1';
+        w.epmem_size := (others => 'X');
+
         if rx_data_valid='1' then
           -- Check validity of request.
           if pid_DATA0='1' then
@@ -403,8 +434,6 @@ BEGIN
 
         end if;
 
-        epmem_addr<=r.epmem_addr;
-
         if r.validwrite='0' then
           epmem_en<='0';
         end if;
@@ -414,32 +443,41 @@ BEGIN
         end if;
 
         if rx_data_done='1' then
-          if r.validwrite='0' then
-            w.state := STALL;
-          else
-          if r.epc(epi).dsize=0 then
-            w.state:= ACK;
-            w.epc(epi).seq := not r.epc(epi).seq;
-          else
-            if r.validseq='0' then
-              w.state := ACK;
+          if crc16_err='0' then
+            w.epmem_addr := (others => 'X');
+  
+            if r.validwrite='0' then
+              w.state := STALL;
             else
-              if r.epc(epi).hwcontrol='0' then
-                w.state := NACK;
-              else
-                w.int_ep(epi).int_out:='1';
-                w.epc(epi).hwcontrol:='0'; -- Set to SW control
+              if r.epc(epi).dsize=0 then
+                w.state:= ACK;
                 w.epc(epi).seq := not r.epc(epi).seq;
-                w.state := ACK;
+              else
+                if r.validseq='0' then
+                  w.state := ACK;
+                else
+                  if r.epc(epi).hwcontrol='0' then
+                    w.state := NACK;
+                  else
+                    w.int_ep(epi).int_out:='1';
+                    w.epc(epi).hwcontrol:='0'; -- Set to SW control
+                    w.epc(epi).seq := not r.epc(epi).seq;
+                    w.state := ACK;
+                  end if;
+                end if;
               end if;
             end if;
-            end if;
+          else
+            w.state := IDLE; -- Ignore
           end if;
         end if;
 
       when ACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"D2";
+        w.epmem_addr := (others => 'X');
+        w.epmem_size := (others => 'X');
+
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -447,6 +485,9 @@ BEGIN
       when STALL =>
         Phy_TxValid <= '1';
         Phy_DataOut <= "00011110";
+        w.epmem_addr := (others => 'X');
+        w.epmem_size := (others => 'X');
+
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -454,6 +495,9 @@ BEGIN
       when NACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"5A";
+        w.epmem_addr := (others => 'X');
+        w.epmem_size := (others => 'X');
+
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -462,14 +506,15 @@ BEGIN
         epi := conv_integer( unsigned(r.endp) );
         Phy_TxValid <= r.dready;
         w.dready := '1';
+
         if r.epc(epi).seq='0' then
           Phy_DataOut<="11000011";
         else
           Phy_DataOut<="01001011";
         end if;
+
         epmem_en<=Phy_TxReady;
         epmem_we<='0';
-        epmem_addr<=r.epmem_addr;
 
         if Phy_TxReady='1' then
           w.dready:='0';
@@ -482,7 +527,8 @@ BEGIN
             -- Release to software, we're done
             w.epc(epi).hwcontrol := '0';
             w.int_ep(epi).int_in:='1'; -- Notify SW
-
+            w.epmem_addr := (others => 'X');
+            w.epmem_size := (others => 'X');
           else
             w.state := READ2;
           end if;
@@ -501,10 +547,9 @@ BEGIN
           w.epmem_addr := r.epmem_addr + 1;
           w.epmem_size := r.epmem_size - 1;
           if r.epmem_size=0 then
-            epi := conv_integer( unsigned(r.endp) );
-            w.epc(epi).hwcontrol := '0';
-            w.int_ep(epi).int_in:='1'; -- Notify SW
-
+            -- We'll notify sw upon receiving ACK
+            w.epmem_addr := (others => 'X');
+            w.epmem_size := (others => 'X');
             w.state := CRC1;
           end if;
         end if;
@@ -512,6 +557,9 @@ BEGIN
       when CRC1 =>
         Phy_DataOut <= reverse(inv(txcrc(15 downto 8)));
         Phy_TxValid<='1';
+        w.epmem_addr := (others => 'X');
+        w.epmem_size := (others => 'X');
+
         if Phy_TxReady='1' then
           w.state := CRC2;
         end if;
@@ -519,6 +567,9 @@ BEGIN
       when CRC2 =>
         Phy_DataOut <= reverse(inv(txcrc(7 downto 0)));
         Phy_TxValid<='1';
+        w.epmem_addr := (others => 'X');
+        w.epmem_size := (others => 'X');
+
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -528,16 +579,16 @@ BEGIN
 
     -- Wishbone access
     w.ack := '0';
-    cpu_epmem_we <= wb_we_i;
     cpu_epmem_en <= '0';
-    cpu_epmem_addr <= wb_adr_i(10 downto 2);
-    cpu_epmem_di <= bswap(wb_dat_i);
-    wb_dat_o <= (others => 'X');
 
     if wb_adr_i(11)='1' then
       wb_dat_o <= bswap(cpu_epmem_do);
     else
       wb_dat_o <= r.dato;
+    end if;
+
+    if rst_event='1' then
+      w.int_reset:='1';
     end if;
 
     --w.dato :=(others => 'X');
@@ -556,12 +607,16 @@ BEGIN
                 -- Config.
                 w.softcon := wb_dat_i(0);
                 w.int_en  := wb_dat_i(1);
+                w.int_reset_en := wb_dat_i(2);
               when "100" =>
                 -- Interrupt status clear
                 for i in 0 to MAX_ENDPOINTS-1 loop
                   if wb_dat_i((i*2))='1' then w.int_ep(i).int_in:='0'; end if;
                   if wb_dat_i((i*2)+1)='1' then w.int_ep(i).int_out:='0'; end if;
                 end loop;
+
+                if (wb_dat_i(16)='1') then w.int_reset:='0'; end if;
+
               when others =>
             end case;
           else
@@ -576,6 +631,9 @@ BEGIN
                 w.epc(epi).int_in := wb_dat_i(5);
                 w.epc(epi).int_out:= wb_dat_i(6);
                 --w.epc(epi).seq    := wb_dat_i(7);
+                if (wb_dat_i(16)='1') then
+                  w.epc(epi).seq := '0';-- Manual sequence reset.
+                end if;
               when "01" =>
                 w.epc(epi).mbase := wb_dat_i(10 downto 0);
               when "10" =>
@@ -593,6 +651,7 @@ BEGIN
               w.dato := (others => '0');
               w.dato(0) := r.softcon;
               w.dato(1) := r.int_en;
+              w.dato(2) := r.int_reset_en;
             when "001" =>
               -- Status register 1
               w.dato := (others => '0');
@@ -612,6 +671,7 @@ BEGIN
                 w.dato(i*2) :=  r.int_ep(i).int_in;
                 w.dato((i*2)+1) := r.int_ep(i).int_out;
               end loop;
+              w.dato(16) := r.int_reset;
             when others =>
           end case;
         else
@@ -643,6 +703,7 @@ BEGIN
     if reset='1' then
       w.state := IDLE;
       w.int_en:='0';
+      w.int_reset_en:='0';
       w.ack := '0';
       w.softcon := '0';
       clearep: for i in 0 to MAX_ENDPOINTS-1 loop
@@ -674,6 +735,9 @@ BEGIN
         is_int := '1';
       end if;
     end loop;
+    if r.int_reset='1' and r.int_reset_en='1' then
+      is_int :='1';
+    end if;
     if r.int_en='0' then
       is_int := '0';
     end if;
