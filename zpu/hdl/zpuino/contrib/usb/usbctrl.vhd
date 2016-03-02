@@ -284,6 +284,18 @@ BEGIN
     dob     => cpu_epmem_do
   );
 
+  -- synopsys translate_off
+  process(clk)
+  begin
+  if rising_edge(clk) then
+    if epmem_en='1' and epmem_we='1' then
+      report "EP mem write, address 0x"&hstr(epmem_addr)&", value 0x"&hstr(epmem_di);
+    end if;
+  end if;
+  end process;
+  -- synopsys translate_on
+
+
   epmem_di        <= rx_data_st;
   epmem_addr      <= r.epmem_addr;
   cpu_epmem_we    <= wb_we_i;
@@ -325,9 +337,19 @@ BEGIN
       end if;
     end function;
 
+    function endpoint_base_address( regs: in pregstype; ep: in std_logic_vector(3 downto 0) ) return std_logic_vector is
+      variable addr: std_logic_vector(10 downto 0);
+      variable epindex: natural;
+    begin
+      epindex := conv_integer( unsigned(ep) );
+      return regs.epc(epindex).mbase;
+    end function;
+
     variable epi: natural; -- Helper
     variable adr: std_logic_vector(8 downto 0);
 
+    variable epaddr_en:   std_logic;
+    variable epaddr_inc:  std_logic;
   begin
 
     w:=r;
@@ -340,8 +362,13 @@ BEGIN
     crc_clr<='0';
     crc_stb<='0';
 
+    epaddr_en   := '0';
+    epaddr_inc  := 'X';
+
     case r.state is
       when IDLE =>
+        epaddr_inc:= '0'; -- We can only load from here.
+
         if token_valid='1' and crc5_err='0' and pid_cks_err='0' then
           if pid_SETUP='1' or pid_IN='1' or pid_OUT='1' then
             w.adr := token_fadr;
@@ -352,7 +379,9 @@ BEGIN
             -- TODO: skip non-control endpoints
             epi := conv_integer( unsigned(token_endp) );
             w.epc(epi).seq := '0';
-            w.epmem_addr := r.epc(epi).mbase;
+            --w.epmem_addr := r.epc(epi).mbase;
+            epaddr_en := '1';
+            --epaddr_inc:= '0';
             w.epc(epi).dsize := (others => '0');
             w.state := WRITE;
             w.validwrite := '1'; -- Proper validation here please
@@ -363,17 +392,18 @@ BEGIN
               crc_clr <= '1';
               w.dready :='0';
               epi := conv_integer( unsigned(token_endp) );
-
-              w.epmem_addr := r.epc(epi).mbase;
+              epaddr_en := '1';
+              epaddr_inc := '0';
+              --w.epmem_addr := r.epc(epi).mbase;
               w.epmem_size := unsigned(r.epc(epi).dsize);
 
               if r.epc(epi).hwcontrol = '0' then
-                w.epmem_addr := (others => 'X');
+                --w.epmem_addr := (others => 'X');
                 w.epmem_size := (others => 'X');
                 w.state := NACK;
               end if;
             else
-              w.epmem_addr := (others => 'X');
+              --w.epmem_addr := (others => 'X');
               w.epmem_size := (others => 'X');
               w.state := STALL; -- Invalid transfer
             end if;
@@ -384,7 +414,7 @@ BEGIN
             w.epc(epi).hwcontrol := '0';
             w.int_ep(epi).int_in:='1'; -- Notify SW
 
-            w.epmem_addr := (others => 'X');
+            --w.epmem_addr := (others => 'X');
             w.epmem_size := (others => 'X');
 
           elsif pid_OUT='1' then
@@ -393,12 +423,17 @@ BEGIN
               w.validwrite := '1';
             else
               w.validwrite := '0';
+              -- synopsys translate_off
+              if rising_edge(clk) then report "Invalid OUT to endpoint 0x"&hstr(token_endp); end if;
+              -- synopsys translate_on
             end if;
 
             epi := conv_integer( unsigned(token_endp) );
 
             w.epmem_size := (others => 'X');
-            w.epmem_addr := r.epc(epi).mbase;
+
+            epaddr_en := '1';
+            --w.epmem_addr := r.epc(epi).mbase;
 
             w.epc(epi).dsize := (others => '0');
 
@@ -406,7 +441,7 @@ BEGIN
           end if;
         else
           -- Nothing on line or error
-            w.epmem_addr := (others => 'X');
+            --w.epmem_addr := (others => 'X');
             w.epmem_size := (others => 'X');
         end if;
 
@@ -416,6 +451,7 @@ BEGIN
         epi := conv_integer( unsigned(r.endp) );
         w.validseq := '1';
         w.epmem_size := (others => 'X');
+        epaddr_inc := '1';
 
         if rx_data_valid='1' then
           -- Check validity of request.
@@ -429,8 +465,17 @@ BEGIN
             epmem_en <= '0';
           end if;
 
+          -- synopsys translate_off
+          if rising_edge(clk) then
+            report "Data valid, pid data0 " &str(pid_DATA0)&", pid data1 "&str(pid_DATA1) & ", seq " &str(r.epc(epi).seq);
+            if w.validseq='0' then report "Invalid sequence (expecting "&str(r.epc(epi).seq)&")"; end if;
+            if epmem_en='0' then report "NOT writing"; end if;
+
+          end if;
+          -- synopsys translate_on
           w.epc(epi).dsize := r.epc(epi).dsize + 1;
-          w.epmem_addr := r.epmem_addr + 1;
+          epaddr_en := '1';
+          --w.epmem_addr := r.epmem_addr + 1;
 
         end if;
 
@@ -444,7 +489,7 @@ BEGIN
 
         if rx_data_done='1' then
           if crc16_err='0' then
-            w.epmem_addr := (others => 'X');
+            --w.epmem_addr := (others => 'X');
   
             if r.validwrite='0' then
               w.state := STALL;
@@ -459,6 +504,12 @@ BEGIN
                   if r.epc(epi).hwcontrol='0' then
                     w.state := NACK;
                   else
+                    -- synopsys translate_off
+                    if rising_edge(clk) then
+                      report "Transaction done, ep "&str(epi)&", size 0x" &hstr(r.epc(epi).dsize)&", notify SW";
+                    end if;
+                    -- synopsys translate_on
+
                     w.int_ep(epi).int_out:='1';
                     w.epc(epi).hwcontrol:='0'; -- Set to SW control
                     w.epc(epi).seq := not r.epc(epi).seq;
@@ -468,6 +519,11 @@ BEGIN
               end if;
             end if;
           else
+            -- synopsys translate_off
+            if rising_edge(clk) then
+              report "CRC error";
+            end if;
+            -- synopsys translate_on
             w.state := IDLE; -- Ignore
           end if;
         end if;
@@ -475,7 +531,7 @@ BEGIN
       when ACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"D2";
-        w.epmem_addr := (others => 'X');
+        --w.epmem_addr := (others => 'X');
         w.epmem_size := (others => 'X');
 
         if Phy_TxReady='1' then
@@ -485,7 +541,7 @@ BEGIN
       when STALL =>
         Phy_TxValid <= '1';
         Phy_DataOut <= "00011110";
-        w.epmem_addr := (others => 'X');
+        --w.epmem_addr := (others => 'X');
         w.epmem_size := (others => 'X');
 
         if Phy_TxReady='1' then
@@ -495,7 +551,7 @@ BEGIN
       when NACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"5A";
-        w.epmem_addr := (others => 'X');
+        --w.epmem_addr := (others => 'X');
         w.epmem_size := (others => 'X');
 
         if Phy_TxReady='1' then
@@ -515,10 +571,12 @@ BEGIN
 
         epmem_en<=Phy_TxReady;
         epmem_we<='0';
+        epaddr_inc  := '1';
 
         if Phy_TxReady='1' then
           w.dready:='0';
-          w.epmem_addr := r.epmem_addr + 1;
+          epaddr_en   := '1';
+          --w.epmem_addr := r.epmem_addr + 1;
           w.epmem_size := r.epmem_size - 1;
 
           if r.epmem_size = 0 then
@@ -527,7 +585,7 @@ BEGIN
             -- Release to software, we're done
             w.epc(epi).hwcontrol := '0';
             w.int_ep(epi).int_in:='1'; -- Notify SW
-            w.epmem_addr := (others => 'X');
+            --w.epmem_addr := (others => 'X');
             w.epmem_size := (others => 'X');
           else
             w.state := READ2;
@@ -541,14 +599,16 @@ BEGIN
         w.dready:='1';
         Phy_DataOut <= epmem_do;
         Phy_TxValid<='1';
+        epaddr_inc := '1';
 
         if Phy_TxReady='1' then
           crc_stb<='1';
-          w.epmem_addr := r.epmem_addr + 1;
+          epaddr_en := '1';
+          --w.epmem_addr := r.epmem_addr + 1;
           w.epmem_size := r.epmem_size - 1;
           if r.epmem_size=0 then
             -- We'll notify sw upon receiving ACK
-            w.epmem_addr := (others => 'X');
+            --w.epmem_addr := (others => 'X');
             w.epmem_size := (others => 'X');
             w.state := CRC1;
           end if;
@@ -557,7 +617,7 @@ BEGIN
       when CRC1 =>
         Phy_DataOut <= reverse(inv(txcrc(15 downto 8)));
         Phy_TxValid<='1';
-        w.epmem_addr := (others => 'X');
+        --w.epmem_addr := (others => 'X');
         w.epmem_size := (others => 'X');
 
         if Phy_TxReady='1' then
@@ -567,7 +627,7 @@ BEGIN
       when CRC2 =>
         Phy_DataOut <= reverse(inv(txcrc(7 downto 0)));
         Phy_TxValid<='1';
-        w.epmem_addr := (others => 'X');
+        --w.epmem_addr := (others => 'X');
         w.epmem_size := (others => 'X');
 
         if Phy_TxReady='1' then
@@ -698,7 +758,17 @@ BEGIN
       end if; -- Internal/Memory select
     end if; -- Wishbone access
 
-
+    if epaddr_en='1' then
+      if epaddr_inc='1' then
+        w.epmem_addr := r.epmem_addr + 1;
+        if rising_edge(clk) then report "EP mem addr inc: " &hstr(w.epmem_addr) & " ep "&str(r.endp); end if;
+      else
+        w.epmem_addr := endpoint_base_address( r, token_endp );
+        -- synopsys translate_off
+        if rising_edge(clk) then report "EP mem addr: " &hstr(w.epmem_addr) & " ep "&str(token_endp); end if;
+        -- synopsys translate_on
+      end if;
+    end if;
 
     if reset='1' then
       w.state := IDLE;
