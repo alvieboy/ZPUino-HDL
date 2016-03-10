@@ -153,6 +153,7 @@ BEGIN
     int_in:       std_logic;
     int_out:      std_logic;
     seq:          std_logic;
+    forcestall:   std_logic;
   end record;
 
   type epc_list_type is array( 0 to MAX_ENDPOINTS-1) of epc_type;
@@ -172,6 +173,7 @@ BEGIN
   type pregstype is record
     state:  pstatetype;
     adr:    std_logic_vector(6 downto 0);
+    my_adr: std_logic_vector(6 downto 0);
     endp:   std_logic_vector(2 downto 0);
     epc:    epc_list_type;
     epmem_addr:   std_logic_vector(3 downto 0);
@@ -345,7 +347,7 @@ BEGIN
       end if;
     end function;
 
-    function endpoint_base_address( regs: in pregstype; ep: in std_logic_vector(2 downto 0) ) return std_logic_vector is
+    function endpoint_base_address( regs: in pregstype; ep: in std_logic_vector(2 downto 0); iswrite: std_logic ) return std_logic_vector is
       variable addr: std_logic_vector(3 downto 0);
       variable epindex: natural;
     begin
@@ -355,15 +357,19 @@ BEGIN
       if regs.epc(epindex).doublebuffer='1' then
         addr := ep & regs.epc(epindex).seq;
       else
-        addr := ep & '0';
+        addr := ep & iswrite;
       end if;
       return addr;
     end function;
 
-    function buffer_in_swcontrol( regs: in pregstype; epi: in natural ) return boolean is
+    function buffer_in_swcontrol( regs: in pregstype; epi: in natural; iswrite: std_logic ) return boolean is
     begin
       if regs.epc(epi).doublebuffer='0' then
-        return regs.epc(epi).hwcontrol0 = '0';
+        if iswrite='1' then
+          return regs.epc(epi).hwcontrol1 = '0';
+        else
+          return regs.epc(epi).hwcontrol0 = '0';
+        end if;
       else
         if regs.epc(epi).seq='0' then
           return regs.epc(epi).hwcontrol0='0';
@@ -393,6 +399,8 @@ BEGIN
     case r.state is
       when IDLE =>
 
+       if token_fadr = r.my_adr then
+
         if token_valid='1' and crc5_err='0' and pid_cks_err='0' then
           if pid_SETUP='1' or pid_IN='1' or pid_OUT='1' then
             w.adr := token_fadr;
@@ -409,28 +417,28 @@ BEGIN
             if rising_edge(clk) then report "SETUP: reset seq for endpoint 0x"&hstr(token_endp); end if;
             -- synopsys translate_on
 
-            --w.epmem_addr := r.epc(epi).mbase;
-            --epaddr_inc:= '0';
-            --w.epc(epi).dsize := (others => '0');
-            w.epmem_addr := endpoint_base_address( r, token_endp(2 downto 0) );
+            w.epmem_addr := endpoint_base_address( r, token_endp(2 downto 0), '1' );
             w.epmem_offset := (others => '0');
             w.state := WRITE;
             w.validwrite := '1'; -- Proper validation here please
+            -- Force buffer under HW control.
+            w.epc(epi).hwcontrol1 := '1';
 
           elsif pid_IN='1' then
-            if is_endpoint_valid( r, token_endp(2 downto 0), TIN) then
+            epi := conv_integer( unsigned(token_endp) );
+
+            if is_endpoint_valid( r, token_endp(2 downto 0), TIN) and r.epc(epi).forcestall='0' then
               w.state := READ;
               crc_clr <= '1';
               w.dready :='0';
-              epi := conv_integer( unsigned(token_endp) );
-              w.epmem_addr := endpoint_base_address( r, token_endp(2 downto 0) );
+              w.epmem_addr := endpoint_base_address( r, token_endp(2 downto 0), '0' );
               w.epmem_offset := (others => '0');
               --epaddr_en := '1';
               --epaddr_inc := '0';
               --w.epmem_addr := r.epc(epi).mbase;
               --w.epmem_size := unsigned(r.epc(epi).dsize);
               -- Check buffer for this sequence
-              if buffer_in_swcontrol(r,epi) then
+              if buffer_in_swcontrol(r,epi,'0') then
                 w.state := NACK;
                 w.epmem_size := (others => 'X');
               end if;
@@ -439,6 +447,8 @@ BEGIN
               w.epmem_size := (others => 'X');
               w.state := STALL; -- Invalid transfer
             end if;
+
+            w.epc(epi).forcestall := '0';
 
           elsif pid_ACK='1' then
             epi := conv_integer( unsigned(token_endp) );
@@ -459,11 +469,15 @@ BEGIN
               end if;
             else
               w.epc(epi).hwcontrol0 := '0';
-              w.epc(epi).hwcontrol1 := 'X';
+              --w.epc(epi).hwcontrol1 := 'X';
 
               w.int_ep(epi).int_in0:='1'; -- Notify SW
-              w.int_ep(epi).int_in1:='0'; 
+              --w.int_ep(epi).int_in1:='0';
             end if;
+
+            -- synopsys translate_off
+            if rising_edge(clk) then report "(ack) EP "&str(epi)&" HW control now " & str(w.epc(epi).hwcontrol0) &  " " & str(w.epc(epi).hwcontrol1); end if;
+            -- synopsys translate_on
 
             w.epmem_addr := (others => 'X');
             --w.epmem_size := (others => 'X');
@@ -487,7 +501,7 @@ BEGIN
             --w.epmem_addr := r.epc(epi).mbase;
 
             --w.epc(epi).dsize := (others => '0');
-            w.epmem_addr := endpoint_base_address(r, token_endp(2 downto 0) );
+            w.epmem_addr := endpoint_base_address(r, token_endp(2 downto 0), '1' );
             w.epmem_offset := (others => '0');
             w.state := WRITE;
           end if;
@@ -496,6 +510,7 @@ BEGIN
             w.epmem_addr := (others => 'X');
             --w.epmem_size := (others => 'X');
         end if;
+       end if; -- My address
 
       when WRITE =>
         epmem_en<='0';
@@ -521,8 +536,6 @@ BEGIN
           if rising_edge(clk) then
             report "Data valid, pid data0 " &str(pid_DATA0)&", pid data1 "&str(pid_DATA1) & ", seq " &str(r.epc(epi).seq);
             if w.validseq='0' then report "Invalid sequence (expecting "&str(r.epc(epi).seq)&")"; end if;
-            if epmem_en='0' then report "NOT writing"; end if;
-
           end if;
           -- synopsys translate_on
           w.epmem_offset := r.epmem_offset + 1;
@@ -532,7 +545,12 @@ BEGIN
           epmem_en<='0';
         end if;
 
-        if buffer_in_swcontrol(r, epi) then
+        if buffer_in_swcontrol(r, epi, '1') then
+          -- synopsys translate_off
+          if rising_edge(clk) then
+            report "Buffer in sw control";
+          end if;
+          -- synopsys translate_on
           epmem_en<='0';
         end if;
 
@@ -551,7 +569,7 @@ BEGIN
                 if r.validseq='0' then
                   w.state := ACK;
                 else
-                  if buffer_in_swcontrol(r, epi) then
+                  if buffer_in_swcontrol(r, epi, '1') then
                     w.state := NACK;
                   else
                     -- synopsys translate_off
@@ -566,8 +584,8 @@ BEGIN
                         w.int_ep(epi).int_out1:='1';
                       end if;
                     else
-                      w.int_ep(epi).int_out0:='1';
-                      w.int_ep(epi).int_out1:='0';
+                      --w.int_ep(epi).int_out0:='0';
+                      w.int_ep(epi).int_out1:='1';
                     end if;
 
                     if r.epc(epi).doublebuffer='1' then
@@ -579,10 +597,10 @@ BEGIN
                         w.epc(epi).dsize1 := r.epmem_offset;
                       end if;
                     else
-                      w.epc(epi).hwcontrol0:='0'; -- Set to SW control
-                      w.epc(epi).dsize0 := r.epmem_offset;
-                      w.epc(epi).hwcontrol1:='X'; -- Set to SW control
-                      w.epc(epi).dsize1 := (others => 'X');
+                      w.epc(epi).hwcontrol1:='0'; -- Set to SW control
+                      w.epc(epi).dsize1 := r.epmem_offset;
+                      --w.epc(epi).hwcontrol1:='X'; -- Set to SW control
+                      --w.epc(epi).dsize1 := (others => 'X');
                     end if;
 
                     w.epc(epi).seq := not r.epc(epi).seq;
@@ -669,24 +687,6 @@ BEGIN
 
           if dsize = r.epmem_offset then
             w.state := CRC1;
-            epi := conv_integer( unsigned(r.endp) );
-            -- Release to software, we're done
-            if r.epc(epi).doublebuffer='1' then
-              if r.epc(epi).seq='0' then
-                w.int_ep(epi).int_in0:='1'; -- Notify SW
-                w.epc(epi).hwcontrol0 := '0';
-              else
-                w.int_ep(epi).int_in1:='1'; -- Notify SW
-                w.epc(epi).hwcontrol1 := '0';
-              end if;
-            else
-              w.int_ep(epi).int_in0:='1'; -- Notify SW
-              w.int_ep(epi).int_in1:='0'; -- Notify SW
-              w.epc(epi).hwcontrol0 := '0';
-              w.epc(epi).hwcontrol1 := 'X';
-
-            end if;
-            --w.epmem_addr := (others => 'X');
             w.epmem_size := (others => 'X');
           else
             w.state := READ2;
@@ -778,6 +778,8 @@ BEGIN
                 w.softcon := wb_dat_i(0);
                 w.int_en  := wb_dat_i(1);
                 w.int_reset_en := wb_dat_i(2);
+              when "010" =>
+                w.my_adr := wb_dat_i(6 downto 0);
               when "100" =>
                 -- Interrupt status clear
                 for i in 0 to MAX_ENDPOINTS-1 loop
@@ -799,13 +801,25 @@ BEGIN
                 w.epc(epi).valid  :=  wb_dat_i(0);
                 w.epc(epi).eptype := wb_dat_i(2 downto 1);
                 -- One bit reserved for expansion
-                w.epc(epi).hwcontrol0 := wb_dat_i(8);
-                w.epc(epi).hwcontrol1 := wb_dat_i(9);
 
                 w.epc(epi).int_in := wb_dat_i(5);
                 w.epc(epi).int_out:= wb_dat_i(6);
 
                 w.epc(epi).doublebuffer := wb_dat_i(7);
+                -- HW set.
+                if wb_dat_i(8)='1' then w.epc(epi).hwcontrol0 := '1'; end if;
+                if wb_dat_i(9)='1' then w.epc(epi).hwcontrol1 := '1'; end if;
+                -- SW set
+                if wb_dat_i(10)='1' then w.epc(epi).hwcontrol0 := '0'; end if;
+                if wb_dat_i(11)='1' then w.epc(epi).hwcontrol1 := '0'; end if;
+
+                if wb_dat_i(14)='1' then w.epc(epi).forcestall := '1'; end if;
+                if wb_dat_i(15)='1' then w.epc(epi).forcestall := '0'; end if;
+
+                -- synopsys translate_off
+                if rising_edge(clk) then report "SW set EP "&str(epi)&" HW control now " & str(w.epc(epi).hwcontrol0) &  " " & str(w.epc(epi).hwcontrol1); end if;
+                -- synopsys translate_on
+
                 --w.epc(epi).seq    := wb_dat_i(7);
                 if (wb_dat_i(17)='1') then
                   -- synopsys translate_off
@@ -840,7 +854,7 @@ BEGIN
             when "010" =>
               -- Status register 2
               w.dato := (others => '0');
-  
+              w.dato(6 downto 0) := r.my_adr;
             when "011" =>
               w.dato := (others => '0');
               -- Status register 3
@@ -865,8 +879,8 @@ BEGIN
               w.dato(0) := r.epc(epi).valid;
               w.dato(2 downto 1) := r.epc(epi).eptype;
               -- One bit reserved for expansion
-              w.dato(8) := r.epc(epi).hwcontrol0;
-              w.dato(9) := r.epc(epi).hwcontrol1;
+              w.dato(12) := r.epc(epi).hwcontrol0;
+              w.dato(13) := r.epc(epi).hwcontrol1;
               w.dato(5) := r.epc(epi).int_in;
               w.dato(6) := r.epc(epi).int_out;
               w.dato(7) := r.epc(epi).doublebuffer;
@@ -884,15 +898,22 @@ BEGIN
       end if; -- Internal/Memory select
     end if; -- Wishbone access
 
+    if rst_event='1' then
+      w.state := IDLE;
+    end if;
+
+
     if reset='1' then
       w.state := IDLE;
       w.int_en:='0';
       w.int_reset_en:='0';
       w.ack := '0';
       w.softcon := '0';
+      w.my_adr := (others => '0');
       clearep: for i in 0 to MAX_ENDPOINTS-1 loop
         w.epc(i).valid:='0';
         w.epc(i).doublebuffer:='0';
+        w.epc(i).forcestall:='0';
       end loop;
     end if;  -- Reset
 
