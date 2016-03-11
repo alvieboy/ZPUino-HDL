@@ -451,10 +451,10 @@ BEGIN
             w.epc(epi).forcestall := '0';
 
           elsif pid_ACK='1' then
-            epi := conv_integer( unsigned(token_endp) );
-
+            --epi := conv_integer( unsigned(token_endp) );
+            epi := conv_integer( unsigned(r.endp) );
             -- synopsys translate_off
-            if rising_edge(clk) then report "Got ACK for endpoint 0x"&hstr(token_endp)&" seq "&str(r.epc(epi).seq); end if;
+            if rising_edge(clk) then report "Got ACK for endpoint 0x"&hstr(r.endp)&" seq "&str(r.epc(epi).seq); end if;
             -- synopsys translate_on
 
             w.epc(epi).seq := not r.epc(epi).seq;
