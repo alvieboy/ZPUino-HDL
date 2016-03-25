@@ -1,3 +1,37 @@
+--
+--  USB FS controller
+--
+--  Copyright 2016 Alvaro Lopes <alvieboy@alvie.com>
+--
+--  The FreeBSD license
+--
+--  Redistribution and use in source and binary forms, with or without
+--  modification, are permitted provided that the following conditions
+--  are met:
+--
+--  1. Redistributions of source code must retain the above copyright
+--     notice, this list of conditions and the following disclaimer.
+--  2. Redistributions in binary form must reproduce the above
+--     copyright notice, this list of conditions and the following
+--     disclaimer in the documentation and/or other materials
+--     provided with the distribution.
+--
+--  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY
+--  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+--  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+--  PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+--  ZPU PROJECT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+--  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+--  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+--  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+--  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+--  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+--  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+--  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+--
+--
+
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
@@ -178,7 +212,6 @@ BEGIN
     epc:    epc_list_type;
     epmem_addr:   std_logic_vector(3 downto 0);
     epmem_offset: std_logic_vector(6 downto 0);
-    epmem_size:   unsigned(6 downto 0);
     dready: std_logic;
     validseq: std_logic;
     validwrite:std_logic;
@@ -315,7 +348,7 @@ BEGIN
   process(clk,r,token_endp,token_fadr,pid_SETUP,pid_IN,pid_OUT,Phy_TxReady,
     wb_stb_i, wb_we_i, wb_cyc_i, wb_dat_i, wb_adr_i, rx_data_valid, reset,
     cpu_epmem_do, token_valid,pid_ack,pid_data0,pid_data1,rx_data_done,epmem_do,
-    txcrc)
+    txcrc, crc5_err, crc16_err,rst_event)
     variable w: pregstype;
 
     function is_endpoint_valid( regs:   in pregstype;
@@ -382,8 +415,6 @@ BEGIN
     variable epi: natural; -- Helper
     variable adr: std_logic_vector(8 downto 0);
     variable dsize: std_logic_vector(6 downto 0);
---    variable epaddr_en:   std_logic;
---    variable epaddr_inc:  std_logic;
   begin
 
     w:=r;
@@ -398,6 +429,12 @@ BEGIN
 
     case r.state is
       when IDLE =>
+
+       w.dready       := 'X';
+       w.adr          := (others =>'X');
+       w.endp         := (others =>'X');
+       w.epmem_addr   := (others =>'X');
+       w.epmem_offset := (others =>'X');
 
        if token_fadr = r.my_adr then
 
@@ -433,25 +470,17 @@ BEGIN
               w.dready :='0';
               w.epmem_addr := endpoint_base_address( r, token_endp(2 downto 0), '0' );
               w.epmem_offset := (others => '0');
-              --epaddr_en := '1';
-              --epaddr_inc := '0';
-              --w.epmem_addr := r.epc(epi).mbase;
-              --w.epmem_size := unsigned(r.epc(epi).dsize);
               -- Check buffer for this sequence
               if buffer_in_swcontrol(r,epi,'0') then
                 w.state := NACK;
-                w.epmem_size := (others => 'X');
               end if;
             else
-              --w.epmem_addr := (others => 'X');
-              w.epmem_size := (others => 'X');
               w.state := STALL; -- Invalid transfer
             end if;
 
             w.epc(epi).forcestall := '0';
 
           elsif pid_ACK='1' then
-            --epi := conv_integer( unsigned(token_endp) );
             epi := conv_integer( unsigned(r.endp) );
             -- synopsys translate_off
             if rising_edge(clk) then report "Got ACK for endpoint 0x"&hstr(r.endp)&" seq "&str(r.epc(epi).seq); end if;
@@ -469,10 +498,7 @@ BEGIN
               end if;
             else
               w.epc(epi).hwcontrol0 := '0';
-              --w.epc(epi).hwcontrol1 := 'X';
-
               w.int_ep(epi).int_in0:='1'; -- Notify SW
-              --w.int_ep(epi).int_in1:='0';
             end if;
 
             -- synopsys translate_off
@@ -480,7 +506,6 @@ BEGIN
             -- synopsys translate_on
 
             w.epmem_addr := (others => 'X');
-            --w.epmem_size := (others => 'X');
 
           elsif pid_OUT='1' then
 
@@ -495,20 +520,10 @@ BEGIN
 
             epi := conv_integer( unsigned(token_endp) );
 
-            --w.epmem_size := (others => 'X');
-
-            --epaddr_en := '1';
-            --w.epmem_addr := r.epc(epi).mbase;
-
-            --w.epc(epi).dsize := (others => '0');
             w.epmem_addr := endpoint_base_address(r, token_endp(2 downto 0), '1' );
             w.epmem_offset := (others => '0');
             w.state := WRITE;
           end if;
-        else
-          -- Nothing on line or error
-            w.epmem_addr := (others => 'X');
-            --w.epmem_size := (others => 'X');
         end if;
        end if; -- My address
 
@@ -517,8 +532,6 @@ BEGIN
         epmem_we<='1';
         epi := conv_integer( unsigned(r.endp) );
         w.validseq := '1';
-        --w.epmem_size := (others => 'X');
-        --epaddr_inc := '1';
 
         if rx_data_valid='1' then
           -- Check validity of request.
@@ -556,12 +569,9 @@ BEGIN
 
         if rx_data_done='1' then
           if crc16_err='0' then
-            --w.epmem_addr := (others => 'X');
-  
             if r.validwrite='0' then
               w.state := STALL;
             else
-              --if r.epc(epi).dsize=0 then -- Automatically ack zero-lenght packets
               if r.epmem_offset=0 then -- Automatically ack zero-lenght packets
                 w.state:= ACK;
                 w.epc(epi).seq := not r.epc(epi).seq;
@@ -584,7 +594,6 @@ BEGIN
                         w.int_ep(epi).int_out1:='1';
                       end if;
                     else
-                      --w.int_ep(epi).int_out0:='0';
                       w.int_ep(epi).int_out1:='1';
                     end if;
 
@@ -599,8 +608,6 @@ BEGIN
                     else
                       w.epc(epi).hwcontrol1:='0'; -- Set to SW control
                       w.epc(epi).dsize1 := r.epmem_offset;
-                      --w.epc(epi).hwcontrol1:='X'; -- Set to SW control
-                      --w.epc(epi).dsize1 := (others => 'X');
                     end if;
 
                     w.epc(epi).seq := not r.epc(epi).seq;
@@ -622,9 +629,11 @@ BEGIN
       when ACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"D2";
-        --w.epmem_addr := (others => 'X');
-        w.epmem_size := (others => 'X');
-
+        w.dready       := 'X';
+        w.adr          := (others =>'X');
+        w.endp         := (others =>'X');
+        w.epmem_addr   := (others =>'X');
+        w.epmem_offset := (others =>'X');
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -632,8 +641,11 @@ BEGIN
       when STALL =>
         Phy_TxValid <= '1';
         Phy_DataOut <= "00011110";
-        --w.epmem_addr := (others => 'X');
-        w.epmem_size := (others => 'X');
+        w.dready       := 'X';
+        w.adr          := (others =>'X');
+        w.endp         := (others =>'X');
+        w.epmem_addr   := (others =>'X');
+        w.epmem_offset := (others =>'X');
 
         if Phy_TxReady='1' then
           w.state := IDLE;
@@ -642,8 +654,11 @@ BEGIN
       when NACK =>
         Phy_TxValid <= '1';
         Phy_DataOut <= x"5A";
-        --w.epmem_addr := (others => 'X');
-        w.epmem_size := (others => 'X');
+        w.dready       := 'X';
+        w.adr          := (others =>'X');
+        w.endp         := (others =>'X');
+        w.epmem_addr   := (others =>'X');
+        w.epmem_offset := (others =>'X');
 
         if Phy_TxReady='1' then
           w.state := IDLE;
@@ -687,7 +702,6 @@ BEGIN
 
           if dsize = r.epmem_offset then
             w.state := CRC1;
-            w.epmem_size := (others => 'X');
           else
             w.state := READ2;
           end if;
@@ -718,8 +732,6 @@ BEGIN
 
           if r.epmem_offset=dsize then
             -- We'll notify sw upon receiving ACK
-            --w.epmem_addr := (others => 'X');
-            w.epmem_size := (others => 'X');
             w.state := CRC1;
           end if;
         end if;
@@ -727,8 +739,11 @@ BEGIN
       when CRC1 =>
         Phy_DataOut <= reverse(inv(txcrc(15 downto 8)));
         Phy_TxValid<='1';
-        --w.epmem_addr := (others => 'X');
-        w.epmem_size := (others => 'X');
+        w.dready       := 'X';
+        w.adr          := (others =>'X');
+        w.endp         := (others =>'X');
+        w.epmem_addr   := (others =>'X');
+        w.epmem_offset := (others =>'X');
 
         if Phy_TxReady='1' then
           w.state := CRC2;
@@ -737,8 +752,11 @@ BEGIN
       when CRC2 =>
         Phy_DataOut <= reverse(inv(txcrc(7 downto 0)));
         Phy_TxValid<='1';
-        --w.epmem_addr := (others => 'X');
-        w.epmem_size := (others => 'X');
+        w.dready       := 'X';
+        w.adr          := (others =>'X');
+        w.endp         := (others =>'X');
+        w.epmem_addr   := (others =>'X');
+        w.epmem_offset := (others =>'X');
 
         if Phy_TxReady='1' then
           w.state := IDLE;
@@ -820,7 +838,6 @@ BEGIN
                 if rising_edge(clk) then report "SW set EP "&str(epi)&" HW control now " & str(w.epc(epi).hwcontrol0) &  " " & str(w.epc(epi).hwcontrol1); end if;
                 -- synopsys translate_on
 
-                --w.epc(epi).seq    := wb_dat_i(7);
                 if (wb_dat_i(17)='1') then
                   -- synopsys translate_off
                   if rising_edge(clk) then report "Got RESET sequence for endpoint "&str(epi); end if;
@@ -828,9 +845,7 @@ BEGIN
                   w.epc(epi).seq := '0';-- Manual sequence reset.
                 end if;
               when "01" =>
-                --w.epc(epi).mbase := wb_dat_i(9 downto 0);
               when "10" =>
-                --w.epc(epi).msize := wb_dat_i(9 downto 0);
                 w.epc(epi).dsize0 := wb_dat_i(6 downto 0);
               when "11" =>
                 w.epc(epi).dsize1 := wb_dat_i(6 downto 0);
@@ -886,9 +901,7 @@ BEGIN
               w.dato(7) := r.epc(epi).doublebuffer;
               w.dato(16) := r.epc(epi).seq;
             when "01" =>
-              --w.dato(9 downto 0) := r.epc(epi).mbase;
             when "10" =>
-              --w.dato(9 downto 0) := r.epc(epi).msize;
               w.dato(6 downto 0) := r.epc(epi).dsize0;
             when "11" =>
               w.dato(6 downto 0) := r.epc(epi).dsize1;
@@ -912,8 +925,11 @@ BEGIN
       w.my_adr := (others => '0');
       clearep: for i in 0 to MAX_ENDPOINTS-1 loop
         w.epc(i).valid:='0';
-        w.epc(i).doublebuffer:='0';
         w.epc(i).forcestall:='0';
+        w.int_ep(i).int_in0 := '0';
+        w.int_ep(i).int_in1 := '0';
+        w.int_ep(i).int_out0 := '0';
+        w.int_ep(i).int_out1 := '0';
       end loop;
     end if;  -- Reset
 
