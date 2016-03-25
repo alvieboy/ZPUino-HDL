@@ -72,38 +72,6 @@ end usb_phy;
 
 architecture RTL of usb_phy is
 
---component usb_tx_phy
---port (
---  clk              : in  std_logic;
---  rst              : in  std_logic;
---  fs_ce            : in  std_logic;
---  phy_mode         : in  std_logic;
---  -- Transciever Interface
---  txdp, txdn, txoe : out std_logic;
---  -- UTMI Interface
---  DataOut_i        : in  std_logic_vector(7 downto 0);
---  TxValid_i        : in  std_logic;
---  TxReady_o        : out std_logic
---);
---end component;
---
---component usb_rx_phy
---port (
---  clk              : in  std_logic;
---  rst              : in  std_logic;
---  -- Transciever Interface
---  fs_ce            : out std_logic;
---  rxd, rxdp, rxdn  : in  std_logic;
---  -- UTMI Interface
---  DataIn_o         : out std_logic_vector(7 downto 0);
---  RxValid_o        : out std_logic;
---  RxActive_o       : out std_logic;
---  RxError_o        : out std_logic;
---  RxEn_i           : in  std_logic;
---  LineState        : out std_logic_vector(1 downto 0)
---);
---end component;
-
   signal LineState      : std_logic_vector(1 downto 0);
   signal fs_ce          : std_logic;
   signal rst_cnt        : std_logic_vector(5 downto 0);
