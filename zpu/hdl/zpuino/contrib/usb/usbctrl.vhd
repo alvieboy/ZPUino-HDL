@@ -816,35 +816,36 @@ BEGIN
             epi := conv_integer( unsigned( wb_adr_i(6 downto 4) ) );
             case wb_adr_i(3 downto 2) is
               when "00" =>
+                -- Endpoint configuration register
                 w.epc(epi).valid  :=  wb_dat_i(0);
                 w.epc(epi).eptype := wb_dat_i(2 downto 1);
                 -- One bit reserved for expansion
-
                 w.epc(epi).int_in := wb_dat_i(5);
                 w.epc(epi).int_out:= wb_dat_i(6);
-
                 w.epc(epi).doublebuffer := wb_dat_i(7);
-                -- HW set.
-                if wb_dat_i(8)='1' then w.epc(epi).hwcontrol0 := '1'; end if;
-                if wb_dat_i(9)='1' then w.epc(epi).hwcontrol1 := '1'; end if;
-                -- SW set
-                if wb_dat_i(10)='1' then w.epc(epi).hwcontrol0 := '0'; end if;
-                if wb_dat_i(11)='1' then w.epc(epi).hwcontrol1 := '0'; end if;
 
-                if wb_dat_i(14)='1' then w.epc(epi).forcestall := '1'; end if;
-                if wb_dat_i(15)='1' then w.epc(epi).forcestall := '0'; end if;
+              when "01" =>
+                -- Set/Clear register
+                if wb_dat_i(0)='1' then w.epc(epi).hwcontrol0 := '1'; end if;
+                if wb_dat_i(1)='1' then w.epc(epi).hwcontrol1 := '1'; end if;
+                -- SW set
+                if wb_dat_i(2)='1' then w.epc(epi).hwcontrol0 := '0'; end if;
+                if wb_dat_i(3)='1' then w.epc(epi).hwcontrol1 := '0'; end if;
+
+                if wb_dat_i(4)='1' then w.epc(epi).forcestall := '1'; end if;
+                if wb_dat_i(5)='1' then w.epc(epi).forcestall := '0'; end if;
 
                 -- synopsys translate_off
                 if rising_edge(clk) then report "SW set EP "&str(epi)&" HW control now " & str(w.epc(epi).hwcontrol0) &  " " & str(w.epc(epi).hwcontrol1); end if;
                 -- synopsys translate_on
 
-                if (wb_dat_i(17)='1') then
+                if (wb_dat_i(6)='1') then
                   -- synopsys translate_off
                   if rising_edge(clk) then report "Got RESET sequence for endpoint "&str(epi); end if;
                   -- synopsys translate_on
                   w.epc(epi).seq := '0';-- Manual sequence reset.
                 end if;
-              when "01" =>
+
               when "10" =>
                 w.epc(epi).dsize0 := wb_dat_i(6 downto 0);
               when "11" =>
