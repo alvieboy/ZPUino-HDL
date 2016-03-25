@@ -106,7 +106,7 @@ architecture RTL of usb_phy is
 
   signal LineState      : std_logic_vector(1 downto 0);
   signal fs_ce          : std_logic;
-  signal rst_cnt        : std_logic_vector(4 downto 0);
+  signal rst_cnt        : std_logic_vector(5 downto 0);
   signal txoe_out       : std_logic;
   signal usb_rst_out    : std_logic := '0';
 
@@ -186,7 +186,7 @@ begin
     p_usb_rst_out: process (clk)
     begin
       if rising_edge(clk) then
-        if rst_cnt = "11111" then
+        if rst_cnt = "111111" then
           usb_rst_out  <= '1';
         else
           usb_rst_out  <= '0';
