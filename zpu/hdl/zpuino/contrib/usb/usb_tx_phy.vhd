@@ -332,7 +332,9 @@ begin
     elsif rising_edge(clk) then
       if fs_ce ='1' then
         append_eop_sync1 <= append_eop;
-        append_eop_sync2 <= append_eop_sync1;
+        if stuff='0' then
+          append_eop_sync2 <= append_eop_sync1;
+        end if;
         append_eop_sync3 <= append_eop_sync2 or -- Make sure always 2 bit wide
                             (append_eop_sync3 and not append_eop_sync4);
         append_eop_sync4 <= append_eop_sync3;
