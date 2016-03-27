@@ -97,7 +97,7 @@ ARCHITECTURE rtl OF usbctrl is
   signal rst_event:     std_logic;
 BEGIN
 
-  id <= x"08" & x"21";
+  id <= x"08" & x"23";
 
   rstinv <= not reset;
   speed <= '1';
