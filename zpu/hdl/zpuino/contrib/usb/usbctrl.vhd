@@ -215,6 +215,7 @@ BEGIN
     dready: std_logic;
     validseq: std_logic;
     validwrite:std_logic;
+    buffer_available: std_logic; -- For OUT endpoints.
     -- Interrupt registers
     int_ep: epc_interrupts;
     int_en: std_logic; -- Global interrupt enable
@@ -435,6 +436,7 @@ BEGIN
        w.endp         := (others =>'X');
        w.epmem_addr   := (others =>'X');
        w.epmem_offset := (others =>'X');
+       w.buffer_available := 'X';
 
        if token_fadr = r.my_adr then
 
@@ -459,6 +461,7 @@ BEGIN
             w.state := WRITE;
             w.validwrite := '1'; -- Proper validation here please
             -- Force buffer under HW control.
+            w.buffer_available:='1';
             w.epc(epi).hwcontrol1 := '1';
 
           elsif pid_IN='1' then
@@ -522,6 +525,16 @@ BEGIN
 
             w.epmem_addr := endpoint_base_address(r, token_endp(2 downto 0), '1' );
             w.epmem_offset := (others => '0');
+
+            -- Avoid sw setting buffer control in the middle of
+            -- a transaction.
+
+            if buffer_in_swcontrol(r, epi, '1') then
+              w.buffer_available := '0';
+            else
+              w.buffer_available := '1';
+            end if;
+
             w.state := WRITE;
           end if;
         end if;
@@ -558,7 +571,7 @@ BEGIN
           epmem_en<='0';
         end if;
 
-        if buffer_in_swcontrol(r, epi, '1') then
+        if r.buffer_available='0' then --buffer_in_swcontrol(r, epi, '1') then
           -- synopsys translate_off
           if rising_edge(clk) then
             report "Buffer in sw control";
@@ -579,7 +592,7 @@ BEGIN
                 if r.validseq='0' then
                   w.state := ACK;
                 else
-                  if buffer_in_swcontrol(r, epi, '1') then
+                  if r.buffer_available='0' then --buffer_in_swcontrol(r, epi, '1') then
                     w.state := NACK;
                   else
                     -- synopsys translate_off
@@ -634,6 +647,8 @@ BEGIN
         w.endp         := (others =>'X');
         w.epmem_addr   := (others =>'X');
         w.epmem_offset := (others =>'X');
+        w.buffer_available := 'X';
+
         if Phy_TxReady='1' then
           w.state := IDLE;
         end if;
@@ -646,6 +661,7 @@ BEGIN
         w.endp         := (others =>'X');
         w.epmem_addr   := (others =>'X');
         w.epmem_offset := (others =>'X');
+        w.buffer_available := 'X';
 
         if Phy_TxReady='1' then
           w.state := IDLE;
@@ -659,6 +675,7 @@ BEGIN
         w.endp         := (others =>'X');
         w.epmem_addr   := (others =>'X');
         w.epmem_offset := (others =>'X');
+        w.buffer_available := 'X';
 
         if Phy_TxReady='1' then
           w.state := IDLE;
@@ -668,7 +685,7 @@ BEGIN
         epi := conv_integer( unsigned(r.endp) );
         Phy_TxValid <= r.dready;
         w.dready := '1';
-
+        w.buffer_available := 'X';
         if r.epc(epi).seq='0' then
           Phy_DataOut<="11000011";
         else
@@ -711,6 +728,7 @@ BEGIN
       when READ2 =>
         epmem_we<='0';
         epmem_en<=Phy_TxReady;
+        w.buffer_available := 'X';
         w.dready:='1';
         Phy_DataOut <= epmem_do;
         Phy_TxValid<='1';
@@ -744,6 +762,7 @@ BEGIN
         w.endp         := (others =>'X');
         w.epmem_addr   := (others =>'X');
         w.epmem_offset := (others =>'X');
+        w.buffer_available := 'X';
 
         if Phy_TxReady='1' then
           w.state := CRC2;
@@ -757,6 +776,7 @@ BEGIN
         w.endp         := (others =>'X');
         w.epmem_addr   := (others =>'X');
         w.epmem_offset := (others =>'X');
+        w.buffer_available := 'X';
 
         if Phy_TxReady='1' then
           w.state := IDLE;
