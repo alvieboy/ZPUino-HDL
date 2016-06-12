@@ -213,7 +213,6 @@ BEGIN
     epmem_addr:   std_logic_vector(3 downto 0);
     epmem_offset: std_logic_vector(6 downto 0);
     dready: std_logic;
-    validseq: std_logic;
     validwrite:std_logic;
     buffer_available: std_logic; -- For OUT endpoints.
     -- Interrupt registers
@@ -416,6 +415,8 @@ BEGIN
     variable epi: natural; -- Helper
     variable adr: std_logic_vector(8 downto 0);
     variable dsize: std_logic_vector(6 downto 0);
+    variable validseq: std_logic;
+
   begin
 
     w:=r;
@@ -544,24 +545,30 @@ BEGIN
         epmem_en<='0';
         epmem_we<='1';
         epi := conv_integer( unsigned(r.endp) );
-        w.validseq := '1';
+
+        if pid_DATA0='1' then
+          if r.epc(epi).seq='0' then
+            validseq:='1';
+          else
+            validseq:='0';
+          end if;
+        elsif pid_DATA1='1' then
+          if r.epc(epi).seq='1' then
+            validseq:='1';
+          else
+            validseq:='0';
+          end if;
+        else
+          validseq:='0';
+        end if;
 
         if rx_data_valid='1' then
-          -- Check validity of request.
-          if pid_DATA0='1' then
-            epmem_en <=   not r.epc(epi).seq;
-            w.validseq := not r.epc(epi).seq;
-          elsif pid_DATA1='1' then
-            epmem_en <=   r.epc(epi).seq;
-            w.validseq := r.epc(epi).seq;
-          else
-            epmem_en <= '0';
-          end if;
+          epmem_en <= validseq;
 
           -- synopsys translate_off
           if rising_edge(clk) then
             report "Data valid, pid data0 " &str(pid_DATA0)&", pid data1 "&str(pid_DATA1) & ", seq " &str(r.epc(epi).seq);
-            if w.validseq='0' then report "Invalid sequence (expecting "&str(r.epc(epi).seq)&")"; end if;
+            if validseq='0' then report "Invalid sequence (expecting "&str(r.epc(epi).seq)&")"; end if;
           end if;
           -- synopsys translate_on
           w.epmem_offset := r.epmem_offset + 1;
@@ -585,47 +592,42 @@ BEGIN
             if r.validwrite='0' then
               w.state := STALL;
             else
-              if r.epmem_offset=0 then -- Automatically ack zero-lenght packets
-                w.state:= ACK;
-                w.epc(epi).seq := not r.epc(epi).seq;
+              if validseq='0' then
+                w.state := ACK;
               else
-                if r.validseq='0' then
-                  w.state := ACK;
+                if r.buffer_available='0' then --buffer_in_swcontrol(r, epi, '1') then
+                  w.state := NACK;
                 else
-                  if r.buffer_available='0' then --buffer_in_swcontrol(r, epi, '1') then
-                    w.state := NACK;
-                  else
-                    -- synopsys translate_off
-                    if rising_edge(clk) then
-                      report "Transaction done, ep "&str(epi)&", size 0x" &hstr(r.epmem_offset)&", notify SW";
-                    end if;
-                    -- synopsys translate_on
-                    if r.epc(epi).doublebuffer='1' then
-                      if r.epc(epi).seq='0' then
-                        w.int_ep(epi).int_out0:='1';
-                      else
-                        w.int_ep(epi).int_out1:='1';
-                      end if;
+                  -- synopsys translate_off
+                  if rising_edge(clk) then
+                    report "Transaction done, ep "&str(epi)&", size 0x" &hstr(r.epmem_offset)&", notify SW";
+                  end if;
+                  -- synopsys translate_on
+                  if r.epc(epi).doublebuffer='1' then
+                    if r.epc(epi).seq='0' then
+                      w.int_ep(epi).int_out0:='1';
                     else
                       w.int_ep(epi).int_out1:='1';
                     end if;
+                  else
+                    w.int_ep(epi).int_out1:='1';
+                  end if;
 
-                    if r.epc(epi).doublebuffer='1' then
-                      if r.epc(epi).seq='0' then
-                        w.epc(epi).hwcontrol0:='0';
-                        w.epc(epi).dsize0 := r.epmem_offset;
-                      else
-                        w.epc(epi).hwcontrol1:='0';
-                        w.epc(epi).dsize1 := r.epmem_offset;
-                      end if;
+                  if r.epc(epi).doublebuffer='1' then
+                    if r.epc(epi).seq='0' then
+                      w.epc(epi).hwcontrol0:='0';
+                      w.epc(epi).dsize0 := r.epmem_offset;
                     else
-                      w.epc(epi).hwcontrol1:='0'; -- Set to SW control
+                      w.epc(epi).hwcontrol1:='0';
                       w.epc(epi).dsize1 := r.epmem_offset;
                     end if;
-
-                    w.epc(epi).seq := not r.epc(epi).seq;
-                    w.state := ACK;
+                  else
+                    w.epc(epi).hwcontrol1:='0'; -- Set to SW control
+                    w.epc(epi).dsize1 := r.epmem_offset;
                   end if;
+
+                  w.epc(epi).seq := not r.epc(epi).seq;
+                  w.state := ACK;
                 end if;
               end if;
             end if;
