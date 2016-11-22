@@ -132,29 +132,29 @@ architecture sim of tb is
 
   component mt48lc16m16a2 IS
     GENERIC (
-        -- Timing Parameters for -7E (PC133) and CAS Latency = 3
-        tAC       : TIME    :=  5.4 ns;
-        tHZ       : TIME    :=  7.0 ns;
-        tOH       : TIME    :=  2.7 ns;
+        -- Timing Parameters for -6 and CAS Latency = 3
+        tAC       : TIME    :=  5.5 ns;
+        tHZ       : TIME    :=  5.5 ns;
+        tOH       : TIME    :=  2 ns;
         tMRD      : INTEGER :=  2;          -- 2 Clk Cycles
-        tRAS      : TIME    := 44.0 ns;
-        tRC       : TIME    := 66.0 ns;
-        tRCD      : TIME    := 20.0 ns;
-        tRP       : TIME    := 20.0 ns;
-        tRRD      : TIME    := 15.0 ns;
+        tRAS      : TIME    := 42.0 ns;
+        tRC       : TIME    := 60.0 ns;
+        tRCD      : TIME    := 18.0 ns;
+        tRP       : TIME    := 18.0 ns;
+        tRRD      : TIME    := 12.0 ns;
         tWRa      : TIME    :=  7.5 ns;     -- A2 Version - Auto precharge mode only (1 Clk + 7.5 ns)
-        tWRp      : TIME    := 15.0 ns;     -- A2 Version - Precharge mode only (15 ns)
+        tWRp      : TIME    := 12.0 ns;     -- A2 Version - Precharge mode only (15 ns)
 
-        tAH       : TIME    :=  0.8 ns;
+        tAH       : TIME    :=  1 ns;
         tAS       : TIME    :=  1.5 ns;
         tCH       : TIME    :=  2.5 ns;
         tCL       : TIME    :=  2.5 ns;
-        tCK       : TIME    :=  7.0 ns;
-        tDH       : TIME    :=  0.8 ns;
+        tCK       : TIME    :=  6.0 ns;
+        tDH       : TIME    :=  1 ns;
         tDS       : TIME    :=  1.5 ns;
-        tCKH      : TIME    :=  0.8 ns;
+        tCKH      : TIME    :=  1 ns;
         tCKS      : TIME    :=  1.5 ns;
-        tCMH      : TIME    :=  0.8 ns;
+        tCMH      : TIME    :=  1 ns;
         tCMS      : TIME    :=  1.5 ns;
 
         addr_bits : INTEGER := 13;
