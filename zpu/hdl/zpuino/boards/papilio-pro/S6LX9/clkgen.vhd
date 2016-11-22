@@ -123,7 +123,7 @@ pll_base_inst : PLL_ADV
     CLKOUT0_PHASE        => 0.000,
     CLKOUT0_DUTY_CYCLE   => 0.500,
     CLKOUT1_DIVIDE       => 10,
-    CLKOUT1_PHASE        => 250.0,
+    CLKOUT1_PHASE        => 90.0,
     CLKOUT1_DUTY_CYCLE   => 0.500,
     CLKOUT2_DIVIDE       => 10,
     CLKOUT2_PHASE        => 0.0,
