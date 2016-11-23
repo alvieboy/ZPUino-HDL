@@ -24,6 +24,7 @@
         22 OV7670 Camera Controller
         23 USB 1.1 FS controller
         24 Xilinx ICAP controller
+        25 SoundPuddle MultiSPI
         FE ZPUino Wishbone HUB (preliminar)
 
 02 FPGAArcade
