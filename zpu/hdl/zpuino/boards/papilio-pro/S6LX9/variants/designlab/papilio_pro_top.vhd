@@ -244,9 +244,9 @@ architecture behave of ZPUino_Papilio_Pro_V2_blackbox is
   -- GPIO Periperal Pin Select
   signal gpio_spp_data: std_logic_vector(PPSCOUNT_OUT-1 downto 0);
   signal gpio_spp_read: std_logic_vector(PPSCOUNT_IN-1 downto 0);
-  signal ppsout_info_slot: ppsoutinfotype := (others => -1);
+  signal ppsout_info_slot: ppsoutinfotype := (others => 0);
   signal ppsout_info_pin:  ppsoutinfotype;
-  signal ppsin_info_slot: ppsininfotype := (others => -1);
+  signal ppsin_info_slot: ppsininfotype := (others => 0);
   signal ppsin_info_pin:  ppsininfotype;
 
   -- Timer connections
@@ -746,6 +746,7 @@ begin
       m_wb_stb_i    => wishbone_slot_video_in(98),
       m_wb_ack_o    => wishbone_slot_video_out(100),
       m_wb_stall_o  => wishbone_slot_video_out(99),
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
 
       wb_ack_i      => sram_wb_ack_o,
       wb_stall_i    => sram_wb_stall_o,
