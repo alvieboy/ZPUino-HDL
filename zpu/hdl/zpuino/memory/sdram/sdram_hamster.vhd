@@ -203,7 +203,7 @@ architecture rtl of sdram_controller is
   signal captured : std_logic_vector(15 downto 0);
   signal busy: std_logic;
 
-  constant tOPD: time := 1.4 ns;
+  constant tOPD: time := 2.1 ns;
   constant tHZ: time := 8 ns;
 
   signal dram_dq_dly : std_logic_vector(15 downto 0);
@@ -211,7 +211,7 @@ architecture rtl of sdram_controller is
   -- Debug only
    signal debug_cmd: std_logic_vector(3 downto 0);
 
-   signal not_clock_100: std_logic;
+   signal not_clock_100_delayed_3ns: std_logic;
 
   constant RELOAD: integer := (((64000000/REFRESH_CYCLES)*MHZ)/1000) - 10;
 
@@ -268,7 +268,7 @@ begin
                  r.req_addr_q(8 downto 2) & "0";
    end process;
 
-  not_clock_100 <= not clock_100;
+  not_clock_100_delayed_3ns <= not clock_100_delayed_3ns;
 
   clock: ODDR2
     generic map (
@@ -276,11 +276,11 @@ begin
       INIT          => '0',
       SRTYPE        => "ASYNC") 
     port map (
-      D0 => '0',
-      D1 => '1',
+      D0 => '1',
+      D1 => '0',
       Q => i_DRAM_CLK,
-      C0 => clock_100,
-      C1 => not_clock_100,
+      C0 => clock_100_delayed_3ns,
+      C1 => not_clock_100_delayed_3ns,
       CE => '1',
       R => '0',
       S => '0'
@@ -720,7 +720,7 @@ begin
       end if;
    end process;
 
-  dram_dq_dly <= transport dram_dq after 3.6 ns;--1.9 ns;
+  dram_dq_dly <= transport dram_dq after 1.9 ns;
 
 --   process (clock_100_delayed_3ns, dram_dq_dly)
 --   begin
@@ -729,9 +729,9 @@ begin
 --     end if;
 --   end process;
 
-   process (clock_100_delayed_3ns)
+   process (clock_100)
    begin
-      if falling_edge(clock_100_delayed_3ns) then
+      if falling_edge(clock_100) then
          captured <= dram_dq_dly;
       end if;
    end process;
