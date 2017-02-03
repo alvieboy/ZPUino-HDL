@@ -41,11 +41,37 @@ ___zpu_interrupt_vector:
         poppc
 .size ___zpu_interrupt_vector, . - ___zpu_interrupt_vector
 
+_endline:
+    im '\r'
+    nop
+    im putc
+    call
+    storesp 0
+    im '\n'
+    nop
+    im putc
+    call
+    storesp 0
+    poppc
+
 .globl _premain
 _premain:
     /* Try to detect memory size. Start at a reasonable offset (16KB).
      Assume memory size is 2^N
      */
+
+    im setup_uart
+    call
+
+    im '>'
+    nop
+    im putc
+    call
+    storesp 0
+
+    im _endline
+    call
+
     im 0
     loadsp 0
     store /* Store 0 to 0x0 */
@@ -56,6 +82,23 @@ _premain:
     im 16384
     // Store the pattern
 .loop:
+    // Print out address/data
+    loadsp 0
+    im printhex
+    call
+    storesp 0
+
+    im '-'
+    nop
+    im putc
+    call
+    storesp 0
+
+    loadsp 4
+    im printhex
+    call
+    storesp 0
+
     loadsp 4
     loadsp 4
     store
@@ -63,6 +106,23 @@ _premain:
     loadsp 4
     im 0
     load
+
+
+    im '='
+    nop
+    im putc
+    call
+    storesp 0
+
+    loadsp 0
+    nop
+    im printhex
+    call
+    storesp 0
+
+    im _endline
+    call
+
     eq
     impcrel .done
     neqbranch

@@ -94,6 +94,14 @@ void flush()
 	while (UARTSTATUS & 4);
 }
 
+extern "C" void putc(int c)
+{
+	/* Wait for space in FIFO */
+	while ((UARTCTL&0x2)==2);
+	UARTDATA=c;
+}
+
+
 extern "C" void printnibble(unsigned int c)
 {
 	c&=0xf;
@@ -856,6 +864,11 @@ extern "C" void loadsketch(unsigned offset, unsigned size)
 	spi_disable(spidata);
 	flush();
 	start();
+}
+
+extern "C" void setup_uart()
+{
+    UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 }
 
 extern "C" int main(int argc,char**argv)
