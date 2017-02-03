@@ -20,3 +20,9 @@
 -g DonePipe:No
 -g DriveDone:No
 -g INIT_9K:Yes
+-g next_config_register_write:Disable 
+-g next_config_reboot:Disable 
+-g next_config_addr:0x03300000 
+-g next_config_new_mode:Yes 
+-g next_config_boot_mode:001 
+-g golden_config_addr:0x03500000

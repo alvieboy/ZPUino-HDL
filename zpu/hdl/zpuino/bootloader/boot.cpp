@@ -4,7 +4,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-//#define VERBOSE_LOADER
+#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -34,7 +34,7 @@
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 10
 #else
-# define BOOTLOADER_WAIT_MILLIS 1000
+# define BOOTLOADER_WAIT_MILLIS 30000
 #endif
 
 #define REPLY(X) (X|0x80)
@@ -67,7 +67,7 @@ unsigned char vstring[] = {
 	SPIOFFSET>>8,
 	SPIOFFSET&0xff,
 	0,
-	0,
+	0x7d0,
 	0,
 	CLK_FREQ >> 24,
 	CLK_FREQ >> 16,
@@ -188,10 +188,14 @@ static unsigned int inbyte()
 		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
 			INTRCTL=0;
 			TMR0CTL=0;
+			printstring("Bootloader Timed out.\r\n");
+			digitalWrite(FPGA_LED_PIN, HIGH);
+			digitalWrite(WING_A_1, LOW);	//reset
+			digitalWrite(WING_A_0, HIGH);	//reboot
 #ifdef __ZPUINO_NEXYS3__
 			digitalWrite(FPGA_LED_0, LOW);
 #endif
-			spi_copy();
+			//spi_copy();	//We don't want the bootloader to load zpuino code...
 		}
 	}
 #endif
@@ -817,6 +821,15 @@ inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+	
+	pinMode(WING_A_0, OUTPUT);	//reboot
+	digitalWrite(WING_A_0, LOW);
+	
+	pinMode(WING_A_1, OUTPUT);   
+	digitalWrite(WING_A_1, HIGH);	//reset	
+	
+	pinMode(FPGA_LED_PIN, OUTPUT);
+	digitalWrite(FPGA_LED_PIN, LOW);
 }
 #endif
 #ifdef __ZPUINO_NEXYS2__
@@ -868,9 +881,9 @@ extern "C" int main(int argc,char**argv)
         unsigned memtop = (unsigned)argv;
         unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
         /* Patch data */
-        vstring[5] = sketchsize>>16;
-        vstring[6] = sketchsize>>8;
-        vstring[7] = sketchsize;
+        // vstring[5] = sketchsize>>16;
+        // vstring[6] = sketchsize>>8;
+        // vstring[7] = sketchsize;
         vstring[16] = memtop>>24;
         vstring[16] = memtop>>16;
         vstring[16] = memtop>>8;
