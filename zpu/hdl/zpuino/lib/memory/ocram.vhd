@@ -19,6 +19,7 @@ architecture behave of ocram is
 
   signal ack: std_logic;
   signal en:  std_logic;
+  signal ramwe: std_logic_vector(3 downto 0);
 
 begin
 
@@ -26,6 +27,7 @@ begin
   wbo.err<='0';
   wbo.ack<=ack;
   wbo.stall<='0';
+
   en<=wbi.cyc and wbi.stb;
 
   process(syscon.clk)
@@ -43,18 +45,24 @@ begin
     end if;
   end process;
 
-  raminst: entity work.generic_sp_ram
-  generic map (
-    address_bits => address_bits,
-    data_bits    => 32
-  )
-  port map (
-    clka    => syscon.clk,
-    ena     => en,
-    wea     => wbi.we,
-    addra   => wbi.adr(address_bits+1 downto 2),
-    dia     => wbi.dat,
-    doa     => wbo.dat
-  );                    
+  rams: for i in 0 to 3 generate
+
+    ramwe(i) <= wbi.we and wbi.sel(i);
+
+    raminst: entity work.generic_sp_ram
+    generic map (
+      address_bits => address_bits,
+      data_bits    => 8
+    )
+    port map (
+      clka    => syscon.clk,
+      ena     => en,
+      wea     => ramwe(i),
+      addra   => wbi.adr(address_bits+1 downto 2),
+      dia     => wbi.dat(((i+1)*8)-1 downto (i*8)),
+      doa     => wbo.dat(((i+1)*8)-1 downto (i*8))
+    );
+
+  end generate;
 
 end behave;
