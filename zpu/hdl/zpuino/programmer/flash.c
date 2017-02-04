@@ -48,6 +48,7 @@ flash_info_t flash_list[] =
         { 0x20, 0x20, 0x16, 256, 65536, 64, "M25P32", &m25p_flash },
         { 0x20, 0xba, 0x18, 256, 65536, 256, "N25Q128A", &m25p_flash },
 	{ 0xBF, 0x25, 0x8D, 256, 4096, 128, "SST25VF040B", &sst25vf_flash },
+	{ 0xBF, 0x25, 0x8C, 256, 4096, 64,  "SST25VF020B", &sst25vf_flash },
 	{ 0x1F, 0x23, 0x00, 264, 1056, 256, "AT45DB021D", &atmel_flash }, /* Note: we use blocks here, not sectors */
 	{ 0x1F, 0x25, 0x00, 264, 2112, 512, "AT45DB081D", &atmel_flash }, /* Note: we use blocks here, not sectors */
 	{ 0xC2, 0x20, 0x17, 256, 65536, 128, "MX25L6445E", &m25p_flash },
