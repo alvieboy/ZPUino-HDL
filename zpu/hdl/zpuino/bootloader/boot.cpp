@@ -34,7 +34,7 @@
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 10
 #else
-# define BOOTLOADER_WAIT_MILLIS 30000
+# define BOOTLOADER_WAIT_MILLIS 5000
 #endif
 
 #define REPLY(X) (X|0x80)
@@ -907,7 +907,7 @@ extern "C" int main(int argc,char**argv)
 	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
-	printstring("\r\nZPUINO\r\n");
+	printstring("\r\nZPUINO Papilio Flex Bram Bootloader\r\n");
 #endif
 
 
