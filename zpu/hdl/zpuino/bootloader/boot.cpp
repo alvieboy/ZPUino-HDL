@@ -68,7 +68,7 @@ unsigned char vstring[] = {
 	SPIOFFSET>>8,
 	SPIOFFSET&0xff,
 	0,
-	0x6d,
+	0,
 	0,
 	CLK_FREQ >> 24,
 	CLK_FREQ >> 16,
@@ -869,9 +869,9 @@ extern "C" int main(int argc,char**argv)
         unsigned memtop = (unsigned)argv;
         unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
         /* Patch data */
-        // vstring[5] = sketchsize>>16;
-        // vstring[6] = sketchsize>>8;
-        // vstring[7] = sketchsize;
+        vstring[5] = sketchsize>>16;
+        vstring[6] = sketchsize>>8;
+        vstring[7] = sketchsize;
         vstring[16] = memtop>>24;
         vstring[17] = memtop>>16;
         vstring[18] = memtop>>8;
