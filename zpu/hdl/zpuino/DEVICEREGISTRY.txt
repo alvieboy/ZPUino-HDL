@@ -1,8 +1,8 @@
 00 None
-	00 No device
+        00 No device
 
 08 ZPUino
-	01 System Controller
+        01 System Controller
         02 Bootloader Code
         03 Internal SPI-Flash SPI controller
         10 SPI interface
@@ -17,24 +17,31 @@
         1A VGA (640x480) 15-bit Graphics Adaptor
         1B VGA Text-mode (640x480) 80x30 3-bit Adaptor
         1C ZX Spectrum Graphics Adaptor
-	1D VGA Generic Interface (8/16-bit)
+        1D VGA Generic Interface (8/16-bit)
         1E PLL Clock Generator
         20 RGB LED Controller
+        21 HDMI generic 16-bit controller
+        22 OV7670 Camera Controller
+        23 USB 1.1 FS controller
+        24 Xilinx ICAP controller
+        25 SoundPuddle MultiSPI
+        FE ZPUino Wishbone HUB (preliminar)
 
 02 FPGAArcade
-	01 YM2149 Sound Chip
+        01 YM2149 Sound Chip
         02 POKEY Sound Chip
 
 03 ZPUIno Contrib
-	01 SID6581 Sound Chip
+        01 SID6581 Sound Chip
+        02 SUMP Logic Analyser
 
 04 OpenCores
-	01 I2C Master Controller
-	02 CORDIC
+        01 I2C Master Controller
+        02 CORDIC
         03 PS/2 Controller
 
 81 Critical Software
-	-- Proprietary devices
+        -- Proprietary devices
 
 88 Alvie
-	-- Proprietary devices
+        -- Proprietary devices

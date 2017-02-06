@@ -116,7 +116,7 @@ static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned in
 	wbuf[0] = 0x01;
 	wbuf[1] = 0x04;
 	wbuf[2] = 0;
-    wbuf[3] = 0;
+        wbuf[3] = 0;
 
 	wbuf[4] = 0x02; // Page program
 	wbuf[5] = (addr >> 16) & 0xff;

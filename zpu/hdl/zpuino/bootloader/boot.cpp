@@ -1,4 +1,5 @@
 #include "zpuino.h"
+#include "zpuino.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -872,9 +873,9 @@ extern "C" int main(int argc,char**argv)
         // vstring[6] = sketchsize>>8;
         // vstring[7] = sketchsize;
         vstring[16] = memtop>>24;
-        vstring[16] = memtop>>16;
-        vstring[16] = memtop>>8;
-        vstring[16] = memtop;
+        vstring[17] = memtop>>16;
+        vstring[18] = memtop>>8;
+        vstring[19] = memtop;
 
         ivector = &_zpu_interrupt;
 

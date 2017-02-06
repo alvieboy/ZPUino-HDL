@@ -1,3 +1,6 @@
+#ifndef __ZPUINO_H__
+#define __ZPUINO_H__
+
 #include "register.h"
 
 static inline __attribute__((always_inline)) register_t outputRegisterForPin(unsigned int pin)
@@ -68,3 +71,4 @@ static inline __attribute((always_inline)) void inputPinForFunction(int pin, int
 }
 
 
+#endif

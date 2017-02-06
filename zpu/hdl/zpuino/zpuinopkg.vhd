@@ -54,8 +54,8 @@ package zpuinopkg is
   subtype slot_id          is std_logic_vector(15 downto 0);
   type slot_id_type        is array(1 to num_devices-1) of slot_id;
 
-  type ppsoutinfotype is array(PPSCOUNT_OUT-1 downto 0) of integer;
-  type ppsininfotype is array(PPSCOUNT_IN-1 downto 0) of integer;
+  type ppsoutinfotype is array(PPSCOUNT_OUT-1 downto 0) of integer range 0 to 15;
+  type ppsininfotype is array(PPSCOUNT_IN-1 downto 0) of integer range 0 to 15;
 
   component zpuino_top_icache is
   port (

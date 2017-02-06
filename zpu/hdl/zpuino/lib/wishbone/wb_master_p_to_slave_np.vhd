@@ -43,7 +43,7 @@ begin
             state <= idle;
           end if;
         when others =>
-      end case
+      end case;
     end if;
   end if;
 end process;
