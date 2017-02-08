@@ -37,7 +37,7 @@ void conn_setsimulator(int v)
 	simulator=v;
 }
 
-int conn_open(const char *device,speed_t speed, connection_t *conn)
+int conn_open(const char *device,speed_t speed, connection_t *conn, int dtr)
 {
 	struct termios termset;
 	int fd;

@@ -39,7 +39,7 @@
 int conn_write(connection_t conn, const unsigned char *buf, size_t size);
 int conn_read(connection_t conn, unsigned char *buf, size_t size,unsigned timeout);
 void conn_close(connection_t conn);
-int conn_open(const char *device,speed_t speed, connection_t *conn);
+int conn_open(const char *device,speed_t speed, connection_t *conn, int dtr);
 void conn_reset(connection_t conn);
 int conn_parse_speed(unsigned int baudrate,speed_t *speed);
 int conn_set_speed(connection_t conn,speed_t speed);

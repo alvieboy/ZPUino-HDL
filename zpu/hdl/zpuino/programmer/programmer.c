@@ -54,6 +54,7 @@ static int only_read=0;
 static int verify=0;
 static int ignore_limit=0;
 static int upload_only=0;
+static int enable_dtr=0;
 static int user_offset=-1;
 static speed_t serial_speed = DEFAULT_SPEED;
 static speed_t initial_serial_speed = DEFAULT_INITIAL_SPEED;
@@ -86,7 +87,7 @@ int parse_arguments(int argc,char **const argv)
 	int p;
 
 	while (1) {
-            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:U"))) {
+            switch ((p=getopt(argc,argv,"RDvztb:d:re:o:ls:S:U"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -134,6 +135,9 @@ int parse_arguments(int argc,char **const argv)
 		case 'U':
 			upload_only=1;
 			break;
+		case 'z':
+			enable_dtr=1;
+			break;			
 		default:
 			return 0;
 		}
@@ -170,6 +174,7 @@ int help(char *name)
         printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
         printf("  -S speed\tUse specified initial serial port speed (default: 115200)\n");
 	printf("  -v\t\tIncrease verbosity\n");
+	printf("  -z\t\tToggle DTR line to cause a reboot\n");
 	return -1;
 }
 
@@ -351,7 +356,7 @@ int open_device(char *device,connection_t *conn)
 	if (is_simulator)
 		return open_simulator_device(device,conn);
 	else
-		return conn_open(device,initial_serial_speed,conn);
+		return conn_open(device,initial_serial_speed,conn,enable_dtr);
 }
 
 

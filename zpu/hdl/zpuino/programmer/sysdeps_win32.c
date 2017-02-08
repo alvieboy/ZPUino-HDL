@@ -32,6 +32,7 @@
 
 extern int verbose;
 
+
 int conn_set_speed(connection_t conn, speed_t speed)
 {
 	struct win32_port *port = conn;
@@ -47,7 +48,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 	port->dcb.ByteSize        = 8;
 	port->dcb.Parity          = NOPARITY;
 	port->dcb.StopBits        = ONESTOPBIT;
-	port->dcb.fDtrControl     = DTR_CONTROL_ENABLE;
+	port->dcb.fDtrControl     = DTR_CONTROL_DISABLE;	//This is needed to prevent an unwanted reset when switching from DTR to no default DTR.
 	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
 	port->dcb.fOutxCtsFlow    = FALSE;
 	port->dcb.fOutxDsrFlow    = FALSE;
@@ -68,11 +69,24 @@ int conn_set_speed(connection_t conn, speed_t speed)
 		fprintf(stderr,"SetCommState: %p %lu\n",port->hcomm, GetLastError());
 		return -1;
 	}
+	
+	
 	return 0;
 }
 
-int conn_open(const char *device,speed_t speed, connection_t *conn)
-{
+int EstablishDefaultDTR(char *comPortName, int dtr){
+    char commandString[256];
+    if ( !system(NULL) ){
+        return(-1);
+    }        
+    sprintf( commandString, "MODE %s dtr=%s% >nul 2>1", comPortName, dtr? "on":"off"  );
+    return system( commandString );
+}
+
+int conn_open(const char *device,speed_t speed, connection_t *conn, int dtr)
+{	
+	EstablishDefaultDTR(device,dtr);
+
 	// Allocate
 	char rportname[128];
 
