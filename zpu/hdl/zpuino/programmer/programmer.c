@@ -738,7 +738,7 @@ int main(int argc, char **argv)
 	int success=1;
 
 	uint32_t freq;
-	struct timeval start,end,delta;
+	struct timeval start,end,delta, erase_end, erase_delta, program_delta;
 	connection_t conn;
 
 	flash_info_t *flash;
@@ -1021,6 +1021,8 @@ int main(int argc, char **argv)
 	if (verbose>0)
 		printf("\ndone.\n");
 
+        gettimeofday(&erase_end, NULL);
+
 	//exit(0);
 
 	saddr = spioffset_page;
@@ -1117,12 +1119,39 @@ report_out:
 	}
 #endif
 
-	printf("%s completed %s in %.02f seconds.\n",
+        // Get erase delta
 
-		   upload_only?"Upload":"Programming",
-		   success?"successfully":"WITH ERRORS",
-		   (double)delta.tv_sec + (double)delta.tv_usec/1000000.0);
+#ifdef __linux__
+	timersub(&erase_end,&start,&erase_delta);
+#else
+	erase_delta.tv_sec = erase_end.tv_sec - start.tv_sec;
+	erase_delta.tv_usec = erase_end.tv_usec - start.tv_usec;
+	if (erase_delta.tv_usec<0) {
+		erase_delta.tv_sec-=1;
+		erase_delta.tv_usec += 1000000;
+	}
+#endif
 
+#ifdef __linux__
+	timersub(&end,&erase_end,&program_delta);
+#else
+	program_delta.tv_sec = end.tv_sec - erase_end.tv_sec;
+	program_delta.tv_usec = end.tv_usec - erase_end.tv_usec;
+	if (program_delta.tv_usec<0) {
+		program_delta.tv_sec-=1;
+		program_delta.tv_usec += 1000000;
+        }
+#endif
+
+
+	printf("%s completed %s in %.02f seconds (%.02fs erase, %.02fs program)\n",
+
+               upload_only?"Upload":"Programming",
+               success?"successfully":"WITH ERRORS",
+               (double)delta.tv_sec + (double)delta.tv_usec/1000000.0,
+               (double)erase_delta.tv_sec + (double)erase_delta.tv_usec/1000000.0,
+               (double)program_delta.tv_sec + (double)program_delta.tv_usec/1000000.0
+              );
 #ifdef WIN32
 	//freemakeargv(argv);
 #endif

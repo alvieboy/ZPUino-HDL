@@ -128,9 +128,6 @@ void writeEscaped(unsigned char c, unsigned char **dest)
 	(*dest)++;
 }
 
-static unsigned count_so_far=0;
-
-
 #define CTRL_UNNUMBERED(x) (((x)&0x80)==0)
 #define CTRL_PEER_TX(x) (((x)&0x38)>>3)
 #define CTRL_PEER_RX(x) ((x)&0x7)
@@ -276,9 +273,6 @@ static int hdlc_send_raw_packet(connection_t fd, unsigned char control, const un
         crc16_update(&crc,buffer[i]);
         writeEscaped(buffer[i],&txptr);
     }
-    if (count_so_far==5) {
-        crc^=0xdead;
-    }
     writeEscaped( crc&0xff, &txptr);
     writeEscaped( (crc>>8)&0xff, &txptr);
 
@@ -294,8 +288,6 @@ static int hdlc_send_raw_packet(connection_t fd, unsigned char control, const un
         }
         printf("\n");
     }
-
-    count_so_far++;
 
     return conn_write(fd, txbuf, txptr-(&txbuf[0]));
 }
@@ -322,9 +314,7 @@ static int hdlc_retransmit(connection_t fd, unsigned char seq)
         crc16_update(&crc,buffer[i]);
         writeEscaped(buffer[i],&txptr);
     }
-    if (count_so_far==5) {
-        crc^=0xdead;
-    }
+
     writeEscaped( crc&0xff, &txptr);
     writeEscaped( (crc>>8)&0xff, &txptr);
 
@@ -343,11 +333,7 @@ static int hdlc_retransmit(connection_t fd, unsigned char seq)
         printf("\n");
     }
 
-    count_so_far++;
-
     return conn_write(fd, txbuf, txptr-(&txbuf[0]));
-
-
 }
 
 int hdlc_sendpacket(connection_t fd, const unsigned char *buffer, size_t size)
