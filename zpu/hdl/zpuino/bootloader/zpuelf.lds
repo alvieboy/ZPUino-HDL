@@ -10,8 +10,8 @@ SEARCH_DIR("/local/work/zpu/zpubig/binutils/../install/zpu-elf/lib");
 
   MEMORY
   {
-    ROM (rx) : ORIGIN = 0x00000000, LENGTH = 0x1000
-    RAM (rw) : ORIGIN = 0x00001000, LENGTH = 0x1000
+    ROM (rx) : ORIGIN = 0x00000000, LENGTH = 0x2000
+    RAM (rw) : ORIGIN = 0x00002000, LENGTH = 0x6000
   }
 
 SECTIONS
@@ -134,7 +134,7 @@ SECTIONS
       _end.  Align after .bss to ensure correct alignment even if the
       .bss section disappears because there are no input sections.  */
    . = ALIGN(32 / 8);
-  } > ROM
+  } > RAM
   . = ALIGN(32 / 8);
   _end = .;
   _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;

@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "hdlc.h"
 #include "transport.h"
+#include <event2/event.h>
 
 extern int verbose;
 static int simulator=0;
@@ -50,7 +51,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	}
 
 	if (verbose>2)
-		printf("Opened device '%s' with speed %u\n", device, speed);
+		printf("Opened device '%s'\n", device);
 
 	tcgetattr(fd, &termset);
 	termset.c_iflag = IGNBRK;   
@@ -129,21 +130,25 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 
 int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeout)
 {
-	struct timeval tv;
-	fd_set rfs;
+    struct timeval tv;
+    fd_set rfs;
 
-	FD_ZERO(&rfs);
-	FD_SET(conn, &rfs);
-	tv.tv_sec = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
+    if (timeout==0) {
+        return read(conn,buf,size);
+    }
 
-	switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
-	default:
-		return read(conn,buf,size);
-	case 0:
-	case -1:
-		return -1;
-	}
+    FD_ZERO(&rfs);
+    FD_SET(conn, &rfs);
+    tv.tv_sec = timeout / 1000;
+    tv.tv_usec = (timeout % 1000) * 1000;
+
+    switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
+    default:
+        return read(conn,buf,size);
+    case 0:
+    case -1:
+        return -1;
+    }
 }
 
 void conn_close(connection_t conn)
@@ -153,86 +158,40 @@ void conn_close(connection_t conn)
 
 buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size, int timeout)
 {
-	fd_set rfs;
-	struct timeval tv;
-	int retries = 3;
-	int rd;
-	buffer_t *ret;
-	unsigned char tmpbuf[32];
+    int r = hdlc_transmit(conn,buf,size,timeout);
 
-	hdlc_sendpacket(conn,buf,size);
+    if (r!=0)
+        return NULL;
 
-	do {
-		FD_ZERO(&rfs);
-		FD_SET(conn, &rfs);
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
+    return hdlc_get_packet();
+}
 
-		switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
-		case -1:
-			return NULL;
-		case 0:
-			// Timeout
-			if (!(--retries)) {
-				return NULL;
-			} else
-				// Resend
-				hdlc_sendpacket(conn,buf,size);
-			break;
-		default:
-			rd = read(conn,tmpbuf,sizeof(tmpbuf));
-			if (rd>0) {
-				if (verbose>2) {
-					int i;
-					struct timeval tv;
-					gettimeofday(&tv,NULL);
+static struct event_base *base;
+#if 0
+static void main_event(evutil_socket_t fd, short what, void *arg)
+{
+    if (what==EV_TIMEOUT) {
+        if (hdlc_timeout(fd)<0) {
+            event_del(timeout_event);
+        }
+    }
+}
 
-					printf("[%d.%06d] Rx:",
-						  tv.tv_sec,tv.tv_usec);
-					for (i=0; i<rd; i++) {
-						printf(" 0x%02x",tmpbuf[i]);
-					}
-					printf("\n");
-				}
-				ret = hdlc_process(tmpbuf,rd);
-				if (ret) {
-					/*if (!validate) {
+#endif
 
-						free(txbuf2);
-						return ret;
-						} */
-					// Check return
-					if (ret->size<1) {
-						buffer_free(ret);
-						//free(txbuf2);
+struct event_base *get_event_base()
+{
+    return base;
+}
 
-						return NULL;
-					}
-					// Check explicit CRC error
-					if (ret->buf[0] == 0xff) {
-						// Resend
-						if (verbose>0) {
-							printf("Reported CRC error %02x%02x / %02x%02x\n",
-								   ret->buf[1],
-								   ret->buf[2],
-								   ret->buf[3],
-								   ret->buf[4]);
-						}
-						hdlc_sendpacket(conn,buf,size+1);
-                        continue;
-					}
+int main_setup(connection_t conn)
+{
+    base = event_base_new();
+}
 
-					return ret;
-				}
-			} else {
-				if (errno==EINTR || errno==EAGAIN)
-					continue;
-				fprintf(stderr,"Cannot read from connection (%d) errno %d: %s\n",rd,errno,strerror(errno));
-				return NULL;
-			}
-		}
-	} while (1);
-
+int main_iter()
+{
+    return event_base_loop(base, EVLOOP_ONCE);
 }
 
 int conn_set_speed(connection_t conn, speed_t speed)

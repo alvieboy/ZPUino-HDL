@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "transport.h"
+#include <event2/event.h>
 
 #ifdef __linux__
 #include "sysdeps_linux.h"
@@ -51,6 +52,7 @@ unsigned int *conn_get_baudrates();
 buffer_t *sendreceive(connection_t conn, unsigned char *txbuf, size_t size, int timeout);
 buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout);
 
+struct event_base *getEventBase();
 
 
 #endif

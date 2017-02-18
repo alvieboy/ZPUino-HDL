@@ -233,12 +233,12 @@ void comms_error()
 {
 	fprintf(stderr,"Cannot get programmer version, aborting\n");
 	fprintf(stderr,"\nCould not contact ZPUino embedded programmer.\n");
-	fprintf(stderr,"The more common reasons for this are:\n\n");
+	fprintf(stderr,"Most common reasons for this error are:\n\n");
 	fprintf(stderr,"a) You are not specifying the correct port. The port currently selected is '%s'\n",
 		serialport);
-	fprintf(stderr,"b) The board FPGA is not programmed with a valid ZPUino bitfile.\n");
-	fprintf(stderr,"c) The board is properly not powered.\n");
-	fprintf(stderr,"\nPlease review all of above, if problem persists please contact support.\n");
+	fprintf(stderr,"b) The FPGA board is not programmed with a valid ZPUino bitfile.\n");
+	fprintf(stderr,"c) The board is not properly powered.\n");
+	fprintf(stderr,"\nPlease review all of above - if problem persists please contact support.\n");
 
 }
 
@@ -351,36 +351,37 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 }
 
 
-static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
+static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd,
+                                      unsigned char *txbuf, size_t size, int timeout, int validate)
 {
-	//unsigned char tmpbuf[32];
-	//struct timeval tv;
-	//int rd;
-	buffer_t *ret=NULL;
-	unsigned char *txbuf2;
-	//int retries=3;
+    buffer_t *ret=NULL;
+    unsigned char *txbuf2;
 
+    txbuf2 = malloc( size + 1 );
+    txbuf2[0] = cmd;
+    if (size>0) {
+        memcpy(&txbuf2[1], txbuf,size);
+    }
+    do {
+        ret = conn_transmit(fd,txbuf2,size+1,timeout);
+        if (NULL==ret) {
+            free(txbuf2);
+            return ret;
+        }
 
-	txbuf2=malloc( size + 1);
-	txbuf2[0] = cmd;
-	if (size) {
-		memcpy(&txbuf2[1], txbuf,size);
-	}
-	do {
-		ret = conn_transmit(fd,txbuf2,size+1,timeout);
-		if (NULL==ret)
-			return ret;
-
-		if (ret->buf[0] != REPLY(cmd)) {
-			if (verbose>0) {
-				printf("Invalid reply 0x%02x to command 0x%02x\n",
-					   ret->buf[0],REPLY(cmd));
-			}
-			buffer_free(ret);
-		} else {
-			return ret;
-		}
-	} while(1);
+        if (ret->buf[1] != REPLY(cmd)) {
+            if (verbose>0) {
+                printf("Invalid reply 0x%02x to command 0x%02x\n",
+                       ret->buf[1],REPLY(cmd));
+            }
+            buffer_free(ret);
+        } else {
+            // Advance it past control field.
+            ret->buf++;
+            free(txbuf2);
+            return ret;
+        }
+    } while(1);
 }
 
 buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout)
@@ -456,10 +457,10 @@ int open_device(char *device,connection_t *conn)
 void buffer_free(buffer_t *b)
 {
 	if (b) {
-		if (b->buf)
-			free(b->buf);
-		free(b);
-	}
+            if (b->abuf)
+                free(b->abuf);
+            free(b);
+        }
 }
 /*
 static int flash_read_status(fd)
@@ -789,12 +790,27 @@ int main(int argc, char **argv)
 		conn_reset(conn);
 	} else {
 		fprintf(stderr,"Press RESET now\n");
-	}
+        }
+
+        // Link up
+        if (verbose>2) {
+            printf("Connecting...\n");
+        }
+        main_setup(conn);
+
+        if (hdlc_connect(conn)<0) {
+            comms_error();
+            conn_close(conn);
+            return -1;
+        }
+
+        printf("Connected. Contacting bootloader.\n");
+        retries = 10;
 	while (retries>0) {
 		/* Reset */
 		conn_prepare(conn);
 		if (verbose>2) {
-			printf("Connecting...\n");
+			printf("Contacting...\n");
 		}
 		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,500);
 		if (b)

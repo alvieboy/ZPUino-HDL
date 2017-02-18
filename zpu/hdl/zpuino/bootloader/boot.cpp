@@ -44,6 +44,34 @@
 #define HDLC_escapeFlag 0x7D
 #define HDLC_escapeXOR 0x20
 
+
+
+#define CRC_EXPECTED_RESIDUAL 0x0000
+
+#define CTRL_UNNUMBERED(x) (((x)&0x80)==0)
+#define CTRL_PEER_TX(x) (((x)&0x38)>>3)
+#define CTRL_PEER_RX(x) ((x)&0x7)
+#define CTRL_PEER_POLL(x) (((x)&40)!=0)
+#define CTRL_PEER_UNNUMBERED_SEQ(x) (((x)&0x38)>>3)
+#define CTRL_PEER_UNNUMBERED_CODE(x) ((x)&0x7)
+
+#define U_RST  0x00
+#define U_REJ  0x01
+#define U_RR   0x02
+#define U_SREJ 0x03
+#define U_RNR  0x04
+
+static unsigned char hdlc_expected_seq_rx;
+static unsigned char hdlc_seq_tx;
+
+static unsigned char hdlc_buffer[257*6];
+static unsigned char hdlc_buffer_seq_start;
+static unsigned char hdlc_buffered;
+
+#define NEXT_SEQUENCE(x) (((x)+1) & 0x7)
+
+
+
 #define BDATA /*__attribute__((section(".bdata")))*/
 
 extern "C" void (*ivector)(int);
@@ -135,7 +163,7 @@ const unsigned char serialbuffer[] = {
 int serialbufferptr=0;
 #endif
 
-void sendByte(unsigned int i)
+static void sendByte(unsigned int i)
 {
 	CRC16APP = i;
 	i &= 0xff;
@@ -148,77 +176,116 @@ void sendByte(unsigned int i)
 
 static void sendBuffer(const unsigned char *buf, unsigned int size)
 {
-	while (size--!=0)
-		sendByte(*buf++);
+    while (size--!=0)
+        sendByte(*buf++);
 }
 
-static void prepareSend()
+static void prepareSend(unsigned char control)
 {
-	CRC16ACC=0xFFFF;
-	outbyte(HDLC_frameFlag);
+    CRC16ACC=0xFFFF;
+    outbyte(HDLC_frameFlag);
+    sendByte(control);
 }
 
 
-void finishSend()
+static inline unsigned char buildDataControl()
 {
-	unsigned int crc = CRC16ACC;
-	sendByte(crc>>8);
-	sendByte(crc&0xff);
-	outbyte(HDLC_frameFlag);
+    unsigned char v = 0x80;
+    v|=(hdlc_seq_tx)<<3;
+    v|=hdlc_expected_seq_rx;
+    return v;
+}
+
+static void finishSend()
+{
+    unsigned int crc = CRC16ACC;
+    sendByte(crc&0xff);
+    sendByte(crc>>8);
+    outbyte(HDLC_frameFlag);
+
+    hdlc_seq_tx = NEXT_SEQUENCE(hdlc_seq_tx);
+}
+
+static void sendRR()
+{
+    prepareSend( (hdlc_expected_seq_rx<<3) | U_RR );
+    finishSend();
+}
+
+static void sendREJ()
+{
+    prepareSend( (hdlc_expected_seq_rx<<3) | U_REJ );
+    finishSend();
+}
+
+static unsigned int hdlcBufferOffsetForSequence(unsigned char seq)
+{
+    unsigned int off = ((unsigned)seq + (unsigned)hdlc_buffer_seq_start);
+    off &= 0x7;
+    off *= 257;
+    return off;
+}
+
+static void saveFrame(unsigned char seq, const unsigned char *buffer, unsigned len)
+{
+    unsigned char *target = &hdlc_buffer[ hdlcBufferOffsetForSequence(seq) ];
+    while (len--) {
+        *target++=*buffer++;
+    }
 }
 
 static unsigned int inbyte()
 {
 #ifdef BOOT_IMMEDIATLY
-		spi_copy();
+    spi_copy();
 #else
 
-	for (;;)
-	{
+    for (;;)
+    {
 #ifdef DEBUG_SERIAL
-		if (serialbufferptr<sizeof(serialbuffer))
-			return serialbuffer[serialbufferptr++];
+        if (serialbufferptr<sizeof(serialbuffer))
+            return serialbuffer[serialbufferptr++];
 #else
 
-		if (UARTCTL&0x1 != 0) {
-			return UARTDATA;
-		}
+        if (UARTCTL&0x1 != 0) {
+            return UARTDATA;
+        }
 
 #endif
 
-		if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
-			INTRCTL=0;
-			TMR0CTL=0;
+        if (inprogrammode==0 && milisseconds>BOOTLOADER_WAIT_MILLIS) {
+            INTRCTL=0;
+            TMR0CTL=0;
 #ifdef __ZPUINO_NEXYS3__
-			digitalWrite(FPGA_LED_0, LOW);
+            digitalWrite(FPGA_LED_0, LOW);
 #endif
-			spi_copy();
-		}
-	}
+            spi_copy();
+        }
+    }
 #endif
 }
 
 static void enableTimer()
 {
 #ifdef BOOT_IMMEDIATLY
-	return; // TEST
+    return; // TEST
 #endif
 
 #ifdef SIMULATION
-	TMR0CMP = (CLK_FREQ/100000U)-1;
+    TMR0CMP = (CLK_FREQ/100000U)-1;
 #else
-	TMR0CMP = (CLK_FREQ/2000U)-1;
+    TMR0CMP = (CLK_FREQ/2000U)-1;
 #endif
-	TMR0CNT = 0x0;
-	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
+    TMR0CNT = 0x0;
+    TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
 }
 
 
 
 /*
- * Output one character to the serial port 
- * 
- * 
+ * Output one character to the serial port
+ *
+ *
  */
 static void outbyte(int c)
 {
@@ -426,7 +493,7 @@ static inline int is_atmel_flash()
 
 static void simpleReply(unsigned int r)
 {
-	prepareSend();
+	prepareSend(buildDataControl());
 	sendByte(REPLY(r));
 	finishSend();
 }
@@ -532,7 +599,7 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 	spi_disable(spidata);
 
 	// Send back
-	prepareSend();
+	prepareSend(buildDataControl());
 	sendByte(REPLY(BOOTLOADER_CMD_RAWREADWRITE));
 	sendByte(rxcount>>8);
 	sendByte(rxcount);
@@ -589,7 +656,7 @@ static void cmd_sst_aai_program(unsigned char *buffer)
 	spiwrite(spidata,0x04);
 	spi_disable(spidata);
 	// Send back
-	prepareSend();
+	prepareSend(buildDataControl());
 	sendByte(REPLY(BOOTLOADER_CMD_SSTAAIPROGRAM));
 	finishSend();
 #endif
@@ -605,7 +672,7 @@ static void cmd_set_baudrate(unsigned char *buffer)
 	bsel<<=8;
 	bsel |= buffer[3];
 	bsel<<=8;
-    bsel |= buffer[4];
+        bsel |= buffer[4];
 
 	simpleReply(BOOTLOADER_CMD_SETBAUDRATE);
 
@@ -619,50 +686,50 @@ static void cmd_set_baudrate(unsigned char *buffer)
 
 static void cmd_waitready(unsigned char *buffer)
 {
-	int status;
+    int status;
 
-	if (is_atmel_flash()) {
-		do {
-			status = spi_read_status();
-		} while (!(status & 0x80));
-	} else {
-		do {
-			status = spi_read_status();
-		} while (status & 1);
-	}
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_WAITREADY));
-	sendByte(status);
-	finishSend();
+    if (is_atmel_flash()) {
+        do {
+            status = spi_read_status();
+        } while (!(status & 0x80));
+    } else {
+        do {
+            status = spi_read_status();
+        } while (status & 1);
+    }
+    prepareSend(buildDataControl());
+    sendByte(REPLY(BOOTLOADER_CMD_WAITREADY));
+    sendByte(status);
+    finishSend();
 }
 
 
 static void cmd_version(unsigned char *buffer)
 {
-	// Reset boot counter
-	milisseconds = 0;
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
+    // Reset boot counter
+    milisseconds = 0;
+    prepareSend(buildDataControl());
+    sendByte(REPLY(BOOTLOADER_CMD_VERSION));
 
-	sendBuffer(vstring,sizeof(vstring));
-	finishSend();
+    sendBuffer(vstring,sizeof(vstring));
+    finishSend();
 }
 
 static void cmd_identify(unsigned char *buffer)
 {
-	// Reset boot counter
-	milisseconds = 0;
-	int id;
+    // Reset boot counter
+    milisseconds = 0;
+    int id;
 
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_IDENTIFY));
-	flash_id = spi_read_id();
-	sendByte(flash_id>>16);
-	sendByte(flash_id>>8);
-	sendByte(flash_id);
-	id = spi_read_status();
-	sendByte(id);
-	finishSend();
+    prepareSend(buildDataControl());
+    sendByte(REPLY(BOOTLOADER_CMD_IDENTIFY));
+    flash_id = spi_read_id();
+    sendByte(flash_id>>16);
+    sendByte(flash_id>>8);
+    sendByte(flash_id);
+    id = spi_read_status();
+    sendByte(id);
+    finishSend();
 }
 
 
@@ -714,31 +781,82 @@ static const cmdhandler_t handlers[] = {
 	&cmd_start            /* CMD10 */
 };
 
-
-inline void processCommand(unsigned char *buffer, unsigned bufferpos)
+static inline void processCommand(unsigned char *buffer, unsigned bufferpos)
 {
-	unsigned int pos=0;
-	if (bufferpos<3)
-		return; // Too few data
+    unsigned int pos=0;
 
-	CRC16ACC=0xFFFF;
-	for (pos=0;pos<bufferpos-2;pos++) {
-		CRC16APP=buffer[pos];
-	}
-	unsigned int tcrc = buffer[--bufferpos];
-	tcrc|=buffer[--bufferpos]<<8;
-	unsigned int rcrc=CRC16ACC;
-	if (rcrc!=tcrc) {
-		//printstring("C!");
-		return;
-	}
+    if (bufferpos<3)
+        return; // Too few data
 
-	pos=buffer[0];
+    unsigned int rcrc=CRC16ACC;
 
-	if (pos>BOOTLOADER_MAX_CMD)
-		return;
-	pos--;
-	handlers[pos](buffer);
+    if (rcrc!=CRC_EXPECTED_RESIDUAL) {
+        //printstring("C!");
+        // Just silently drop it?
+        sendREJ();
+        return;
+    }
+
+    unsigned int control = buffer[0];
+
+    if (CTRL_UNNUMBERED(control)) {
+        switch (CTRL_PEER_UNNUMBERED_CODE(control)) {
+        case U_RST:
+            hdlc_expected_seq_rx=0;
+            hdlc_seq_tx=0;
+            // TODO: clear window
+            sendRR();
+            break;
+        case U_REJ:
+            // TODO: Got a reject. Our window is only 1.
+            break;
+        case U_SREJ:
+            // TODO: Got a reject. Our window is only 1.
+            break;
+        case U_RR:
+            // TODO: ack window
+            break;
+        case U_RNR:
+            // TODO: Should not happen
+            break;
+        }
+    } else {
+        // Numbered frame
+        unsigned peer_tx = CTRL_PEER_TX(control);
+        unsigned peer_rx = CTRL_PEER_RX(control);
+        unsigned is_poll = CTRL_PEER_POLL(control);
+
+        if (hdlc_expected_seq_rx != peer_tx) {
+            // Lost frame.
+            sendREJ();
+            // Save reception frame.
+            hdlc_buffer_seq_start = hdlc_expected_seq_rx;
+            saveFrame(peer_tx, buffer, bufferpos);
+            hdlc_buffered = 1;
+            return;
+        } else {
+            hdlc_expected_seq_rx = NEXT_SEQUENCE(hdlc_expected_seq_rx);
+        }
+
+        {
+            unsigned char *buf;
+            if (hdlc_buffered) {
+                // TODO. Iterate through all buffered commands and execute them.
+            } else {
+                buf = buffer;
+            }
+
+            pos=buf[1];
+
+            if (pos>BOOTLOADER_MAX_CMD)
+                return;
+
+            pos--;
+
+            handlers[pos](&buf[1]);
+
+        }
+    }
 }
 
 #ifdef __ZPUINO_S3E_EVAL__
@@ -850,8 +968,8 @@ inline void configure_pins()
 #ifdef __ZPUINO_NEXYS3__
 inline void configure_pins()
 {
-	digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
-	digitalWrite(FPGA_LED_0,HIGH);
+    digitalWrite(SPI_FLASH_SEL_PIN,HIGH);
+    digitalWrite(FPGA_LED_0,HIGH);
 }
 #endif
 
@@ -871,109 +989,111 @@ extern "C" void udivmodsi4(); /* Just need it's address */
 
 extern "C" void loadsketch(unsigned offset, unsigned size)
 {
-	register_t spidata = &SPIDATA; // Ensure this stays in stack
-	unsigned crc16base = CRC16BASE;
-	volatile unsigned int *target = (volatile unsigned int *)0x1000;
-	spi_disable(spidata);
-	spi_enable();
-	spiwrite(spidata,0x0b);
-	spiwrite(spidata+4,offset);
-	spiwrite(spidata,0x0);
-	copy_sketch(spidata, crc16base, size, target);
-	spi_disable(spidata);
-	flush();
-	start();
+    register_t spidata = &SPIDATA; // Ensure this stays in stack
+    unsigned crc16base = CRC16BASE;
+    volatile unsigned int *target = (volatile unsigned int *)0x1000;
+    spi_disable(spidata);
+    spi_enable();
+    spiwrite(spidata,0x0b);
+    spiwrite(spidata+4,offset);
+    spiwrite(spidata,0x0);
+    copy_sketch(spidata, crc16base, size, target);
+    spi_disable(spidata);
+    flush();
+    start();
 }
 
 extern "C" int main(int argc,char**argv)
 {
-	inprogrammode = 0;
-	milisseconds = 0;
-	unsigned bufferpos = 0;
-	unsigned char buffer[256 + 32];
-	int syncSeen;
-	int unescaping;
-        unsigned memtop = (unsigned)argv;
-        unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
-        /* Patch data */
-        vstring[5] = sketchsize>>16;
-        vstring[6] = sketchsize>>8;
-        vstring[7] = sketchsize;
-        vstring[16] = memtop>>24;
-        vstring[17] = memtop>>16;
-        vstring[18] = memtop>>8;
-        vstring[19] = memtop;
+    inprogrammode = 0;
+    milisseconds = 0;
+    unsigned bufferpos = 0;
+    unsigned char buffer[256 + 32];
+    int syncSeen;
+    int unescaping;
+    unsigned memtop = (unsigned)argv;
+    unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
+    /* Patch data */
+    vstring[5] = sketchsize>>16;
+    vstring[6] = sketchsize>>8;
+    vstring[7] = sketchsize;
+    vstring[16] = memtop>>24;
+    vstring[17] = memtop>>16;
+    vstring[18] = memtop>>8;
+    vstring[19] = memtop;
+    hdlc_buffered = 0;
 
-        ivector = &_zpu_interrupt;
+    ivector = &_zpu_interrupt;
 
-        UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+    UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
 
-	configure_pins();
+    configure_pins();
 
 #if 0//ndef VERBOSE_LOADER
-	_bfunctions[0] = (unsigned)&udivmodsi4;
-	_bfunctions[1] = (unsigned)&memcpy;
-	_bfunctions[2] = (unsigned)&memset;
-	_bfunctions[3] = (unsigned)&strcmp;
-	_bfunctions[4] = (unsigned)&loadsketch;
+    _bfunctions[0] = (unsigned)&udivmodsi4;
+    _bfunctions[1] = (unsigned)&memcpy;
+    _bfunctions[2] = (unsigned)&memset;
+    _bfunctions[3] = (unsigned)&strcmp;
+    _bfunctions[4] = (unsigned)&loadsketch;
 #endif
 
-	INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
-	INTRCTL=1;
+    INTRMASK = BIT(INTRLINE_TIMER0); // Enable Timer0 interrupt
+    INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
-	printstring("\r\nZPUINO\r\n");
+    printstring("\r\nZPUINO\r\n");
 #endif
 
 
-	enableTimer();
+    enableTimer();
 
-	CRC16POLY = 0xFFFF8408; // CRC16-CCITT
-	SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
-	// Reset flash
-	spi_reset(&SPIDATA);
+    CRC16POLY = 0xFFFF8408; // CRC16-CCITT
+    SPICTL=BIT(SPICPOL)|BOARD_SPI_DIVIDER|BIT(SPISRE)|BIT(SPIEN)|BIT(SPIBLOCK);
+    // Reset flash
+    spi_reset(&SPIDATA);
 #ifdef __SST_FLASH__
-	spi_enable();
-	spiwrite(0x4); // Disable WREN for SST flash
-	spi_disable(&SPIDATA);
+    spi_enable();
+    spiwrite(0x4); // Disable WREN for SST flash
+    spi_disable(&SPIDATA);
 #endif
 
-	syncSeen = 0;
-	unescaping = 0;
-	while (1) {
-		int i;
-		i = inbyte();
-		// DEBUG ONLY
-		//TMR1CNT=i;
-		//outbyte(i);
-		if (syncSeen) {
-			if (i==HDLC_frameFlag) {
-				if (bufferpos>0) {
-					syncSeen=0;
-					processCommand(buffer, bufferpos);
-				}
-			} else if (i==HDLC_escapeFlag) {
-				unescaping=1;
-			} else if (bufferpos<sizeof(buffer)) {
-				if (unescaping) {
-					unescaping=0;
-					i^=HDLC_escapeXOR;
-				}
-				buffer[bufferpos++]=i;
-			} else {
-				syncSeen=0;
-			}
-		} else {
-			if (i==HDLC_frameFlag) {
-				bufferpos=0;
-				CRC16ACC=0xFFFFFFFF;
-				syncSeen=1;
-				unescaping=0;
-			} else {
+    syncSeen = 0;
+    unescaping = 0;
+    while (1) {
+        int i;
+        i = inbyte();
+        // DEBUG ONLY
+        //TMR1CNT=i;
+        //outbyte(i);
+        if (syncSeen) {
+            if (i==HDLC_frameFlag) {
+                if (bufferpos>0) {
+                    syncSeen=0;
+                    processCommand(buffer, bufferpos);
+                }
+            } else if (i==HDLC_escapeFlag) {
+                unescaping=1;
+            } else if (bufferpos<sizeof(buffer)) {
+                if (unescaping) {
+                    unescaping=0;
+                    i^=HDLC_escapeXOR;
+                }
+                CRC16APP=i;
+                buffer[bufferpos++]=i;
+            } else {
+                syncSeen=0;
+            }
+        } else {
+            if (i==HDLC_frameFlag) {
+                bufferpos=0;
+                CRC16ACC=0xFFFFFFFF;
+                syncSeen=1;
+                unescaping=0;
+            } else {
 #ifdef VERBOSE_LOADER
-				//outbyte(i); // Echo back.
+                //outbyte(i); // Echo back.
 #endif
-			}
-		}
-	}
+            }
+        }
+    }
 }
