@@ -30,7 +30,8 @@
 #define BOOTLOADER_CMD_SETBAUDRATE 0x08
 #define BOOTLOADER_CMD_PROGMEM 0x09
 #define BOOTLOADER_CMD_START 0x0A
-#define BOOTLOADER_MAX_CMD 0x0A
+#define BOOTLOADER_CMD_PGM_PAGE 0x0B
+#define BOOTLOADER_MAX_CMD 0x0B
 
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 10
@@ -609,6 +610,45 @@ static void cmd_raw_send_receive(unsigned char *buffer)
 	finishSend();
 }
 
+static void cmd_pgm_page(unsigned char *buffer)
+{
+    unsigned count;
+    register_t spidata = &SPIDATA; // Ensure this stays in stack
+
+    buffer++;
+
+    spi_enable();
+    spiwrite(0x06);
+    spi_disable(spidata);
+
+    spi_enable();
+#if 0
+    unsigned char ppcmd[4];
+    ppcmd[0] = 0x02; // Page program
+    ppcmd[1] = *buffer++;
+    ppcmd[2] = *buffer++;
+    ppcmd[3] = *buffer++;
+#endif
+    spiwrite( 0x02 );
+    spiwrite( *buffer++ );
+    spiwrite( *buffer++ );
+    spiwrite( *buffer++ );
+
+    for (count=0; count<256; count++) {
+        spiwrite(spidata,*buffer++);
+    }
+    
+    spi_disable(spidata);
+    // Wait for progress.
+    while (spi_read_status() & 1) {
+    }
+
+    // Send simple ACK.
+    sendRR();
+}
+
+
+
 
 static void cmd_sst_aai_program(unsigned char *buffer)
 {
@@ -778,7 +818,8 @@ static const cmdhandler_t handlers[] = {
 	&cmd_sst_aai_program, /* CMD7 */
 	&cmd_set_baudrate,    /* CMD8 */
 	&cmd_progmem,         /* CMD9 */
-	&cmd_start            /* CMD10 */
+        &cmd_start,           /* CMD10 */
+        &cmd_pgm_page /* CMD11 */
 };
 
 static inline void processCommand(unsigned char *buffer, unsigned bufferpos)
@@ -839,7 +880,7 @@ static inline void processCommand(unsigned char *buffer, unsigned bufferpos)
         }
 
         {
-            unsigned char *buf;
+            unsigned char *buf=NULL;
             if (hdlc_buffered) {
                 // TODO. Iterate through all buffered commands and execute them.
             } else {

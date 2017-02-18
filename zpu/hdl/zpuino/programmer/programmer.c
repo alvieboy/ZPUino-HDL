@@ -1026,13 +1026,13 @@ int main(int argc, char **argv)
 	saddr = spioffset_page;
 	unsigned char *sptr = buf;
 
+        if (!dry_run) {
+            if (flash->driver->enable_writes(flash,conn)<0) {
+                fprintf(stderr,"Cannot enable writes ?\n");
+                return -1;
+            }
+        }
 	while (pages--) {
-		if (!dry_run)
-			if (flash->driver->enable_writes(flash,conn)<0) {
-				fprintf(stderr,"Cannot enable writes ?\n");
-				return -1;
-			}
-
 		if (verbose>0) {
 			printf("Programing page %d at 0x%08x\r",saddr, saddr * flash->pagesize);
 			fflush(stdout);
@@ -1094,7 +1094,7 @@ int main(int argc, char **argv)
 			printf("\nVerification done.\n");
 	}
 
-	b = sendreceivecommand(conn, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 1000 );
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 5000 );
 	if (b) {
 		buffer_free(b);
 	} else {

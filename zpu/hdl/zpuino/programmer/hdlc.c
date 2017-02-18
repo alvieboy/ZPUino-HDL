@@ -153,6 +153,7 @@ static unsigned char hdlc_seq_tx = 0;
 static int last_acked_packet = -1;
 static unsigned char *packets_to_ack[8] = {{0}};
 static unsigned packets_len[8];
+static unsigned packets_in_flight;
 
 static inline unsigned char buildDataControl()
 {
@@ -160,6 +161,11 @@ static inline unsigned char buildDataControl()
     v|=(hdlc_seq_tx)<<3;
     v|=hdlc_expected_seq_rx;
     return v;
+}
+
+static int hdlc_can_transmit()
+{
+    return packets_in_flight<8;
 }
 
 static void hdlc_release_seq(unsigned char seq)
@@ -172,6 +178,7 @@ static void hdlc_release_seq(unsigned char seq)
         packets_to_ack[seq]=NULL;
     } else {
         printf("WARN: releasing already released seq %d\n",seq);
+        abort();
     }
 }
 
@@ -186,11 +193,13 @@ static void hdlc_ack_up_to( unsigned char seq )
         last_acked_packet = seq;
         for (i=0;i<=seq;i++) {
             hdlc_release_seq(seq);
+            packets_in_flight--;
         }
     } else {
         last_acked_packet = NEXT_SEQUENCE(last_acked_packet);
         while (1) {
             hdlc_release_seq(last_acked_packet);
+            packets_in_flight--;
             if (last_acked_packet==seq)
                 break;
         }
@@ -247,7 +256,7 @@ static int hdlc_send_raw_packet(connection_t fd, unsigned char control, const un
             packets_to_ack[hdlc_seq_tx] = buffer_copy;
             packets_len[hdlc_seq_tx] = size;
             // Data packet
-
+            packets_in_flight++;
             hdlc_seq_tx = NEXT_SEQUENCE(hdlc_seq_tx);
             if (verbose>3) {
                 printf("Next sequence %d\n", hdlc_seq_tx);
@@ -382,6 +391,7 @@ int hdlc_connect_timeout(connection_t conn)
 
 static void hdlc_link_error(connection_t conn)
 {
+    printf("LINK failed\n");
     link_state=LINK_FAILED;
 }
 
@@ -428,6 +438,7 @@ static void hdlc_connect_data_ready(connection_t conn)
             buffer_free(data);
         }
     } else {
+
         hdlc_link_error(conn);
     }
 }
@@ -452,6 +463,8 @@ static void hdlc_reset()
     last_acked_packet = -1;
     hdlc_seq_tx = 0;
     hdlc_expected_seq_rx = 0;
+    packets_in_flight=0;
+
     for (i=0;i<sizeof(packets_to_ack)/sizeof(packets_to_ack[0]);i++) {
         if (packets_to_ack[i]!=NULL) {
             free( packets_to_ack[i] );
@@ -497,7 +510,7 @@ int data_tx_timed_out = 0;
 
 static void hdlc_data_ready(connection_t conn)
 {
-    char buf[128];
+    char buf[256];
     int r;
     r = conn_read(conn, buf, sizeof(buf), 0);
     if (r>0) {
@@ -532,6 +545,12 @@ static void hdlc_data_ready(connection_t conn)
 
                     }
                     break;
+                case U_RR:
+                    {
+                        uint8_t seq = CTRL_PEER_UNNUMBERED_SEQ(control);
+                        hdlc_ack_up_to( seq );
+                    }
+                    break;
                 default:
                     printf("Received unknown control code %d\n",CTRL_PEER_UNNUMBERED_CODE(control));
                     abort();
@@ -543,7 +562,7 @@ static void hdlc_data_ready(connection_t conn)
             }
         }
     } else {
-        hdlc_link_error(conn);
+        //hdlc_link_error(conn);
     }
 }
 
@@ -558,7 +577,6 @@ static void hdlc_data_event_cb(evutil_socket_t fd, short what, void *arg)
         if (data_timeout--==0) {
             data_tx_timed_out=1;
         }
-        //hdlc_connect_timeout(fd);
     } else if (what==EV_READ) {
         hdlc_data_ready(fd);
     }
@@ -590,7 +608,21 @@ int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, un
 
     event_add(hdlc_data_event,&tv);
 
+    while (!hdlc_can_transmit()) {
+        event_base_loop(get_event_base(),EVLOOP_ONCE);
+    }
+
     hdlc_sendpacket(conn,buffer,len);
+
+    if (timeout==0) {
+        // Just check if we have data.
+        event_base_loop(get_event_base(),EVLOOP_NONBLOCK);
+        if (link_state!=LINK_UP) {
+            printf("Link down!!!");
+            return -1;
+        }
+        return 0;
+    }
 
     do {
         event_base_loop(get_event_base(),EVLOOP_ONCE);
@@ -600,10 +632,15 @@ int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, un
     } while (((timeout>0)&&(!data_tx_timed_out)));
     event_del(hdlc_data_event);
 
-    if (link_state!=LINK_UP)
+    if (link_state!=LINK_UP) {
+        printf("Link down!!!");
         return -1;
+    }
 
     if(timeout>0) {
+        if (data_tx_timed_out) {
+            printf("DATA tx timed out\n");
+        }
         return data_tx_timed_out;
     }
     return 0;

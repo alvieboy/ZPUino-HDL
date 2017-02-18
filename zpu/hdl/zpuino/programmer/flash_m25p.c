@@ -103,7 +103,7 @@ static buffer_t *m25p_read_page(flash_info_t *flash, connection_t conn, unsigned
 	}
 	return b;
 }
-
+#if 0
 static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
 {
 	unsigned char wbuf[256 + 8];
@@ -143,7 +143,26 @@ static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned in
 
 	return 0;
 }
+#else
+static int m25p_program_page(flash_info_t *flash, connection_t conn, unsigned int page, const unsigned char *buf,size_t size)
+{
+	unsigned char wbuf[256 + 3];
+	unsigned int addr = page * 256;
+	buffer_t *b;
 
+	if (size!=256)
+		return -1;
+
+	wbuf[0] = (addr >> 16) & 0xff;
+	wbuf[1] = (addr >> 8) & 0xff;
+	wbuf[2] = (addr) & 0xff;
+
+	memcpy(&wbuf[3], buf, size);
+
+	b = sendreceivecommand(conn, BOOTLOADER_CMD_PGMPAGE, wbuf, sizeof(wbuf), 0);
+	return 0;
+}
+#endif
 flash_driver_t m25p_flash = {
         .name          = "micron",
 	.erase_sector  = &m25p_erase_sector,

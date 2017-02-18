@@ -160,8 +160,13 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 {
     int r = hdlc_transmit(conn,buf,size,timeout);
 
-    if (r!=0)
+    if (timeout==0)
         return NULL;
+
+    if (r!=0) {
+        printf("HDLC error %d\n",r);
+        return NULL;
+    }
 
     return hdlc_get_packet();
 }
@@ -205,6 +210,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 }
 
 static unsigned int baudrates[] = {
+    3000000,
     1000000,
     921600,
     576000,
@@ -228,6 +234,9 @@ int conn_parse_speed(unsigned int value,speed_t *speed)
 {
 	int v = value;
 	switch (v) {
+	case 3000000:
+		*speed = B3000000;
+		break;
 	case 1000000:
 		*speed = B1000000;
 		break;
