@@ -23,16 +23,16 @@
 #include "makeargv.h"
 #include <string.h>
 
-struct win32_port {
-	DCB dcb;
-	HANDLE hcomm;
-	OVERLAPPED rol,sol,wol;
+static	DCB dcb;
+static  OVERLAPPED rol,sol,wol;
 
-	unsigned char rxbuf[2048];
-};
+#define OSHANDLE(port) (port->hcomm)
 
-typedef struct win32_port *connection_t;
+typedef HANDLE connection_t;
 
+#ifndef CBR_3000000
+#define CBR_3000000 3000000
+#endif
 #ifndef CBR_1000000
 #define CBR_1000000 1000000
 #endif

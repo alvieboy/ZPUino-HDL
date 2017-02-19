@@ -27,6 +27,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "hdlc.h"
+#include <event2/event.h>
 
 #define debug(x...) /* do { printf(x); fflush(stdout); } while (0) */
 
@@ -34,38 +35,37 @@ extern int verbose;
 
 int conn_set_speed(connection_t conn, speed_t speed)
 {
-	struct win32_port *port = conn;
 
-	port->dcb.DCBlength = sizeof( DCB );
-	if ( !GetCommState( port->hcomm, &port->dcb ) )
+    dcb.DCBlength = sizeof( DCB );
+	if ( !GetCommState(conn, &dcb ) )
 	{
-		fprintf(stderr,"GetCommState: %p %lu\n",port->hcomm,GetLastError());
+		fprintf(stderr,"GetCommState: %p %lu\n",conn,GetLastError());
 		return -1;
 	}
 
-	port->dcb.BaudRate        = speed;
-	port->dcb.ByteSize        = 8;
-	port->dcb.Parity          = NOPARITY;
-	port->dcb.StopBits        = ONESTOPBIT;
-	port->dcb.fDtrControl     = DTR_CONTROL_ENABLE;
-	port->dcb.fRtsControl     = RTS_CONTROL_DISABLE;
-	port->dcb.fOutxCtsFlow    = FALSE;
-	port->dcb.fOutxDsrFlow    = FALSE;
-	port->dcb.fDsrSensitivity = FALSE;
-	port->dcb.fOutX           = FALSE;
-	port->dcb.fInX            = FALSE;
-	port->dcb.fTXContinueOnXoff = FALSE;
-	port->dcb.XonChar         = 0x11;
-	port->dcb.XoffChar        = 0x13;
-	port->dcb.XonLim          = 0;
-	port->dcb.XoffLim         = 0;
-	port->dcb.fParity = TRUE;
+	dcb.BaudRate        = speed;
+	dcb.ByteSize        = 8;
+	dcb.Parity          = NOPARITY;
+	dcb.StopBits        = ONESTOPBIT;
+	dcb.fDtrControl     = DTR_CONTROL_ENABLE;
+	dcb.fRtsControl     = RTS_CONTROL_DISABLE;
+	dcb.fOutxCtsFlow    = FALSE;
+	dcb.fOutxDsrFlow    = FALSE;
+	dcb.fDsrSensitivity = FALSE;
+	dcb.fOutX           = FALSE;
+	dcb.fInX            = FALSE;
+	dcb.fTXContinueOnXoff = FALSE;
+	dcb.XonChar         = 0x11;
+	dcb.XoffChar        = 0x13;
+	dcb.XonLim          = 0;
+	dcb.XoffLim         = 0;
+	dcb.fParity = TRUE;
 
-	port->dcb.EvtChar = '\0';
+	dcb.EvtChar = '\0';
 
-	if ( !SetCommState( port->hcomm, &port->dcb ) )
+	if ( !SetCommState( conn, &dcb ) )
 	{
-		fprintf(stderr,"SetCommState: %p %lu\n",port->hcomm, GetLastError());
+		fprintf(stderr,"SetCommState: %p %lu\n",conn, GetLastError());
 		return -1;
 	}
 	return 0;
@@ -76,29 +76,28 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	// Allocate
 	char rportname[128];
 
-	struct win32_port *port =  (struct win32_port*)calloc(1,sizeof(struct win32_port));
 	COMMTIMEOUTS ctimeout;
 
 
 	debug("Opening port %s\n",device);
 	sprintf(rportname,"\\\\.\\%s",device);
 
-	port->hcomm = CreateFile( rportname,
-							 GENERIC_READ | GENERIC_WRITE,
-							 0,
-							 0,
-							 OPEN_EXISTING,
-							 FILE_FLAG_OVERLAPPED,
-							 0
-							);
+	*conn = CreateFile( rportname,
+                           GENERIC_READ | GENERIC_WRITE,
+                           0,
+                           0,
+                           OPEN_EXISTING,
+                           FILE_FLAG_OVERLAPPED,
+                           0
+                          );
 
-	if (INVALID_HANDLE_VALUE==port->hcomm) {
+	if (INVALID_HANDLE_VALUE==*conn) {
 		fprintf(stderr,"Cannot open device %s: %ld\n",device,GetLastError());
         return -1;
 	}
-	debug("Port %s opened, handle %p\n",device, port->hcomm);
+	debug("Port %s opened, handle %p\n",device, *conn);
 
-	if(conn_set_speed(port, CBR_115200)<0) {
+	if(conn_set_speed(*conn, CBR_115200)<0) {
 		fprintf(stderr,"Cannot set port flags: %ld\n",GetLastError());
 		return -1;
 	}
@@ -109,36 +108,20 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	ctimeout.WriteTotalTimeoutMultiplier = 0;
 	ctimeout.WriteTotalTimeoutConstant = 10000;
 
-	if (!SetCommTimeouts(port->hcomm, &ctimeout)){
+	if (!SetCommTimeouts(*conn, &ctimeout)){
 		fprintf(stderr,"Cannot set port timeouts: %ld\n", GetLastError());
 		return -1;
 	}
 
-	*conn = port;
+	memset( &rol, 0, sizeof( OVERLAPPED ) );
+	memset( &wol, 0, sizeof( OVERLAPPED ) );
+	memset( &sol, 0, sizeof( OVERLAPPED ) );
 
-	memset( &port->rol, 0, sizeof( OVERLAPPED ) );
-	memset( &port->wol, 0, sizeof( OVERLAPPED ) );
-	memset( &port->sol, 0, sizeof( OVERLAPPED ) );
+        rol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
+        sol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
+	wol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
 
-	port->rol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
-
-	if ( !port->rol.hEvent )
-	{
-	}
-
-	port->sol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
-
-	if ( !port->sol.hEvent )
-	{
-	}
-
-	port->wol.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
-
-	if ( !port->wol.hEvent )
-	{
-	}
-
-	debug("Port %s ready\n",device);
+        debug("Port %s ready\n",device);
 
 	return 0;
 }
@@ -158,14 +141,14 @@ void conn_reset(connection_t conn)
 
 	tempdcb.DCBlength = sizeof( DCB );
 
-	if ( !GetCommState( conn->hcomm, &tempdcb ))
+	if ( !GetCommState( conn, &tempdcb ))
 	{
 		return;
 	}
 
 	tempdcb.BaudRate        = CBR_300 ;
 
-	if ( !SetCommState( conn->hcomm, &tempdcb ) )
+	if ( !SetCommState( conn, &tempdcb ) )
 	{
 		return;
 	}
@@ -177,7 +160,7 @@ void conn_reset(connection_t conn)
 	// delay a bit. It takes about 80ms to get sequence into board
 	Sleep(80);
 
-	SetCommState( conn->hcomm, &conn->dcb );
+	SetCommState( conn, &dcb );
 
 
 }
@@ -186,20 +169,20 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 {
 	unsigned long nBytes;
 
-	conn->wol.Offset = conn->wol.OffsetHigh = 0;
+	wol.Offset = wol.OffsetHigh = 0;
 
-	ResetEvent( conn->wol.hEvent );
+	ResetEvent( wol.hEvent );
 
-	if ( !WriteFile( conn->hcomm, buf, size, &nBytes, &conn->wol ) )
+	if ( !WriteFile( conn, buf, size, &nBytes, &wol ) )
 	{
-		WaitForSingleObject( conn->wol.hEvent,100 );
+		WaitForSingleObject( wol.hEvent,100 );
 		if ( GetLastError() != ERROR_IO_PENDING )
 		{
 			return -1;
 		}
 		/* This is breaking on Win2K, WinXP for some reason */
-		else while( !GetOverlappedResult( conn->hcomm, &conn->wol,
-										 &nBytes, TRUE ) )
+		else while( !GetOverlappedResult( conn, &wol,
+                                                 &nBytes, TRUE ) )
 		{
 			if ( GetLastError() != ERROR_IO_INCOMPLETE )
 			{
@@ -215,12 +198,40 @@ unsigned int get_bytes_in_rxqueue(connection_t conn)
 {
 	COMSTAT Stat;
 	DWORD ErrCode;
-	ClearCommError( conn->hcomm, &ErrCode, &Stat );
+	ClearCommError( conn, &ErrCode, &Stat );
 	return Stat.cbInQue;
 }
 
 
 buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size, int timeout)
+{
+    int r = hdlc_transmit(conn,buf,size,timeout);
+
+    if (timeout==0)
+        return NULL;
+
+    if (r!=0) {
+        printf("HDLC error %d\n",r);
+        return NULL;
+    }
+
+    return hdlc_get_packet();
+}
+
+static struct event_base *base;
+
+struct event_base *get_event_base()
+{
+    return base;
+}
+
+int main_setup(connection_t conn)
+{
+    base = event_base_new();
+}
+
+#if 0
+buffer_t *conn_transmit_old(connection_t conn, const unsigned char *buf, size_t size, int timeout)
 {
 	int retries = 3;
 	unsigned int bytes;
@@ -238,8 +249,8 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 
 	/* Prepare event for overlapped receive */
 
-	conn->rol.Offset = conn->rol.OffsetHigh = 0;
-	ResetEvent( conn->rol.hEvent );
+	rol.Offset = rol.OffsetHigh = 0;
+	ResetEvent( rol.hEvent );
 
 	do {
 		bytes = get_bytes_in_rxqueue(conn);
@@ -248,7 +259,7 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 
 		/* If RX queue already contains bytes, read them at once */
 		if (bytes) {
-			if (ReadFile( conn->hcomm, conn->rxbuf, bytes, &nBytes, &conn->rol)==0) {
+			if (ReadFile( conn->hcomm, conn->rxbuf, bytes, &nBytes, &rol)==0) {
 				/* Something weird happened.. */
 				fprintf(stderr,"Error in ReadFile(): %lu\n", GetLastError());
 				return NULL;
@@ -276,9 +287,9 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 			/* No known size, have to read one byte at once */
 			debug("No bytes in queue\n");
 
-			ResetEvent( conn->rol.hEvent );
+			ResetEvent( rol.hEvent );
 
-			ret = ReadFile( conn->hcomm, conn->rxbuf, 1, &nBytes, &conn->rol);
+			ret = ReadFile( conn->hcomm, conn->rxbuf, 1, &nBytes, &rol);
 			switch (ret) {
 			default:
 				/* We read data OK */
@@ -294,18 +305,18 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 			case 0:
 				if (GetLastError()==ERROR_IO_PENDING) {
 					/* Overlapped read going on */
-					switch (WaitForSingleObject(conn->rol.hEvent, adj_timeout)) {
+					switch (WaitForSingleObject(rol.hEvent, adj_timeout)) {
 					case WAIT_TIMEOUT:
 						debug("Timeout occurred\n");
 						if (retries--==0) {
-							ResetEvent( conn->rol.hEvent );
+							ResetEvent( rol.hEvent );
 							return NULL;
 						}
                         
                         break;
 					case WAIT_OBJECT_0:
 						/* Read data */
-						if (!GetOverlappedResult(conn->hcomm, &conn->rol, &nTransfer, FALSE)) {
+						if (!GetOverlappedResult(conn->hcomm, &rol, &nTransfer, FALSE)) {
 							/* Some error occured... */
 							fprintf(stderr,"Error in GetOverlappedResult(): %lu\n",GetLastError());
 							return NULL;
@@ -329,6 +340,89 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
 	} while (1);
 
 	return NULL;
+}
+#endif
+
+int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeout)
+{
+    int retries = 3;
+    unsigned int bytes;
+    SYSTEMTIME systemTime;
+    unsigned long adj_timeout = timeout;
+    int ret;
+    buffer_t *rb;
+    DWORD nBytes, nTransfer;
+
+    rol.Offset = rol.OffsetHigh = 0;
+    ResetEvent( rol.hEvent );
+
+    do {
+        bytes = get_bytes_in_rxqueue(conn);
+
+        debug("Bytes in RX queue: %d\n",bytes);
+
+        /* If RX queue already contains bytes, read them at once */
+        if (bytes) {
+            if (ReadFile( conn, buf, bytes > size? size: bytes, &nBytes, &rol)==0) {
+                /* Something weird happened.. */
+                fprintf(stderr,"Error in ReadFile(): %lu\n", GetLastError());
+                return -1;
+            }
+
+            return nBytes;
+
+        } else {
+            /* No known size, have to read one byte at once */
+            debug("No bytes in queue\n");
+
+            ResetEvent( rol.hEvent );
+
+            ret = ReadFile( conn, buf, 1, &nBytes, &rol);
+            switch (ret) {
+            default:
+                /* We read data OK */
+                if (nBytes) {
+                    debug("Read %lu bytes\n", nBytes);
+                    return nBytes;
+                } else {
+                    debug("No data?\n");
+                    return 0;
+                }
+                break;
+            case 0:
+                if (GetLastError()==ERROR_IO_PENDING) {
+                    /* Overlapped read going on */
+                    switch (WaitForSingleObject(rol.hEvent, adj_timeout)) {
+                    case WAIT_TIMEOUT:
+                        debug("Timeout occurred\n");
+                        if (retries--==0) {
+                            ResetEvent( rol.hEvent );
+                            return -1;
+                        }
+
+                        break;
+                    case WAIT_OBJECT_0:
+                        /* Read data */
+                        if (!GetOverlappedResult(conn, &rol, &nTransfer, FALSE)) {
+                            /* Some error occured... */
+                            fprintf(stderr,"Error in GetOverlappedResult(): %lu\n",GetLastError());
+                            return -1;
+                        } else {
+                            return 1;
+                        }
+                        break;
+                    default:
+                        return -1;
+
+                    }
+                } else {
+                    fprintf(stderr,"Error in ReadFile: %lu\n",GetLastError());
+                    return -1;
+                }
+            }
+        }
+    } while (1);
+
 }
 
 void conn_close(connection_t conn)

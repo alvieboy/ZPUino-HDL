@@ -52,7 +52,11 @@ unsigned int *conn_get_baudrates();
 buffer_t *sendreceive(connection_t conn, unsigned char *txbuf, size_t size, int timeout);
 buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout);
 
-struct event_base *getEventBase();
+#define EV_DATA 0
+#define EV_TIMEOUT 1
+
+typedef void (*event_callback_t)(connection_t conn, int what);
+int conn_wait(connection_t conn, event_callback_t callback, unsigned timeout);
 
 
 #endif

@@ -171,32 +171,8 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
     return hdlc_get_packet();
 }
 
-static struct event_base *base;
-#if 0
-static void main_event(evutil_socket_t fd, short what, void *arg)
-{
-    if (what==EV_TIMEOUT) {
-        if (hdlc_timeout(fd)<0) {
-            event_del(timeout_event);
-        }
-    }
-}
-
-#endif
-
-struct event_base *get_event_base()
-{
-    return base;
-}
-
 int main_setup(connection_t conn)
 {
-    base = event_base_new();
-}
-
-int main_iter()
-{
-    return event_base_loop(base, EVLOOP_ONCE);
 }
 
 int conn_set_speed(connection_t conn, speed_t speed)
@@ -280,4 +256,31 @@ void conn_prepare(connection_t conn)
 	buffer[0] = HDLC_frameFlag;
 	conn_write(conn,buffer,1);
 }
+
+
+int conn_wait(connection_t conn, event_callback_t callback, unsigned timeout)
+{
+    struct timeval tv;
+    fd_set rfs;
+
+    FD_ZERO(&rfs);
+    FD_SET(conn, &rfs);
+
+    tv.tv_sec = timeout / 1000;
+    tv.tv_usec = (timeout % 1000) * 1000;
+
+    switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
+    default:
+        callback(conn, EV_DATA);
+    case 0:
+        // Timed out.
+        callback(conn, EV_TIMEOUT);
+        break;
+    case -1:
+        return -1;
+    }
+}
+
+
+
 #endif

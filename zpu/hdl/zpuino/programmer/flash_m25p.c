@@ -73,7 +73,6 @@ static int m25p_enable_writes(flash_info_t *flash, connection_t conn)
 		return -1;
 
 	buffer_free(b);
-
 	return 0;
 }
 
@@ -168,5 +167,6 @@ flash_driver_t m25p_flash = {
 	.erase_sector  = &m25p_erase_sector,
 	.enable_writes = &m25p_enable_writes,
 	.read_page     = &m25p_read_page,
-	.program_page  = &m25p_program_page
+        .program_page  = &m25p_program_page,
+        .erase_range   = NULL
 };

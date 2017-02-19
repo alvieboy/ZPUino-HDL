@@ -617,6 +617,9 @@ static void cmd_pgm_page(unsigned char *buffer)
 
     buffer++;
 
+    // Send simple ACK.
+    sendRR();
+
     spi_enable();
     spiwrite(0x06);
     spi_disable(spidata);
@@ -643,8 +646,6 @@ static void cmd_pgm_page(unsigned char *buffer)
     while (spi_read_status() & 1) {
     }
 
-    // Send simple ACK.
-    sendRR();
 }
 
 
@@ -790,7 +791,7 @@ static void cmd_leavepgm(unsigned char *buffer)
 }
  
 
-void cmd_start(unsigned char *buffer)
+static void cmd_start(unsigned char *buffer)
 {
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	simpleReply(BOOTLOADER_CMD_START);
@@ -819,7 +820,7 @@ static const cmdhandler_t handlers[] = {
 	&cmd_set_baudrate,    /* CMD8 */
 	&cmd_progmem,         /* CMD9 */
         &cmd_start,           /* CMD10 */
-        &cmd_pgm_page /* CMD11 */
+        &cmd_pgm_page         /* CMD11 */
 };
 
 static inline void processCommand(unsigned char *buffer, unsigned bufferpos)

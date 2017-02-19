@@ -168,7 +168,7 @@ static int hdlc_can_transmit()
 static void hdlc_release_seq(unsigned char seq)
 {
     if (verbose>3) {
-        printf("Releasing sequence %d\n",seq);
+        printf("Releasing sequence %d, in transit %d\n",seq, packets_in_flight);
     }
     if (packets_to_ack[seq]!=NULL) {
         free(packets_to_ack[seq]);
@@ -570,16 +570,15 @@ static void hdlc_data_event_cb(evutil_socket_t fd, short what, void *arg)
 
 static struct event *hdlc_data_event;
 
-
 int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, unsigned timeout)
 {
     int ret;
-    struct timeval tv = { 0, 100000 };
+    struct timeval tv = { 0, 20000 };
 
     int flags = EV_READ|EV_PERSIST;
     if (timeout>0) {
 
-        timeout/=100; // In ticks.
+        timeout/=20; // In ticks.
         data_timeout = timeout;
         data_tx_timed_out = 0;
 
@@ -595,6 +594,9 @@ int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, un
     event_add(hdlc_data_event,&tv);
 
     while (!hdlc_can_transmit()) {
+        if (verbose>3) {
+            printf("TX busy, waiting...\n");
+        }
         event_base_loop(get_event_base(),EVLOOP_ONCE);
     }
 

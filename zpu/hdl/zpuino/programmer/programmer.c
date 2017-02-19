@@ -732,429 +732,440 @@ static unsigned char *load_binfile(flash_info_t *flash)
 
 int main(int argc, char **argv)
 {
-	unsigned char buffer[8192];
-	uint32_t extrasize = 0;
-	unsigned char *buf=NULL;
-	int success=1;
+    unsigned char buffer[8192];
+    uint32_t extrasize = 0;
+    unsigned char *buf=NULL;
+    int success=1;
 
-	uint32_t freq;
-	struct timeval start,end,delta, erase_end, erase_delta, program_delta;
-	connection_t conn;
+    uint32_t freq;
+    struct timeval start,end,delta, erase_end, erase_delta, program_delta;
+    connection_t conn;
 
-	flash_info_t *flash;
-	int retries;
+    flash_info_t *flash;
+    int retries;
 
 
-	struct stat st, est;
-	buffer_t *b;
+    struct stat st, est;
+    buffer_t *b;
 
 #ifdef WIN32
-	char **winargv;
-	char *win_command_line = GetCommandLine();
-	argc = makeargv(win_command_line,&winargv);
-/*
-	printf("ARGC: %d\n",argc);
-	{
-		int i;
-		for (i=0;i<argc;i++) {
-			printf("ARGV %d: '%s'\n",i, winargv[i]);
-		}
-	}
-    */
-	if (parse_arguments(argc,winargv)<0) {
-		return help(winargv[0]);
-	}
+    char **winargv;
+    char *win_command_line = GetCommandLine();
+    argc = makeargv(win_command_line,&winargv);
+    /*
+     printf("ARGC: %d\n",argc);
+     {
+     int i;
+     for (i=0;i<argc;i++) {
+     printf("ARGV %d: '%s'\n",i, winargv[i]);
+     }
+     }
+     */
+    if (parse_arguments(argc,winargv)<0) {
+        return help(winargv[0]);
+    }
 
 #else
 
-	if (parse_arguments(argc,argv)<0) {
-		return help(argv[0]);
-	}
+    if (parse_arguments(argc,argv)<0) {
+        return help(argv[0]);
+    }
 
 #endif
 
-	setvbuf(stderr,0,_IONBF,0);
-	setvbuf(stdout,0,_IONBF,0);
+    setvbuf(stderr,0,_IONBF,0);
+    setvbuf(stdout,0,_IONBF,0);
 
-	if ((NULL==binfile&&only_read==0) || NULL==serialport) {
-		return help(argv[0]);
-	}
+    if ((NULL==binfile&&only_read==0) || NULL==serialport) {
+        return help(argv[0]);
+    }
 
-	if (open_device(serialport,&conn)<0) {
-		fprintf(stderr,"Could not open port, exiting...\n");
-		return -1;
-	}
-	retries = 10;
+    if (open_device(serialport,&conn)<0) {
+        fprintf(stderr,"Could not open port, exiting...\n");
+        return -1;
+    }
+    retries = 10;
 
-	if (serial_reset) {
-		conn_reset(conn);
-	} else {
-		fprintf(stderr,"Press RESET now\n");
-        }
+    if (serial_reset) {
+        conn_reset(conn);
+    } else {
+        fprintf(stderr,"Press RESET now\n");
+    }
 
-        // Link up
+    // Link up
+    if (verbose>2) {
+        printf("Connecting...\n");
+    }
+    main_setup(conn);
+
+    if (hdlc_connect(conn)<0) {
+        comms_error();
+        conn_close(conn);
+        return -1;
+    }
+
+    printf("Connected. Contacting bootloader.\n");
+    retries = 10;
+    while (retries>0) {
+        /* Reset */
+        conn_prepare(conn);
         if (verbose>2) {
-            printf("Connecting...\n");
+            printf("Contacting...\n");
         }
-        main_setup(conn);
+        b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,500);
+        if (b)
+            break;
+        retries--;
+    }
 
-        if (hdlc_connect(conn)<0) {
-            comms_error();
+    if (b) {
+
+        if (verbose>0)
+            printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
+
+        version = ((unsigned short)b->buf[1]<<8) | b->buf[2];
+
+        spioffset = b->buf[3];
+        spioffset<<=8;
+        spioffset += b->buf[4];
+        spioffset<<=8;
+        spioffset += b->buf[5];
+
+        if (verbose>0)
+            printf("SPI offset: %u\n",spioffset);
+
+        codesize = b->buf[6];
+        codesize<<=8;
+        codesize += b->buf[7];
+        codesize<<=8;
+        codesize += b->buf[8];
+        if (version>=0x0106) {
+            freq = b->buf[9];
+            freq<<=8;
+            freq += b->buf[10];
+            freq<<=8;
+            freq += b->buf[11];
+            freq<<=8;
+            freq += b->buf[12];
+            //printf("CPU frequency: %u Hz\n",freq);
+        }
+        if (verbose>0) {
+            printf("CODE size: %u\n",codesize);
+        }
+
+        if (version>=0x0107) {
+            const char *boardname;
+            board = b->buf[13];
+            board<<=8;
+            board += b->buf[14];
+            board<<=8;
+            board += b->buf[15];
+            board<<=8;
+            board += b->buf[16];
+
+            boardname = getBoardById(board);
+            printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
+        }
+    } else {
+        comms_error();
+        conn_close(conn);
+        return -1;
+    }
+
+    buffer_free(b);
+
+    gettimeofday(&start,NULL);
+
+    /* Upload only does not care about flash chips */
+    if (!upload_only) {
+
+        if (user_offset>=0) {
+            printf("Using user-specified offset 0x%08x\n",user_offset);
+            spioffset=user_offset;
+        }
+
+        b = sendreceivecommand(conn,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
+
+        if (b) {
+                if (verbose>0)
+                        printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
+                flash = NULL;
+                /* Find flash */
+                if (custom_flash.driver) {
+                    if ( (custom_flash.manufacturer == b->buf[1]) &&
+                        (custom_flash.product == b->buf[2]) &&
+                        (custom_flash.density == b->buf[3])) {
+                        flash = &custom_flash;
+                    }
+                } else {
+                    flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
+                }
+                if (NULL==flash) {
+                        fprintf(stderr,"Unknown flash type, exiting\n");
+                        conn_close(conn);
+                        buffer_free(b);
+                        return -1;
+                }
+                if (verbose>0)
+                        printf("Detected %s flash\n", flash->name);
+        } else {
+                fprintf(stderr,"Cannot identify flash\n");
+                conn_close(conn);
+                return -1;
+        }
+
+        /* Align offset */
+        spioffset_page = spioffset / flash->pagesize;
+        spioffset_sector = spioffset / flash->sectorsize;
+
+        if (verbose>0) {
+            printf("Will program sector %d (page %d), original offset 0x%08x\n", spioffset_sector,spioffset_page,spioffset);
+        }
+
+        /* Ensure SPI offset is aligned */
+        if (!only_read) {
+            if (spioffset % flash->pagesize!=0) {
+                fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
+                conn_close(conn);
+                return -1;
+            }
+            if (spioffset % flash->sectorsize!=0) {
+                fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
+                conn_close(conn);
+                return -1;
+            }
+        }
+
+        buffer_free(b);
+    } else {
+        /* We still need a "dummy" flash driver for direct upload */
+        flash = find_flash(0xAA,0xAA,0xAA);
+    }
+
+    // Get file
+    if (binfile) {
+        buf = load_binfile(flash);
+        if (NULL==buf) {
             conn_close(conn);
             return -1;
         }
-
-        printf("Connected. Contacting bootloader.\n");
-        retries = 10;
-	while (retries>0) {
-		/* Reset */
-		conn_prepare(conn);
-		if (verbose>2) {
-			printf("Contacting...\n");
-		}
-		b = sendreceivecommand(conn,BOOTLOADER_CMD_VERSION,NULL,0,500);
-		if (b)
-			break;
-		retries--;
-	}
-
-	if (b) {
-
-		if (verbose>0)
-			printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
-
-		version = ((unsigned short)b->buf[1]<<8) | b->buf[2];
-
-		spioffset = b->buf[3];
-		spioffset<<=8;
-		spioffset += b->buf[4];
-		spioffset<<=8;
-		spioffset += b->buf[5];
-
-		if (verbose>0)
-			printf("SPI offset: %u\n",spioffset);
-
-		codesize = b->buf[6];
-		codesize<<=8;
-		codesize += b->buf[7];
-		codesize<<=8;
-		codesize += b->buf[8];
-		if (version>=0x0106) {
-			freq = b->buf[9];
-			freq<<=8;
-			freq += b->buf[10];
-			freq<<=8;
-			freq += b->buf[11];
-			freq<<=8;
-			freq += b->buf[12];
-			//printf("CPU frequency: %u Hz\n",freq);
-		}
-		if (verbose>0) {
-			printf("CODE size: %u\n",codesize);
-		}
-
-		if (version>=0x0107) {
-			const char *boardname;
-			board = b->buf[13];
-			board<<=8;
-			board += b->buf[14];
-			board<<=8;
-			board += b->buf[15];
-			board<<=8;
-			board += b->buf[16];
-
-			boardname = getBoardById(board);
-			printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
-		}
-	} else {
-		comms_error();
-		conn_close(conn);
-		return -1;
-	}
-
-	buffer_free(b);
-
-	gettimeofday(&start,NULL);
-
-	/* Upload only does not care about flash chips */
-	if (!upload_only) {
-
-		if (user_offset>=0) {
-			printf("Using user-specified offset 0x%08x\n",user_offset);
-			spioffset=user_offset;
-		}
-
-		b = sendreceivecommand(conn,BOOTLOADER_CMD_IDENTIFY,buffer,0,1000);
-
-		if (b) {
-			if (verbose>0)
-				printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
-                        flash = NULL;
-                        /* Find flash */
-                        if (custom_flash.driver) {
-                            if ( (custom_flash.manufacturer == b->buf[1]) &&
-                                (custom_flash.product == b->buf[2]) &&
-                                (custom_flash.density == b->buf[3])) {
-                                flash = &custom_flash;
-                            }
-                        } else {
-                            flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
-                        }
-			if (NULL==flash) {
-				fprintf(stderr,"Unknown flash type, exiting\n");
-				conn_close(conn);
-				buffer_free(b);
-				return -1;
-			}
-			if (verbose>0)
-				printf("Detected %s flash\n", flash->name);
-		} else {
-			fprintf(stderr,"Cannot identify flash\n");
-			conn_close(conn);
-			return -1;
-		}
-
-		/* Align offset */
-		spioffset_page = spioffset / flash->pagesize;
-		spioffset_sector = spioffset / flash->sectorsize;
-
-		if (verbose>0) {
-			printf("Will program sector %d (page %d), original offset 0x%08x\n", spioffset_sector,spioffset_page,spioffset);
-		}
-
-		/* Ensure SPI offset is aligned */
-		if (!only_read) {
-			if (spioffset % flash->pagesize!=0) {
-				fprintf(stderr,"Cannot program flash on non-page boundaries!\n");
-				conn_close(conn);
-				return -1;
-			}
-			if (spioffset % flash->sectorsize!=0) {
-				fprintf(stderr,"Cannot program flash on non-sector boundaries!\n");
-				conn_close(conn);
-				return -1;
-			}
-		}
-
-		buffer_free(b);
-	} else {
-		/* We still need a "dummy" flash driver for direct upload */
-		flash = find_flash(0xAA,0xAA,0xAA);
-	}
-
-	// Get file
-	if (binfile) {
-		buf = load_binfile(flash);
-		if (NULL==buf) {
-			conn_close(conn);
-			return -1;
-		}
-	}
+    }
 
 
-	// Switch to correct baud rate
-	set_baudrate(conn,serial_speed_int,freq);
+    // Switch to correct baud rate
+    set_baudrate(conn,serial_speed_int,freq);
 
-	if(verbose>2) {
-		fprintf(stderr,"Entering program mode\n");
-	}
-	b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
-	if (b) {
-		buffer_free(b);
-	} else {
-		fprintf(stderr,"Cannot enter program mode\n");
-		conn_close(conn);
-		return -1;
-	}
+    if(verbose>2) {
+        fprintf(stderr,"Entering program mode\n");
+    }
+    b = sendreceivecommand(conn, BOOTLOADER_CMD_ENTERPGM, NULL,0, 1000 );
+    if (b) {
+        buffer_free(b);
+    } else {
+        fprintf(stderr,"Cannot enter program mode\n");
+        conn_close(conn);
+        return -1;
+    }
 
-	if (upload_only) {
-		int r = do_upload(conn, buf);
-		conn_close(conn);
-		// make this better
-		if (r!=0)
-			success=0;
-		goto report_out;
-	}
+    if (upload_only) {
+        int r = do_upload(conn, buf);
+        conn_close(conn);
+        // make this better
+        if (r!=0)
+            success=0;
+        goto report_out;
+    }
 
-	// compute sector erase
+    // compute sector erase
 
-	unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
-	unsigned int saddr = spioffset_sector;
+    unsigned int sectors = ALIGN(size_bytes,flash->sectorsize) / flash->sectorsize;
+    unsigned int saddr = spioffset_sector;
 
-	/* Ensure all data will fit on flash */
-	if (saddr + sectors > flash->totalsectors) {
-		fprintf(stderr,"Sorry, data will not fit on flash.\n");
-		fprintf(stderr,"Total sectors are %d, and we need %d\n", flash->totalsectors,
-				saddr+sectors);
-		conn_close(conn);
-		return -1;
-	}
-
-
-	if (only_read) {
-		return read_flash(conn,flash,spioffset/flash->pagesize);
-	}
-
-	if (verbose>0) {
-		printf("Need to erase %d sectors\n",sectors);
-	}
-
-	while (sectors--) {
-		if (!dry_run)
-			if (flash->driver->enable_writes(flash,conn)<0)
-				return -1;
-
-		if (verbose>0) {
-			printf("Erasing sector %d at 0x%08x...\r",saddr, saddr*flash->sectorsize);
-			fflush(stdout);
-		}
-
-		if (!dry_run && flash->driver->erase_sector(flash, conn, saddr)<0) {
-			fprintf(stderr,"\nSector erase failed!\n");
-			return -1;
-		}
+    /* Ensure all data will fit on flash */
+    if (saddr + sectors > flash->totalsectors) {
+        fprintf(stderr,"Sorry, data will not fit on flash.\n");
+        fprintf(stderr,"Total sectors are %d, and we need %d\n", flash->totalsectors,
+                saddr+sectors);
+        conn_close(conn);
+        return -1;
+    }
 
 
-		saddr++;
-	}
+    if (only_read) {
+        return read_flash(conn,flash,spioffset/flash->pagesize);
+    }
 
-	if (verbose>0)
-		printf("\ndone.\n");
+    if (verbose>0) {
+        printf("Need to erase %d sectors\n",sectors);
+    }
 
-        gettimeofday(&erase_end, NULL);
+    if (flash->driver->erase_range != NULL) {
+        printf("Erasing sector ranges %d to %d...\r",saddr, saddr+sectors-1);
+        fflush(stdout);
+        if (!dry_run) {
+            if (flash->driver->erase_range(flash,conn, saddr, sectors)<0)
+                return -1;
+        }
+    } else {
+        while (sectors--) {
+            if (!dry_run)
+                if (flash->driver->enable_writes(flash,conn)<0)
+                    return -1;
 
-	//exit(0);
+            if (verbose>0) {
+                printf("Erasing sector %d at 0x%08x...\r",saddr, saddr*flash->sectorsize);
+                fflush(stdout);
+            }
 
-	saddr = spioffset_page;
-	unsigned char *sptr = buf;
+            if (!dry_run && flash->driver->erase_sector(flash, conn, saddr)<0) {
+                fprintf(stderr,"\nSector erase failed!\n");
+                return -1;
+            }
 
+
+            saddr++;
+        }
+    }
+
+    if (verbose>0)
+        printf("\ndone.\n");
+
+    gettimeofday(&erase_end, NULL);
+
+    //exit(0);
+
+    saddr = spioffset_page;
+    unsigned char *sptr = buf;
+
+    while (pages--) {
+#if 0
         if (!dry_run) {
             if (flash->driver->enable_writes(flash,conn)<0) {
                 fprintf(stderr,"Cannot enable writes ?\n");
                 return -1;
             }
         }
-	while (pages--) {
-		if (verbose>0) {
-			printf("Programing page %d at 0x%08x\r",saddr, saddr * flash->pagesize);
-			fflush(stdout);
-		}
+#endif
+        if (verbose>0) {
+            printf("Programing page %d at 0x%08x\r",saddr, saddr * flash->pagesize);
+            fflush(stdout);
+        }
 
-		if (!dry_run)
-			if (flash->driver->program_page(flash, conn, saddr, sptr,flash->pagesize)<0) {
-				fprintf(stderr,"\nCannot program page!\n");
-				return -1;
-			}
+        if (!dry_run)
+            if (flash->driver->program_page(flash, conn, saddr, sptr,flash->pagesize)<0) {
+                fprintf(stderr,"\nCannot program page!\n");
+                return -1;
+            }
 
-		sptr+=flash->pagesize;
+        sptr+=flash->pagesize;
 
-		saddr++;
-	}
+        saddr++;
+    }
 
-	if (verbose>0) {
-		if (verify)
-			printf("\ndone. Verifying...\n");
-		else
-			printf("\ndone.\n");
+    if (verbose>0) {
+        if (verify)
+            printf("\ndone. Verifying...\n");
+        else
+            printf("\ndone.\n");
 
-	}
+    }
 
-	pages = size_bytes/flash->pagesize;
-	sptr = buf;
-	saddr = spioffset_page;
+    pages = size_bytes/flash->pagesize;
+    sptr = buf;
+    saddr = spioffset_page;
 
-	if (dry_run) {
-		if (verbose>0)
-			printf("Skipping verification due to dry run\n");
-	} else if (verify) {
-		while (pages--) {
-			if (verbose>0) {
-				printf("Verifying page %d at 0x%08x...\r",saddr, saddr * flash->pagesize);
-				fflush(stdout);
-			}
-			b = flash->driver->read_page(flash, conn, saddr);
+    if (dry_run) {
+        if (verbose>0)
+            printf("Skipping verification due to dry run\n");
+    } else if (verify) {
+        while (pages--) {
+            if (verbose>0) {
+                printf("Verifying page %d at 0x%08x...\r",saddr, saddr * flash->pagesize);
+                fflush(stdout);
+            }
+            b = flash->driver->read_page(flash, conn, saddr);
 
-			if (NULL==b) {
-				fprintf(stderr,"\nCannot read page?\n");
-				return -1;
-			}
+            if (NULL==b) {
+                fprintf(stderr,"\nCannot read page?\n");
+                return -1;
+            }
 
-			if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
-				fprintf(stderr,"\nVerification failed at 0x%08x!\n",saddr * flash->pagesize);
-				// Dump
-				dump_buffer(&b->buf[3], flash->pagesize);
-				dump_buffer(sptr, flash->pagesize);
-				success=0;
-				pages=0;
-			}
+            if (memcmp(sptr,&b->buf[3], flash->pagesize)!=0) {
+                fprintf(stderr,"\nVerification failed at 0x%08x!\n",saddr * flash->pagesize);
+                // Dump
+                dump_buffer(&b->buf[3], flash->pagesize);
+                dump_buffer(sptr, flash->pagesize);
+                success=0;
+                pages=0;
+            }
 
-			buffer_free(b);
-			sptr+=flash->pagesize;
-			saddr++;
-		}
-		if (verbose>0)
-			printf("\nVerification done.\n");
-	}
+            buffer_free(b);
+            sptr+=flash->pagesize;
+            saddr++;
+        }
+        if (verbose>0)
+            printf("\nVerification done.\n");
+    }
 
-	b = sendreceivecommand(conn, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 5000 );
-	if (b) {
-		buffer_free(b);
-	} else {
-		fprintf(stderr,"Cannot leave program mode");
-		conn_close(conn);
-		return -1;
-	}
-	conn_close(conn);
+    b = sendreceivecommand(conn, BOOTLOADER_CMD_LEAVEPGM, NULL,0, 5000 );
+    if (b) {
+        buffer_free(b);
+    } else {
+        fprintf(stderr,"Cannot leave program mode");
+        conn_close(conn);
+        return -1;
+    }
+    conn_close(conn);
 
 report_out:
-	gettimeofday(&end,NULL);
+    gettimeofday(&end,NULL);
 #ifdef __linux__
-	timersub(&end,&start,&delta);
+    timersub(&end,&start,&delta);
 #else
-	delta.tv_sec = end.tv_sec - start.tv_sec;
-	delta.tv_usec = end.tv_usec - start.tv_usec;
-	if (delta.tv_usec<0) {
-		delta.tv_sec-=1;
-		delta.tv_usec += 1000000;
-	}
+    delta.tv_sec = end.tv_sec - start.tv_sec;
+    delta.tv_usec = end.tv_usec - start.tv_usec;
+    if (delta.tv_usec<0) {
+        delta.tv_sec-=1;
+        delta.tv_usec += 1000000;
+    }
 #endif
 
-        // Get erase delta
+    // Get erase delta
 
 #ifdef __linux__
-	timersub(&erase_end,&start,&erase_delta);
+    timersub(&erase_end,&start,&erase_delta);
 #else
-	erase_delta.tv_sec = erase_end.tv_sec - start.tv_sec;
-	erase_delta.tv_usec = erase_end.tv_usec - start.tv_usec;
-	if (erase_delta.tv_usec<0) {
-		erase_delta.tv_sec-=1;
-		erase_delta.tv_usec += 1000000;
-	}
+    erase_delta.tv_sec = erase_end.tv_sec - start.tv_sec;
+    erase_delta.tv_usec = erase_end.tv_usec - start.tv_usec;
+    if (erase_delta.tv_usec<0) {
+        erase_delta.tv_sec-=1;
+        erase_delta.tv_usec += 1000000;
+    }
 #endif
 
 #ifdef __linux__
-	timersub(&end,&erase_end,&program_delta);
+    timersub(&end,&erase_end,&program_delta);
 #else
-	program_delta.tv_sec = end.tv_sec - erase_end.tv_sec;
-	program_delta.tv_usec = end.tv_usec - erase_end.tv_usec;
-	if (program_delta.tv_usec<0) {
-		program_delta.tv_sec-=1;
-		program_delta.tv_usec += 1000000;
-        }
+    program_delta.tv_sec = end.tv_sec - erase_end.tv_sec;
+    program_delta.tv_usec = end.tv_usec - erase_end.tv_usec;
+    if (program_delta.tv_usec<0) {
+        program_delta.tv_sec-=1;
+        program_delta.tv_usec += 1000000;
+    }
 #endif
 
 
-	printf("%s completed %s in %.02f seconds (%.02fs erase, %.02fs program)\n",
+    printf("%s completed %s in %.02f seconds (%.02fs erase, %.02fs program)\n",
 
-               upload_only?"Upload":"Programming",
-               success?"successfully":"WITH ERRORS",
-               (double)delta.tv_sec + (double)delta.tv_usec/1000000.0,
-               (double)erase_delta.tv_sec + (double)erase_delta.tv_usec/1000000.0,
-               (double)program_delta.tv_sec + (double)program_delta.tv_usec/1000000.0
-              );
+           upload_only?"Upload":"Programming",
+           success?"successfully":"WITH ERRORS",
+           (double)delta.tv_sec + (double)delta.tv_usec/1000000.0,
+           (double)erase_delta.tv_sec + (double)erase_delta.tv_usec/1000000.0,
+           (double)program_delta.tv_sec + (double)program_delta.tv_usec/1000000.0
+          );
 #ifdef WIN32
-	//freemakeargv(argv);
+    //freemakeargv(argv);
 #endif
 
-	return 0;
+    return 0;
 }
