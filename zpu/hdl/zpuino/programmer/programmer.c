@@ -557,7 +557,7 @@ int do_upload(connection_t conn, const
 		memcpy( &dbuf[5], source, bsize);
 		if (verbose>1)
 			printf("Sending %d bytes, address 0x%08x\n",bsize,address);
-		b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 5 + bsize, 1000 );
+		b = sendreceivecommand(conn, BOOTLOADER_CMD_PROGMEM, dbuf, 5 + bsize, 0 );
 		if (NULL==b) {
 			fprintf(stderr,"Error programming memory\n");
 			return -1;
@@ -570,7 +570,7 @@ int do_upload(connection_t conn, const
 	if (verbose>1) {
 		printf("Starting sketch\n");
 	}
-	b = sendreceivecommand(conn,BOOTLOADER_CMD_START,dbuf,0,1000);
+	b = sendreceivecommand(conn,BOOTLOADER_CMD_START,dbuf,0,5000);
 	if (NULL==b)
 		return -1;
 	buffer_free(b);
@@ -824,7 +824,11 @@ int main(int argc, char **argv)
             printf("Got programmer version %u.%u\n",b->buf[1],b->buf[2]);
 
         version = ((unsigned short)b->buf[1]<<8) | b->buf[2];
-
+        if (b->buf[1]<2) {
+            printf("Incompatible bootloader. Only versions >= 2.0 are supported by this programmer.");
+            conn_close(conn);
+            return -1;
+        }
         spioffset = b->buf[3];
         spioffset<<=8;
         spioffset += b->buf[4];
