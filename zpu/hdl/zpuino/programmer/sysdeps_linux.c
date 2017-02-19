@@ -258,23 +258,30 @@ void conn_prepare(connection_t conn)
 }
 
 
-int conn_wait(connection_t conn, event_callback_t callback, unsigned timeout)
+int conn_wait(connection_t conn, event_callback_t callback, int timeout)
 {
+    unsigned char readbuf[128];
     struct timeval tv;
+    int bytes;
     fd_set rfs;
 
     FD_ZERO(&rfs);
     FD_SET(conn, &rfs);
-
-    tv.tv_sec = timeout / 1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
+    if (timeout<0) {
+        tv.tv_sec = 60;
+        tv.tv_usec = 0;
+    } else {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
 
     switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
     default:
-        callback(conn, EV_DATA);
+        bytes = read(conn, &readbuf[0], sizeof(readbuf));
+        callback(conn, EV_DATA, &readbuf[0], bytes);
     case 0:
         // Timed out.
-        callback(conn, EV_TIMEOUT);
+        callback(conn, EV_TIMEOUT, NULL, 0);
         break;
     case -1:
         return -1;

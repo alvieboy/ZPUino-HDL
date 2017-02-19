@@ -27,9 +27,8 @@
 #include <windows.h>
 #include <stdio.h>
 #include "hdlc.h"
-#include <event2/event.h>
 
-#define debug(x...) /* do { printf(x); fflush(stdout); } while (0) */
+#define debug(x...)  /* do { printf(x); fflush(stdout); } while (0) */
 
 extern int verbose;
 
@@ -104,9 +103,9 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 
 	ctimeout.ReadIntervalTimeout = MAXDWORD;
 	ctimeout.ReadTotalTimeoutMultiplier = 0;
-	ctimeout.ReadTotalTimeoutConstant = 500;
+	ctimeout.ReadTotalTimeoutConstant = 10;
 	ctimeout.WriteTotalTimeoutMultiplier = 0;
-	ctimeout.WriteTotalTimeoutConstant = 10000;
+	ctimeout.WriteTotalTimeoutConstant = 500;
 
 	if (!SetCommTimeouts(*conn, &ctimeout)){
 		fprintf(stderr,"Cannot set port timeouts: %ld\n", GetLastError());
@@ -175,7 +174,7 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 
 	if ( !WriteFile( conn, buf, size, &nBytes, &wol ) )
 	{
-		WaitForSingleObject( wol.hEvent,100 );
+		WaitForSingleObject( wol.hEvent,500 );
 		if ( GetLastError() != ERROR_IO_PENDING )
 		{
 			return -1;
@@ -218,16 +217,8 @@ buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size
     return hdlc_get_packet();
 }
 
-static struct event_base *base;
-
-struct event_base *get_event_base()
-{
-    return base;
-}
-
 int main_setup(connection_t conn)
 {
-    base = event_base_new();
 }
 
 #if 0
@@ -239,7 +230,7 @@ buffer_t *conn_transmit_old(connection_t conn, const unsigned char *buf, size_t 
 	unsigned long adj_timeout = timeout;
 	int ret;
 	buffer_t *rb;
-    DWORD nBytes, nTransfer;
+        DWORD nBytes, nTransfer;
 	
 	debug("Transmitting data, size %d\n",size);
 
@@ -299,7 +290,7 @@ buffer_t *conn_transmit_old(connection_t conn, const unsigned char *buf, size_t 
 					if (rb)
 						return rb;
 				} else {
-                    debug("No data?\n");
+                                    debug("No data?\n");
 				}
 				break;
 			case 0:
@@ -342,6 +333,7 @@ buffer_t *conn_transmit_old(connection_t conn, const unsigned char *buf, size_t 
 	return NULL;
 }
 #endif
+
 
 int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeout)
 {
@@ -425,11 +417,114 @@ int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeo
 
 }
 
+int conn_wait(connection_t conn, event_callback_t callback, int timeout)
+{
+    int retries = 3;
+    unsigned char buf[128];
+    unsigned int bytes;
+    SYSTEMTIME systemTime;
+    int ret;
+    buffer_t *rb;
+    DWORD nBytes, nTransfer;
+
+    rol.Offset = rol.OffsetHigh = 0;
+    ResetEvent( rol.hEvent );
+
+
+    unsigned long adj_timeout;
+    if (timeout<0) {
+        adj_timeout=60000;
+    } else {
+        adj_timeout=timeout;
+    }
+
+    do {
+        bytes = get_bytes_in_rxqueue(conn);
+
+        debug("Bytes in RX queue: %d\n",bytes);
+
+        if ((timeout==0) && (bytes==0)) {
+            if (verbose>3) {
+                printf("No bytes, timeout=0, flagging event\n");
+            }
+            callback(conn,EV_TIMEOUT,NULL,0);
+            return 0;
+        }
+
+        /* If RX queue already contains bytes, read them at once */
+        if (bytes) {
+            if (ReadFile( conn, buf, bytes>sizeof(buf)?sizeof(buf):bytes, &nBytes, &rol)==0) {
+                /* Something weird happened.. */
+                fprintf(stderr,"Error in ReadFile(): %lu\n", GetLastError());
+                return -1;
+            }
+            callback(conn, EV_DATA, buf, nBytes);
+            return 0;
+        } else {
+            /* No known size, have to read one byte at once */
+            debug("No bytes in queue\n");
+
+            ResetEvent( rol.hEvent );
+
+            ret = ReadFile( conn, buf, 1, &nBytes, &rol);
+            switch (ret) {
+            default:
+                /* We read data OK */
+                debug("Data read OK\n");
+                if (nBytes) {
+                    callback(conn, EV_DATA, buf, nBytes);
+                    return 0;
+                } else {
+                    debug("No data?\n");
+                    callback(conn, EV_TIMEOUT, NULL,0);
+                    return 0;
+                }
+                break;
+            case 0:
+                if (GetLastError()==ERROR_IO_PENDING) {
+                    /* Overlapped read going on */
+                    debug("Waiting for object\n");
+                    switch (WaitForSingleObject(rol.hEvent, adj_timeout)) {
+                    case WAIT_TIMEOUT:
+                        debug("Timeout occurred\n");
+                        ResetEvent( rol.hEvent );
+                        callback(conn,EV_TIMEOUT,NULL,0);
+                        break;
+                    case WAIT_OBJECT_0:
+                        /* Read data */
+                        if (!GetOverlappedResult(conn, &rol, &nTransfer, FALSE)) {
+                            /* Some error occured... */
+                            fprintf(stderr,"Error in GetOverlappedResult(): %lu\n",GetLastError());
+                            callback(conn,EV_TIMEOUT,NULL,0);
+                            return -1;
+                        } else {
+                            debug("Got overlapped data %d\n", nTransfer);
+                            callback(conn, EV_DATA, buf, nTransfer);
+                            return 0;
+                        }
+                        break;
+                    default:
+                        callback(conn,EV_TIMEOUT,NULL,0);
+                        return -1;
+                    }
+                } else {
+                    fprintf(stderr,"Error in ReadFile: %lu\n",GetLastError());
+                    callback(conn,EV_TIMEOUT,NULL,0);
+                    return -1;
+                }
+            }
+        }
+    } while (1);
+}
+
+
+
 void conn_close(connection_t conn)
 {
 }
 
 static unsigned int baudrates[] = {
+    3000000,
     1000000,
     921600,
     576000,
@@ -452,6 +547,9 @@ unsigned int *conn_get_baudrates()
 int conn_parse_speed(unsigned baudrate,speed_t *speed)
 {
 	switch (baudrate) {
+	case 3000000:
+		*speed = CBR_3000000;
+		break;
 	case 1000000:
 		*speed = CBR_1000000;
 		break;

@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "transport.h"
-#include <event2/event.h>
 
 #ifdef __linux__
 #include "sysdeps_linux.h"
@@ -55,8 +54,8 @@ buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char
 #define EV_DATA 0
 #define EV_TIMEOUT 1
 
-typedef void (*event_callback_t)(connection_t conn, int what);
-int conn_wait(connection_t conn, event_callback_t callback, unsigned timeout);
+typedef void (*event_callback_t)(connection_t conn, int what, const unsigned char *data, int datalen);
+int conn_wait(connection_t conn, event_callback_t callback, int timeout);
 
 
 #endif

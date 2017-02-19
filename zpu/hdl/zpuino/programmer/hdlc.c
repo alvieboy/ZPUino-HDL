@@ -391,13 +391,10 @@ buffer_t *hdlc_get_packet()
     return NULL;
 }
 
-static void hdlc_connect_data_ready(connection_t conn)
+static void hdlc_connect_data_ready(connection_t conn, const unsigned char *data, int datalen)
 {
-    char buf[128];
-    int r;
-    r = conn_read(conn, buf, sizeof(buf), 0);
-    if (r>0) {
-        hdlc_process(buf,r);
+    if (datalen>0) {
+        hdlc_process(data,datalen);
         if (dlist__count(incoming_packets)>0) {
             buffer_t *data = dlist__data(incoming_packets);
             incoming_packets = dlist__remove_node(incoming_packets, incoming_packets);
@@ -429,15 +426,12 @@ static void hdlc_connect_data_ready(connection_t conn)
     }
 }
 
-static struct event *hdlc_connect_timeout_event;
-
-
-static void hdlc_connect_event(evutil_socket_t fd, short what, void *arg)
+static void hdlc_connect_event(connection_t fd, int what, const unsigned char *data, int datalen)
 {
     if (what==EV_TIMEOUT) {
         hdlc_connect_timeout(fd);
-    } else if (what==EV_READ) {
-        hdlc_connect_data_ready(fd);
+    } else if (what==EV_DATA) {
+        hdlc_connect_data_ready(fd,data,datalen);
     }
 }
 
@@ -466,22 +460,14 @@ int hdlc_connect(connection_t conn)
 
     hdlc_reset();
 
-    hdlc_connect_timeout_event = event_new(get_event_base(),
-                                           conn,
-                                           EV_TIMEOUT|EV_READ|EV_PERSIST,
-                                           hdlc_connect_event,
-                                           NULL);
-
-    event_add(hdlc_connect_timeout_event,&timeout);
-
     link_state = LINK_INIT;
 
     hdlc_transmit_link_up(conn);
 
     while (link_state==LINK_INIT) {
-        event_base_loop(get_event_base(),EVLOOP_ONCE);
+        conn_wait(conn, &hdlc_connect_event, 100);
     }
-    event_del(hdlc_connect_timeout_event);
+
     if (link_state==LINK_UP) {
         if (verbose>1) {
             printf("Link up\n");
@@ -494,13 +480,10 @@ int hdlc_connect(connection_t conn)
 unsigned data_timeout;
 int data_tx_timed_out = 0;
 
-static void hdlc_data_ready(connection_t conn)
+static void hdlc_data_ready(connection_t conn, const unsigned char *data, int datalen)
 {
-    char buf[256];
-    int r;
-    r = conn_read(conn, buf, sizeof(buf), 0);
-    if (r>0) {
-        hdlc_process(buf,r);
+    if (datalen>0) {
+        hdlc_process(data,datalen);
         while (dlist__count(incoming_packets)>0) {
             buffer_t *data = dlist__data(incoming_packets);
             incoming_packets = dlist__remove_node(incoming_packets, incoming_packets);
@@ -552,8 +535,7 @@ static void hdlc_data_ready(connection_t conn)
     }
 }
 
-
-static void hdlc_data_event_cb(evutil_socket_t fd, short what, void *arg)
+static void hdlc_data_event_cb(connection_t fd, int what, const unsigned char *data, int datalen)
 {
     if (what==EV_TIMEOUT) {
         if (verbose>3) {
@@ -563,8 +545,8 @@ static void hdlc_data_event_cb(evutil_socket_t fd, short what, void *arg)
         if (data_timeout--==0) {
             data_tx_timed_out=1;
         }
-    } else if (what==EV_READ) {
-        hdlc_data_ready(fd);
+    } else if (what==EV_DATA) {
+        hdlc_data_ready(fd,data,datalen);
     }
 }
 
@@ -573,38 +555,28 @@ static struct event *hdlc_data_event;
 int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, unsigned timeout)
 {
     int ret;
+
     struct timeval tv = { 0, 20000 };
 
-    int flags = EV_READ|EV_PERSIST;
-    if (timeout>0) {
 
+    if (timeout>0) {
         timeout/=20; // In ticks.
         data_timeout = timeout;
         data_tx_timed_out = 0;
-
-        flags|=EV_TIMEOUT;
     }
-
-    hdlc_data_event = event_new(get_event_base(),
-                                conn,
-                                flags,
-                                hdlc_data_event_cb,
-                                NULL);
-
-    event_add(hdlc_data_event,&tv);
 
     while (!hdlc_can_transmit()) {
         if (verbose>3) {
             printf("TX busy, waiting...\n");
         }
-        event_base_loop(get_event_base(),EVLOOP_ONCE);
+        conn_wait(conn, hdlc_data_event_cb, 20);
     }
 
     hdlc_sendpacket(conn,buffer,len);
 
     if (timeout==0) {
         // Just check if we have data.
-        event_base_loop(get_event_base(),EVLOOP_NONBLOCK);
+        conn_wait(conn, hdlc_data_event_cb, 0);
         if (link_state!=LINK_UP) {
             printf("Link down!!!");
             return -1;
@@ -613,12 +585,11 @@ int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, un
     }
 
     do {
-        event_base_loop(get_event_base(),EVLOOP_ONCE);
+        conn_wait(conn, hdlc_data_event_cb, -1);
         if (dlist__count(user_packets)>0)
             break;
 
     } while (((timeout>0)&&(!data_tx_timed_out)));
-    event_del(hdlc_data_event);
 
     if (link_state!=LINK_UP) {
         printf("Link down!!!");
