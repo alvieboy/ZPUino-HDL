@@ -15,8 +15,9 @@
 # undef SPI_FLASH_SEL_PIN
 # define SPI_FLASH_SEL_PIN FPGA_SS_B
 #endif
-#define VERSION_HIGH 0x01
-#define VERSION_LOW  0x09
+
+#define VERSION_HIGH 0x02
+#define VERSION_LOW  0x01
 
 /* Commands for programmer */
 
@@ -551,7 +552,9 @@ static void cmd_progmem(unsigned char *buffer)
 	volatile unsigned char *mem;
 	unsigned char *source;
 
-	address=(buffer[1]<<24);
+        sendRR();
+
+        address=(buffer[1]<<24);
 	address+=(buffer[2]<<16);
 	address+=(buffer[3]<<8);
 	address+=buffer[4];
@@ -563,8 +566,6 @@ static void cmd_progmem(unsigned char *buffer)
 	while (size--) {
 		*mem++=*source++;
 	}
-	simpleReply(BOOTLOADER_CMD_PROGMEM);
-
 }
 
 
