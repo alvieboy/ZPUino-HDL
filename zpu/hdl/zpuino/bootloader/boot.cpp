@@ -66,9 +66,11 @@
 static unsigned char hdlc_expected_seq_rx;
 static unsigned char hdlc_seq_tx;
 
+#if 0
 static unsigned char hdlc_buffer[257*6];
 static unsigned char hdlc_buffer_seq_start;
 static unsigned char hdlc_buffered;
+#endif
 
 #define NEXT_SEQUENCE(x) (((x)+1) & 0x7)
 
@@ -219,7 +221,7 @@ static void sendREJ()
     prepareSend( (hdlc_expected_seq_rx<<3) | U_REJ );
     finishSend();
 }
-
+#if 0
 static unsigned int hdlcBufferOffsetForSequence(unsigned char seq)
 {
     unsigned int off = ((unsigned)seq + (unsigned)hdlc_buffer_seq_start);
@@ -235,6 +237,7 @@ static void saveFrame(unsigned char seq, const unsigned char *buffer, unsigned l
         *target++=*buffer++;
     }
 }
+#endif
 
 static unsigned int inbyte()
 {
@@ -866,28 +869,25 @@ static inline void processCommand(unsigned char *buffer, unsigned bufferpos)
     } else {
         // Numbered frame
         unsigned peer_tx = CTRL_PEER_TX(control);
-        unsigned peer_rx = CTRL_PEER_RX(control);
-        unsigned is_poll = CTRL_PEER_POLL(control);
+        //unsigned peer_rx = CTRL_PEER_RX(control);
+        //unsigned is_poll = CTRL_PEER_POLL(control);
+
+        // TODO: retransmit data frames if lost.
 
         if (hdlc_expected_seq_rx != peer_tx) {
             // Lost frame.
             sendREJ();
             // Save reception frame.
-            hdlc_buffer_seq_start = hdlc_expected_seq_rx;
-            saveFrame(peer_tx, buffer, bufferpos);
-            hdlc_buffered = 1;
+            //hdlc_buffer_seq_start = hdlc_expected_seq_rx;
+            //saveFrame(peer_tx, buffer, bufferpos);
+            //hdlc_buffered = 1;
             return;
         } else {
             hdlc_expected_seq_rx = NEXT_SEQUENCE(hdlc_expected_seq_rx);
         }
 
         {
-            unsigned char *buf=NULL;
-            if (hdlc_buffered) {
-                // TODO. Iterate through all buffered commands and execute them.
-            } else {
-                buf = buffer;
-            }
+            unsigned char *buf = buffer;
 
             pos=buf[1];
 
@@ -1064,7 +1064,7 @@ extern "C" int main(int argc,char**argv)
     vstring[17] = memtop>>16;
     vstring[18] = memtop>>8;
     vstring[19] = memtop;
-    hdlc_buffered = 0;
+    //hdlc_buffered = 0;
 
     ivector = &_zpu_interrupt;
 

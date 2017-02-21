@@ -134,7 +134,7 @@ SECTIONS
       _end.  Align after .bss to ensure correct alignment even if the
       .bss section disappears because there are no input sections.  */
    . = ALIGN(32 / 8);
-  } > RAM
+  } > ROM
   . = ALIGN(32 / 8);
   _end = .;
   _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
