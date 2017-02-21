@@ -37,11 +37,11 @@ typedef volatile unsigned int* register_t;
 
 #define SPIISBLOCKING 1
 
-#define BIT(x) (1<<x)
+#define BIT(x) (1<<(x))
 
-#define IO_SLOT(x) (IOBASE + (x<<IO_SLOT_OFFSET_BIT))
+#define IO_SLOT(x) (IOBASE + ((x)<<IO_SLOT_OFFSET_BIT))
 
-#define REGISTER(SLOT, y) *(volatile unsigned int*)(SLOT + (y<<2))
+#define REGISTER(SLOT, y) *(volatile unsigned int*)(SLOT + ((y)<<2))
 
 #define SYSCTLBASE IO_SLOT(0)
 #define SPIBASE  IO_SLOT(4)
@@ -70,13 +70,13 @@ typedef volatile unsigned int* register_t;
 #define GPIOTRIS(x)  REGISTER(GPIOBASE,4+x)
 #define GPIOPPSMODE(x)  REGISTER(GPIOBASE,8+x)
 
-#define GPIOPPSOUT(x)  REGISTER(GPIOBASE,(128 + x))
-#define GPIOPPSIN(x)  REGISTER(GPIOBASE,(256 + x))
+#define GPIOPPSOUT(x)  REGISTER(GPIOBASE,128 + x)
+#define GPIOPPSIN(x)  REGISTER(GPIOBASE,256 + x)
 
 // for direct pin access
-#define GPIOSET(x)	REGISTER(GPIOBASE,(16+x))
-#define GPIOCLR(x)	REGISTER(GPIOBASE,(20+x))
-#define GPIOTGL(x)	REGISTER(GPIOBASE,(24+x))
+#define GPIOSET(x)	REGISTER(GPIOBASE,16+x)
+#define GPIOCLR(x)	REGISTER(GPIOBASE,20+x)
+#define GPIOTGL(x)	REGISTER(GPIOBASE,24+x)
 
 #define PINSET(x) GPIOSET((x>>5))=(1<<(x&0x1F))
 #define PINCLR(x) GPIOCLR((x>>5))=(1<<(x&0x1F))
