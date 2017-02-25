@@ -836,6 +836,14 @@ inline void configure_pins()
 }
 #endif
 
+#if defined( __ZPUINO_POSEDGE_ONE__ )
+inline void configure_pins()
+{
+	pinModePPS(FPGA_PIN_FLASHCS,LOW);
+	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
 extern "C" int _syscall(int *foo, int ID, ...);
 extern "C" unsigned _bfunctions[];
 extern "C" const unsigned _bfunctionsconst[];
