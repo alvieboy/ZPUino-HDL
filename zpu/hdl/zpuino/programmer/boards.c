@@ -30,6 +30,7 @@ static struct board_type boards[] = {
         { 0xBA011A00, "Saanlima Pipistrello with S6 LX45 (ZPUino 2.0)" },
         { 0xBB011A00, "Numato Saturn6 with S6 LX45 (ZPUino 2.0)" },
         { 0xBB021A00, "Numato MimasV2 with S6 LX9 (ZPUino 2.0)" },
+		{ 0xBC011300, "TORANJ Posedge One with S6 LX9 (ZPUino 2.0)" },		
 	{ 0x0, NULL }
 };
 
