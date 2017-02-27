@@ -27,6 +27,8 @@
 # include "board_saturn.h"
 #elif defined( __ZPUINO_MIMASV2__ )
 # include "board_mimasv2.h"
+#elif defined( __ZPUINO_POSEDGE_ONE__ )
+# include "board_posedge_one.h"
 #else
 #  error Unknown board.
 # endif
