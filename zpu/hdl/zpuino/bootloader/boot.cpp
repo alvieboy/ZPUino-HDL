@@ -456,8 +456,15 @@ static unsigned int spi_read_id()
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 
 	spi_enable();
+#ifdef ALTERA_FLASH
+        ret = 0x6E<<16;
+        spiwrite(spidata+6, 0xAB000000);
+        spiwrite(spidata, 0x00);
+        ret |= spiread(spidata) & 0xFF;
+#else
 	spiwrite(spidata+6, 0x9f000000);
 	ret = spiread(spidata);
+#endif
 	spi_disable(spidata);
 	return ret;
 }
@@ -810,6 +817,18 @@ inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
 	pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+}
+#endif
+
+#ifdef __ZPUINO_COREEP4CE6__
+inline void configure_pins()
+{
+    pinModePPS(FPGA_PIN_FLASHCS,LOW);
+    pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+    digitalWrite(FPGA_PIN_LED1, HIGH);
+    digitalWrite(FPGA_PIN_LED2, HIGH);
+    digitalWrite(FPGA_PIN_LED3, HIGH);
+    digitalWrite(FPGA_PIN_LED4, HIGH);
 }
 #endif
 
