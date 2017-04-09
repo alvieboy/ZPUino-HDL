@@ -27,8 +27,8 @@ CONFIG PROHIBIT=P69;
 CONFIG PROHIBIT=P60;
 
 NET CLK      LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;               # CLK
-NET TXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
-NET RXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
+NET TXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
+NET RXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
 NET WING_A(0)     LOC="P48"  | IOSTANDARD=LVTTL;                                # A0
 NET WING_A(1)     LOC="P51"  | IOSTANDARD=LVTTL;                                # A1
 NET WING_A(2)     LOC="P56"  | IOSTANDARD=LVTTL;                                # A2
@@ -78,49 +78,49 @@ NET WING_C(13)    LOC="P132" | IOSTANDARD=LVTTL;                                
 NET WING_C(14)    LOC="P133" | IOSTANDARD=LVTTL;                                # C14
 NET WING_C(15)    LOC="P134" | IOSTANDARD=LVTTL;                                # C15
 
-NET DRAM_ADDR(0)  LOC="P140" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR0
-NET DRAM_ADDR(1)  LOC="P139" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR1
-NET DRAM_ADDR(2)  LOC="P138" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR2
-NET DRAM_ADDR(3)  LOC="P137" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR3
-NET DRAM_ADDR(4)  LOC="P46"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR4
-NET DRAM_ADDR(5)  LOC="P45"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR5
-NET DRAM_ADDR(6)  LOC="P44"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR6
-NET DRAM_ADDR(7)  LOC="P43"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR7
-NET DRAM_ADDR(8)  LOC="P41"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR8
-NET DRAM_ADDR(9)  LOC="P40"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR9
-NET DRAM_ADDR(10) LOC="P141" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR10
-NET DRAM_ADDR(11) LOC="P35"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR11
-NET DRAM_ADDR(12) LOC="P34"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR12
+NET DRAM_ADDR(0)  LOC="P7" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR0
+NET DRAM_ADDR(1)  LOC="P6" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR1
+NET DRAM_ADDR(2)  LOC="P5" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR2
+NET DRAM_ADDR(3)  LOC="P2" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR3
+NET DRAM_ADDR(4)  LOC="P15"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR4
+NET DRAM_ADDR(5)  LOC="P16"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR5
+NET DRAM_ADDR(6)  LOC="P17"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR6
+NET DRAM_ADDR(7)  LOC="P21"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR7
+NET DRAM_ADDR(8)  LOC="P22"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR8
+NET DRAM_ADDR(9)  LOC="P44"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR9
+NET DRAM_ADDR(10) LOC="P8" | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR10
+NET DRAM_ADDR(11) LOC="P45"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR11
+NET DRAM_ADDR(12) LOC="P46"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # ADDR12
 
-NET DRAM_DQ(0)  LOC="P9"   | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA0
-NET DRAM_DQ(1)  LOC="P10"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA1
-NET DRAM_DQ(2)  LOC="P11"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA2
-NET DRAM_DQ(3)  LOC="P12"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA3
-NET DRAM_DQ(4)  LOC="P14"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA4
-NET DRAM_DQ(5)  LOC="P15"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA5
-NET DRAM_DQ(6)  LOC="P16"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA6
-NET DRAM_DQ(7)  LOC="P8"   | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA7
-NET DRAM_DQ(8)  LOC="P21"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA8
-NET DRAM_DQ(9)  LOC="P22"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA9
-NET DRAM_DQ(10) LOC="P23"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA10
-NET DRAM_DQ(11) LOC="P24"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA11
-NET DRAM_DQ(12) LOC="P26"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA12
-NET DRAM_DQ(13) LOC="P27"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA13
-NET DRAM_DQ(14) LOC="P29"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA14
-NET DRAM_DQ(15) LOC="P30"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA15
+NET DRAM_DQ(0)  LOC="P137"   | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA0
+NET DRAM_DQ(1)  LOC="P138"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA1
+NET DRAM_DQ(2)  LOC="P139"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA2
+NET DRAM_DQ(3)  LOC="P140"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA3
+NET DRAM_DQ(4)  LOC="P141"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA4
+NET DRAM_DQ(5)  LOC="P142"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA5
+NET DRAM_DQ(6)  LOC="P143"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA6
+NET DRAM_DQ(7)  LOC="P1"   | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA7
+NET DRAM_DQ(8)  LOC="P35"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA8
+NET DRAM_DQ(9)  LOC="P34"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA9
+NET DRAM_DQ(10) LOC="P33"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA10
+NET DRAM_DQ(11) LOC="P14"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA11
+NET DRAM_DQ(12) LOC="P12"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA12
+NET DRAM_DQ(13) LOC="P11"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA13
+NET DRAM_DQ(14) LOC="P10"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA14
+NET DRAM_DQ(15) LOC="P9"  | IOSTANDARD=LVTTL | SLEW=FAST | NODELAY;                                # DATA15
 
-NET DRAM_DQM(0) LOC="P7"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # DQML OK
-NET DRAM_DQM(1) LOC="P17"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # DQMH OK
-NET DRAM_BA(0)  LOC="P143"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # BA0 OK
-NET DRAM_BA(1)  LOC="P142"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # BA1 OK
+NET DRAM_DQM(0) LOC="P32"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # DQML OK
+NET DRAM_DQM(1) LOC="P40"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # DQMH OK
+NET DRAM_BA(0)  LOC="P24"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # BA0 OK
+NET DRAM_BA(1)  LOC="P23"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # BA1 OK
 
-NET DRAM_WE_N   LOC="P6"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nWE OK OK
-NET DRAM_CAS_N  LOC="P5"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nCAS OK OK
-NET DRAM_RAS_N  LOC="P2"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nRAS OK OK
-NET DRAM_CS_N   LOC="P1"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nCS OK OK
+NET DRAM_WE_N   LOC="P30"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nWE OK OK
+NET DRAM_CAS_N  LOC="P29"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nCAS OK OK
+NET DRAM_RAS_N  LOC="P27"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nRAS OK OK
+NET DRAM_CS_N   LOC="P26"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # nCS OK OK
 
-NET DRAM_CLK    LOC="P32"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # CLK OK
-NET DRAM_CKE    LOC="P33"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # CKE OK
+NET DRAM_CLK    LOC="P41"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # CLK OK
+NET DRAM_CKE    LOC="P43"  | IOSTANDARD=LVTTL | SLEW=FAST;                                # CKE OK
 
 NET SPI_CS      LOC="P38"   | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # FLASH_CS   OK
 NET SPI_SCK     LOC="P70"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # FLASH_CK   OK
