@@ -26,11 +26,10 @@ CONFIG PROHIBIT=P144;
 CONFIG PROHIBIT=P69;
 CONFIG PROHIBIT=P60;
 
+#changed for papilio unity
 NET CLK      LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;               # CLK
-#NET TXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
-#NET RXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
-NET TXD       LOC="P78" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
-NET RXD       LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
+NET TXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
+NET RXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
 NET WING_A(0)     LOC="P48"  | IOSTANDARD=LVTTL;                                # A0
 NET WING_A(1)     LOC="P51"  | IOSTANDARD=LVTTL;                                # A1
 NET WING_A(2)     LOC="P56"  | IOSTANDARD=LVTTL;                                # A2
@@ -54,7 +53,7 @@ NET WING_B(3)     LOC="P87"  | IOSTANDARD=LVTTL;                                
 NET WING_B(4)     LOC="P84"  | IOSTANDARD=LVTTL;                                # B4
 NET WING_B(5)     LOC="P82"  | IOSTANDARD=LVTTL;                                # B5
 NET WING_B(6)     LOC="P80"  | IOSTANDARD=LVTTL;                                # B6
-NET WING_B(7)     LOC="P105"  | IOSTANDARD=LVTTL;                                # B7
+NET WING_B(7)     LOC="P78"  | IOSTANDARD=LVTTL;                                # B7
 NET WING_B(8)     LOC="P74"  | IOSTANDARD=LVTTL;                                # B8
 NET WING_B(9)     LOC="P95"  | IOSTANDARD=LVTTL;                                # B9
 NET WING_B(10)    LOC="P62"  | IOSTANDARD=LVTTL;                                # B10
@@ -87,4 +86,4 @@ NET SPI_SCK     LOC="P70"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # 
 NET SPI_MOSI    LOC="P64"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # FLASH_SI   OK
 NET SPI_MISO    LOC="P65"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | PULLUP; # FLASH_SO   OK
 
-NET LED LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW; # LED
+NET LED LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=SLOW; # LED
