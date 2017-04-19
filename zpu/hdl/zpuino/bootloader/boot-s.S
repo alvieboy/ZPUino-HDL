@@ -41,6 +41,7 @@ ___zpu_interrupt_vector:
         poppc
 .size ___zpu_interrupt_vector, . - ___zpu_interrupt_vector
 
+.globl _endline
 _endline:
     im '\r'
     nop
@@ -158,10 +159,10 @@ __sketch_start:
 
 .section ".vectors"
 
-	.org 0x0008
-        .globl _memreg
-_memreg:
         .org 0x0028
         .globl _bfunctions
 _bfunctions:
 
+.section ".mreg"
+        .globl _memreg 
+_memreg:
