@@ -38,7 +38,7 @@ void _premain2(unsigned memtop)
     {                 \
     unsigned check;   \
     (*a) = v;         \
-    check = ~(*a);     \
+    check = (*a);     \
     if (check!=v) {   \
     putc('E');     \
     putc(' ');     \
