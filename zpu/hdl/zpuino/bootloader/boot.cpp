@@ -907,7 +907,7 @@ extern "C" int main(int argc,char**argv)
 	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
-	printstring("\r\nZPUINO Papilio Flex Bram Bootloader\r\n");
+	printstring("\r\nZPUINO Papilio Unity Bram Bootloader\r\n");
 #endif
 
 
