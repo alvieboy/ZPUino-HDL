@@ -34,7 +34,7 @@
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 10
 #else
-# define BOOTLOADER_WAIT_MILLIS 5000
+# define BOOTLOADER_WAIT_MILLIS 2000
 #endif
 
 #define REPLY(X) (X|0x80)
