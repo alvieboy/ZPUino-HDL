@@ -1,6 +1,6 @@
 --
 --
---  ZPUINO implementation on Gadget Factory 'Papilio Unity' Board
+--  ZPUINO implementation on Gadget Factory 'Papilio Pro' Board
 -- 
 --  Copyright 2011 Alvaro Lopes <alvieboy@alvie.com>
 -- 

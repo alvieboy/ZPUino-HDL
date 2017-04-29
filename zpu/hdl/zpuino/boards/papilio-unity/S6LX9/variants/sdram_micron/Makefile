@@ -1,12 +1,11 @@
 PROJECT=papilio_unity
 PART=xc6slx9-2-tqg144
-VARIANT=zpuino-1.0-PapilioUnity-S6LX9-SDRAM-Micron-1.0.bit
+VARIANT=zpuino-1.0-PapilioUnity-S6LX9-SDRAM-Micron-1.0
 
 # For bootloader
 BOARD=PAPILIO_UNITY
 SIZE=16384
-DEFINES="-DBOARD_ID=0xA4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE"
-#define ZPUINO_HAS_ICACHE
+DEFINES="-DBOARD_ID=0xB4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPU20 -DZPUINO_HAS_ICACHE"
 
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
@@ -23,8 +22,8 @@ ${PROJECT}.ngd: ${PROJECT}.ngc
 	-uc ${PROJECT}.ucf -p ${PART} ${PROJECT}.ngc ${PROJECT}.ngd
 
 ${PROJECT}.ncd: ${PROJECT}.ngd
-	map -intstyle ise -p ${PART} \
-	 -detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
+	map -intstyle ise -w -mt 2 -p ${PART} \
+	-detail -ir off -ignore_keep_hierarchy -pr b -timing -ol high -logic_opt on  \
 	-o ${PROJECT}.ncd ${PROJECT}.ngd ${PROJECT}.pcf 
 
 ${PROJECT}_routed.ncd: ${PROJECT}.ncd
@@ -32,12 +31,13 @@ ${PROJECT}_routed.ncd: ${PROJECT}.ncd
 
 ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 	bitgen -f ${PROJECT}.ut ${PROJECT}_routed.ncd
-	cp ${PROJECT}_routed.bit ${VARIANT}
+	cp ${PROJECT}_routed.bit ${VARIANT}.bit
 
 ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
+	cp ${PROJECT}_routed.bin ${VARIANT}.bin
 
 clean:
-	rm -rf ${PROJECT}{.ngc,.ngd,.ncd,_routed.ncd,.pcf,_routed_pad*,_routed.bit}
-	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html bootloader.vhd
+	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}._routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}._routed.bit bootloader.vhd
+	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
 	$(MAKE) -C ../../../../../bootloader clean
