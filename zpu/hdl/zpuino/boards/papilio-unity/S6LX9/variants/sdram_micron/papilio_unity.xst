@@ -1,12 +1,12 @@
 set -tmpdir "xst/projnav.tmp"
 set -xsthdpdir "xst"
 run
--ifn papilio_pro.prj
+-ifn papilio_unity.prj
 -ifmt mixed
--ofn papilio_pro
+-ofn papilio_unity
 -ofmt NGC
 -p xc6slx9-2-tqg144
--top papilio_pro_top
+-top papilio_unity_top
 -opt_mode Speed
 -opt_level 2
 -iuc NO

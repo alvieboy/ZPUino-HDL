@@ -11,8 +11,8 @@ DEFINES="-DBOARD_ID=0xA4041700 -DBOARD_MEMORYSIZE=0x800000 -DZPUINO_HAS_ICACHE"
 all: ${PROJECT}_routed.bit ${PROJECT}_routed.bin
 
 bootloader.vhd:
-	$(MAKE) -C ../../../bootloader -f Makefile BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
-	cp ../../../bootloader/bootloader.vhd .
+	$(MAKE) -C ../../../../../bootloader -f Makefile BOARD=$(BOARD) SIZE=$(SIZE) DEFINES=$(DEFINES)
+	cp ../../../../../bootloader/bootloader.vhd .
 	
 ${PROJECT}.ngc: bootloader.vhd
 	mkdir -p xst/projnav.tmp/
