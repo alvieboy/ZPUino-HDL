@@ -1,6 +1,6 @@
 PROJECT=papilio_unity
 PART=xc6slx9-2-tqg144
-VARIANT=zpuino-2.0-PapilioUnity-S6LX9-BRAM-1.0
+VARIANT=zpuino-2.0-PapilioUnity-S6LX9-Bram-1.0
 
 # For bootloader
 BOARD=PAPILIO_UNITY
@@ -32,12 +32,13 @@ ${PROJECT}_routed.ncd: ${PROJECT}.ncd
 ${PROJECT}_routed.bit: ${PROJECT}_routed.ncd
 	bitgen -f ${PROJECT}.ut ${PROJECT}_routed.ncd
 	cp ${PROJECT}_routed.bit ${VARIANT}.bit
+	cp ${PROJECT}_routed.bin ${VARIANT}.bin
 
 ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	promgen -w -spi -p bin -o ${PROJECT}_routed.bin -s 1024 -u 0 ${PROJECT}_routed.bit
 	cp ${PROJECT}_routed.bin ${VARIANT}.bin
 
 clean:
-	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}._routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}._routed.bit bootloader.vhd
+	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}_routed.bit ${PROJECT}_routed.rbt ${PROJECT}_routed_pad.txt bootloader.vhd
 	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
 	$(MAKE) -C ../../../../../bootloader clean
