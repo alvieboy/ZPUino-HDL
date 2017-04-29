@@ -813,7 +813,7 @@ inline void configure_pins()
 }
 #endif
 
-#if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ ) || defined ( __ZPUINO_PAPILIO_DUO__ )
+#if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ ) || defined ( __ZPUINO_PAPILIO_DUO__ ) || defined ( __ZPUINO_PAPILIO_UNITY__ )
 inline void configure_pins()
 {
 	pinModePPS(FPGA_PIN_FLASHCS,LOW);
