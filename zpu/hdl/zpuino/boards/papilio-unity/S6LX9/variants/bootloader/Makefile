@@ -39,6 +39,6 @@ ${PROJECT}_routed.bin: ${PROJECT}_routed.bit
 	cp ${PROJECT}_routed.bin ${VARIANT}.bin
 
 clean:
-	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}_routed.bit ${PROJECT}_routed.rbt ${PROJECT}_routed_pad.txt bootloader.vhd
-	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.bin *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
+	@rm -rf ${PROJECT}.ngc ${PROJECT}.ngd ${PROJECT}.ncd ${PROJECT}_routed.ncd ${PROJECT}.pcf ${PROJECT}.bit ${PROJECT}_routed.bit ${PROJECT}_routed.bit ${PROJECT}_routed.rbt ${PROJECT}_routed_pad.txt bootloader.vhd
+	rm -rf _ngo _xmsgs xlnx_auto_0_xdb xst *.bld *.map *.mrp *.ngm *.ngr *.syr *.xrpt *.bgn *.cfi *.drc *.pad *.par *.prm *.ptwx *.unroutes *.xpi *.xwbt *.csv *summary.xml *.lso *.xrpt *.xml *.html
 	$(MAKE) -C ../../../../../bootloader clean
