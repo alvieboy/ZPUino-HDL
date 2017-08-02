@@ -46,13 +46,13 @@ use work.wishbonepkg.all;
 entity de0_nano_top is
   port (
     -- Clock
-	  CLOCK_50:       in std_logic;
+    CLOCK_50:       in std_logic;
     -- LED
-	  LED:            out std_logic_vector(7 downto 0);
+    LED:            out std_logic_vector(7 downto 0);
     -- Debounced keys
-	  KEY:            in std_logic_vector(1 downto 0);
+    KEY:            in std_logic_vector(1 downto 0);
     -- DIP switches
-	  SW:             in std_logic_vector(3 downto 0);
+    SW:             in std_logic_vector(3 downto 0);
     -- DRAM connections
     DRAM_ADDR:      out std_logic_vector(12 downto 0);
     DRAM_BA:        out std_logic_vector(1 downto 0);
@@ -65,20 +65,20 @@ entity de0_nano_top is
     DRAM_RAS_N:     out std_logic;
     DRAM_WE_N:      out std_logic;
     -- EPCS (serial flash)
-  	EPCS_ASDO:      out std_logic;
-	  EPCS_DATA0:     in std_logic;
-	  EPCS_DCLK:      out std_logic;
-	  EPCS_NCSO:      out std_logic;
+    EPCS_ASDO:      out std_logic;
+    EPCS_DATA0:     in std_logic;
+    EPCS_DCLK:      out std_logic;
+    EPCS_NCSO:      out std_logic;
     -- I2C sensor
     G_SENSOR_CS_N:  out std_logic;
     G_SENSOR_INT:   in std_logic;
     I2C_SCLK:       inout std_logic;
     I2C_SDAT:       inout std_logic;
     -- ADC
-	  ADC_CS_N:       out std_logic;
-	  ADC_SADDR:      out std_logic;
-	  ADC_SCLK:       out std_logic;
-	  ADC_SDAT:       in std_logic;
+    ADC_CS_N:       out std_logic;
+    ADC_SADDR:      out std_logic;
+    ADC_SCLK:       out std_logic;
+    ADC_SDAT:       in std_logic;
     -- GPIO Header 0
     GPIO_0:         inout std_logic_vector(33 downto 0);
     GPIO_0_IN:      in std_logic_vector(1 downto 0);
@@ -251,7 +251,7 @@ architecture behave of de0_nano_top is
   );
   port (
     wb_clk_i: in std_logic;
-	 	wb_rst_i: in std_logic;
+    wb_rst_i: in std_logic;
 
     -- Master signals
 
@@ -388,7 +388,7 @@ begin
   zpuino: entity work.zpuino_top_icache
     port map (
       clk           => sysclk,
-	 	  rst           => sysrst,
+      rst           => sysrst,
 
       slot_cyc      => slot_cyc,
       slot_we       => slot_we,
@@ -438,7 +438,7 @@ begin
   sram_inst: entity work.sdram_ctrl
     port map (
       wb_clk_i    => wb_clk_i,
-  	 	wb_rst_i    => wb_rst_i,
+      wb_rst_i    => wb_rst_i,
       wb_dat_o    => sram_wb_dat_o,
       wb_dat_i    => sram_wb_dat_i,
       wb_adr_i    => sram_wb_adr_i(maxIObit downto minIObit),
@@ -462,7 +462,7 @@ begin
       DRAM_WE_N   => DRAM_WE_N
     );
 
-    DRAM_ADDR(12) <= '0';
+  DRAM_ADDR(12) <= '0';
 
 
   --
@@ -475,7 +475,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+     wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(1),
     wb_dat_i      => slot_write(1),
     wb_adr_i      => slot_address(1),
@@ -501,7 +501,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(2),
     wb_dat_i      => slot_write(2),
     wb_adr_i      => slot_address(2),
@@ -541,7 +541,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(3),
     wb_dat_i      => slot_write(3),
     wb_adr_i      => slot_address(3),
@@ -568,7 +568,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(4),
     wb_dat_i      => slot_write(4),
     wb_adr_i      => slot_address(4),
@@ -590,7 +590,7 @@ begin
   sigmadelta_inst: zpuino_sigmadelta
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(5),
     wb_dat_i      => slot_write(5),
     wb_adr_i      => slot_address(5),
@@ -613,7 +613,7 @@ begin
   slot1: zpuino_spi
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(6),
     wb_dat_i      => slot_write(6),
     wb_adr_i      => slot_address(6),
@@ -639,7 +639,7 @@ begin
   crc16_inst: zpuino_crc16
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(7),
     wb_dat_i      => slot_write(7),
     wb_adr_i      => slot_address(7),
@@ -661,7 +661,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(8),
     wb_dat_i      => slot_write(8),
     wb_adr_i      => slot_address(8),
@@ -682,7 +682,7 @@ begin
   slot9: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(9),
     wb_dat_i      => slot_write(9),
     wb_adr_i      => slot_address(9),
@@ -702,7 +702,7 @@ begin
   slot10: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+     wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(10),
     wb_dat_i      => slot_write(10),
     wb_adr_i      => slot_address(10),
@@ -721,7 +721,7 @@ begin
   slot11: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(11),
     wb_dat_i      => slot_write(11),
     wb_adr_i      => slot_address(11),
@@ -740,7 +740,7 @@ begin
   slot12: zpuino_spi
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+     wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(12),
     wb_dat_i      => slot_write(12),
     wb_adr_i      => slot_address(12),
@@ -764,7 +764,7 @@ begin
   slot13: entity work.i2c_master_top
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(13)(7 downto 0),
     wb_dat_i      => slot_write(13)(7 downto 0),
     wb_adr_i      => slot_address(13)(4 downto 2),
@@ -798,7 +798,7 @@ begin
   slot14: zpuino_empty_device
   port map (
     wb_clk_i      => wb_clk_i,
-	 	wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(14),
     wb_dat_i      => slot_write(14),
     wb_adr_i      => slot_address(14),
