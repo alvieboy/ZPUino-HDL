@@ -10,9 +10,6 @@ use work.zpuinopkg.all;
 use work.zpupkg.all;
 use work.wishbonepkg.all;
 
-library unisim;
-use unisim.vcomponents.all;
-
 entity sdram_ctrl is
   port (
     wb_clk_i: in std_logic;

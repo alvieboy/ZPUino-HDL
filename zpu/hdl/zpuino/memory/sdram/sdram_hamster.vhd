@@ -13,9 +13,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
-library unisim;
-use unisim.vcomponents.all;
-
 entity sdram_controller is
   generic (
     HIGH_BIT: integer := 24;
@@ -211,8 +208,6 @@ architecture rtl of sdram_controller is
   -- Debug only
    signal debug_cmd: std_logic_vector(3 downto 0);
 
-   signal not_clock_100: std_logic;
-
   constant RELOAD: integer := (((64000000/REFRESH_CYCLES)*MHZ)/1000) - 10;
 
   attribute IOB: string;
@@ -268,22 +263,12 @@ begin
                  r.req_addr_q(8 downto 2) & "0";
    end process;
 
-  not_clock_100 <= not clock_100;
-
-  clock: ODDR2
-    generic map (
-      DDR_ALIGNMENT => "NONE",  
-      INIT          => '0',
-      SRTYPE        => "ASYNC") 
+  clock: entity work.oddrff
     port map (
       D0 => '0',
       D1 => '1',
-      Q => i_DRAM_CLK,
-      C0 => clock_100,
-      C1 => not_clock_100,
-      CE => '1',
-      R => '0',
-      S => '0'
+      O => i_DRAM_CLK,
+      CLK => clock_100
     );
 
    DRAM_CKE       <= '1';
