@@ -832,6 +832,22 @@ inline void configure_pins()
 }
 #endif
 
+#ifdef __ZPUINO_DE0NANO__
+inline void configure_pins()
+{
+    pinModePPS(FPGA_PIN_FLASHCS,LOW);
+    pinMode(FPGA_PIN_FLASHCS, OUTPUT);
+    digitalWrite(FPGA_PIN_LED0, HIGH);
+    digitalWrite(FPGA_PIN_LED1, LOW);
+    digitalWrite(FPGA_PIN_LED2, HIGH);
+    digitalWrite(FPGA_PIN_LED3, LOW);
+    digitalWrite(FPGA_PIN_LED4, HIGH);
+    digitalWrite(FPGA_PIN_LED5, LOW);
+    digitalWrite(FPGA_PIN_LED6, HIGH);
+    digitalWrite(FPGA_PIN_LED7, LOW);
+}
+#endif
+
 #if defined( __ZPUINO_PAPILIO_PLUS__ ) || defined( __ZPUINO_PAPILIO_PRO__ ) || defined ( __ZPUINO_PAPILIO_DUO__ )
 inline void configure_pins()
 {
