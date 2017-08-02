@@ -72,7 +72,7 @@ entity de0_nano_top is
     -- I2C sensor
     G_SENSOR_CS_N:  out std_logic;
     G_SENSOR_INT:   in std_logic;
-    I2C_SCLK:       out std_logic;
+    I2C_SCLK:       inout std_logic;
     I2C_SDAT:       inout std_logic;
     -- ADC
 	  ADC_CS_N:       out std_logic;
@@ -84,11 +84,14 @@ entity de0_nano_top is
     GPIO_0_IN:      in std_logic_vector(1 downto 0);
     -- GPIO Header 1
     GPIO_1:         inout std_logic_vector(33 downto 0);
-    GPIO_1_IN:      in std_logic_vector(1 downto 0)
+    GPIO_1_IN:      in std_logic_vector(1 downto 0);
     -- GPIO Header 2
     GPIO_2:         inout std_logic_vector(12 downto 0);
-    GPIO_2_IN:      in std_logic_vector(2 downto 0);
-);
+    GPIO_2_IN:      in std_logic_vector(2 downto 0)
+  );
+end entity de0_nano_top;
+
+
 architecture behave of de0_nano_top is
 
 
@@ -136,14 +139,14 @@ architecture behave of de0_nano_top is
   signal gpio_i:      std_logic_vector(zpuino_gpio_count-1 downto 0);
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "000000000000000000000000" &
+    "0000000000000000000000000000" &
     "0000000000000000000000000000000000" &
-    "1111111111111111111111111111111111"
+    "1111111111111111111111111111111111";
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
-    "000000000000000000000000" &
+    "0000000000000000000000000000" &
     "0000000000000000000000000000000000" &
-    "1111111111111111111111111111111111"
+    "1111111111111111111111111111111111";
 
   -- I/O Signals
   signal slot_cyc:    slot_std_logic_type;
@@ -293,6 +296,14 @@ architecture behave of de0_nano_top is
 
   alias CLK:      std_ulogic is CLOCK_50;
 
+  signal scl_pad_i     : std_logic;                    -- i2c clock line input
+  signal scl_pad_o     : std_logic;                    -- i2c clock line output
+  signal scl_padoen_o  : std_logic;                    -- i2c clock line output enable, active low
+  signal sda_pad_i     : std_logic;                    -- i2c data line input
+  signal sda_pad_o     : std_logic;                    -- i2c data line output
+  signal sda_padoen_o  : std_logic;                    -- i2c data line output enable, active low
+
+
 begin
 
   wb_clk_i <= sysclk;
@@ -317,6 +328,8 @@ begin
     rstout  => clkgen_rst
   );
 
+  iopads: block
+  begin
 
   -- GPIO 0 to 33 map to GPIO0 block
   gp0_gen: for i in 0 to 33 generate
@@ -369,10 +382,10 @@ begin
   gssel:    OPAD port map ( I => gpio_o(94),   PAD => G_SENSOR_CS_N );
   adcsel:   OPAD port map ( I => gpio_o(95),   PAD => ADC_CS_N );
 
+  end block;
 
 
-
-  zpuino:zpuino_top
+  zpuino: entity work.zpuino_top_icache
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
@@ -422,7 +435,7 @@ begin
 
   sysclk_sram_we <= not wb_clk_i;
 
-  sram_inst: sdram_ctrl
+  sram_inst: entity work.sdram_ctrl
     port map (
       wb_clk_i    => wb_clk_i,
   	 	wb_rst_i    => wb_rst_i,
@@ -748,7 +761,7 @@ begin
   -- IO SLOT 13
   --
 
-  slot13: i2c_master_top
+  slot13: entity work.i2c_master_top
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,
@@ -772,8 +785,8 @@ begin
   );
   slot_read(13)(31 downto 8)<=(others => '0');
 
-  i2c_buf0: IOBUF port map(I => scl_pad_o, O => scl_pad_i, T => scl_padoen_o, IO => I2C_SCLK );
-  i2c_buf1: IOBUF port map(I => sda_pad_o, O => sda_pad_i, T => sda_padoen_o, IO => I2C_SDAT );
+  i2c_buf0: entity work.IOBUF port map(I => scl_pad_o, O => scl_pad_i, T => scl_padoen_o, IO => I2C_SCLK );
+  i2c_buf1: entity work.IOBUF port map(I => sda_pad_o, O => sda_pad_i, T => sda_padoen_o, IO => I2C_SDAT );
 
 
 
