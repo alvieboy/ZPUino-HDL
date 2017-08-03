@@ -55,5 +55,6 @@ flash_info_t flash_list[] =
         { 0xEF, 0x40, 0x14, 256, 65536, 16, "W25Q80BV", &m25p_flash },
         { 0x01, 0x02, 0x16, 256, 65536, 128, "S25FL064P", &m25p_flash },
         { 0x6E, 0x00, 0x14, 256, 65536, 32, "EPCS16", &m25p_flash },
+        { 0x6E, 0x00, 0x16, 256, 65536, 128, "EPCS64", &m25p_flash },
 	{ 0, 0, 0, 0, 0, 0, NULL, NULL }
 };
