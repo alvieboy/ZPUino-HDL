@@ -94,40 +94,6 @@ end entity de0_nano_top;
 
 architecture behave of de0_nano_top is
 
-
-  component zpuino_serialreset is
-  generic (
-    SYSTEM_CLOCK_MHZ: integer := 96
-  );
-  port (
-    clk:      in std_logic;
-    rx:       in std_logic;
-    rstin:    in std_logic;
-    rstout:   out std_logic
-  );
-  end component zpuino_serialreset;
-
-  component wb_bootloader is
-  port (
-    wb_clk_i:   in std_logic;
-    wb_rst_i:   in std_logic;
-
-    wb_dat_o:   out std_logic_vector(31 downto 0);
-    wb_adr_i:   in std_logic_vector(11 downto 2);
-    wb_cyc_i:   in std_logic;
-    wb_stb_i:   in std_logic;
-    wb_ack_o:   out std_logic;
-    wb_stall_o: out std_logic;
-
-    wb2_dat_o:   out std_logic_vector(31 downto 0);
-    wb2_adr_i:   in std_logic_vector(11 downto 2);
-    wb2_cyc_i:   in std_logic;
-    wb2_stb_i:   in std_logic;
-    wb2_ack_o:   out std_logic;
-    wb2_stall_o: out std_logic
-  );
-  end component;
-
   signal sysrst:      std_logic;
   signal sysclk:      std_logic;
   signal clkgen_rst:  std_logic;
@@ -244,50 +210,14 @@ architecture behave of de0_nano_top is
 
   signal memory_enable: std_logic;
 
-  component wb_master_np_to_slave_p is
-  generic (
-    ADDRESS_HIGH: integer := maxIObit;
-    ADDRESS_LOW: integer := maxIObit
-  );
-  port (
-    wb_clk_i: in std_logic;
-    wb_rst_i: in std_logic;
-
-    -- Master signals
-
-    m_wb_dat_o: out std_logic_vector(31 downto 0);
-    m_wb_dat_i: in std_logic_vector(31 downto 0);
-    m_wb_adr_i: in std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
-    m_wb_sel_i: in std_logic_vector(3 downto 0);
-    m_wb_cti_i: in std_logic_vector(2 downto 0);
-    m_wb_we_i:  in std_logic;
-    m_wb_cyc_i: in std_logic;
-    m_wb_stb_i: in std_logic;
-    m_wb_ack_o: out std_logic;
-
-    -- Slave signals
-
-    s_wb_dat_i: in std_logic_vector(31 downto 0);
-    s_wb_dat_o: out std_logic_vector(31 downto 0);
-    s_wb_adr_o: out std_logic_vector(ADDRESS_HIGH downto ADDRESS_LOW);
-    s_wb_sel_o: out std_logic_vector(3 downto 0);
-    s_wb_cti_o: out std_logic_vector(2 downto 0);
-    s_wb_we_o:  out std_logic;
-    s_wb_cyc_o: out std_logic;
-    s_wb_stb_o: out std_logic;
-    s_wb_ack_i: in std_logic;
-    s_wb_stall_i: in std_logic
-  );
-  end component;
-
   signal uart2_rx: std_logic;
   signal uart2_tx: std_logic;
 
   signal ramwbi:  wb_mosi_type;
   signal ramwbo:  wb_p_miso_type;
 
-  alias RXD: std_logic is GPIO_2(0);
-  alias TXD: std_logic is GPIO_2(1);
+  alias RXD: std_logic is GPIO_0(0);
+  alias TXD: std_logic is GPIO_0(1);
 
   alias SPI_MISO: std_logic is EPCS_DATA0;
   alias SPI_MOSI: std_logic is EPCS_ASDO;
@@ -309,7 +239,7 @@ begin
   wb_clk_i <= sysclk;
   wb_rst_i <= sysrst;
 
-  rstgen: zpuino_serialreset
+  rstgen: entity work.zpuino_serialreset
     generic map (
       SYSTEM_CLOCK_MHZ  => 96
     )
@@ -331,22 +261,23 @@ begin
   iopads: block
   begin
 
-  -- GPIO 0 to 33 map to GPIO0 block
-  gp0_gen: for i in 0 to 33 generate
-    pin: IOPAD port map(I => gpio_o(i),O => gpio_i(i),T => gpio_t(i),C => sysclk,PAD => GPIO_0(i) );
+  -- first 2 GPIO reserved for UART
+
+  -- GPIO 2 to 33 map to GPIO0 block
+  gp0_gen: for i in 0 to 31 generate
+    pin: IOPAD port map(I => gpio_o(i),O => gpio_i(i),T => gpio_t(i),C => sysclk,PAD => GPIO_0(i+2) );
   end generate;
 
   -- GPIO 34 to 67 map to GPIO1 block
   gp1_gen: for i in 0 to 33 generate
-    pin: IOPAD port map(I => gpio_o(34+i),O => gpio_i(34+i),T => gpio_t(34+i),C => sysclk,PAD => GPIO_1(i) );
+    pin: IOPAD port map(I => gpio_o(32+i),O => gpio_i(32+i),T => gpio_t(32+i),C => sysclk,PAD => GPIO_1(i) );
   end generate;
 
-  -- first 2 GPIO reserved for UART
 
   -- GPIO 68 to 78 map to GPIO2 block
 
-  gp2_gen: for i in 2 to 12 generate
-    pin: IOPAD port map(I => gpio_o(68+i-2),O => gpio_i(68+i-2),T => gpio_t(68+i-2),C => sysclk,PAD => GPIO_2(i) );
+  gp2_gen: for i in 0 to 12 generate
+    pin: IOPAD port map(I => gpio_o(66+i-2),O => gpio_i(66+i-2),T => gpio_t(66+i-2),C => sysclk,PAD => GPIO_2(i) );
   end generate;
 
   -- Other ports are special, we need to avoid outputs on input-only pins
@@ -475,7 +406,7 @@ begin
   )
   port map (
     wb_clk_i      => wb_clk_i,
-     wb_rst_i      => wb_rst_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(1),
     wb_dat_i      => slot_write(1),
     wb_adr_i      => slot_address(1),
