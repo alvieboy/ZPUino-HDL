@@ -55,6 +55,7 @@ static int verify=0;
 static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
+static flash_info_t custom_flash;
 static speed_t serial_speed = DEFAULT_SPEED;
 static speed_t initial_serial_speed = DEFAULT_INITIAL_SPEED;
 static unsigned int serial_speed_int = 0;
@@ -71,6 +72,7 @@ static uint32_t spioffset_sector;
 static uint32_t codesize;
 static unsigned int board;
 
+const char *custom_flash_name="Custom Flash";
 
 extern void crc16_update(uint16_t *crc, uint8_t data);
 
@@ -79,6 +81,88 @@ unsigned short get_programmer_version()
 	return version;
 }
 
+int parse_int(const char *data, unsigned int *target)
+{
+    unsigned long l;
+    char *endp;
+    l = strtoul(data,&endp,0);
+    if (data==NULL || (*endp)!='\0')
+        return -1;
+    *target = l;
+    return 0;
+}
+
+static int parse_custom_flash(const char *const_info)
+{
+    if (custom_flash.driver!=NULL) {
+        /* Already set up */
+        fprintf(stderr,"Custom flash driver already specified!");
+        return -1;
+    }
+    char *info = strdup(const_info);
+
+    // Split args. Format is:
+    // m25p_flash:0x6E:0x00:0x16:256:65536:128
+    char *toks[7];
+    unsigned i = 0;
+    toks[i++] = strtok(info,":");
+    while ((toks[i]=strtok(NULL,":"))!=NULL) {
+        i++;
+        if (i>7)
+            break;
+    }
+    if (i!=7) {
+        fprintf(stderr,"Invalid number of arguments %d for custom flash (-F) option\n",
+                i);
+        return -1;
+    }
+    // Find driver
+    flash_driver_t *driver;
+    driver = find_flash_driver(toks[0]);
+
+    if (driver==NULL) {
+        fprintf(stderr,"Flash driver '%s' not found\n", toks[0]);
+    }
+
+    i=1;
+
+    if (parse_int(toks[i],&custom_flash.manufacturer)!=0) {
+        printf("Invalid manufacturer code '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+
+    if (parse_int(toks[i],&custom_flash.product)!=0) {
+        printf("Invalid product code '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+
+    if (parse_int(toks[i],&custom_flash.density)!=0) {
+        printf("Invalid density '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+
+    if (parse_int(toks[i],&custom_flash.pagesize)!=0) {
+        printf("Invalid page size '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+
+    if (parse_int(toks[i],&custom_flash.sectorsize)!=0) {
+        printf("Invalid sector size '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+    if (parse_int(toks[i],&custom_flash.totalsectors)!=0) {
+        printf("Invalid total sectors '%s'\n", toks[i]);
+        return -1;
+    }
+    i++;
+    custom_flash.name = custom_flash_name;
+    return 0;
+}
 
 int parse_arguments(int argc,char **const argv)
 {
@@ -86,7 +170,7 @@ int parse_arguments(int argc,char **const argv)
 	int p;
 
 	while (1) {
-            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:U"))) {
+            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:UF:"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -133,8 +217,13 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'U':
 			upload_only=1;
-			break;
-		default:
+                        break;
+            case 'F':
+                if ( parse_custom_flash(optarg) <0)
+                    return -1;
+                break;
+
+                default:
 			return 0;
 		}
 	}
@@ -169,7 +258,16 @@ int help(char *name)
 	printf("  -t\t\tTest/verify flash after programming\n");
         printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
         printf("  -S speed\tUse specified initial serial port speed (default: 115200)\n");
-	printf("  -v\t\tIncrease verbosity\n");
+        printf("  -F finfo\tUse specified custom flash info\n");
+        printf("  -v\t\tIncrease verbosity\n\n");
+        printf("For custom flash info (option -F) you will have to provide\n"
+               "information regarding the flash chip using the following format:\n"
+               "  driver:vid:pid:density:pagesize:sectorsize:totalsectors\n"
+               "Example: \n"
+               "  micron:0x6E:0x00:0x16:256:65536:128\n"
+               ),
+
+        list_flash_drivers();
 	return -1;
 }
 
@@ -775,10 +873,17 @@ int main(int argc, char **argv)
 		if (b) {
 			if (verbose>0)
 				printf("SPI flash information: 0x%02x 0x%02x 0x%02x, status 0x%02x\n", b->buf[1],b->buf[2],b->buf[3],b->buf[4]);
-
-			/* Find flash */
-			flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
-
+                        flash = NULL;
+                        /* Find flash */
+                        if (custom_flash.driver) {
+                            if ( (custom_flash.manufacturer == b->buf[1]) &&
+                                (custom_flash.product == b->buf[2]) &&
+                                (custom_flash.density == b->buf[3])) {
+                                flash = &custom_flash;
+                            }
+                        } else {
+                            flash = find_flash(b->buf[1],b->buf[2],b->buf[3]);
+                        }
 			if (NULL==flash) {
 				fprintf(stderr,"Unknown flash type, exiting\n");
 				conn_close(conn);

@@ -49,5 +49,6 @@ extern flash_info_t flash_list[];
 
 flash_info_t *find_flash(unsigned int manufacturer,unsigned int product, unsigned int density);
 flash_driver_t *find_flash_driver(const char *name);
+void list_flash_drivers();
 
 #endif

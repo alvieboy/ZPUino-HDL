@@ -40,6 +40,41 @@ extern flash_driver_t m25p_flash;
 extern flash_driver_t sst25vf_flash;
 extern flash_driver_t atmel_flash;
 
+flash_driver_t *flash_drivers[] = {
+    &m25p_flash,
+    &sst25vf_flash,
+    &atmel_flash,
+    NULL
+};
+
+flash_driver_t *find_flash_driver(const char *name)
+{
+    int i=0;
+    flash_driver_t *d = flash_drivers[i];
+
+    while (d) {
+        if (strcmp(d->name, name)==0) {
+            break;
+        }
+        d = flash_drivers[++i];
+    }
+    return d;
+}
+
+void list_flash_drivers()
+{
+    int i=0;
+    flash_driver_t *d = flash_drivers[i];
+    printf("\nList of flash drivers:\n   ");
+    while (d) {
+        fputs(d->name, stdout);
+        putc(' ',stdout);
+        d = flash_drivers[++i];
+    }
+    putc('\n',stdout);
+}
+
+
 flash_info_t flash_list[] =
 {
 	/* Dummy flash driver, for direct upload */

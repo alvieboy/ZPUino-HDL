@@ -1,14 +1,10 @@
 AC_INIT(programmer.h)
 
-AM_INIT_AUTOMAKE(zpuinoprogrammer,2.1)
+AM_INIT_AUTOMAKE(zpuinoprogrammer,2.2)
 AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX
 
-ftdi=false
-
-AM_CONDITIONAL(HAVE_FTDI, test "x$ftdi" = "xtrue")
- 
 AC_CONFIG_FILES([Makefile])
 
 #CXXFLAGS="$CXXFLAGS -fdata-sections -ffunction-sections"
