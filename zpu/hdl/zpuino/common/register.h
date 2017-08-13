@@ -106,6 +106,9 @@ typedef volatile unsigned int* register_t;
 #define TMR0CMP  REGISTER(TIMERSBASE,2)
 #define TIMERTSC REGISTER(TIMERSBASE,3)
 
+#define MILLISL  REGISTER(TIMERSBASE,4)
+#define MILLISH  REGISTER(TIMERSBASE,5)
+
 // PWM for timer 0
 #define TMR0PWMLOW(x) REGISTER(TIMERSBASE, 32+(4*x))
 #define TMR0PWMHIGH(x) REGISTER(TIMERSBASE, 33+(4*x))
