@@ -277,7 +277,7 @@ begin
   -- GPIO 68 to 78 map to GPIO2 block
 
   gp2_gen: for i in 0 to 12 generate
-    pin: IOPAD port map(I => gpio_o(66+i-2),O => gpio_i(66+i-2),T => gpio_t(66+i-2),C => sysclk,PAD => GPIO_2(i) );
+    pin: IOPAD port map(I => gpio_o(32+34+i),O => gpio_i(32+34+i),T => gpio_t(32+34+i),C => sysclk,PAD => GPIO_2(i) );
   end generate;
 
   -- Other ports are special, we need to avoid outputs on input-only pins
@@ -290,14 +290,14 @@ begin
   ospics:   OPAD port map ( I => gpio_o(79),   PAD => SPI_CS );
   ospimosi: OPAD port map ( I => spi_pf_mosi,  PAD => SPI_MOSI );
 
-  oled0:    OPAD port map ( I => gpio_o(80),   PAD => LED(0) );
-  oled1:    OPAD port map ( I => gpio_o(81),   PAD => LED(1) );
-  oled2:    OPAD port map ( I => gpio_o(82),   PAD => LED(2) );
-  oled3:    OPAD port map ( I => gpio_o(83),   PAD => LED(3) );
-  oled4:    OPAD port map ( I => gpio_o(84),   PAD => LED(4) );
-  oled5:    OPAD port map ( I => gpio_o(85),   PAD => LED(5) );
-  oled6:    OPAD port map ( I => gpio_o(86),   PAD => LED(6) );
-  oled7:    OPAD port map ( I => gpio_o(87),   PAD => LED(7) );
+  --oled0:    OPAD port map ( I => gpio_o(80),   PAD => LED(0) );
+  --oled1:    OPAD port map ( I => gpio_o(81),   PAD => LED(1) );
+  --oled2:    OPAD port map ( I => gpio_o(82),   PAD => LED(2) );
+  --oled3:    OPAD port map ( I => gpio_o(83),   PAD => LED(3) );
+  --oled4:    OPAD port map ( I => gpio_o(84),   PAD => LED(4) );
+  --oled5:    OPAD port map ( I => gpio_o(85),   PAD => LED(5) );
+  --oled6:    OPAD port map ( I => gpio_o(86),   PAD => LED(6) );
+  --oled7:    OPAD port map ( I => gpio_o(87),   PAD => LED(7) );
 
   -- KEY in
   kin0:     IPAD port map ( O => gpio_i(88),   C => sysclk, PAD => KEY(0) );
@@ -347,15 +347,26 @@ begin
       m_wb_ack_o    => open,
       m_wb_stall_o  => open,
 
-      wb_ack_i      => sram_wb_ack_o,
-      wb_stall_i    => sram_wb_stall_o,
-      wb_dat_o      => sram_wb_dat_i,
-      wb_dat_i      => sram_wb_dat_o,
-      wb_adr_o      => sram_wb_adr_i(maxAddrBit downto 0),
-      wb_cyc_o      => sram_wb_cyc_i,
-      wb_stb_o      => sram_wb_stb_i,
-      wb_sel_o      => sram_wb_sel_i,
-      wb_we_o       => sram_wb_we_i,
+      wb_ack_i      => ramwbo.ack,
+      wb_stall_i    => ramwbo.stall,
+      wb_dat_i      => ramwbo.dat,
+      wb_dat_o      => ramwbi.dat,
+      wb_adr_o      => ramwbi.adr(maxAddrBit downto 0),
+      wb_cyc_o      => ramwbi.cyc,
+      wb_cti_o      => ramwbi.cti,
+      wb_stb_o      => ramwbi.stb,
+      wb_sel_o      => ramwbi.sel,
+      wb_we_o       => ramwbi.we,
+
+      --wb_ack_i      => sram_wb_ack_o,
+      --wb_stall_i    => sram_wb_stall_o,
+      --wb_dat_o      => sram_wb_dat_i,
+      --wb_dat_i      => sram_wb_dat_o,
+      --wb_adr_o      => sram_wb_adr_i(maxAddrBit downto 0),
+      --wb_cyc_o      => sram_wb_cyc_i,
+      --wb_stb_o      => sram_wb_stb_i,
+      --wb_sel_o      => sram_wb_sel_i,
+      --wb_we_o       => sram_wb_we_i,
 
       -- No debug unit connected
       dbg_reset     => open,
@@ -364,7 +375,20 @@ begin
     );
 
 
-  sysclk_sram_we <= not wb_clk_i;
+  ram:  entity work.ocram
+    generic map (
+      address_bits => 13
+    )
+    port map (
+      syscon.clk  => wb_clk_i,
+      syscon.rst  => wb_rst_i,
+      wbi         => ramwbi,
+      wbo         => ramwbo
+   );	
+
+
+  --sysclk_sram_we <= not wb_clk_i;
+  sysclk_sram_we <= wb_clk_i;
 
   sram_inst: entity work.sdram_ctrl
     port map (
@@ -610,7 +634,7 @@ begin
   -- IO SLOT 9
   --
 
-  slot9: zpuino_empty_device
+  slot9: entity work.zpuino_pwmblock
   port map (
     wb_clk_i      => wb_clk_i,
     wb_rst_i      => wb_rst_i,
@@ -622,7 +646,8 @@ begin
     wb_stb_i      => slot_stb(9),
     wb_ack_o      => slot_ack(9),
     wb_inta_o     => slot_interrupt(9),
-    id            => slot_ids(9)
+    id            => slot_ids(9),
+    pwmout        => LED
   );
 
 
