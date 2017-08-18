@@ -309,7 +309,7 @@ begin
   oled2:    OPAD port map ( I => gpio_o(10),   PAD => LEDS(2) );
   oled3:    OPAD port map ( I => gpio_o(11),   PAD => LEDS(3) );
 
-  zpuino:zpuino_top
+  zpuino: entity work.zpuino_top_icache
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
