@@ -144,7 +144,7 @@ begin
   end process;
 
 
-  displayram: generic_dp_ram
+  displayram: entity work.generic_dp_ram
     generic map (
       address_bits => 5+WIDTH_BITS,
       data_bits => 32
