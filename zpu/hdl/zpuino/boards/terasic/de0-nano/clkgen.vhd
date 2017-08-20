@@ -8,6 +8,7 @@ entity clkgen is
     clkin:  in std_logic;
     rstin:  in std_logic;
     clkout: out std_logic;
+    clk16:  out std_logic;
     rstout: out std_logic
   );
 end entity clkgen;
@@ -16,6 +17,8 @@ architecture behave of clkgen is
 
   signal locked, rstq1, rstq2: std_logic;
   signal clki: std_logic;
+  signal clki_16: std_logic;
+
 
 begin
 
@@ -24,9 +27,11 @@ begin
 	(
 		inclk0		=> clkin,
 		c0		    => clki,
+    c1        => clki_16,
 		locked		=> locked
 	);
   clkout<=clki;
+  clk16 <= clki_16;
 
   process(locked, clki)
   begin
