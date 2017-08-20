@@ -403,6 +403,7 @@ set_global_assignment -name VHDL_FILE ../../../lib/wishbone/wbarb2_1.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/wishbone/wb_master_np_to_slave_p.vhd
 set_global_assignment -name VHDL_FILE ../../../zpuino_serialreset.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/timer/timer.vhd
+set_global_assignment -name VHDL_FILE ../../../rgb/rgbctrl.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/zpuino_pwmblock.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/timer/zpuino_timers.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/gpio/zpuino_gpio.vhd
@@ -426,7 +427,7 @@ set_global_assignment -name VHDL_FILE ../../../core/zpuino/zpuino_top_icache.vhd
 set_global_assignment -name VHDL_FILE clkgen.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/memory/generic_sp_ram.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/memory/generic_dp_ram_rf.vhd
-set_global_assignment -name VHDL_FILE ../../../lib/memory/generic_dp_ram.vhd
+set_global_assignment -name VHDL_FILE ../../../lib/memory/altera_generic_dp_ram.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/memory/ocram.vhd
 set_global_assignment -name VHDL_FILE ../../../memory/sdram/sdram_ctrl.vhd
 set_global_assignment -name VHDL_FILE ../../../memory/sdram/sdram_hamster.vhd
@@ -444,7 +445,6 @@ set_global_assignment -name VHDL_FILE ../../../lib/prescaler.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/fifo/fifo.vhd
 set_global_assignment -name QIP_FILE mydpram.qip
 set_global_assignment -name QIP_FILE mypll.qip
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ*
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQM*
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA*
@@ -454,3 +454,7 @@ set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RAS_N
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_WE_N
 
 set_instance_assignment -name SLEW_RATE 2 -to DRAM_DQ*
+
+set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION ON
+set_global_assignment -name SYNTH_MESSAGE_LEVEL HIGH
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

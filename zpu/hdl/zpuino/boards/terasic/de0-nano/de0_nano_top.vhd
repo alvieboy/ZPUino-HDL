@@ -234,6 +234,22 @@ architecture behave of de0_nano_top is
   signal sda_padoen_o  : std_logic;                    -- i2c data line output enable, active low
 
 
+  alias RGB_R0: std_logic is GPIO_0(13);
+  alias RGB_G0: std_logic is GPIO_0(9);
+  alias RGB_B0: std_logic is GPIO_0(15);
+  alias RGB_R1: std_logic is GPIO_0(16);
+  alias RGB_G1: std_logic is GPIO_0(17);
+  alias RGB_B1: std_logic is GPIO_0(19);
+  alias RGB_A: std_logic is GPIO_0(18);
+  alias RGB_B: std_logic is GPIO_0(22);
+  alias RGB_C: std_logic is GPIO_0(23);
+  alias RGB_D: std_logic is GPIO_0(26);
+  alias RGB_CLK: std_logic is GPIO_0(27);
+  alias RGB_STB: std_logic is GPIO_0(28);
+  alias RGB_OE: std_logic is GPIO_0(29);
+
+  signal clk16: std_logic;
+
 begin
 
   wb_clk_i <= sysclk;
@@ -255,6 +271,7 @@ begin
     clkin   => clk,
     rstin   => '0'  ,
     clkout  => sysclk,
+    clk16   => clk16,
     rstout  => clkgen_rst
   );
 
@@ -264,9 +281,10 @@ begin
   -- first 2 GPIO reserved for UART
 
   -- GPIO 2 to 33 map to GPIO0 block
-  gp0_gen: for i in 0 to 31 generate
-    pin: IOPAD port map(I => gpio_o(i),O => gpio_i(i),T => gpio_t(i),C => sysclk,PAD => GPIO_0(i+2) );
-  end generate;
+
+  --gp0_gen: for i in 0 to 31 generate
+  --  pin: IOPAD port map(I => gpio_o(i),O => gpio_i(i),T => gpio_t(i),C => sysclk,PAD => GPIO_0(i+2) );
+  --end generate;
 
   -- GPIO 34 to 67 map to GPIO1 block
   gp1_gen: for i in 0 to 33 generate
@@ -377,7 +395,7 @@ begin
 
   ram:  entity work.ocram
     generic map (
-      address_bits => 13
+      address_bits => 12
     )
     port map (
       syscon.clk  => wb_clk_i,
@@ -612,7 +630,7 @@ begin
 
   slot8: zpuino_uart
   generic map (
-    bits  => 8
+    bits  => 3
   )
   port map (
     wb_clk_i      => wb_clk_i,
@@ -655,20 +673,44 @@ begin
   -- IO SLOT 10
   --
 
-  slot10: zpuino_empty_device
+  slot10: entity work.zpuino_rgbctrl
+  generic map (
+    WIDTH_BITS => 7,
+    PWM_WIDTH => 7,
+    WIDTH_LEDS => 96
+  )
   port map (
-    wb_clk_i      => wb_clk_i,
-     wb_rst_i      => wb_rst_i,
+    wb_clk_i       => wb_clk_i,
+	 	wb_rst_i       => wb_rst_i,
     wb_dat_o      => slot_read(10),
-    wb_dat_i      => slot_write(10),
-    wb_adr_i      => slot_address(10),
-    wb_we_i       => slot_we(10),
-    wb_cyc_i      => slot_cyc(10),
-    wb_stb_i      => slot_stb(10),
+    wb_dat_i     => slot_write(10),
+    wb_adr_i   => slot_address(10),
+    wb_we_i        => slot_we(10),
+    wb_cyc_i        => slot_cyc(10),
+    wb_stb_i        => slot_stb(10),
     wb_ack_o      => slot_ack(10),
-    wb_inta_o     => slot_interrupt(10),
-    id            => slot_ids(10)
+    wb_inta_o => slot_interrupt(10),
+
+    displayclk => clk16,
+
+    R(0) => RGB_R0,
+    R(1) => RGB_R1,
+    G(0) => RGB_G0,
+    G(1) => RGB_G1,
+    B(0) => RGB_B0,
+    B(1) => RGB_B1,
+
+    COL(0) => RGB_A,
+    COL(1) => RGB_B,
+    COL(2) => RGB_C,
+    COL(3) => RGB_D,
+
+    CLK => RGB_CLK,
+    STB => RGB_STB,
+    OE  => RGB_OE
   );
+  slot_ids(10) <= x"08" & x"20";
+
 
   --
   -- IO SLOT 11
