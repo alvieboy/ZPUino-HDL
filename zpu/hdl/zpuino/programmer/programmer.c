@@ -690,7 +690,8 @@ int main(int argc, char **argv)
 	if (serial_reset) {
 		conn_reset(conn);
 	} else {
-		fprintf(stderr,"Press RESET now\n");
+            fprintf(stderr,"Press RESET now\n");
+            retries = 1000;
 	}
 	while (retries>0) {
 		/* Reset */
