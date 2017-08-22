@@ -312,5 +312,6 @@ flash_driver_t sst25vf_flash = {
 	.erase_sector  = &sst25vf_erase_sector,
 	.enable_writes = &sst25vf_enable_writes,
 	.read_page     = &sst25vf_read_page,
-	.program_page  = &sst25vf_program_page
+        .program_page  = &sst25vf_program_page,
+        .erase_range   = NULL
 };

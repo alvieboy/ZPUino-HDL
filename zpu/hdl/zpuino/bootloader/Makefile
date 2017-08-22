@@ -17,9 +17,9 @@ DHRYSRC=.
 
 OBJ=boot.o boot-c.o boot-s.o loader.o
 
-CFLAGS=-O2 -fno-gcse -Wall -mno-callpcrel  -fdata-sections -fno-reorder-blocks  -fno-reorder-blocks-and-partition -fno-prefetch-loop-arrays \
+CFLAGS=-Os -fno-gcse -Wall -mno-callpcrel  -fdata-sections -fno-reorder-blocks  -fno-reorder-blocks-and-partition -fno-prefetch-loop-arrays \
  -ffunction-sections -I../common -D__ZPUINO_$(BOARD)__ $(EXTRACFLAGS) $(DEFINES)
-LDFLAGS= -O2 -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
+LDFLAGS= -Os -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections 
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 ASFLAGS=-D__ZPUINO_$(BOARD)__ $(DEFINES) -DASSEMBLY -I../common
 

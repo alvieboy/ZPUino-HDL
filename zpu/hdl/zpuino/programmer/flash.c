@@ -40,6 +40,41 @@ extern flash_driver_t m25p_flash;
 extern flash_driver_t sst25vf_flash;
 extern flash_driver_t atmel_flash;
 
+flash_driver_t *flash_drivers[] = {
+    &m25p_flash,
+    &sst25vf_flash,
+    &atmel_flash,
+    NULL
+};
+
+flash_driver_t *find_flash_driver(const char *name)
+{
+    int i=0;
+    flash_driver_t *d = flash_drivers[i];
+
+    while (d) {
+        if (strcmp(d->name, name)==0) {
+            break;
+        }
+        d = flash_drivers[++i];
+    }
+    return d;
+}
+
+void list_flash_drivers()
+{
+    int i=0;
+    flash_driver_t *d = flash_drivers[i];
+    printf("\nList of flash drivers:\n   ");
+    while (d) {
+        fputs(d->name, stdout);
+        putc(' ',stdout);
+        d = flash_drivers[++i];
+    }
+    putc('\n',stdout);
+}
+
+
 flash_info_t flash_list[] =
 {
 	/* Dummy flash driver, for direct upload */
@@ -54,5 +89,6 @@ flash_info_t flash_list[] =
 	{ 0xC2, 0x20, 0x17, 256, 65536, 128, "MX25L6445E", &m25p_flash },
         { 0xEF, 0x40, 0x14, 256, 65536, 16, "W25Q80BV", &m25p_flash },
         { 0x01, 0x02, 0x16, 256, 65536, 128, "S25FL064P", &m25p_flash },
+        { 0x6E, 0x00, 0x14, 256, 65536, 32, "EPCS16", &m25p_flash },
 	{ 0, 0, 0, 0, 0, 0, NULL, NULL }
 };

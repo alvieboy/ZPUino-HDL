@@ -31,6 +31,8 @@
 # include "board_mimasv2.h"
 #elif defined( __ZPUINO_POSEDGE_ONE__ )
 # include "board_posedge_one.h"
+#elif defined( __ZPUINO_COREEP4CE6__ )
+# include "board_coreep4ce6.h"
 #else
 #  error Unknown board.
 # endif

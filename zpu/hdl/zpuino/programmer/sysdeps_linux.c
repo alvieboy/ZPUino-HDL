@@ -50,7 +50,7 @@ int conn_open(const char *device,speed_t speed, connection_t *conn)
 	}
 
 	if (verbose>2)
-		printf("Opened device '%s' with speed %u\n", device, speed);
+		printf("Opened device '%s'\n", device);
 
 	tcgetattr(fd, &termset);
 	termset.c_iflag = IGNBRK;   
@@ -129,21 +129,25 @@ int conn_write(connection_t conn, const unsigned char *buf, size_t size)
 
 int conn_read(connection_t conn, unsigned char *buf, size_t size, unsigned timeout)
 {
-	struct timeval tv;
-	fd_set rfs;
+    struct timeval tv;
+    fd_set rfs;
 
-	FD_ZERO(&rfs);
-	FD_SET(conn, &rfs);
-	tv.tv_sec = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
+    if (timeout==0) {
+        return read(conn,buf,size);
+    }
 
-	switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
-	default:
-		return read(conn,buf,size);
-	case 0:
-	case -1:
-		return -1;
-	}
+    FD_ZERO(&rfs);
+    FD_SET(conn, &rfs);
+    tv.tv_sec = timeout / 1000;
+    tv.tv_usec = (timeout % 1000) * 1000;
+
+    switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
+    default:
+        return read(conn,buf,size);
+    case 0:
+    case -1:
+        return -1;
+    }
 }
 
 void conn_close(connection_t conn)
@@ -153,86 +157,21 @@ void conn_close(connection_t conn)
 
 buffer_t *conn_transmit(connection_t conn, const unsigned char *buf, size_t size, int timeout)
 {
-	fd_set rfs;
-	struct timeval tv;
-	int retries = 3;
-	int rd;
-	buffer_t *ret;
-	unsigned char tmpbuf[32];
+    int r = hdlc_transmit(conn,buf,size,timeout);
 
-	hdlc_sendpacket(conn,buf,size);
+    if (timeout==0)
+        return NULL;
 
-	do {
-		FD_ZERO(&rfs);
-		FD_SET(conn, &rfs);
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
+    if (r!=0) {
+        printf("HDLC error %d\n",r);
+        return NULL;
+    }
 
-		switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
-		case -1:
-			return NULL;
-		case 0:
-			// Timeout
-			if (!(--retries)) {
-				return NULL;
-			} else
-				// Resend
-				hdlc_sendpacket(conn,buf,size);
-			break;
-		default:
-			rd = read(conn,tmpbuf,sizeof(tmpbuf));
-			if (rd>0) {
-				if (verbose>2) {
-					int i;
-					struct timeval tv;
-					gettimeofday(&tv,NULL);
+    return hdlc_get_packet();
+}
 
-					printf("[%d.%06d] Rx:",
-						  tv.tv_sec,tv.tv_usec);
-					for (i=0; i<rd; i++) {
-						printf(" 0x%02x",tmpbuf[i]);
-					}
-					printf("\n");
-				}
-				ret = hdlc_process(tmpbuf,rd);
-				if (ret) {
-					/*if (!validate) {
-
-						free(txbuf2);
-						return ret;
-						} */
-					// Check return
-					if (ret->size<1) {
-						buffer_free(ret);
-						//free(txbuf2);
-
-						return NULL;
-					}
-					// Check explicit CRC error
-					if (ret->buf[0] == 0xff) {
-						// Resend
-						if (verbose>0) {
-							printf("Reported CRC error %02x%02x / %02x%02x\n",
-								   ret->buf[1],
-								   ret->buf[2],
-								   ret->buf[3],
-								   ret->buf[4]);
-						}
-						hdlc_sendpacket(conn,buf,size+1);
-                        continue;
-					}
-
-					return ret;
-				}
-			} else {
-				if (errno==EINTR || errno==EAGAIN)
-					continue;
-				fprintf(stderr,"Cannot read from connection (%d) errno %d: %s\n",rd,errno,strerror(errno));
-				return NULL;
-			}
-		}
-	} while (1);
-
+int main_setup(connection_t conn)
+{
 }
 
 int conn_set_speed(connection_t conn, speed_t speed)
@@ -246,6 +185,7 @@ int conn_set_speed(connection_t conn, speed_t speed)
 }
 
 static unsigned int baudrates[] = {
+    3000000,
     1000000,
     921600,
     576000,
@@ -269,6 +209,9 @@ int conn_parse_speed(unsigned int value,speed_t *speed)
 {
 	int v = value;
 	switch (v) {
+	case 3000000:
+		*speed = B3000000;
+		break;
 	case 1000000:
 		*speed = B1000000;
 		break;
@@ -312,4 +255,38 @@ void conn_prepare(connection_t conn)
 	buffer[0] = HDLC_frameFlag;
 	conn_write(conn,buffer,1);
 }
+
+
+int conn_wait(connection_t conn, event_callback_t callback, int timeout)
+{
+    unsigned char readbuf[128];
+    struct timeval tv;
+    int bytes;
+    fd_set rfs;
+
+    FD_ZERO(&rfs);
+    FD_SET(conn, &rfs);
+    if (timeout<0) {
+        tv.tv_sec = 60;
+        tv.tv_usec = 0;
+    } else {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
+
+    switch (select(conn+1,&rfs,NULL,NULL,&tv)) {
+    default:
+        bytes = read(conn, &readbuf[0], sizeof(readbuf));
+        callback(conn, EV_DATA, &readbuf[0], bytes);
+    case 0:
+        // Timed out.
+        callback(conn, EV_TIMEOUT, NULL, 0);
+        break;
+    case -1:
+        return -1;
+    }
+}
+
+
+
 #endif

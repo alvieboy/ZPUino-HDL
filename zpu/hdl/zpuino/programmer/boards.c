@@ -25,12 +25,14 @@ static struct board_type boards[] = {
         { 0x93011A00, "Spartan 3E Starter Kit S3E500 (ZPUino 2.0)" },
         { 0xB4041700, "GadgetFactory Papilio Pro LX9 (ZPUino 2.0)" },
         { 0xB4051300, "GadgetFactory Papilio DUO LX9 (ZPUino 2.0)" },
+		{ 0xB4061300, "GadgetFactory Papilio Unity LX9 (ZPUino 2.0)" },
         { 0xB6011900, "Xess Xula2 with S6 LX9 (ZPUino 2.0)" },
         { 0xB8011A00, "EMS11-22 board S6 LX45 (ZPUino 2.0)" },
         { 0xBA011A00, "Saanlima Pipistrello with S6 LX45 (ZPUino 2.0)" },
         { 0xBB011A00, "Numato Saturn6 with S6 LX45 (ZPUino 2.0)" },
         { 0xBB021A00, "Numato MimasV2 with S6 LX9 (ZPUino 2.0)" },
-		{ 0xBC011300, "TORANJ Posedge One with S6 LX9 (ZPUino 2.0)" },		
+        { 0xBC011300, "TORANJ Posedge One with S6 LX9 (ZPUino 2.0)" },
+        { 0x41010e00, "Waveshare CoreEP4CE6 (Altera/Intel Cyclone IV) (ZPUino 2.0)" },
 	{ 0x0, NULL }
 };
 

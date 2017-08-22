@@ -23,7 +23,8 @@
 
 typedef struct {
 	unsigned char *buf;
-	size_t size;
+        size_t size;
+        unsigned char *abuf;
 } buffer_t;
 
 void buffer_free(buffer_t *b);

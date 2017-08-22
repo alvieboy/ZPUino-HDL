@@ -1,0 +1,196 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2016  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel MegaCore Function License Agreement, or other 
+# applicable license agreement, including, without limitation, 
+# that your use is for the sole purpose of programming logic 
+# devices manufactured by Intel and sold by Intel or its 
+# authorized distributors.  Please refer to the applicable 
+# agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 16.1.0 Build 196 10/24/2016 SJ Lite Edition
+# Date created = 10:10:28  March 26, 2017
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		coreep4ce6_top_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE6E22C8
+set_global_assignment -name TOP_LEVEL_ENTITY coreep4ce6_top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 16.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "10:10:28  MARCH 26, 2017"
+set_global_assignment -name LAST_QUARTUS_VERSION "16.1.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name DEVICE_FILTER_PACKAGE TQFP
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 144
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_location_assignment PIN_23 -to CLK
+set_location_assignment PIN_121 -to GIO[15]
+set_location_assignment PIN_119 -to GIO[14]
+set_location_assignment PIN_114 -to GIO[13]
+set_location_assignment PIN_112 -to GIO[12]
+set_location_assignment PIN_110 -to GIO[11]
+set_location_assignment PIN_105 -to GIO[10]
+set_location_assignment PIN_103 -to GIO[9]
+set_location_assignment PIN_100 -to GIO[8]
+set_location_assignment PIN_98 -to GIO[7]
+set_location_assignment PIN_86 -to GIO[6]
+set_location_assignment PIN_84 -to GIO[5]
+set_location_assignment PIN_80 -to GIO[4]
+set_location_assignment PIN_76 -to GIO[3]
+set_location_assignment PIN_74 -to GIO[2]
+set_location_assignment PIN_72 -to GIO[1]
+set_location_assignment PIN_75 -to GIO[0]
+set_location_assignment PIN_3 -to LEDS[3]
+set_location_assignment PIN_7 -to LEDS[2]
+set_location_assignment PIN_10 -to LEDS[1]
+set_location_assignment PIN_11 -to LEDS[0]
+set_location_assignment PIN_59 -to RXD
+set_location_assignment PIN_8 -to SPI_CS
+set_location_assignment PIN_13 -to SPI_MISO
+set_location_assignment PIN_6 -to SPI_MOSI
+set_location_assignment PIN_12 -to SPI_SCK
+set_location_assignment PIN_67 -to TXD
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME tb -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb
+set_global_assignment -name EDA_TEST_BENCH_RUN_SIM_FOR "200 us" -section_id tb
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb -section_id tb
+set_global_assignment -name EDA_TEST_BENCH_FILE ../../txt_util.vhd -section_id tb
+set_global_assignment -name EDA_TEST_BENCH_FILE ../../trace.vhd -section_id tb
+set_global_assignment -name EDA_TEST_BENCH_FILE tb.vhd -section_id tb
+set_global_assignment -name VHDL_FILE ../../dac_simplesd.vhd
+set_global_assignment -name VHDL_FILE ../../wbbootloadermux.vhd
+set_global_assignment -name VHDL_FILE bootloader.vhd
+set_global_assignment -name VHDL_FILE ../../wb_bootloader.vhd
+set_global_assignment -name VHDL_FILE ../../zpuino_debug_none.vhd
+set_global_assignment -name VHDL_FILE ../../zpuino_debug_core.vhd
+set_global_assignment -name VHDL_FILE stack.vhd
+set_global_assignment -name VHDL_FILE ../../lib/wishbone/wbmux2.vhd
+set_global_assignment -name VHDL_FILE ../../lib/wishbone/wbarb4_1.vhd
+set_global_assignment -name VHDL_FILE ../../lib/wishbone/wbarb2_1.vhd
+set_global_assignment -name VHDL_FILE ../../lib/wishbone/wb_master_np_to_slave_p.vhd
+set_global_assignment -name VHDL_FILE ../../zpuino_serialreset.vhd
+set_global_assignment -name VHDL_FILE ../../devices/timer/timer.vhd
+set_global_assignment -name VHDL_FILE ../../devices/timer/zpuino_timers.vhd
+set_global_assignment -name VHDL_FILE ../../devices/gpio/zpuino_gpio.vhd
+set_global_assignment -name VHDL_FILE ../../devices/spi/zpuino_spi.vhd
+set_global_assignment -name VHDL_FILE ../../devices/spi/spiclkgen.vhd
+set_global_assignment -name VHDL_FILE ../../devices/spi/spi.vhd
+set_global_assignment -name VHDL_FILE ../../devices/uart/zpuino_uart.vhd
+set_global_assignment -name VHDL_FILE ../../devices/uart/uart_rx.vhd
+set_global_assignment -name VHDL_FILE ../../devices/uart/uart_mv_filter.vhd
+set_global_assignment -name VHDL_FILE ../../devices/uart/uart_brgen.vhd
+set_global_assignment -name VHDL_FILE ../../devices/uart/tx_unit.vhd
+set_global_assignment -name VHDL_FILE ../../devices/zpuino_empty_device.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpu/lsu.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpu/shifter.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpu/mult.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpu/zpu_core_extreme_icache.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpuino/zpuino_icache.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpuino/zpuino_io.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpuino/zpuino_sysctl.vhd
+set_global_assignment -name VHDL_FILE ../../core/zpuino/zpuino_top_icache.vhd
+set_global_assignment -name VHDL_FILE clkgen.vhd
+set_global_assignment -name VHDL_FILE ../../lib/memory/generic_sp_ram.vhd
+set_global_assignment -name VHDL_FILE ../../lib/memory/generic_dp_ram_rf.vhd
+set_global_assignment -name VHDL_FILE ../../lib/memory/generic_dp_ram.vhd
+set_global_assignment -name VHDL_FILE ../../lib/memory/ocram.vhd
+set_global_assignment -name VHDL_FILE "../../pad-sim.vhd"
+set_global_assignment -name VHDL_FILE ../../lib/wishbone/wishbonepkg.vhd
+set_global_assignment -name VHDL_FILE ../../zpupkg.vhd
+set_global_assignment -name VHDL_FILE ../../zpuinopkg.vhd
+set_global_assignment -name VHDL_FILE zpuino_config.vhd
+set_global_assignment -name VHDL_FILE zpu_config.vhd
+set_global_assignment -name VHDL_FILE coreep4ce6_top.vhd
+set_global_assignment -name SOURCE_FILE db/coreep4ce6_top.cmp.rdb
+set_global_assignment -name QIP_FILE mypll.qip
+set_global_assignment -name VHDL_FILE ../../devices/crc/zpuino_crc16.vhd
+set_global_assignment -name VHDL_FILE ../../devices/audio/zpuino_sigmadelta.vhd
+set_global_assignment -name VHDL_FILE ../../devices/audio/zpuino_pwmaudio.vhd
+set_global_assignment -name VHDL_FILE ../../lib/prescaler.vhd
+set_global_assignment -name VHDL_FILE ../../lib/fifo/fifo.vhd
+set_global_assignment -name QIP_FILE mydpram.qip
+set_global_assignment -name ENABLE_DEVICE_WIDE_RESET ON
+set_global_assignment -name ENABLE_INIT_DONE_OUTPUT OFF
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name ENABLE_CONFIGURATION_PINS OFF
+set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
+set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SPI_SCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SPI_MOSI
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SPI_MISO
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SPI_CS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GIO
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVCMOS"
+set_instance_assignment -name IO_MAXIMUM_TOGGLE_RATE "0 MHz" -to LEDS[0]
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name CDF_FILE Chain1.cdf

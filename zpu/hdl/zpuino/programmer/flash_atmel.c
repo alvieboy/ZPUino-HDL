@@ -184,5 +184,6 @@ flash_driver_t atmel_flash = {
 	.erase_sector  = &atmel_erase_sector,
 	.enable_writes = &atmel_enable_writes,
 	.read_page     = &atmel_read_page,
-	.program_page  = &atmel_program_page
+        .program_page  = &atmel_program_page,
+        .erase_range   = NULL
 };
