@@ -50,6 +50,7 @@ static char *binfile=NULL;
 static char *extradata=NULL;
 static char *serialport=NULL;
 static int is_simulator=0;
+static int unprotect_flash=0;
 static int only_read=0;
 static int verify=0;
 static int ignore_limit=0;
@@ -71,6 +72,7 @@ static uint32_t spioffset_sector;
 static uint32_t codesize;
 static unsigned int board;
 
+static uint32_t supported_ops = 0;
 
 extern void crc16_update(uint16_t *crc, uint8_t data);
 
@@ -86,7 +88,7 @@ int parse_arguments(int argc,char **const argv)
 	int p;
 
 	while (1) {
-            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:U"))) {
+            switch ((p=getopt(argc,argv,"PRDvtb:d:re:o:ls:S:U"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -113,6 +115,9 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'R':
 			serial_reset=1;
+			break;
+		case 'P':
+			unprotect_flash=1;
 			break;
 		case 'l':
 			ignore_limit=1;
@@ -175,6 +180,25 @@ int help(char *name)
 
 buffer_t *handle();
 buffer_t *process(unsigned char *buffer, size_t size);
+
+static char errorbuffer[128];
+
+const char *get_error_as_string(unsigned char c)
+{
+    switch (c) {
+    case 0xff:
+        sprintf(errorbuffer,"Unspecified error");
+        break;
+    case 0x01:
+        sprintf(errorbuffer,"Sector is protected");
+        break;
+    default:
+        sprintf(errorbuffer,"Unknown error 0x%02x",(unsigned)c);
+        break;
+    }
+    return errorbuffer;
+}
+
 
 int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 {
@@ -630,6 +654,17 @@ static unsigned char *load_binfile(flash_info_t *flash)
 	return buf;
 }
 
+uint32_t get_supported_ops()
+{
+    return supported_ops;
+}
+
+int is_op_supported(unsigned char op)
+{
+    return !!( supported_ops & (1<<op) );
+}
+
+
 
 int main(int argc, char **argv)
 {
@@ -752,7 +787,19 @@ int main(int argc, char **argv)
 
 			boardname = getBoardById(board);
 			printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
-		}
+                }
+                if (b->size > 24) {
+                    supported_ops = ((uint32_t)b->buf[21])<<24;
+                    supported_ops += ((uint32_t)b->buf[22])<<16;
+                    supported_ops += ((uint32_t)b->buf[23])<<8;
+                    supported_ops += ((uint32_t)b->buf[24]);
+                    if (verbose>2) {
+                        printf("Supported ops: 0x%08x\n", supported_ops);
+                    }
+                } else {
+                    // Default ops: up to BOOTLOADER_CMD_START
+                    supported_ops = ((1<<BOOTLOADER_CMD_START) -1) ^ 0x1;
+                }
 	} else {
 		comms_error();
 		conn_close(conn);
@@ -834,6 +881,21 @@ int main(int argc, char **argv)
 
 	// Switch to correct baud rate
 	set_baudrate(conn,serial_speed_int,freq);
+
+        if(unprotect_flash) {
+            if (verbose>2) {
+                fprintf(stderr,"Unprotecting flash\n");
+            }
+            b = sendreceivecommand(conn, BOOTLOADER_CMD_UNLOCK, NULL,0, 1000 );
+            if (b) {
+                buffer_free(b);
+            } else {
+                fprintf(stderr,"Cannot enter program mode\n");
+                conn_close(conn);
+                return -1;
+            }
+
+	}
 
 	if(verbose>2) {
 		fprintf(stderr,"Entering program mode\n");

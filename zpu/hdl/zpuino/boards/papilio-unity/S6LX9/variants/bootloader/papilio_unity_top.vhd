@@ -368,16 +368,9 @@ begin
     rstout  => clkgen_rst
   );
   
-	Inst_ICAP_SP605_reboot: ICAP_SP605_reboot PORT MAP(
-		CLK => sysclk,
-		MBT_RESET => gpio_o(1),
-		MBT_REBOOT => gpio_o(0),
-		MBT_BUSY => OPEN,
-		ICAP_DOUT => OPEN
-	);   
 
-  --pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
-  --pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => WING_A(1) );
+  pin00: IOPAD port map(I => gpio_o(0),O => gpio_i(0),T => gpio_t(0),C => sysclk,PAD => WING_A(0) );
+  pin01: IOPAD port map(I => gpio_o(1),O => gpio_i(1),T => gpio_t(1),C => sysclk,PAD => WING_A(1) );
   pin02: IOPAD port map(I => gpio_o(2),O => gpio_i(2),T => gpio_t(2),C => sysclk,PAD => WING_A(2) );
   pin03: IOPAD port map(I => gpio_o(3),O => gpio_i(3),T => gpio_t(3),C => sysclk,PAD => WING_A(3) );
   pin04: IOPAD port map(I => gpio_o(4),O => gpio_i(4),T => gpio_t(4),C => sysclk,PAD => WING_A(4) );
@@ -843,7 +836,7 @@ begin
   -- IO SLOT 14
   --
 
-  slot14: zpuino_empty_device
+  slot14: entity work.xilinx_icap_wb
   port map (
     wb_clk_i      => wb_clk_i,
 	 	wb_rst_i      => wb_rst_i,

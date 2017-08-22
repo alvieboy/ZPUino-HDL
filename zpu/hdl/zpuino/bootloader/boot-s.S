@@ -5,9 +5,11 @@
 .text
 .globl spi_copy
 spi_copy:
+#ifndef ENABLE_MULTIBOOT
 	im STACKTOP
         popsp 
         im spi_copy_impl
+#endif
         poppc
 .globl start_sketch
 

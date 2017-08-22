@@ -20,6 +20,7 @@
 #define __PROGRAMMER_H__
 
 #include "sysdeps.h"
+#include <inttypes.h>
 
 #define TIMEOUT 30
 
@@ -33,6 +34,8 @@
 #define BOOTLOADER_CMD_SETBAUDRATE 0x08
 #define BOOTLOADER_CMD_PROGMEM 0x09
 #define BOOTLOADER_CMD_START 0x0A
+#define BOOTLOADER_CMD_UNLOCK 0x0C
+#define BOOTLOADER_CMD_ERASESECTOR 0x0D
 
 #define REPLY(X) (X|0x80)
 
@@ -41,5 +44,8 @@
 extern unsigned int debug;
 
 unsigned short get_programmer_version();
+uint32_t get_supported_ops();
+int is_op_supported(unsigned char op);
+const char *get_error_as_string(unsigned char error);
 
 #endif

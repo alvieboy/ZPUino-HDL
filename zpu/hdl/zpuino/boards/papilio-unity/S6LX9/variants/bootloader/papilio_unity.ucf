@@ -25,8 +25,10 @@ CONFIG PROHIBIT=P69;
 CONFIG PROHIBIT=P60;
 
 NET CLK      LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;               # CLK
-NET TXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
-NET RXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
+#NET TXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
+#NET RXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
+NET TXD       LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
+NET RXD       LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST; 	    # RX
 NET WING_A(0)     LOC="P48"  | IOSTANDARD=LVTTL;                                # A0
 NET WING_A(1)     LOC="P51"  | IOSTANDARD=LVTTL;                                # A1
 NET WING_A(2)     LOC="P56"  | IOSTANDARD=LVTTL;                                # A2

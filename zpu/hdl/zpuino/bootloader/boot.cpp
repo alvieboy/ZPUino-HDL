@@ -5,7 +5,7 @@
 
 //#undef DEBUG_SERIAL
 //#define SIMULATION
-//#define VERBOSE_LOADER
+#define VERBOSE_LOADER
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
@@ -30,12 +30,18 @@
 #define BOOTLOADER_CMD_SETBAUDRATE 0x08
 #define BOOTLOADER_CMD_PROGMEM 0x09
 #define BOOTLOADER_CMD_START 0x0A
-#define BOOTLOADER_MAX_CMD 0x0A
+#define BOOTLOADER_CMD_UNLOCK 0x0C
+#define BOOTLOADER_CMD_ERASESECTOR 0x0D
+#define BOOTLOADER_MAX_CMD 0x0D
 
 #ifdef SIMULATION
 # define BOOTLOADER_WAIT_MILLIS 10
 #else
-# define BOOTLOADER_WAIT_MILLIS 1000
+# ifdef ENABLE_MULTIBOOT
+#  define BOOTLOADER_WAIT_MILLIS 2000
+# else
+#  define BOOTLOADER_WAIT_MILLIS 1000
+# endif
 #endif
 
 #define REPLY(X) (X|0x80)
@@ -86,6 +92,15 @@ unsigned char vstring[] = {
 
 
 static void outbyte(int);
+
+static void spi_disable(register_t base);
+static void spi_enable();
+static inline void spiwrite(register_t base,unsigned int i);
+static inline unsigned int spiread(register_t base);
+static int spi_read_status(register_t base);
+
+static inline unsigned int get_supported_ops();
+
 extern "C" void _zpu_interrupt(int);
 
 void flush()
@@ -133,6 +148,160 @@ const unsigned char serialbuffer[] = {
 
 };
 int serialbufferptr=0;
+#endif
+
+#ifdef ENABLE_MULTIBOOT
+
+// XILINX version
+#define ICAPBASE  IO_SLOT(14)
+#define ICAP REGISTER(ICAPBASE,0)
+
+
+#ifdef MULTBOOT_SPI2X
+# define SPI_READCMD 0x3B
+#else
+# define SPI_READCMD 0x0B
+#endif
+
+static void do_writeenable(register_t base)
+{
+    spi_enable();
+    spiwrite(base,0x06);
+    spi_disable(base);
+}
+
+static void do_unprotect_all(register_t base)
+{
+    // Unprotect ALL of flash.
+    do_writeenable(base);
+
+    spi_enable();
+    spiwrite(base,0x98);
+    spi_disable(base);
+}
+
+static void do_unprotect_user(register_t base)
+{
+    unsigned address;
+    unsigned char status;
+
+    do_unprotect_all(base);
+#ifdef VERBOSE_LOADER
+    printstring("Protecting: ");
+#endif
+    for (address=0; address<0x60000; address++)
+    {
+        do_writeenable(base);
+        spi_enable();
+        spiwrite(base, 0x36); // SBLK
+        spiwrite(base, address>>16);
+        spiwrite(base, address>>8);
+        spiwrite(base, address);
+        spi_disable(base);
+        do {
+            status = spi_read_status(base);
+        } while (status & 1);
+        // TODO: check this for proper sector/block...
+        address += 4096;
+#ifdef VERBOSE_LOADER
+        printstring(".");
+#endif
+    }
+#ifdef VERBOSE_LOADER
+        printstring(" done.\r\n");
+#endif
+}
+
+static unsigned char read_rdscur(register_t base)
+{
+    unsigned char scur;
+    spi_enable();
+    spiwrite(base,0x2B);
+    spiwrite(base,0x00);
+    scur = spiread(base);
+    spi_disable(base);
+    return scur;
+}
+
+static void check_protect(register_t base)
+{
+    unsigned char scur, status;
+    scur = read_rdscur(base);
+
+#ifdef VERBOSE_LOADER
+    printstring("RDSCUR: ");
+    printhexbyte( scur );
+    printstring("\r\n");
+#endif
+
+    if (( scur & 0x80 ) == 0)
+    {
+        // BP mode. Switch to sector/block protect mode.
+        do_writeenable(base);
+
+        // Send WPSEL
+        spi_enable();
+        spiwrite(base,0x68);
+        spi_disable(base);
+
+        do {
+            status = spi_read_status(base);
+        } while (status & 1);
+        // WPSEL set.
+    }
+    // Temporary
+    do_unprotect_user(base);
+    // Should protect now....
+}
+
+static void do_multiboot()
+{
+
+    register_t spidata = &SPIDATA;
+    check_protect(spidata);
+#ifdef VERBOSE_LOADER
+    printstring("Starting new FPGA bitfile at 0x");
+    printhex(MULTIBOOT_ADDRESS);
+    printstring("\r\n");
+#endif
+    ICAP = 0xAA99; // Sync word 0
+    ICAP = 0x5566; // Sync word 1
+    ICAP = 0x3261; // Type 1 Write 1 Words to GENERAL_1
+    ICAP = MULTIBOOT_ADDRESS & 0xFFFF; // Multiboot address[15:0]
+    ICAP = 0x3281; // Type 1 Write 1 Words to GENERAL_2
+    ICAP = (SPI_READCMD<<8) | ((MULTIBOOT_ADDRESS>>16) & 0xFF); // SPI command 0x0B, multiboot address[23:16]
+
+    ICAP = 0x32A1; // Type 1 Write 1 Words to GENERAL_3
+    ICAP = 0x0000; // Fallback address[15:0]
+    ICAP = 0x32C1; // Type 1 Write 1 Words to GENERAL_4
+    ICAP = (SPI_READCMD<<8); // SPI command 0x0B, fallback address[23:16]
+
+    ICAP = 0x3381; // ??
+    ICAP = 0x3C00; // 25Mhz
+
+#ifdef MULTBOOT_SPI2X
+
+    ICAP = 0x32e1;
+    ICAP = 0x0000;
+    ICAP = 0x30a1;
+    ICAP = 0x0000;
+    ICAP = 0x3301;
+    ICAP = 0x2900;
+    ICAP = 0x3201;
+    ICAP = 0x005f;
+
+#endif
+
+    ICAP = 0x30A1; // Type 1 Write 1 Word to CMD
+    ICAP = 0x000E; // IPROG command
+    while (1) {
+        ICAP = 0x2000; // Type 1 NOOP
+#ifdef VERBOSE_LOADER
+        printstring(".");
+#endif
+    }
+}
+
 #endif
 
 void sendByte(unsigned int i)
@@ -192,7 +361,11 @@ static unsigned int inbyte()
 #ifdef __ZPUINO_NEXYS3__
 			digitalWrite(FPGA_LED_0, LOW);
 #endif
-			spi_copy();
+#ifdef ENABLE_MULTIBOOT
+                        do_multiboot();
+#else
+                        spi_copy();
+#endif
 		}
 	}
 #endif
@@ -212,7 +385,6 @@ static void enableTimer()
 	TMR0CNT = 0x0;
 	TMR0CTL = BIT(TCTLENA)|BIT(TCTLCCM)|BIT(TCTLDIR)|BIT(TCTLCP0)|BIT(TCTLIEN);
 }
-
 
 
 /*
@@ -275,6 +447,8 @@ static inline unsigned int spiread(register_t base)
 	waitspiready();
 	return *base;
 }
+
+#ifndef ENABLE_MULTIBOOT
 
 extern "C" void __attribute__((noreturn)) start()
 {
@@ -411,6 +585,8 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 	while (1) {}
 }
 
+#endif
+
 extern "C" void _zpu_interrupt(int line)
 {
 	milisseconds++;
@@ -422,6 +598,11 @@ static inline int is_atmel_flash()
 {
 	//return ((flash_id & 0xff0000)==0x1f0000);
 	return 0;
+}
+
+static inline int is_macronix_flash()
+{
+    return ((flash_id & 0xff0000)==0xC20000);
 }
 
 static void simpleReply(unsigned int r)
@@ -450,6 +631,17 @@ static int spi_read_status()
 	return status;
 }
 
+static int spi_read_status(register_t spidata)
+{
+	unsigned int status;
+	spi_enable();
+        spiwrite(spidata,0x05);
+	spiwrite(spidata,0x00);
+	status =  spiread(spidata) & 0xff;
+	spi_disable(spidata);
+	return status;
+}
+
 static unsigned int spi_read_id()
 {
 	unsigned int ret;
@@ -471,7 +663,7 @@ static void cmd_progmem(unsigned char *buffer)
 	 buffer[5] is size,
 	 next bytes are data
 	 */
-
+#ifndef ENABLE_MULTIBOOT
 	unsigned int address, size=5;
 	volatile unsigned char *mem;
 	unsigned char *source;
@@ -488,8 +680,8 @@ static void cmd_progmem(unsigned char *buffer)
 	while (size--) {
 		*mem++=*source++;
 	}
-	simpleReply(BOOTLOADER_CMD_PROGMEM);
-
+        simpleReply(BOOTLOADER_CMD_PROGMEM);
+#endif
 }
 
 
@@ -633,12 +825,18 @@ static void cmd_waitready(unsigned char *buffer)
 static void cmd_version(unsigned char *buffer)
 {
 	// Reset boot counter
-	milisseconds = 0;
-	prepareSend();
-	sendByte(REPLY(BOOTLOADER_CMD_VERSION));
+    milisseconds = 0;
+    unsigned ops = get_supported_ops();
+    prepareSend();
+    sendByte(REPLY(BOOTLOADER_CMD_VERSION));
 
-	sendBuffer(vstring,sizeof(vstring));
-	finishSend();
+    sendBuffer(vstring,sizeof(vstring));
+    sendByte(ops>>24);
+    sendByte(ops>>16);
+    sendByte(ops>>8);
+    sendByte(ops);
+
+    finishSend();
 }
 
 static void cmd_identify(unsigned char *buffer)
@@ -674,7 +872,62 @@ static void cmd_leavepgm(unsigned char *buffer)
 	enableTimer();
 	simpleReply(BOOTLOADER_CMD_LEAVEPGM);
 }
- 
+
+static void cmd_unlock(unsigned char *buffer)
+{
+    register_t spidata = &SPIDATA; 
+    do_unprotect_all(spidata);
+    simpleReply(BOOTLOADER_CMD_UNLOCK);
+}
+
+#ifdef __MX_FLASH__
+static void mx_reset_status(register_t base)
+{
+    // CLSR
+    spi_enable();
+    spiwrite(base,0x30);
+    spi_disable(base);
+}
+
+static void cmd_erasesector(unsigned char *buffer)
+{
+    unsigned char ret = 0xff;
+    unsigned char status;
+
+    register_t base = &SPIDATA;
+
+    do_writeenable(base);
+
+    mx_reset_status(base);
+
+    spi_enable();
+
+    spiwrite(base, 0xD8); // Sector erase
+    spiwrite(base, buffer[1]);
+    spiwrite(base, buffer[2]);
+    spiwrite(base, buffer[3]);
+    spi_disable(base);
+
+    do {
+        status = spi_read_status();
+    } while (status & 1);
+
+    unsigned char scur = read_rdscur(base);
+
+    if ((scur & 0x60) == 0) {
+        ret = 0; // Ok
+    } else {
+        ret = 0x01;
+    }
+
+    prepareSend();
+    sendByte(REPLY(BOOTLOADER_CMD_ERASESECTOR));
+    sendByte(ret);
+    finishSend();
+}
+#endif
+
+#ifndef ENABLE_MULTIBOOT
 
 void cmd_start(unsigned char *buffer)
 {
@@ -691,6 +944,7 @@ void cmd_start(unsigned char *buffer)
 	flush();
 	start();
 }
+#endif
 
 typedef void(*cmdhandler_t)(unsigned char *);
 
@@ -703,10 +957,32 @@ static const cmdhandler_t handlers[] = {
 	&cmd_leavepgm,        /* CMD6 */
 	&cmd_sst_aai_program, /* CMD7 */
 	&cmd_set_baudrate,    /* CMD8 */
-	&cmd_progmem,         /* CMD9 */
-	&cmd_start            /* CMD10 */
+        &cmd_progmem,         /* CMD9 */
+#ifndef ENABLE_MULTIBOOT
+        &cmd_start,           /* CMD10 */
+#else
+        NULL,
+#endif
+        NULL,                 /* CMD11 */
+        &cmd_unlock,          /* CMD12 */
+#ifdef __MX_FLASH__
+        &cmd_erasesector
+#else
+        NULL
+#endif
 };
 
+static inline unsigned int get_supported_ops()
+{
+    unsigned int i;
+    unsigned int ops = 0;
+    for (i=0; i<sizeof(handlers)/sizeof(handlers[0]);i++) {
+        if (handlers[i]!=NULL) {
+            ops|=(1<<(i+1));
+        }
+    }
+    return ops;
+}
 
 inline void processCommand(unsigned char *buffer, unsigned bufferpos)
 {
@@ -852,6 +1128,7 @@ extern "C" void udivmodsi4(); /* Just need it's address */
 
 extern "C" void loadsketch(unsigned offset, unsigned size)
 {
+#ifndef ENABLE_MULTIBOOT
 	register_t spidata = &SPIDATA; // Ensure this stays in stack
 	unsigned crc16base = CRC16BASE;
 	volatile unsigned int *target = (volatile unsigned int *)0x1000;
@@ -863,7 +1140,8 @@ extern "C" void loadsketch(unsigned offset, unsigned size)
 	copy_sketch(spidata, crc16base, size, target);
 	spi_disable(spidata);
 	flush();
-	start();
+        start();
+#endif
 }
 
 extern "C" int main(int argc,char**argv)
@@ -877,9 +1155,15 @@ extern "C" int main(int argc,char**argv)
         unsigned memtop = (unsigned)argv;
         unsigned sketchsize = memtop - (BOOTLOADER_SIZE+128);
         /* Patch data */
+#ifndef ENABLE_MULTIBOOT
         vstring[5] = sketchsize>>16;
         vstring[6] = sketchsize>>8;
         vstring[7] = sketchsize;
+#else
+        vstring[5] = (MULTIBOOT_SIZE>>16) &0xff;
+        vstring[6] = (MULTIBOOT_SIZE>>8) &0xff;
+        vstring[7] = (MULTIBOOT_SIZE)& 0xff;
+#endif
         vstring[16] = memtop>>24;
         vstring[17] = memtop>>16;
         vstring[18] = memtop>>8;
@@ -891,7 +1175,7 @@ extern "C" int main(int argc,char**argv)
 
 	configure_pins();
 
-#if 0//ndef VERBOSE_LOADER
+#if 0
 	_bfunctions[0] = (unsigned)&udivmodsi4;
 	_bfunctions[1] = (unsigned)&memcpy;
 	_bfunctions[2] = (unsigned)&memset;
@@ -903,7 +1187,11 @@ extern "C" int main(int argc,char**argv)
 	INTRCTL=1;
 
 #ifdef VERBOSE_LOADER
-	printstring("\r\nZPUINO\r\n");
+# ifndef ENABLE_MULTIBOOT
+        printstring("\r\nZPUINO\r\n");
+# else
+        printstring("\r\nZPUINO MULTIBOOT\r\n");
+# endif
 #endif
 
 
@@ -918,6 +1206,7 @@ extern "C" int main(int argc,char**argv)
 	spiwrite(0x4); // Disable WREN for SST flash
 	spi_disable(&SPIDATA);
 #endif
+	flash_id = spi_read_id();
 
 	syncSeen = 0;
 	unescaping = 0;
@@ -950,10 +1239,6 @@ extern "C" int main(int argc,char**argv)
 				CRC16ACC=0xFFFFFFFF;
 				syncSeen=1;
 				unescaping=0;
-			} else {
-#ifdef VERBOSE_LOADER
-				//outbyte(i); // Echo back.
-#endif
 			}
 		}
 	}

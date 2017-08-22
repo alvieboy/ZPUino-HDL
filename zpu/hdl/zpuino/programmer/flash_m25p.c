@@ -22,7 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static int m25p_erase_sector(flash_info_t *flash, connection_t conn, unsigned int sector)
+
+static int m25p_erase_sector_old(flash_info_t *flash, connection_t conn, unsigned int sector)
 {
 	buffer_t *b;
 	unsigned char wbuf[8];
@@ -54,6 +55,44 @@ static int m25p_erase_sector(flash_info_t *flash, connection_t conn, unsigned in
 	buffer_free(b);
 
 	return 0;
+}
+
+static int m25p_erase_sector(flash_info_t *flash, connection_t conn, unsigned int sector)
+{
+    int ret = -1;
+    unsigned char wbuf[3];
+    buffer_t *b;
+
+    if (is_op_supported(BOOTLOADER_CMD_ERASESECTOR)) {
+
+	sector *= flash->sectorsize;
+
+        wbuf[0] = (sector>>16) & 0xff;
+	wbuf[1] = (sector>>8) & 0xff;
+	wbuf[2] = (sector) & 0xff;
+
+        b = sendreceivecommand(conn, BOOTLOADER_CMD_ERASESECTOR, wbuf, sizeof(wbuf), 5000);
+
+        if (NULL==b) {
+            fprintf(stderr,"NULL reply???\n");
+            return -1;
+        }
+
+        if (b->size!=2) {
+            fprintf(stderr,"\nInvalid reply size %d to ERASESECTOR\n", b->size);
+        } else {
+            if (b->buf[1] == 0x00) {
+                ret = 0;
+            } else {
+                fprintf(stderr,"\nError erasing sector: %s\n", get_error_as_string(b->buf[1]) );
+            }
+        }
+	buffer_free(b);
+
+    } else {
+        ret = m25p_erase_sector_old(flash, conn, sector);
+    }
+    return ret;
 }
 
 static int m25p_enable_writes(flash_info_t *flash, connection_t conn)
