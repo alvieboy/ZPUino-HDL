@@ -9,6 +9,7 @@
 //#define BOOT_IMMEDIATLY
 
 #define BOOTLOADER_SIZE 0x1000
+#define BOOTLOADER_MAX_SPEED 1000000
 
 #ifdef SIMULATION
 # define FPGA_SS_B 40
@@ -953,10 +954,16 @@ static void cmd_version(unsigned char *buffer)
 
     sendBuffer(vstring,sizeof(vstring));
     sendBuffer(vstring,sizeof(vstring));
+
     sendByte(ops>>24);
     sendByte(ops>>16);
     sendByte(ops>>8);
     sendByte(ops);
+
+    sendByte(BOOTLOADER_MAX_SPEED>>24);
+    sendByte(BOOTLOADER_MAX_SPEED>>16);
+    sendByte(BOOTLOADER_MAX_SPEED>>8);
+    sendByte(BOOTLOADER_MAX_SPEED);
     finishSend();
 }
 
