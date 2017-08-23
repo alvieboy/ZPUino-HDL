@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <list.h>
 #include <assert.h>
+#include <sys/time.h>
 
 static int syncSeen=0;
 static int unescaping=0;
@@ -34,6 +35,8 @@ extern unsigned int verbose;
 dlist_t *incoming_packets = NULL;
 dlist_t *user_packets = NULL;
 
+
+void crc16_update(uint16_t *crc, uint8_t data);
 
 void hdlc_handle()
 {

@@ -56,6 +56,7 @@ buffer_t *sendreceivecommand(connection_t conn, unsigned char cmd, unsigned char
 
 typedef void (*event_callback_t)(connection_t conn, int what, const unsigned char *data, int datalen);
 int conn_wait(connection_t conn, event_callback_t callback, int timeout);
+int main_setup(connection_t conn);
 
 
 #endif

@@ -30,5 +30,10 @@ int hdlc_send_datapacket(connection_t conn, const unsigned char *buffer, size_t 
 int hdlc_send_unnumbered_packet(connection_t conn, const unsigned char *buffer, size_t size);
 
 void hdlc_process(const unsigned char *buffer, size_t size);
+int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, unsigned timeout);
+int hdlc_connect(connection_t conn);
+buffer_t *hdlc_get_packet();
+
+
 
 #endif

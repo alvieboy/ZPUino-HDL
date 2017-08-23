@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <math.h>
 #include "boards.h"
+#include "hdlc.h"
 
 #ifdef __linux__
 #include <netinet/in.h>
@@ -388,6 +389,7 @@ static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd,
     }
     do {
         ret = conn_transmit(fd,txbuf2,size+1,timeout);
+
         if (NULL==ret) {
             free(txbuf2);
             return ret;
@@ -929,7 +931,7 @@ int main(int argc, char **argv)
     buffer_free(b);
 
     gettimeofday(&start,NULL);
-
+#if 0
     /* Upload only does not care about flash chips */
     if (!upload_only) {
 
@@ -983,30 +985,17 @@ int main(int argc, char **argv)
             }
         }
 
-        buffer_free(b);
+//        buffer_free(b);
 
     } else {
         /* We still need a "dummy" flash driver for direct upload */
         flash = find_flash(0xAA,0xAA,0xAA);
     }
+#endif
 
-    if (version>=0x0107) {
-        const char *boardname;
-        board = b->buf[13];
-        board<<=8;
-        board += b->buf[14];
-        board<<=8;
-        board += b->buf[15];
-        board<<=8;
-        board += b->buf[16];
+//    buffer_free(b);
 
-        boardname = getBoardById(board);
-        printf("Board: %s @ %u Hz (0x%08x)\n", boardname, freq, board);
-    }
-
-    buffer_free(b);
-
-    gettimeofday(&start,NULL);
+//    gettimeofday(&start,NULL);
 
     if(unprotect_flash) {
         if (verbose>2) {
