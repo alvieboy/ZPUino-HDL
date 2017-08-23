@@ -953,7 +953,6 @@ static void cmd_version(unsigned char *buffer)
     sendByte(REPLY(BOOTLOADER_CMD_VERSION));
 
     sendBuffer(vstring,sizeof(vstring));
-    sendBuffer(vstring,sizeof(vstring));
 
     sendByte(ops>>24);
     sendByte(ops>>16);
@@ -964,6 +963,7 @@ static void cmd_version(unsigned char *buffer)
     sendByte(BOOTLOADER_MAX_SPEED>>16);
     sendByte(BOOTLOADER_MAX_SPEED>>8);
     sendByte(BOOTLOADER_MAX_SPEED);
+
     finishSend();
 }
 

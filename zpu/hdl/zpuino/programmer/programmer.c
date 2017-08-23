@@ -57,6 +57,7 @@ static int verify=0;
 static int ignore_limit=0;
 static int upload_only=0;
 static int user_offset=-1;
+static int32_t max_speed=-1;
 static flash_info_t custom_flash;
 static speed_t serial_speed = DEFAULT_SPEED;
 static speed_t initial_serial_speed = DEFAULT_INITIAL_SPEED;
@@ -299,7 +300,7 @@ const char *get_error_as_string(unsigned char c)
 }
 
 
-int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
+int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq, int max_speed)
 {
 	/* Request new baudrate */
 	buffer_t *b;
@@ -313,6 +314,10 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
             unsigned int *baudrates = conn_get_baudrates();
             while (*baudrates) {
                 baud_int = *baudrates;
+
+                if ((max_speed>0) && (baud_int>max_speed))
+                    continue;
+
                 divider = ((freq/baud_int)/16)-1;
                 unsigned int real_baud =  (freq/16)/(divider+1);
                 unsigned int real_baud2 =  (freq/16)/(divider+2);
@@ -338,6 +343,11 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
             }
         } else {
             /* TODO: also do computation based on error here */
+            if ((max_speed>0) && (baud_int>max_speed)) {
+                fprintf(stderr,"Cannot set baudrate of %d (maximum is %d)\n", baud_int, max_speed);
+                return -1;
+            }
+
             divider = ((freq/baud_int)/16)-1;
         }
 
@@ -370,9 +380,9 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 	}
 	if (b) {
 		buffer_free(b);
-		return -1;
+		return 0;
 	}
-	return 0;
+	return -1;
 }
 
 
@@ -395,15 +405,15 @@ static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd,
             return ret;
         }
 
-        if (ret->buf[1] != REPLY(cmd)) {
+        if (ret->buf[0] != REPLY(cmd)) {
             if (verbose>0) {
                 printf("Invalid reply 0x%02x to command 0x%02x\n",
-                       ret->buf[1],REPLY(cmd));
+                       ret->buf[0],REPLY(cmd));
             }
             buffer_free(ret);
         } else {
-            // Advance it past control field.
-            ret->buf++;
+            // Advance it past control field. Already done.
+            //ret->buf++;
             free(txbuf2);
             return ret;
         }
@@ -922,6 +932,19 @@ int main(int argc, char **argv)
             // Default ops: up to BOOTLOADER_CMD_START
             supported_ops = ((1<<BOOTLOADER_CMD_START) -1) ^ 0x1;
         }
+        if (b->size > 28) {
+            max_speed =  ((uint32_t)b->buf[25])<<24;
+            max_speed += ((uint32_t)b->buf[26])<<16;
+            max_speed += ((uint32_t)b->buf[27])<<8;
+            max_speed += ((uint32_t)b->buf[28]);
+            if (verbose>2) {
+                printf("Max speed: %dbps\n", max_speed);
+            }
+            max_speed=-1;
+        } else {
+            // Default ops: up to BOOTLOADER_CMD_START
+            max_speed = -1;
+        }
     } else {
         comms_error();
         conn_close(conn);
@@ -1101,7 +1124,11 @@ int main(int argc, char **argv)
 
 
     // Switch to correct baud rate
-    set_baudrate(conn,serial_speed_int,freq);
+    if (set_baudrate(conn,serial_speed_int,freq,max_speed)<0) {
+        fprintf(stderr,"No suitable baudrate found, aborting\n");
+        conn_close(conn);
+        return -1;
+    }
 
     if(verbose>2) {
         fprintf(stderr,"Entering program mode\n");

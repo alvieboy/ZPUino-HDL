@@ -46,7 +46,7 @@ void hdlc_handle()
 
     if (packetoffset<3) {
         if (verbose>0)
-            printf("Short packet\n");
+            printf("Short packet %d\n", packetoffset);
         goto out;
     }
 
@@ -397,21 +397,22 @@ buffer_t *hdlc_get_packet()
 static void hdlc_connect_data_ready(connection_t conn, const unsigned char *data, int datalen)
 {
     if (datalen>0) {
+        if(verbose>2) {
+            int i;
+            struct timeval tv;
+            gettimeofday(&tv,NULL);
+            printf("[%d.%06d] Rx:",tv.tv_sec,tv.tv_usec
+                  );
+            for (i=0; i<datalen; i++) {
+                printf(" 0x%02x", data[i]);
+            }
+            printf("\n");
+        }
+
         hdlc_process(data,datalen);
         if (dlist__count(incoming_packets)>0) {
             buffer_t *data = dlist__data(incoming_packets);
             incoming_packets = dlist__remove_node(incoming_packets, incoming_packets);
-            if(verbose>2) {
-                int i;
-                struct timeval tv;
-                gettimeofday(&tv,NULL);
-                printf("[%d.%06d] Rx:",tv.tv_sec,tv.tv_usec
-                      );
-                for (i=0; i<data->size; i++) {
-                    printf(" 0x%02x", data->buf[i]);
-                }
-                printf("\n");
-            }
 
 
 
@@ -447,6 +448,8 @@ static void hdlc_reset()
     hdlc_seq_tx = 0;
     hdlc_expected_seq_rx = 0;
     packets_in_flight=0;
+    syncSeen = 0;
+    unescaping=0;
 
     for (i=0;i<sizeof(packets_to_ack)/sizeof(packets_to_ack[0]);i++) {
         if (packets_to_ack[i]!=NULL) {
@@ -530,6 +533,9 @@ static void hdlc_data_ready(connection_t conn, const unsigned char *data, int da
                 buffer_free(data);
             } else {
                 hdlc_ack_up_to( CTRL_PEER_RX(control) );
+                // We need to mangle buffer here to remove control
+                data->buf++;
+                data->size--;
                 user_packets = dlist__append(user_packets, data);
             }
         }
