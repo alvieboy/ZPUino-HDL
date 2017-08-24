@@ -163,7 +163,7 @@ static unsigned packets_in_flight;
 
 static inline unsigned char buildDataControl()
 {
-    unsigned char v = 0x80;
+    unsigned char v = 0xC0;
     v|=(hdlc_seq_tx)<<3;
     v|=hdlc_expected_seq_rx;
     return v;
@@ -424,8 +424,11 @@ static void hdlc_connect_data_ready(connection_t conn, const unsigned char *data
 
 
             if (data->size==1) {
-                if (data->buf[0] = 0x02) {
+                if (data->buf[0] == 0x02) {
                     // Good!.
+                    if (verbose>2) {
+                        printf("LINK UP received");
+                    }
                     link_state = LINK_UP;
                 }
             }
