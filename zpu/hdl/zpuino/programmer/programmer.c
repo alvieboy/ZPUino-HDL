@@ -845,14 +845,13 @@ int main(int argc, char **argv)
     }
     main_setup(conn);
 
-    if (hdlc_connect(conn)<0) {
+    if (hdlc_connect(conn, retries)<0) {
         comms_error();
         conn_close(conn);
         return -1;
     }
 
     printf("Connected. Contacting bootloader.\n");
-    retries = 10;
 
     while (retries>0) {
         /* Reset */

@@ -88,6 +88,12 @@ void hdlc_process(const unsigned char *buffer, size_t size)
 {
     size_t s;
     unsigned int i;
+
+    if (verbose>3) {
+        printf("[RAW RX] ");
+        dump_buffer(buffer,size);
+    }
+
     for (s=0;s<size;s++) {
         i = buffer[s];
 
@@ -347,6 +353,7 @@ int hdlc_sendpacket(connection_t fd, const unsigned char *buffer, size_t size)
 
 static int transmit_timeout=0;
 static int link_timeout=0;
+static int max_link_timeout=0;
 
 static enum {
     LINK_INIT,
@@ -364,7 +371,7 @@ int hdlc_connect_timeout(connection_t conn)
 {
     transmit_timeout++;
     if (link_state==LINK_INIT) {
-        if (link_timeout>10) {
+        if (link_timeout> max_link_timeout) {
             // Timed out...
             link_state=LINK_FAILED;
             return -1;
@@ -459,7 +466,7 @@ static void hdlc_reset()
     }
 }
 
-int hdlc_connect(connection_t conn)
+int hdlc_connect(connection_t conn, int retries)
 {
     int ret;
     struct timeval timeout = { 0, 100000 };
@@ -467,6 +474,8 @@ int hdlc_connect(connection_t conn)
     hdlc_reset();
 
     link_state = LINK_INIT;
+
+    max_link_timeout = retries;
 
     hdlc_transmit_link_up(conn);
 
@@ -594,7 +603,7 @@ int hdlc_transmit(connection_t conn, const unsigned char *buffer, size_t len, un
     }
 
     do {
-        conn_wait(conn, hdlc_data_event_cb, -1);
+        conn_wait(conn, hdlc_data_event_cb, 21);
         if (dlist__count(user_packets)>0)
             break;
 
