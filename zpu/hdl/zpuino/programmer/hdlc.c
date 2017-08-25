@@ -426,8 +426,8 @@ static void hdlc_connect_data_ready(connection_t conn, const unsigned char *data
             if (data->size==1) {
                 if (data->buf[0] == 0x02) {
                     // Good!.
-                    if (verbose>2) {
-                        printf("LINK UP received");
+                    if (verbose>3) {
+                        printf("LINK UP received\n");
                     }
                     link_state = LINK_UP;
                 }
