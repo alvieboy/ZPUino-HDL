@@ -386,7 +386,7 @@ set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name VHDL_FILE ../../../lib/oddrff_altera.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/iobuf_altera.vhd
-set_global_assignment -name SDC_FILE de0_nano.sdc
+set_global_assignment -name SDC_FILE zpuino_de0_nano.sdc
 set_global_assignment -name VHDL_FILE ../../../contrib/i2c/i2c_master_bit_ctrl.vhd
 set_global_assignment -name VHDL_FILE ../../../contrib/i2c/i2c_master_byte_ctrl.vhd
 set_global_assignment -name VHDL_FILE ../../../contrib/i2c/i2c_master_top.vhd
@@ -445,10 +445,10 @@ set_global_assignment -name VHDL_FILE ../../../lib/prescaler.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/fifo/fifo.vhd
 set_global_assignment -name QIP_FILE mydpram.qip
 set_global_assignment -name QIP_FILE mypll.qip
-set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ*
-set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQM*
-set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA*
-set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_ADDR*
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQM[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_ADDR[*]
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CAS_N
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RAS_N
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_WE_N
