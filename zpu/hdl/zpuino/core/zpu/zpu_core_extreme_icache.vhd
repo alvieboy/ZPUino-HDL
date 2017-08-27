@@ -90,6 +90,7 @@ entity zpu_core_extreme_icache is
     rom_wb_stall_i:     in std_logic;
 
     cache_flush:        in std_logic;
+    memory_enable:      in std_logic;
     -- Debug interface
 
     dbg_out:            out zpu_dbg_out_type;
@@ -401,7 +402,35 @@ signal lsu_data_write:     std_logic_vector(wordSize-1 downto 0);
 signal lsu_data_sel:       std_logic_vector(3 downto 0);
 signal lsu_address:        std_logic_vector(maxAddrBitIncIO downto 0);
 
+
+	component tap_dbg_sdram is
+		port (
+			acq_data_in    : in std_logic_vector(31 downto 0) := (others => 'X'); -- acq_data_in
+			acq_trigger_in : in std_logic_vector(0 downto 0)  := (others => 'X'); -- acq_trigger_in
+			acq_clk        : in std_logic                     := 'X';             -- clk
+			trigger_in     : in std_logic                     := 'X'              -- trigger_in
+		);
+	end component tap_dbg_sdram;
+
+  signal dbg_clk: std_logic;
+
 begin
+
+  dbg_clk<=wb_clk_i when begin_inst='1' else '0';
+
+	u0 : tap_dbg_sdram
+		port map (
+			acq_data_in    => trace_opcode & trace_pc(23 downto 0),
+			acq_trigger_in => "1",
+			acq_clk        => dbg_clk,
+			trigger_in     => '1'
+		);
+
+
+
+
+
+
 
 
   -- Debug interface
