@@ -266,6 +266,7 @@ begin
       poppc_inst    => poppc_inst,
 	 		break         => open,
       cache_flush   => cache_flush,
+      memory_enable => memory_enable,
 
       stack_clk     => stack_clk,
       stack_a_read  => stack_a_read,
