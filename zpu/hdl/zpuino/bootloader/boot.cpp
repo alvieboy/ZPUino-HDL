@@ -1001,7 +1001,7 @@ static void cmd_leavepgm(unsigned char *buffer)
 	simpleReply(BOOTLOADER_CMD_LEAVEPGM);
 }
 
-#ifdef __MX_FLASH__
+#if defined(ENABLE_MULTIBOOT) && defined(__MX_FLASH__)
 
 static void cmd_unlock(unsigned char *buffer)
 {
@@ -1093,12 +1093,12 @@ static const cmdhandler_t handlers[] = {
         NULL,
 #endif
         &cmd_pgm_page,       /* CMD11 */
-#ifdef __MX_FLASH__
+#if defined(__MX_FLASH__) && defined(ENABLE_MULTIBOOT)
         &cmd_unlock,          /* CMD12 */
 #else
         NULL,
 #endif
-#ifdef __MX_FLASH__
+#if defined(__MX_FLASH__) && defined(ENABLE_MULTIBOOT)
         &cmd_erasesector
 #else
         NULL
