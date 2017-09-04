@@ -693,12 +693,14 @@ begin
 
     displayclk => clk16,
 
-    R(0) => RGB_R0,
-    R(1) => RGB_R1,
-    G(0) => RGB_G0,
-    G(1) => RGB_G1,
-    B(0) => RGB_B0,
-    B(1) => RGB_B1,
+    R(0) => RGB_R1,
+    R(1) => RGB_R0,
+
+    G(0) => RGB_G1,
+    G(1) => RGB_G0,
+
+    B(0) => RGB_B1,
+    B(1) => RGB_B0,
 
     COL(0) => RGB_A,
     COL(1) => RGB_B,
