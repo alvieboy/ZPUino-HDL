@@ -39,8 +39,8 @@ begin
 		dataout => O_v
 	);
 
-  D1_v(0) <= D1;
-  D0_v(0) <= D0;
+  D1_v(0) <= D0;
+  D0_v(0) <= D1;
   O <= O_v(0);
 
 end behave;
