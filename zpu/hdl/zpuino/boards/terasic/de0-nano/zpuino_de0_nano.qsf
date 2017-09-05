@@ -403,7 +403,7 @@ set_global_assignment -name VHDL_FILE ../../../lib/wishbone/wbarb2_1.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/wishbone/wb_master_np_to_slave_p.vhd
 set_global_assignment -name VHDL_FILE ../../../zpuino_serialreset.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/timer/timer.vhd
-set_global_assignment -name VHDL_FILE ../../../rgb/rgbctrl.vhd
+set_global_assignment -name VHDL_FILE ../../../rgb/rgbctrl2_oss.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/zpuino_pwmblock.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/timer/zpuino_timers.vhd
 set_global_assignment -name VHDL_FILE ../../../devices/gpio/zpuino_gpio.vhd
