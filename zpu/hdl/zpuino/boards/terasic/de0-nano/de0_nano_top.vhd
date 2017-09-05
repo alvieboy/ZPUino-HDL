@@ -208,6 +208,16 @@ architecture behave of de0_nano_top is
   signal prom_rom_wb_cti_i:       std_logic_vector(2 downto 0);
   signal prom_rom_wb_stall_o:     std_logic;
 
+  signal m_wb_ack_o:       std_logic;
+  signal m_wb_dat_o:       std_logic_vector(wordSize-1 downto 0);
+  signal m_wb_dat_i:       std_logic_vector(wordSize-1 downto 0);
+  signal m_wb_adr_i:       std_logic_vector(maxAddrBitIncIO downto 0);
+  signal m_wb_cyc_i:       std_logic;
+  signal m_wb_stb_i:       std_logic;
+  signal m_wb_we_i:        std_logic;
+  signal m_wb_cti_i:       std_logic_vector(2 downto 0);
+  signal m_wb_stall_o:     std_logic;
+
   signal memory_enable: std_logic;
 
   signal uart2_rx: std_logic;
@@ -249,6 +259,18 @@ architecture behave of de0_nano_top is
   alias RGB_OE: std_logic is GPIO_0(29);
 
   signal clk16: std_logic;
+
+  signal PRi:         std_logic_vector(1 downto 0);
+  signal PGi:         std_logic_vector(1 downto 0);
+  signal PBi:         std_logic_vector(1 downto 0);
+  signal PSELAi:      std_logic;
+  signal PSELBi:      std_logic;
+  signal PSELCi:      std_logic;
+  signal PSELDi:      std_logic;
+  signal POEi:        std_logic;
+  signal PSTBi:       std_logic;
+  signal PCLKi:       std_logic_vector(0 downto 0);
+
 
 begin
 
@@ -355,15 +377,15 @@ begin
       pps_out_slot => ppsout_info_slot,
       pps_out_pin  => ppsout_info_pin,
 
-      m_wb_dat_o    => open,
-      m_wb_dat_i    => (others => 'X'),
-      m_wb_adr_i    => (others => 'X'),
-      m_wb_we_i     => '0',
-      m_wb_cyc_i    => '0',
-      m_wb_stb_i    => '0',
+      m_wb_dat_o    => m_wb_dat_o,
+      m_wb_dat_i    => m_wb_dat_i,
+      m_wb_adr_i    => m_wb_adr_i,
+      m_wb_we_i     => m_wb_we_i,
+      m_wb_cyc_i    => m_wb_cyc_i,
+      m_wb_stb_i    => m_wb_stb_i,
+      m_wb_ack_o    => m_wb_ack_o,
+      m_wb_stall_o  => m_wb_stall_o,
       m_wb_cti_i    => CTI_CYCLE_CLASSIC,
-      m_wb_ack_o    => open,
-      m_wb_stall_o  => open,
 
       --wb_ack_i      => ramwbo.ack,
       --wb_stall_i    => ramwbo.stall,
@@ -673,45 +695,75 @@ begin
   -- IO SLOT 10
   --
 
-  slot10: entity work.zpuino_rgbctrl
+  rgbctrl: entity work.zpuino_rgbctrl2
   generic map (
-    WIDTH_BITS => 7,
-    PWM_WIDTH => 7,
-    WIDTH_LEDS => 96
+    WIDTH_BITS        => 7,
+    PWM_WIDTH         => 7,
+    CLOCK_POLARITY    => '1',
+    STROBE_POLARITY   => '1',
+    OE_POLARITY       => '0',
+    DATA_INVERT       => false,
+    COLUMN_INVERT     => false,
+    NUMCLOCKS         => 1,
+    VSUBPANELS        => 2
   )
   port map (
-    wb_clk_i       => wb_clk_i,
-	 	wb_rst_i       => wb_rst_i,
+    wb_clk_i      => wb_clk_i,
+    wb_rst_i      => wb_rst_i,
     wb_dat_o      => slot_read(10),
-    wb_dat_i     => slot_write(10),
-    wb_adr_i   => slot_address(10),
-    wb_we_i        => slot_we(10),
-    wb_cyc_i        => slot_cyc(10),
-    wb_stb_i        => slot_stb(10),
+    wb_dat_i      => slot_write(10),
+    wb_adr_i      => slot_address(10),
+    wb_we_i       => slot_we(10),
+    wb_cyc_i      => slot_cyc(10),
+    wb_stb_i      => slot_stb(10),
     wb_ack_o      => slot_ack(10),
     wb_inta_o => slot_interrupt(10),
 
+    -- Wishbone MASTER interface
+    mi_wb_dat_i   => m_wb_dat_o,
+    mi_wb_dat_o   => m_wb_dat_i,
+    mi_wb_adr_o   => m_wb_adr_i(maxAddrBitIncIO downto 0),
+    mi_wb_sel_o   => open,
+    mi_wb_cti_o   => open,
+    mi_wb_we_o    => m_wb_we_i,
+    mi_wb_cyc_o   => m_wb_cyc_i,
+    mi_wb_stb_o   => m_wb_stb_i,
+    mi_wb_ack_i   => m_wb_ack_o,
+    mi_wb_stall_i => m_wb_stall_o,
+
     displayclk => clk16,
 
-    R(0) => RGB_R1,
-    R(1) => RGB_R0,
-
-    G(0) => RGB_G1,
-    G(1) => RGB_G0,
-
-    B(0) => RGB_B1,
-    B(1) => RGB_B0,
-
-    COL(0) => RGB_A,
-    COL(1) => RGB_B,
-    COL(2) => RGB_C,
-    COL(3) => RGB_D,
-
-    CLK => RGB_CLK,
-    STB => RGB_STB,
-    OE  => RGB_OE
+    R       => PRi(1 downto 0),
+    G       => PGi(1 downto 0),
+    B       => PBi(1 downto 0),
+    CLK     => PCLKi,
+    COL(0)  => PSELAi,
+    COL(1)  => PSELBi,
+    COL(2)  => PSELCi,
+    COL(3)  => PSELDi,
+    STB     => PSTBi,
+    OE      => POEi
   );
-  slot_ids(10) <= x"08" & x"20";
+  slot_ids(10) <= x"88" & x"20";
+
+  clkpad: OPAD port map ( I => PCLKi(0), PAD => RGB_CLK );
+
+  rpad0: OPAD port map ( I => PRi(0), O => RGB_R0 );
+  gpad0: OPAD port map ( I => PGi(0), O => RGB_G0 );
+  bpad0: OPAD port map ( I => PBi(0), O => RGB_B0 );
+
+  rpad1: OPAD port map ( I => PRi(1), O => RGB_R1 );
+  gpad1: OPAD port map ( I => PGi(1), O => RGB_G1 );
+  bpad1: OPAD port map ( I => PBi(1), O => RGB_B1 );
+
+  pselapad: OPAD port map ( I => PSELAi, PAD => RGB_A );
+  pselbpad: OPAD port map ( I => PSELBi, PAD => RGB_B );
+  pselcpad: OPAD port map ( I => PSELCi, PAD => RGB_C );
+  pseldpad: OPAD port map ( I => PSELDi, PAD => RGB_D );
+
+  stbpad: OPAD port map ( I => PSTBi, PAD => RGB_STB );
+
+  oepad: OPAD port map ( I => POEi, PAD => RGB_OE );
 
 
   --
