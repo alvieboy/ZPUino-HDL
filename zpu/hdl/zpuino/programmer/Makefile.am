@@ -6,7 +6,7 @@ zpuinoprogrammer_SOURCES= programmer.c programmer.h hdlc.c hdlc.h crc16.c \
 	sysdeps_linux.c \
 	sysdeps_win32.c \
 	sysdeps_apple.c \
-	makeargv.c makeargv.h list.c list.h event.c event.h
+	makeargv.c makeargv.h list.c list.h
 
 bitmerge_SOURCES=bitmerge.cpp bitfile.cpp bitrev.cpp crc16.c \
 	makeargv.c makeargv.h
