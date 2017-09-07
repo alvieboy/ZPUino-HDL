@@ -272,6 +272,8 @@ architecture behave of de0_nano_top is
   signal PCLKi:       std_logic_vector(0 downto 0);
 
 
+  signal LEDi: std_logic_vector(7 downto 0);
+
 begin
 
   wb_clk_i <= sysclk;
@@ -352,6 +354,7 @@ begin
 
   gssel:    OPAD port map ( I => gpio_o(94),   PAD => G_SENSOR_CS_N );
   adcsel:   OPAD port map ( I => gpio_o(95),   PAD => ADC_CS_N );
+
 
   end block;
 
@@ -687,9 +690,13 @@ begin
     wb_ack_o      => slot_ack(9),
     wb_inta_o     => slot_interrupt(9),
     id            => slot_ids(9),
-    pwmout        => LED
+    pwmout        => LEDi
   );
 
+  LED(5 downto 0)<=LEDi(5 downto 0);
+  LED(6) <= not wb_rst_i;
+  LED(7) <= not gpio_o(79);
+  
 
   --
   -- IO SLOT 10
