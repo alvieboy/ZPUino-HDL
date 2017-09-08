@@ -266,6 +266,7 @@ int help(char *name)
         printf("  -s speed\tUse specified serial port speed (default: 1000000, auto fallback)\n");
         printf("  -S speed\tUse specified initial serial port speed (default: 115200)\n");
         printf("  -F finfo\tUse specified custom flash info\n");
+        printf("  -P unProtect flash before programming\n");
         printf("  -v\t\tIncrease verbosity\n\n");
         printf("For custom flash info (option -F) you will have to provide\n"
                "information regarding the flash chip using the following format:\n"
