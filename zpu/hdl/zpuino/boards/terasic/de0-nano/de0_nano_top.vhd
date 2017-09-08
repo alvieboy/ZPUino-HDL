@@ -243,6 +243,13 @@ architecture behave of de0_nano_top is
   signal sda_pad_o     : std_logic;                    -- i2c data line output
   signal sda_padoen_o  : std_logic;                    -- i2c data line output enable, active low
 
+  signal scl2_pad_i     : std_logic;                    -- i2c clock line input
+  signal scl2_pad_o     : std_logic;                    -- i2c clock line output
+  signal scl2_padoen_o  : std_logic;                    -- i2c clock line output enable, active low
+  signal sda2_pad_i     : std_logic;                    -- i2c data line input
+  signal sda2_pad_o     : std_logic;                    -- i2c data line output
+  signal sda2_padoen_o  : std_logic;                    -- i2c data line output enable, active low
+
 
   alias RGB_R0: std_logic is GPIO_0(13);
   alias RGB_G0: std_logic is GPIO_0(9);
@@ -854,20 +861,32 @@ begin
   -- IO SLOT 14
   --
 
-  slot14: zpuino_empty_device
+  slot14: entity work.i2c_master_top
   port map (
     wb_clk_i      => wb_clk_i,
     wb_rst_i      => wb_rst_i,
-    wb_dat_o      => slot_read(14),
-    wb_dat_i      => slot_write(14),
-    wb_adr_i      => slot_address(14),
+    wb_dat_o      => slot_read(14)(7 downto 0),
+    wb_dat_i      => slot_write(14)(7 downto 0),
+    wb_adr_i      => slot_address(14)(4 downto 2),
     wb_we_i       => slot_we(14),
     wb_cyc_i      => slot_cyc(14),
     wb_stb_i      => slot_stb(14),
     wb_ack_o      => slot_ack(14),
     wb_inta_o     => slot_interrupt(14),
-    id            => slot_ids(14)
+    id            => slot_ids(14),
+
+    scl_pad_i     => scl2_pad_i,
+    scl_pad_o     => scl2_pad_o,                    -- i2c clock line output
+    scl_padoen_o  => scl2_padoen_o,                    -- i2c clock line output enable, active low
+    sda_pad_i     => sda2_pad_i,                    -- i2c data line input
+    sda_pad_o     => sda2_pad_o,                    -- i2c data line output
+    sda_padoen_o  => sda2_padoen_o                     -- i2c data line output enable, active low
+
   );
+  slot_read(14)(31 downto 8)<=(others => '0');
+
+  i2c2_buf0: entity work.IOBUF port map(I => scl2_pad_o, O => scl2_pad_i, T => scl2_padoen_o, IO => GPIO_1(32) );
+  i2c2_buf1: entity work.IOBUF port map(I => sda2_pad_o, O => sda2_pad_i, T => sda2_padoen_o, IO => GPIO_1(30) );
 
   --
   -- IO SLOT 15 - do not use
