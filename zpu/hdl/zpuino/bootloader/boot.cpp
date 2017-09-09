@@ -984,6 +984,12 @@ static void cmd_identify(unsigned char *buffer)
     finishSend();
 }
 
+static void linkUp()
+{
+    inprogrammode = 1;
+    // Disable timer.
+    TMR0CTL = 0;
+}
 
 static void cmd_enterpgm(unsigned char *buffer)
 {
@@ -1141,6 +1147,7 @@ static inline void processCommand(unsigned char *buffer, unsigned bufferpos)
             hdlc_expected_seq_rx=0;
             hdlc_seq_tx=0;
             // TODO: clear window
+            linkUp();
             sendRR();
             break;
         case U_REJ:
