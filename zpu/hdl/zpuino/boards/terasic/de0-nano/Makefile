@@ -4,8 +4,8 @@ TOP=de0_nano_top
 # For bootloader
 BOARD=DE0NANO
 SIZE=16384
-#DEFINES="-DBOARD_ID=0x42011900 -DBOARD_MEMORYSIZE=0x2000000 -DZPU20 -DZPUINO_HAS_ICACHE"
-DEFINES="-DBOARD_ID=0x42011900 -DBOARD_MEMORYSIZE=0x10000 -DZPU20 -DZPUINO_HAS_ICACHE"
+DEFINES="-DBOARD_ID=0x42011900 -DBOARD_MEMORYSIZE=0x2000000 -DZPU20 -DZPUINO_HAS_ICACHE"
+#DEFINES="-DBOARD_ID=0x42011900 -DBOARD_MEMORYSIZE=0x10000 -DZPU20 -DZPUINO_HAS_ICACHE"
 
 all: ${PROJECT}.bin
 
@@ -29,5 +29,5 @@ ${PROJECT}.bin: ${PROJECT}.flash
 	objcopy -I srec -O binary "${PROJECT}.flash" "${PROJECT}.bin"
 
 clean:
-	@rm -rf db/${PROJECT}.map.cdb db/${PROJECT}.cmp.cdb ${PROJECT}.sof bootloader.vhd
+	@rm -rf ${PROJECT}.sof bootloader.vhd db incremental_db
 	$(MAKE) -C ../../../bootloader clean
