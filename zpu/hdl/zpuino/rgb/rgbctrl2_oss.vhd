@@ -192,6 +192,7 @@ architecture behave of zpuino_rgbctrl2 is
   signal clockout: std_logic_vector(NUMCLOCKS-1 downto 0);
 
   signal fbaddr:    std_logic_vector(wb_dat_i'range);
+  signal test_mode: std_logic;
 
   attribute IOB: string;
   attribute IOB of clockout: signal is "true";
@@ -224,6 +225,7 @@ begin
     if rising_edge(wb_clk_i) then
       if wb_rst_i='1' then
         ack_q<='0';
+        test_mode<='0';
         fbaddr<=x"00010000";
         OE <= not OE_POLARITY;
       else
@@ -236,6 +238,7 @@ begin
                 fbaddr <= wb_dat_i;
               when "10" =>
                 OE <= wb_dat_i(0);
+                test_mode <= wb_dat_i(1);
               when others => null;
             end case;
           end if;
@@ -476,14 +479,20 @@ begin
                   compresult(j):='0';
                 end if;
               end loop;
-              if DATA_INVERT then
-                R(N) <= not compresult(0);
-                G(N) <= not compresult(1);
-                B(N) <= not compresult(2);
+              if test_mode='1' then
+                R(N) <= row(0);
+                G(N) <= row(1);
+                B(N) <= row(2);
               else
-                R(N) <= compresult(0);
-                G(N) <= compresult(1);
-                B(N) <= compresult(2);
+                if DATA_INVERT then
+                  R(N) <= not compresult(0);
+                  G(N) <= not compresult(1);
+                  B(N) <= not compresult(2);
+                else
+                  R(N) <= compresult(0);
+                  G(N) <= compresult(1);
+                  B(N) <= compresult(2);
+                end if;
               end if;
               --clockout <= '1';
             end loop;
