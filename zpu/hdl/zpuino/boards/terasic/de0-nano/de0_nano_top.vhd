@@ -106,13 +106,13 @@ architecture behave of de0_nano_top is
 
   constant spp_cap_in: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "0000000000000000000000000000" &
-    "0000000000000000000000000000000000" &
-    "1111111111111111111111111111111111";
+    "1111111111111111111111111111111111" &
+    "0000000000000000000000000000000000";
 
   constant spp_cap_out: std_logic_vector(zpuino_gpio_count-1 downto 0) :=
     "0000000000000000000000000000" &
-    "0000000000000000000000000000000000" &
-    "1111111111111111111111111111111111";
+    "1111111111111111111111111111111111" &
+    "0000000000000000000000000000000000";
 
   -- I/O Signals
   signal slot_cyc:    slot_std_logic_type;
@@ -700,10 +700,7 @@ begin
     pwmout        => LEDi
   );
 
-  LED(5 downto 0)<=LEDi(5 downto 0);
-  LED(6) <= not wb_rst_i;
-  LED(7) <= not gpio_o(79);
-  
+  LED <= LEDi;
 
   --
   -- IO SLOT 10

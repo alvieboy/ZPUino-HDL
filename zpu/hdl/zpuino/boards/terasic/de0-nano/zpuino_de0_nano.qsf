@@ -445,7 +445,6 @@ set_global_assignment -name VHDL_FILE ../../../lib/prescaler.vhd
 set_global_assignment -name VHDL_FILE ../../../lib/fifo/fifo.vhd
 set_global_assignment -name QIP_FILE mydpram.qip
 set_global_assignment -name QIP_FILE mypll.qip
-set_global_assignment -name QIP_FILE tap_dbg_sdram/synthesis/tap_dbg_sdram.qip
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[*]
 set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[*]
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQM[*]
@@ -459,9 +458,6 @@ set_instance_assignment -name SLEW_RATE 2 -to DRAM_DQ*
 
 set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION ON
 set_global_assignment -name SYNTH_MESSAGE_LEVEL HIGH
-set_global_assignment -name ENABLE_SIGNALTAP ON
+
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name USE_SIGNALTAP_FILE lixo.stp
-set_global_assignment -name ENABLE_LOGIC_ANALYZER_INTERFACE ON
-set_global_assignment -name SLD_FILE db/lixo_auto_stripped.stp
