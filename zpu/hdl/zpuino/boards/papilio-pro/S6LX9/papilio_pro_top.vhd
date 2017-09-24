@@ -64,6 +64,17 @@ entity papilio_pro_top is
     TXD:        out std_logic;
     RXD:        in std_logic;
 
+    DRAM_ADDR   : OUT   STD_LOGIC_VECTOR (12 downto 0);
+     DRAM_BA      : OUT   STD_LOGIC_VECTOR (1 downto 0);
+     DRAM_CAS_N   : OUT   STD_LOGIC;
+     DRAM_CKE      : OUT   STD_LOGIC;
+     DRAM_CLK      : OUT   STD_LOGIC;
+     DRAM_CS_N   : OUT   STD_LOGIC;
+     DRAM_DQ      : INOUT STD_LOGIC_VECTOR(15 downto 0);
+     DRAM_DQM      : OUT   STD_LOGIC_VECTOR(1 downto 0);
+     DRAM_RAS_N   : OUT   STD_LOGIC;
+     DRAM_WE_N    : OUT   STD_LOGIC;
+
     -- The LED
     LED:        out std_logic
   );
@@ -315,9 +326,6 @@ architecture behave of papilio_pro_top is
   signal uart2_rx: std_logic;
   signal uart2_tx: std_logic;
 
-  signal ramwbi:  wb_mosi_type;
-  signal ramwbo:  wb_p_miso_type;
-
 begin
 
   wb_clk_i <= sysclk;
@@ -436,33 +444,21 @@ begin
       m_wb_ack_o    => open,
       m_wb_stall_o  => open,
 
-      wb_ack_i      => ramwbo.ack,
-      wb_stall_i    => ramwbo.stall,
-      wb_dat_i      => ramwbo.dat,
-      wb_dat_o      => ramwbi.dat,
-      wb_adr_o      => ramwbi.adr(maxAddrBit downto 0),
-      wb_cyc_o      => ramwbi.cyc,
-      wb_cti_o      => ramwbi.cti,
-      wb_stb_o      => ramwbi.stb,
-      wb_sel_o      => ramwbi.sel,
-      wb_we_o       => ramwbi.we,	  
+      wb_ack_i      => sram_wb_ack_o,
+      wb_stall_i    => sram_wb_stall_o,
+      wb_dat_o      => sram_wb_dat_i,
+      wb_dat_i      => sram_wb_dat_o,
+      wb_adr_o      => sram_wb_adr_i(maxAddrBit downto 0),
+      wb_cyc_o      => sram_wb_cyc_i,
+      wb_stb_o      => sram_wb_stb_i,
+      wb_sel_o      => sram_wb_sel_i,
+      wb_we_o       => sram_wb_we_i,
+
       -- No debug unit connected
       dbg_reset     => open,
       jtag_data_chain_out => open,            --jtag_data_chain_in,
       jtag_ctrl_chain_in  => (others => '0') --jtag_ctrl_chain_out
     );
-
-  ram:  entity work.ocram
-    generic map (
-      address_bits => 13
-    )
-    port map (
-      syscon.clk  => wb_clk_i,
-      syscon.rst  => wb_rst_i,
-      wbi         => ramwbi,
-      wbo         => ramwbo
-   );	
-
 
   --
   -- IO SLOT 1
@@ -669,6 +665,35 @@ begin
     tx            => uart2_tx,
     rx            => uart2_rx
   );
+
+  sram_inst: sdram_ctrl
+    port map (
+      wb_clk_i    => wb_clk_i,
+  	 	wb_rst_i    => wb_rst_i,
+      wb_dat_o    => sram_wb_dat_o,
+      wb_dat_i    => sram_wb_dat_i,
+      wb_adr_i    => sram_wb_adr_i(maxIObit downto minIObit),
+      wb_we_i     => sram_wb_we_i,
+      wb_cyc_i    => sram_wb_cyc_i,
+      wb_stb_i    => sram_wb_stb_i,
+      wb_sel_i    => sram_wb_sel_i,
+      wb_ack_o    => sram_wb_ack_o,
+      wb_stall_o  => sram_wb_stall_o,
+
+      clk_off_3ns => sysclk_sram_we,
+      DRAM_ADDR   => DRAM_ADDR(11 downto 0),
+      DRAM_BA     => DRAM_BA,
+      DRAM_CAS_N  => DRAM_CAS_N,
+      DRAM_CKE    => DRAM_CKE,
+      DRAM_CLK    => DRAM_CLK,
+      DRAM_CS_N   => DRAM_CS_N,
+      DRAM_DQ     => DRAM_DQ,
+      DRAM_DQM    => DRAM_DQM,
+      DRAM_RAS_N  => DRAM_RAS_N,
+      DRAM_WE_N   => DRAM_WE_N
+    );
+
+    DRAM_ADDR(12) <= '0';
 
   --
   -- IO SLOT 9
