@@ -458,7 +458,11 @@ int conn_wait(connection_t conn, event_callback_t callback, int timeout)
                 fprintf(stderr,"Error in ReadFile(): %lu\n", GetLastError());
                 return -1;
             }
-            callback(conn, EV_DATA, buf, nBytes);
+            if (nBytes) {
+                callback(conn, EV_DATA, buf, nBytes);
+            } else {
+                callback(conn, EV_TIMEOUT, NULL, 0);
+            }
             return 0;
         } else {
             /* No known size, have to read one byte at once */
@@ -499,7 +503,11 @@ int conn_wait(connection_t conn, event_callback_t callback, int timeout)
                             return -1;
                         } else {
                             debug("Got overlapped data %d\n", nTransfer);
-                            callback(conn, EV_DATA, buf, nTransfer);
+                            if (nTransfer) {
+                                callback(conn, EV_DATA, buf, nTransfer);
+                            } else {
+                                callback(conn, EV_TIMEOUT,NULL,0);
+                            }
                             return 0;
                         }
                         break;

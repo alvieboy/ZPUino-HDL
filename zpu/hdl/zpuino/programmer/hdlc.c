@@ -435,8 +435,8 @@ static void hdlc_connect_data_ready(connection_t conn, const unsigned char *data
             buffer_free(data);
         }
     } else {
-
-        hdlc_link_error(conn);
+        //printf("Datalen %d\n", datalen);
+        //hdlc_link_error(conn);
     }
 }
 
