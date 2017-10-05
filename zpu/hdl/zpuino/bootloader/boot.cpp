@@ -136,7 +136,7 @@ static inline unsigned int get_supported_ops();
 
 extern "C" void _zpu_interrupt(int);
 
-void flush()
+static void flush()
 {
 	/* Flush serial line */
 	while (UARTSTATUS & 4);
@@ -219,9 +219,6 @@ static void do_unprotect_user(register_t base)
     unsigned char status;
 
     do_unprotect_all(base);
-#ifdef VERBOSE_LOADER
-    printstring("Protecting: ");
-#endif
     for (address=0; address<0x60000; address++)
     {
         do_writeenable(base);
@@ -236,13 +233,7 @@ static void do_unprotect_user(register_t base)
         } while (status & 1);
         // TODO: check this for proper sector/block...
         address += 4096;
-#ifdef VERBOSE_LOADER
-        printstring(".");
-#endif
     }
-#ifdef VERBOSE_LOADER
-        printstring(" done.\r\n");
-#endif
 }
 
 static unsigned char read_rdscur(register_t base)
