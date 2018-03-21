@@ -35,3 +35,4 @@ ZPUino 2.0
 | 0xBB011A00 | Numato Saturn6       | S6 LX45  | 64MB LPDDR (8K Inst Cache)          |
 | 0xBB021A00 | Numato MimasV2       | S6 LX9   | 64MB LPDDR (8K Inst Cache)          |
 | 0xBB021A00 | Terasic DE0-Nano     | EP4CE622 | 32MB SDRAM (8K Inst Cache)          |
+| 0xBC010000 | AVNET MiniZED        | Zynq     | 128Kb                               |

@@ -879,6 +879,16 @@ inline void configure_pins()
 }
 #endif
 
+#if defined( __ZPUINO_MINIZED__ )
+inline void configure_pins()
+{
+	pinMode(FPGA_PIN_LED_R, OUTPUT);
+	pinMode(FPGA_PIN_LED_G, OUTPUT);
+	digitalWrite(FPGA_PIN_LED_R, HIGH);
+        digitalWrite(FPGA_PIN_LED_G, LOW);
+}
+#endif
+
 extern "C" int _syscall(int *foo, int ID, ...);
 extern "C" unsigned _bfunctions[];
 extern "C" const unsigned _bfunctionsconst[];
@@ -901,6 +911,7 @@ extern "C" void loadsketch(unsigned offset, unsigned size)
 	start();
 }
 
+#if 0
 extern "C" int main(int argc,char**argv)
 {
 	inprogrammode = 0;
@@ -993,3 +1004,11 @@ extern "C" int main(int argc,char**argv)
 		}
 	}
 }
+#else
+extern "C" int main(int argc,char**argv)
+{
+	configure_pins();
+	start();
+}
+
+#endif
