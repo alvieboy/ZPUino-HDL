@@ -1,11 +1,14 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-#define CLK_FREQ 96000000UL
+#define CLK_FREQ 100000000UL
 
 #ifndef BOARD_MEMORYSIZE
 #error Undefined board memory size
 #endif
+
+#define SPIOFFSET 0
+#define SPI_FLASH_SEL_PIN 19
 
 #define IOBASE 0x08000000
 #define IO_SLOT_OFFSET_BIT 23
@@ -25,9 +28,9 @@
 #define FPGA_PIN_D12    12
 #define FPGA_PIN_D13    13
 
-#define FPGA_PIN_D3    14
-#define FPGA_PIN_D3    15
-#define FPGA_PIN_D3    16
+#define FPGA_PIN_A0    14
+#define FPGA_PIN_A1    15
+#define FPGA_PIN_A2    16
 
 #define FPGA_PIN_LED_G 17
 #define FPGA_PIN_LED_R 18
