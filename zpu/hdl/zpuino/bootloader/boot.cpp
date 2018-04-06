@@ -1,5 +1,4 @@
 #include "zpuino.h"
-#include "zpuino.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -356,7 +355,7 @@ extern "C" void __attribute__((noreturn)) spi_copy_impl()
 #ifdef VERBOSE_LOADER
 	//printstring("Filling\n");
 #endif
-    copy_sketch(spidata, crc16base, sketchsize, target);
+	copy_sketch(spidata, crc16base, sketchsize, target);
 #ifdef VERBOSE_LOADER
    // printstring("Filled\n");
 #endif
@@ -884,8 +883,8 @@ inline void configure_pins()
 {
 	pinMode(FPGA_PIN_LED_R, OUTPUT);
 	pinMode(FPGA_PIN_LED_G, OUTPUT);
-	digitalWrite(FPGA_PIN_LED_R, HIGH);
-        digitalWrite(FPGA_PIN_LED_G, LOW);
+	digitalWrite(FPGA_PIN_LED_R, LOW);
+        digitalWrite(FPGA_PIN_LED_G, HIGH);
 }
 #endif
 
@@ -911,7 +910,7 @@ extern "C" void loadsketch(unsigned offset, unsigned size)
 	start();
 }
 
-#if 0
+#ifndef __ZPUINO_MINIZED__
 extern "C" int main(int argc,char**argv)
 {
 	inprogrammode = 0;
@@ -1005,9 +1004,22 @@ extern "C" int main(int argc,char**argv)
 	}
 }
 #else
-extern "C" int main(int argc,char**argv)
+// For minized, and spi-less devices
+
+extern "C" int main(int argc, char**argv)
 {
+	UARTCTL = BAUDRATEGEN(115200) | BIT(UARTEN);
+	ivector = &_zpu_interrupt;
+
 	configure_pins();
+
+	printstring("Starting ZPUino (MiniZED).\r\n");
+	printhex( *(unsigned*)0x1008 );
+	printstring("\r\n");
+	digitalWrite(FPGA_PIN_LED_R, 0);
+
+	digitalWrite(FPGA_PIN_LED_G, 1);
+
 	start();
 }
 
