@@ -910,7 +910,7 @@ extern "C" void loadsketch(unsigned offset, unsigned size)
 	start();
 }
 
-#ifndef __ZPUINO_MINIZED__
+#ifndef BARE_BOOTLOADER
 extern "C" int main(int argc,char**argv)
 {
 	inprogrammode = 0;

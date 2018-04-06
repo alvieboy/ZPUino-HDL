@@ -35,4 +35,6 @@
 #define FPGA_PIN_LED_G 17
 #define FPGA_PIN_LED_R 18
 
+#define BARE_BOOTLOADER
+
 #endif
