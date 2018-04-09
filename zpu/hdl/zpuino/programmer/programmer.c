@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <math.h>
 #include "boards.h"
+#include "smallfs.h"
 
 #ifdef __linux__
 #include <netinet/in.h>
@@ -39,7 +40,6 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 
-#define O_BINARY 0
 #endif
 
 #define SKETCHSIGNATURE 0x310AFADE
@@ -49,6 +49,7 @@ unsigned int verbose = 0;
 static char *binfile=NULL;
 static char *extradata=NULL;
 static char *serialport=NULL;
+static char *gensmallfsdir=NULL;
 static int is_simulator=0;
 static int only_read=0;
 static int verify=0;
@@ -170,7 +171,7 @@ int parse_arguments(int argc,char **const argv)
 	int p;
 
 	while (1) {
-            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:UF:"))) {
+            switch ((p=getopt(argc,argv,"RDvtb:d:re:o:ls:S:UF:g:"))) {
 		case '?':
 			return -1;
 		case 'v':
@@ -214,6 +215,9 @@ int parse_arguments(int argc,char **const argv)
 			break;
 		case 'e':
 			extradata = optarg;
+			break;
+		case 'g':
+			gensmallfsdir = optarg;
 			break;
 		case 'U':
 			upload_only=1;
@@ -350,6 +354,16 @@ int set_baudrate(connection_t conn, unsigned int baud_int, unsigned int freq)
 	return 0;
 }
 
+char *generate_smallfs(const char *path)
+{
+	struct stat st;
+	if (stat(path,&st)<0)
+		return NULL;
+
+	if (!S_ISDIR(st.st_mode)) {
+		return NULL;
+	}
+}
 
 static buffer_t *sendreceivecommand_i(connection_t fd, unsigned char cmd, unsigned char *txbuf, size_t size, int timeout, int validate)
 {
@@ -589,6 +603,22 @@ static unsigned char *load_binfile(flash_info_t *flash)
 	}
 
 	int ein=-1;
+	// Check if we are to generate extra data.
+	if (gensmallfsdir) {
+		char tmpl[] = "smallfs-XXXXXX";
+		int fd = mkstemp(tmpl);
+		if (fd<0) {
+			perror("Cannot create temporary file");
+			return NULL;
+		}
+		if (smallfs__packfd(gensmallfsdir,fd)<0) {
+			// Ignore.
+		} else {
+			ein = fd;
+		}
+	}
+	//int smalfs__pack(const char *dir, const char *targetfilename)
+
 	if (extradata) {
 		ein = open(extradata,O_RDONLY|O_BINARY);
 		if (ein<0) {

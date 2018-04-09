@@ -28,4 +28,8 @@
 typedef int connection_t;
 #define cpu_to_le16(x) __bswap_16(x)
 
+#ifndef O_BINARY
+#define O_BINARY (0)
+#endif
+
 #endif
