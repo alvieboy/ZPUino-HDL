@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "hdlc.h"
 #include "transport.h"
+#include <sys/time.h>
 
 extern int verbose;
 static int simulator=0;

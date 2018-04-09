@@ -21,6 +21,10 @@
 #include <inttypes.h>
 #include "transport.h"
 #include <stdio.h>
+#include <sys/time.h>
+
+extern void crc16_update(uint16_t *crc, uint8_t data);
+
 
 static int syncSeen=0;
 static int unescaping=0;
