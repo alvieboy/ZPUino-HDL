@@ -137,9 +137,9 @@ architecture behave of papilio_one_top is
   signal gpio_spp_data: std_logic_vector(PPSCOUNT_OUT-1 downto 0);
   signal gpio_spp_read: std_logic_vector(PPSCOUNT_IN-1 downto 0);
 
-  signal ppsout_info_slot: ppsoutinfotype := (others => -1);
+  signal ppsout_info_slot: ppsoutinfotype := (others => 0);
   signal ppsout_info_pin:  ppsoutinfotype;
-  signal ppsin_info_slot: ppsininfotype := (others => -1);
+  signal ppsin_info_slot: ppsininfotype := (others => 0);
   signal ppsin_info_pin:  ppsininfotype;
 
   signal timers_interrupt:  std_logic_vector(1 downto 0);

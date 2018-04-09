@@ -42,6 +42,7 @@ use work.zpuinopkg.all;
 use work.zpuino_config.all;
 use work.zpu_config.all;
 use work.pad.all;
+use work.wishbonepkg.all;
 
 library unisim;
 use unisim.vcomponents.all;
@@ -138,13 +139,13 @@ architecture behave of papilio_one_top is
   signal gpio_spp_data: std_logic_vector(PPSCOUNT_OUT-1 downto 0);
   signal gpio_spp_read: std_logic_vector(PPSCOUNT_IN-1 downto 0);
 
-  signal ppsout_info_slot: ppsoutinfotype := (others => -1);
+  signal ppsout_info_slot: ppsoutinfotype := (others => 0);
   signal ppsout_info_pin:  ppsoutinfotype;
-  signal ppsin_info_slot: ppsininfotype := (others => -1);
+  signal ppsin_info_slot: ppsininfotype := (others => 0);
   signal ppsin_info_pin:  ppsininfotype;
 
   signal timers_interrupt:  std_logic_vector(1 downto 0);
-  signal timers_pwm:        std_logic_vector(1 downto 0);
+  signal timers_pwm: std_logic_vector(1 downto 0);
 
   signal sigmadelta_spp_en:  std_logic_vector(1 downto 0);
   signal sigmadelta_spp_data:  std_logic_vector(1 downto 0);
@@ -156,8 +157,13 @@ architecture behave of papilio_one_top is
   signal wb_clk_i: std_logic;
   signal wb_rst_i: std_logic;
 
+  signal uart2_tx, uart2_rx: std_logic;
+
   signal jtag_data_chain_out: std_logic_vector(98 downto 0);
   signal jtag_ctrl_chain_in:  std_logic_vector(11 downto 0);
+
+  signal ramwbi:  wb_mosi_type;
+  signal ramwbo:  wb_p_miso_type;
 
 begin
 
@@ -187,7 +193,7 @@ begin
 
 
 
-  zpuino:zpuino_top
+  zpuino: entity work.zpuino_top
     port map (
       clk           => sysclk,
 	 	  rst           => sysrst,
@@ -214,14 +220,40 @@ begin
       m_wb_we_i     => '0',
       m_wb_cyc_i    => '0',
       m_wb_stb_i    => '0',
+      m_wb_cti_i    => CTI_CYCLE_CLASSIC,
       m_wb_ack_o    => open,
 
-      dbg_reset     => open,
+      wb_ack_i      => ramwbo.ack,
+      wb_stall_i    => ramwbo.stall,
+      wb_dat_i      => ramwbo.dat,
+      wb_dat_o      => ramwbi.dat,
+      wb_adr_o      => ramwbi.adr(maxAddrBit downto 0),
+      wb_cyc_o      => ramwbi.cyc,
+      wb_cti_o      => ramwbi.cti,
+      wb_stb_o      => ramwbi.stb,
+      wb_sel_o      => ramwbi.sel,
+      wb_we_o       => ramwbi.we,
+
+
+      dbg_reset     => dbg_reset,
       jtag_data_chain_out => open,--jtag_data_chain_out,
       jtag_ctrl_chain_in  => (others=>'0')--jtag_ctrl_chain_in
 
     );
 
+
+  -- RAM
+
+  ram:  entity work.ocram
+    generic map (
+      address_bits => 10
+    )
+    port map (
+      syscon.clk  => wb_clk_i,
+      syscon.rst  => wb_rst_i,
+      wbi         => ramwbi,
+      wbo         => ramwbo
+   );
   --
   --
   -- ----------------  I/O connection to devices --------------------
@@ -271,8 +303,8 @@ begin
     id        => slot_id(1),
 
     enabled   => uart_enabled,
-    tx        => uart_tx,
-    rx        => uart_rx
+    tx        => tx,
+    rx        => rx
   );
 
   --
@@ -295,7 +327,6 @@ begin
     wb_ack_o      => slot_ack(2),
     wb_inta_o => slot_interrupt(2),
     id        => slot_id(2),
-
     spp_data  => gpio_spp_data,
     spp_read  => gpio_spp_read,
 
@@ -333,10 +364,10 @@ begin
     wb_cyc_i        => slot_cyc(3),
     wb_stb_i        => slot_stb(3),
     wb_ack_o      => slot_ack(3),
-    id            => slot_id(3),
 
     wb_inta_o => slot_interrupt(3), -- We use two interrupt lines
     wb_intb_o => slot_interrupt(4), -- so we borrow intr line from slot 4
+    id        => slot_id(3),
     pwm_a_out   => timers_pwm(0 downto 0),
     pwm_b_out   => timers_pwm(1 downto 1)
   );
@@ -358,7 +389,6 @@ begin
     wb_ack_o      => slot_ack(5),
     wb_inta_o => slot_interrupt(5),
     id        => slot_id(5),
-
     spp_data  => sigmadelta_spp_data,
     spp_en    => sigmadelta_spp_en,
     sync_in   => '1'
@@ -614,10 +644,6 @@ begin
   pin47: IOPAD port map(I => gpio_o(47),O => gpio_i(47),T => gpio_t(47),C => sysclk,PAD => WING_C(15) );
 
 
-  uart_rx <= rx;
-  tx <= uart_tx;
-
-
   -- Other ports are special, we need to avoid outputs on input-only pins
 
   ibufrx:   IPAD port map ( PAD => RXD,        O => rx, C => sysclk );
@@ -630,7 +656,9 @@ begin
   ospimosi: OPAD port map ( I => spi_pf_mosi,   PAD => SPI_MOSI );
 
 
-  process(gpio_spp_read, 
+
+
+  process(gpio_spp_read,
           sigmadelta_spp_data,
           timers_pwm,
           spi2_mosi,spi2_sck)
