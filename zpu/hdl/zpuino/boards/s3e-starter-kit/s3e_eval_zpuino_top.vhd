@@ -232,9 +232,9 @@ architecture behave of s3e_eval_zpuino is
   signal gpio_spp_data: std_logic_vector(PPSCOUNT_OUT-1 downto 0);
   signal gpio_spp_read: std_logic_vector(PPSCOUNT_IN-1 downto 0);
 
-  signal ppsout_info_slot: ppsoutinfotype := (others => -1);
+  signal ppsout_info_slot: ppsoutinfotype := (others => 0);
   signal ppsout_info_pin:  ppsoutinfotype;
-  signal ppsin_info_slot: ppsininfotype := (others => -1);
+  signal ppsin_info_slot: ppsininfotype := (others => 0);
   signal ppsin_info_pin:  ppsininfotype;
 
   --signal gpio_spp_en: std_logic_vector(zpuino_gpio_count-1 downto 1);
