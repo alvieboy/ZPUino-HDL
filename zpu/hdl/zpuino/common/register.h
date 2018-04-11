@@ -187,7 +187,7 @@ typedef volatile unsigned int* register_t;
 
 /* Baud rate computation */
 
-#define BAUDRATEGEN(x) ((CLK_FREQ/(x))/16)-1
+#define BAUDRATEGEN(x) (((CLK_FREQ/(x))/16)-1)
 
 #define INPUT 1
 #define OUTPUT 0
