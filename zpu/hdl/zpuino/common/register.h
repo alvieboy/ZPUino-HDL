@@ -1,5 +1,5 @@
-#ifndef __REGISTER_H__
-#define __REGISTER_H__
+#ifndef __ZPUINO_REGISTER_H__
+#define __ZPUINO_REGISTER_H__
 
 #if defined( __ZPUINO_S3E_EVAL__ )
 # include "board_s3e_eval.h"
