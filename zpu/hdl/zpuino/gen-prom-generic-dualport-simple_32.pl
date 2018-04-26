@@ -56,19 +56,13 @@ use ieee.numeric_std.all;
 
 entity ${entity} is
   port (
-    CLK:              in std_logic;
-    WEA:  in std_logic;
-    ENA:  in std_logic;
-    MASKA:    in std_logic_vector(3 downto 0);
-    ADDRA:         in std_logic_vector($bitsminusone downto 2);
-    DIA:        in std_logic_vector(31 downto 0);
-    DOA:         out std_logic_vector(31 downto 0);
-    WEB:  in std_logic;
-    ENB:  in std_logic;
-    ADDRB:         in std_logic_vector($bitsminusone downto 2);
-    DIB:        in std_logic_vector(31 downto 0);
-    MASKB:    in std_logic_vector(3 downto 0);
-    DOB:         out std_logic_vector(31 downto 0)
+    CLK:      in std_logic;
+    ENA:      in std_logic;
+    ADDRA:    in std_logic_vector($bitsminusone downto 2);
+    DOA:      out std_logic_vector(31 downto 0);
+    ENB:      in std_logic;
+    ADDRB:    in std_logic_vector($bitsminusone downto 2);
+    DOB:      out std_logic_vector(31 downto 0)
   );
 end entity ${entity};
 
@@ -92,7 +86,7 @@ while ( $total_words ) {
 
 # Output RAM contents
 
-print " shared variable RAM: RAM_TABLE := RAM_TABLE'(\n";
+print " CONSTANT RAM: RAM_TABLE := RAM_TABLE'(\n";
 print join(",", map { sprintf("x\"%08x\"",$_) } @ram );
 print ");\n";
 
@@ -104,9 +98,6 @@ print <<EOM;
   begin
     if rising_edge(clk) then
       if ENA='1' then
-        if WEA='1' then
-          RAM(conv_integer(ADDRA) ) := DIA;
-        end if;
         DOA <= RAM(conv_integer(ADDRA)) ;
       end if;
     end if;
@@ -116,9 +107,6 @@ print <<EOM;
   begin
     if rising_edge(clk) then
       if ENB='1' then
-        if WEB='1' then
-          RAM( conv_integer(ADDRB) ) := DIB;
-        end if;
         DOB <= RAM(conv_integer(ADDRB)) ;
       end if;
     end if;

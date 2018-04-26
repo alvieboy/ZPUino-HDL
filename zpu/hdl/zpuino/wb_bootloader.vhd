@@ -31,19 +31,13 @@ architecture behave of wb_bootloader is
 
   component bootloader_dp_32 is
   port (
-    CLK:              in std_logic;
-    WEA:  in std_logic;
-    ENA:  in std_logic;
-    MASKA:    in std_logic_vector(3 downto 0);
-    ADDRA:         in std_logic_vector(11 downto 2);
-    DIA:        in std_logic_vector(31 downto 0);
-    DOA:         out std_logic_vector(31 downto 0);
-    WEB:  in std_logic;
-    ENB:  in std_logic;
-    ADDRB:         in std_logic_vector(11 downto 2);
-    DIB:        in std_logic_vector(31 downto 0);
-    MASKB:    in std_logic_vector(3 downto 0);
-    DOB:         out std_logic_vector(31 downto 0)
+    CLK:      in std_logic;
+    ENA:      in std_logic;
+    ADDRA:    in std_logic_vector(11 downto 2);
+    DOA:      out std_logic_vector(31 downto 0);
+    ENB:      in std_logic;
+    ADDRB:    in std_logic_vector(11 downto 2);
+    DOB:      out std_logic_vector(31 downto 0)
   );
   end component bootloader_dp_32;
 
@@ -79,17 +73,11 @@ begin
   rom: bootloader_dp_32
   port map (
     CLK         => wb_clk_i,
-    WEA         => '0',
     ENA         => en,
-    MASKA       => (others => '1'),
     ADDRA       => wb_adr_i,
-    DIA         => (others => DontCareValue),
     DOA         => wb_dat_o,
-    WEB         => '0',
     ENB         => en2,
     ADDRB       => wb2_adr_i,
-    DIB         => (others => DontCareValue),
-    MASKB       => (others => '1'),
     DOB         => wb2_dat_o
   );
 
