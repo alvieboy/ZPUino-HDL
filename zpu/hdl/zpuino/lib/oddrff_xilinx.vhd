@@ -21,7 +21,7 @@ architecture behave of oddrff is
 
 begin
 
-  CLKN <= not CLKN;
+  CLKN <= not CLK;
 
   inst: ODDR2
     generic map (
